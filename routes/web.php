@@ -1,7 +1,8 @@
 <?php
 
+use App\Http\Controllers\JobseekerRegistrationController;
 use Illuminate\Support\Facades\Route;
-//use Illuminate\Support\Facades\Auth;//
+use Illuminate\Support\Facades\DB;  
 
 /*
 |--------------------------------------------------------------------------
@@ -10,7 +11,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('homepage');  // Changed from 'welcome' to 'homepage'
+    return view('homepage');
 })->name('home');
 
 Route::get('/contact', function () {
@@ -19,10 +20,13 @@ Route::get('/contact', function () {
 
 /*
 |--------------------------------------------------------------------------
-| Authentication Routes
+| Jobseeker Registration Routes (Public)
 |--------------------------------------------------------------------------
 */
-//Auth::routes();//
+
+Route::get('/jobseeker/register', [JobseekerRegistrationController::class, 'showRegistrationForm'])->name('jobseeker.register');
+Route::post('/jobseeker/register', [JobseekerRegistrationController::class, 'register'])->name('jobseeker.register.post');
+Route::get('/jobseeker/register/success', [JobseekerRegistrationController::class, 'success'])->name('jobseeker.register.success');
 
 /*
 |--------------------------------------------------------------------------
@@ -32,23 +36,15 @@ Route::get('/contact', function () {
 
 Route::prefix('jobseeker')->name('jobseeker.')->group(function () {
 
-    Route::get('/register', function () {
-        return view('jobseeker.register');
-    })->name('register');
-
     Route::get('/login', function () {
         return view('jobseeker.login');
     })->name('login');
 
     // Protected routes - requires authentication
     Route::middleware(['auth'])->group(function () {
-        Route::get('/', function () {
+        Route::get('/home', function () {
             return view('jobseeker.homepage');
         })->name('home');
-
-        Route::get('/homepage', function () {
-            return view('jobseeker.homepage');
-        })->name('homepage');
 
         Route::get('/profile', function () {
             return view('jobseeker.profile');
@@ -74,9 +70,9 @@ Route::prefix('employer')->name('employer.')->group(function () {
 
     // Protected routes - requires authentication
     Route::middleware(['auth'])->group(function () {
-        Route::get('/homepage', function () {
+        Route::get('/home', function () {
             return view('employer.homepage');
-        })->name('homepage');
+        })->name('home');
     });
 });
 
@@ -98,4 +94,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
             return view('admin.dashboard');
         })->name('dashboard');
     });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Test Routes (Remove in production)
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/test-db', function () {
+    $users = DB::table('users')->get();
+    return response()->json($users);
 });
