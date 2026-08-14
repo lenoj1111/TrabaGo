@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\JobseekerRegistrationController;
+use App\Http\Controllers\EmployerRegistrationController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;  
 
@@ -27,6 +28,16 @@ Route::get('/contact', function () {
 Route::get('/jobseeker/register', [JobseekerRegistrationController::class, 'showRegistrationForm'])->name('jobseeker.register');
 Route::post('/jobseeker/register', [JobseekerRegistrationController::class, 'register'])->name('jobseeker.register.post');
 Route::get('/jobseeker/register/success', [JobseekerRegistrationController::class, 'success'])->name('jobseeker.register.success');
+
+/*
+|--------------------------------------------------------------------------
+| Employer Registration Routes (Public)
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/employer/register', [EmployerRegistrationController::class, 'showRegistrationForm'])->name('employer.register');
+Route::post('/employer/register', [EmployerRegistrationController::class, 'register'])->name('employer.register.post');
+Route::get('/employer/register/success', [EmployerRegistrationController::class, 'success'])->name('employer.register.success');
 
 /*
 |--------------------------------------------------------------------------
@@ -60,10 +71,6 @@ Route::prefix('jobseeker')->name('jobseeker.')->group(function () {
 
 Route::prefix('employer')->name('employer.')->group(function () {
 
-    Route::get('/register', function () {
-        return view('employer.register');
-    })->name('register');
-
     Route::get('/login', function () {
         return view('employer.login');
     })->name('login');
@@ -73,6 +80,26 @@ Route::prefix('employer')->name('employer.')->group(function () {
         Route::get('/home', function () {
             return view('employer.homepage');
         })->name('home');
+
+        Route::get('/dashboard', function () {
+            return view('employer.dashboard');
+        })->name('dashboard');
+
+        Route::get('/profile', function () {
+            return view('employer.profile');
+        })->name('profile');
+
+        Route::get('/job-postings', function () {
+            return view('employer.job-postings');
+        })->name('job-postings');
+
+        Route::get('/applications', function () {
+            return view('employer.applications');
+        })->name('applications');
+
+        Route::get('/accreditation', function () {
+            return view('employer.accreditation');
+        })->name('accreditation');
     });
 });
 
@@ -93,6 +120,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', function () {
             return view('admin.dashboard');
         })->name('dashboard');
+
+        Route::get('/employers', function () {
+            return view('admin.employers');
+        })->name('employers');
+
+        Route::get('/job-postings', function () {
+            return view('admin.job-postings');
+        })->name('job-postings');
+
+        Route::get('/reports', function () {
+            return view('admin.reports');
+        })->name('reports');
     });
 });
 
@@ -106,3 +145,4 @@ Route::get('/test-db', function () {
     $users = DB::table('users')->get();
     return response()->json($users);
 });
+
