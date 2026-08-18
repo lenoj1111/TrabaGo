@@ -2,8 +2,19 @@
 
 use App\Http\Controllers\JobseekerRegistrationController;
 use App\Http\Controllers\EmployerRegistrationController;
+use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;  
+use App\Http\Controllers\Admin\UserManagementController;
+
+/*
+|--------------------------------------------------------------------------
+| Auth Routes
+|--------------------------------------------------------------------------
+*/
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [LoginController::class, 'login']);
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 /*
 |--------------------------------------------------------------------------
@@ -48,7 +59,7 @@ Route::get('/employer/register/success', [EmployerRegistrationController::class,
 Route::prefix('jobseeker')->name('jobseeker.')->group(function () {
 
     Route::get('/login', function () {
-        return view('jobseeker.login');
+        return view('auth.login');
     })->name('login');
 
     // Protected routes - requires authentication
@@ -146,3 +157,25 @@ Route::get('/test-db', function () {
     return response()->json($users);
 });
 
+
+/*
+|--------------------------------------------------------------------------
+| Admin User Management Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+    Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [UserManagementController::class, 'create'])->name('users.create');
+    Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
+    Route::get('/users/{id}/edit', [UserManagementController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{id}', [UserManagementController::class, 'update'])->name('users.update');
+    Route::post('/users/{id}/toggle-status', [UserManagementController::class, 'toggleStatus'])->name('users.toggle-status');
+    Route::post('/users/{id}/approve', [UserManagementController::class, 'approve'])->name('users.approve');
+    Route::delete('/users/{id}', [UserManagementController::class, 'destroy'])->name('users.destroy');
+});
+
+// Test route after login
+Route::get('/dashboard', function () {
+    return 'Welcome! User ID: ' . session('user_id') . ', Role: ' . session('user_role');
+})->middleware(['auth']);

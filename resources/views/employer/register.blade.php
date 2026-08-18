@@ -458,6 +458,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const nextBtn = document.getElementById('nextBtn');
     const submitBtn = document.getElementById('submitBtn');
 
+    // Debug: Check if elements exist
+    console.log('Form:', form);
+    console.log('Submit Button:', submitBtn);
+    console.log('Next Button:', nextBtn);
+
     function updateSteps() {
         // Show/hide step contents
         stepContents.forEach(content => {
@@ -482,18 +487,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Update navigation buttons
-        prevBtn.style.display = currentStep > 1 ? 'inline-flex' : 'none';
-        if (currentStep === totalSteps) {
-            nextBtn.style.display = 'none';
-            submitBtn.style.display = 'inline-flex';
-        } else {
-            nextBtn.style.display = 'inline-flex';
-            submitBtn.style.display = 'none';
+        if (prevBtn) {
+            prevBtn.style.display = currentStep > 1 ? 'inline-flex' : 'none';
+        }
+        if (nextBtn && submitBtn) {
+            if (currentStep === totalSteps) {
+                nextBtn.style.display = 'none';
+                submitBtn.style.display = 'inline-flex';
+            } else {
+                nextBtn.style.display = 'inline-flex';
+                submitBtn.style.display = 'none';
+            }
         }
     }
 
     function validateStep(step) {
         const currentContent = document.querySelector(`.step-content[data-step="${step}"]`);
+        if (!currentContent) return true;
+        
         const inputs = currentContent.querySelectorAll('input[required], select[required]');
         let isValid = true;
 
@@ -509,10 +520,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Special validation for step 4 (terms checkbox)
         if (step === 4) {
             const termsCheckbox = document.querySelector('input[name="terms"]');
-            if (!termsCheckbox.checked) {
+            if (termsCheckbox && !termsCheckbox.checked) {
                 isValid = false;
                 termsCheckbox.classList.add('border-red-500');
-            } else {
+            } else if (termsCheckbox) {
                 termsCheckbox.classList.remove('border-red-500');
             }
         }
@@ -526,23 +537,63 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         currentStep = step;
         updateSteps();
+        // Scroll to top of form
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     // Next button
-    nextBtn.addEventListener('click', function() {
-        if (validateStep(currentStep)) {
-            if (currentStep < totalSteps) {
-                goToStep(currentStep + 1);
+    if (nextBtn) {
+        nextBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Next button clicked, step:', currentStep);
+            if (validateStep(currentStep)) {
+                if (currentStep < totalSteps) {
+                    goToStep(currentStep + 1);
+                }
+            } else {
+                alert('Please fill in all required fields before proceeding.');
             }
-        }
-    });
+        });
+    }
 
     // Previous button
-    prevBtn.addEventListener('click', function() {
-        if (currentStep > 1) {
-            goToStep(currentStep - 1);
-        }
-    });
+    if (prevBtn) {
+        prevBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (currentStep > 1) {
+                goToStep(currentStep - 1);
+            }
+        });
+    }
+
+    // Submit button - FIXED
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function(e) {
+            console.log('Submit button clicked!');
+            
+            // Validate all steps before submitting
+            let allValid = true;
+            for (let i = 1; i <= totalSteps; i++) {
+                if (!validateStep(i)) {
+                    allValid = false;
+                    // Go to the first invalid step
+                    if (i < currentStep) {
+                        goToStep(i);
+                    }
+                    break;
+                }
+            }
+            
+            if (allValid) {
+                console.log('All valid, submitting form...');
+                // Submit the form
+                form.submit();
+            } else {
+                e.preventDefault();
+                alert('Please fill in all required fields before submitting.');
+            }
+        });
+    }
 
     // Click on step dots to navigate
     stepDots.forEach(dot => {
@@ -574,13 +625,12 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('input[type="file"]').forEach(input => {
         input.addEventListener('change', function() {
             if (this.files.length > 0) {
-                const label = this.closest('div').querySelector('.file-label');
-                if (label) {
-                    label.textContent = this.files[0].name;
-                }
+                console.log('File selected:', this.files[0].name);
             }
         });
     });
+
+    console.log('Employer registration form initialized!');
 });
 </script>
 @endsection

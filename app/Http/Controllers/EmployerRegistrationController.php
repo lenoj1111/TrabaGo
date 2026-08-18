@@ -66,18 +66,16 @@ class EmployerRegistrationController extends Controller
                 'password' => Hash::make($validated['password']),
                 'role' => 'employer',
                 'status' => 'active',
-                'is_approved' => false, // Needs admin approval
+                'is_approved' => 0,
                 'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now(),
             ]);
 
             // 2. Create employer profile
             $employerId = DB::table('employers')->insertGetId([
                 'user_id' => $user,
                 'company_name' => $validated['company_name'],
-                'is_accredited' => false, // Needs accreditation approval
-                'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now(),
+                'is_accredited' => 0,
+                'accredited_at' => null,
             ]);
 
             // 3. Store documents if uploaded
@@ -97,8 +95,7 @@ class EmployerRegistrationController extends Controller
                 'employer_id' => $employerId,
                 'documents' => json_encode($documents),
                 'submitted_at' => Carbon::now(),
-                'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now(),
+                'ocr_validation_status' => 'pending',
             ]);
 
             // 5. Create user profile (for contact information)
@@ -107,8 +104,6 @@ class EmployerRegistrationController extends Controller
                 'full_name' => $validated['contact_person'],
                 'position' => $validated['contact_position'],
                 'phone' => $validated['phone'],
-                'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now(),
             ]);
 
             DB::commit();
@@ -136,6 +131,6 @@ class EmployerRegistrationController extends Controller
      */
     public function success()
     {
-        return view('employer.register-success');
+        return view('employer.success');
     }
 }
