@@ -2,23 +2,15 @@
 
     <div class="max-w-6xl mx-auto h-16 flex justify-between items-center px-5">
 
-        <a href="{{ route('jobseeker.homepage') }}"
+        <a href="{{ route('jobseeker.home') }}"
            class="font-bold text-xl">
             DMDP
         </a>
 
         <nav class="flex gap-4">
 
-            <a href="{{ route('jobseeker.homepage') }}">
+            <a href="{{ route('jobseeker.home') }}">
                 Home
-            </a>
-
-            <a href="{{ route('jobseeker.jobs') }}">
-                Find Jobs
-            </a>
-
-            <a href="{{ route('jobseeker.training') }}">
-                Trainings
             </a>
 
             <a href="{{ route('jobseeker.profile') }}">
