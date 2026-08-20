@@ -4,17 +4,18 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class AdminMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!Auth::check()) {
+        // Check if user is logged in via session
+        if (!session()->has('user_id')) {
             return redirect()->route('login');
         }
 
-        if (Auth::user()->role !== 'admin') {
+        // Check if user has admin role
+        if (session('user_role') !== 'admin') {
             abort(403, 'Unauthorized access. Admin only.');
         }
 
