@@ -3,7 +3,8 @@
 @section('title', 'User Management')
 
 @section('content')
-<div class="p-4 md:p-6">
+<!-- Your content here - the layout already provides the container -->
+<div>
     <!-- Page Header -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
@@ -21,7 +22,7 @@
         </a>
     </div>
 
-    <!-- Statistics Cards - Compact -->
+    <!-- Statistics Cards -->
     <div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
         <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-3 text-center">
             <p class="text-lg font-bold text-gray-800">{{ $counts['total'] }}</p>
@@ -49,7 +50,7 @@
         </div>
     </div>
 
-    <!-- Filters - Compact -->
+    <!-- Filters -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-3 mb-6">
         <form method="GET" action="{{ route('admin.users.index') }}" class="flex flex-wrap items-end gap-3">
             <div class="flex-1 min-w-[150px]">
@@ -86,7 +87,7 @@
         </form>
     </div>
 
-    <!-- Users Table - Compact -->
+    <!-- Users Table -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -205,7 +206,7 @@
             </table>
         </div>
 
-        <!-- Pagination - Compact -->
+        <!-- Pagination -->
         @if($users->hasPages())
             <div class="px-4 py-3 border-t border-gray-100 bg-gray-50">
                 <div class="flex items-center justify-between">

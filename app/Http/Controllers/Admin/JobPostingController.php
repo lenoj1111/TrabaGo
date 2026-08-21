@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Admin/JobPostingController.php
 
 namespace App\Http\Controllers\Admin;
 
@@ -136,9 +135,9 @@ class JobPostingController extends Controller
         // If employer_id is empty, set to null (DMDP)
         $employerId = $request->employer_id ?: null;
 
-        $jobId = DB::table('job_postings')->insertGetId([
+        DB::table('job_postings')->insertGetId([
             'employer_id' => $employerId,
-            'admin_id' => $adminProfile->profile_id,  // Using profile_id from user_profiles
+            'admin_id' => $adminProfile->profile_id,
             'title' => $request->title,
             'description' => $request->description,
             'qualifications' => $request->qualifications,
@@ -159,7 +158,7 @@ class JobPostingController extends Controller
     /**
      * Display the specified job posting.
      */
-    public function show($id)
+    public function show(int $id)
     {
         $jobPosting = DB::table('job_postings as jp')
             ->leftJoin('employers as e', 'jp.employer_id', '=', 'e.employer_id')
@@ -200,7 +199,7 @@ class JobPostingController extends Controller
     /**
      * Show the form for editing the specified job posting.
      */
-    public function edit($id)
+    public function edit(int $id)
     {
         $jobPosting = DB::table('job_postings')
             ->where('job_id', $id)
@@ -226,7 +225,7 @@ class JobPostingController extends Controller
     /**
      * Update the specified job posting.
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, int $id)
     {
         $validator = Validator::make($request->all(), [
             'employer_id' => 'nullable|exists:employers,employer_id',
@@ -273,7 +272,7 @@ class JobPostingController extends Controller
     /**
      * Remove the specified job posting.
      */
-    public function destroy($id)
+    public function destroy(int $id)
     {
         DB::table('job_postings')->where('job_id', $id)->delete();
         
@@ -284,7 +283,7 @@ class JobPostingController extends Controller
     /**
      * Approve a job posting.
      */
-    public function approve($id)
+    public function approve(int $id)
     {
         $jobPosting = DB::table('job_postings')
             ->where('job_id', $id)
@@ -311,7 +310,7 @@ class JobPostingController extends Controller
     /**
      * Reject a job posting.
      */
-    public function reject(Request $request, $id)
+    public function reject(Request $request, int $id)
     {
         $jobPosting = DB::table('job_postings')
             ->where('job_id', $id)
@@ -338,7 +337,7 @@ class JobPostingController extends Controller
     /**
      * Close a job posting.
      */
-    public function close($id)
+    public function close(int $id)
     {
         $jobPosting = DB::table('job_postings')
             ->where('job_id', $id)
@@ -379,6 +378,7 @@ class JobPostingController extends Controller
         $jobIds = $request->job_ids;
         $action = $request->action;
         $count = count($jobIds);
+        $message = '';
 
         switch ($action) {
             case 'approve':
