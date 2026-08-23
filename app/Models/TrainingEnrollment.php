@@ -42,6 +42,12 @@ class TrainingEnrollment extends Model
         'end_date',
         'lab_remarks',
         'answers',
+        'score',
+        'passed',
+        'certificate_no',
+        'certificate_issued',
+        'certificate_issued_at',
+        'trainer_feedback',
     ];
 
     /**
@@ -55,6 +61,10 @@ class TrainingEnrollment extends Model
             'start_date' => 'date',
             'end_date' => 'date',
             'answers' => 'array',
+            'score' => 'float',
+            'passed' => 'boolean',
+            'certificate_issued' => 'boolean',
+            'certificate_issued_at' => 'datetime',
         ];
     }
 

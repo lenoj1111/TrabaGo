@@ -7,11 +7,12 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The table associated with the model.
@@ -32,7 +33,7 @@ class User extends Authenticatable
      *
      * @var bool
      */
-    public $timestamps = false;
+    public $timestamps = true;
 
     /**
      * The attributes that are mass assignable.
@@ -46,6 +47,7 @@ class User extends Authenticatable
         'status',
         'is_approved',
         'created_at',
+        'updated_at',
     ];
 
     /**
@@ -67,6 +69,7 @@ class User extends Authenticatable
     {
         return [
             'created_at' => 'datetime',
+            'updated_at' => 'datetime',
             'is_approved' => 'boolean',
             'password' => 'hashed',
         ];
@@ -121,6 +124,26 @@ class User extends Authenticatable
     // =============================================
 
     /**
+     * Get user full name from relations or fallback to email.
+     */
+    public function getFullNameAttribute(): string
+    {
+        if ($this->jobseeker) {
+            $name = trim("{$this->jobseeker->first_name} {$this->jobseeker->last_name}");
+            if (!empty($name)) {
+                return $name;
+            }
+        }
+        if ($this->profile && !empty($this->profile->full_name)) {
+            return $this->profile->full_name;
+        }
+        if ($this->employer && !empty($this->employer->company_name)) {
+            return $this->employer->company_name;
+        }
+        return $this->email;
+    }
+
+    /**
      * Check if the user is a jobseeker.
      */
     public function isJobseeker(): bool
@@ -142,6 +165,14 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    /**
+     * Check if the user is a supervisor.
+     */
+    public function isSupervisor(): bool
+    {
+        return in_array($this->role, ['supervisor', 'pesd_supervisor']);
     }
 
     /**

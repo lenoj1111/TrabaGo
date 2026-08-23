@@ -39,10 +39,19 @@ class LoginController extends Controller
                 ]);
             }
 
-            // ✅ FIXED: Use direct URLs instead of named routes
+            // Route each role to its own dedicated dashboard
             switch ($user->role) {
                 case 'admin':
                     return redirect('/admin/dashboard');
+                case 'supervisor':
+                case 'pesd_supervisor':
+                    return redirect('/supervisor/dashboard');
+                case 'lmo':
+                    return redirect('/lmo/dashboard');
+                case 'jpo':
+                    return redirect('/jpo/dashboard');
+                case 'trainer':
+                    return redirect('/trainer/dashboard');
                 case 'employer':
                     return redirect('/employer/home');
                 case 'jobseeker':

@@ -1,127 +1,282 @@
 @extends('layouts.jobseeker')
 
-@section('title', 'Jobseeker Homepage')
+@section('title', 'Dashboard & AI Match - TrabaGo')
 
 @section('content')
-<div class="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-6xl">
-        <section class="relative isolate overflow-hidden rounded-2xl bg-slate-900 px-6 py-8 shadow-xl sm:px-10 sm:py-10">
-            <div class="absolute inset-y-0 right-0 -z-10 w-1/2 opacity-30" style="background: radial-gradient(circle at center, #c79a4b 0, transparent 65%);"></div>
-            <div class="absolute -right-16 -top-24 -z-10 h-64 w-64 rounded-full border border-amber-300/20"></div>
-            <div class="absolute -bottom-40 right-24 -z-10 h-80 w-80 rounded-full border border-white/10"></div>
+<div class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-7xl space-y-8">
+        
+        <!-- =================================================================== -->
+        <!-- 1. FEATURED "BEST MATCH" HERO BANNER (GREEN/EMERALD PALETTE) -->
+        <!-- =================================================================== -->
+        @if ($bestMatch && isset($bestMatch['job']))
+            @php
+                $topJob = $bestMatch['job'];
+                $topMatch = $bestMatch['match'];
+                $topCompany = $topJob->employer->company_name ?? 'Partner Employer';
+            @endphp
+            <section class="relative isolate overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 px-6 py-8 shadow-2xl sm:px-10 sm:py-10 border border-emerald-500/20">
+                <!-- Background ambient emerald circles -->
+                <div class="absolute -right-20 -top-20 -z-10 h-80 w-80 rounded-full bg-emerald-500/15 blur-3xl"></div>
+                <div class="absolute -bottom-20 right-40 -z-10 h-80 w-80 rounded-full bg-teal-500/15 blur-3xl"></div>
 
-            <div class="relative flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
-                <div class="max-w-2xl">
-                    <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-amber-200">
-                        <span class="h-2 w-2 rounded-full bg-amber-300"></span>
-                        Jobseeker workspace
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+                    
+                    <div class="max-w-2xl">
+                        <div class="inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-emerald-300 shadow-inner">
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                            </span>
+                            AI Skill-Match #1 Recommendation
+                        </div>
+
+                        <h1 class="mt-4 text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl">
+                            {{ $topJob->title }}
+                        </h1>
+                        <p class="mt-2 text-base font-semibold text-emerald-300">
+                            {{ $topCompany }} &bull; Cebu City &bull; ₱18,000 - ₱35,000 / mo
+                        </p>
+                        <p class="mt-4 text-sm leading-relaxed text-slate-300 line-clamp-2">
+                            {{ $topJob->description ?: 'Explore this top-recommended position specifically matched to your verified skillset profile.' }}
+                        </p>
+
+                        <!-- Matched Skills Preview Badges -->
+                        <div class="mt-5 flex flex-wrap items-center gap-2">
+                            <span class="text-xs font-semibold text-slate-400">Skills snapshot:</span>
+                            @foreach (array_slice($topMatch['matchedSkills'] ?? [], 0, 3) as $mSkill)
+                                <span class="inline-flex items-center gap-1 rounded-lg bg-emerald-500/20 border border-emerald-400/40 px-2.5 py-1 text-xs font-bold text-emerald-200">
+                                    <svg class="h-3 w-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                    {{ $mSkill }}
+                                </span>
+                            @endforeach
+                            @if(count($topMatch['matchedSkills'] ?? []) > 3)
+                                <span class="text-xs text-slate-400">+{{ count($topMatch['matchedSkills']) - 3 }} more</span>
+                            @endif
+                        </div>
                     </div>
-                    <h1 class="text-3xl font-bold tracking-tight text-white sm:text-5xl">Find work that moves you forward.</h1>
-                    <p class="mt-4 max-w-xl text-base leading-7 text-slate-300">Welcome back to TrabaGo. Explore opportunities, keep your applications moving, and build your next chapter.</p>
-                </div>
-                <a href="{{ route('jobseeker.profile') }}" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-amber-500 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition hover:-translate-y-0.5 hover:bg-amber-400">
-                    Complete your profile
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                </a>
-            </div>
-        </section>
 
-        <section class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <p class="text-sm font-semibold text-slate-500">Available jobs</p>
-                    <span class="rounded-lg bg-blue-50 p-2 text-blue-700">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8 5-8-5m16 0l-8-4-8 4m16 0v10l-8 4-8-4V7" /></svg>
-                    </span>
-                </div>
-                <p class="mt-4 text-3xl font-bold text-slate-900">25</p>
-                <p class="mt-1 text-xs font-medium text-emerald-600">New opportunities this week</p>
-            </div>
-            <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <p class="text-sm font-semibold text-slate-500">Active applications</p>
-                    <span class="rounded-lg bg-emerald-50 p-2 text-emerald-700">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 12c0 5.591 3.824 10.291 9 11.622C17.176 22.291 21 17.591 21 12c0-1.425-.248-2.792-.7-4.016z" /></svg>
-                    </span>
-                </div>
-                <p class="mt-4 text-3xl font-bold text-slate-900">4</p>
-                <p class="mt-1 text-xs font-medium text-slate-500">Keep your momentum going</p>
-            </div>
-            <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <p class="text-sm font-semibold text-slate-500">Skills trainings</p>
-                    <span class="rounded-lg bg-amber-50 p-2 text-amber-700">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                    </span>
-                </div>
-                <p class="mt-4 text-3xl font-bold text-slate-900">3</p>
-                <p class="mt-1 text-xs font-medium text-slate-500">Grow skills employers need</p>
-            </div>
-        </section>
+                    <!-- Right Match Percentage Card & Actions -->
+                    <div class="flex flex-col sm:flex-row lg:flex-col items-center lg:items-end justify-between gap-6 shrink-0 bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-emerald-500/20">
+                        <div class="text-center lg:text-right">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Match Compatibility</span>
+                            <div class="flex items-baseline justify-center lg:justify-end gap-1.5 mt-1">
+                                <span class="text-5xl font-black text-emerald-400">{{ $topMatch['percentage'] ?? 0 }}%</span>
+                            </div>
+                            <span class="inline-block mt-1 text-xs font-bold text-emerald-300">
+                                {{ $topMatch['tier'] ?? 'Match Calculated' }}
+                            </span>
+                        </div>
 
-        <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-xs font-bold uppercase tracking-widest text-amber-600">Curated for you</p>
-                        <h2 class="mt-1 text-2xl font-bold text-slate-900">Recent job openings</h2>
+                        <div class="flex flex-col w-full sm:w-auto gap-2.5">
+                            <a href="{{ route('jobseeker.jobs.show', $topJob->job_id) }}" 
+                               class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 px-6 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-600/30 hover:scale-[1.02] transition-all">
+                                View Match & Apply
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                            </a>
+                            <a href="{{ route('jobseeker.jobs') }}" class="text-center text-xs font-semibold text-slate-300 hover:text-emerald-300 transition-colors">
+                                Browse all matching jobs &rarr;
+                            </a>
+                        </div>
                     </div>
-                    <span class="hidden text-sm font-semibold text-slate-400 sm:block">Cebu City</span>
-                </div>
 
-                <div class="mt-6 divide-y divide-slate-100">
-                    <article class="flex flex-col gap-4 py-4 first:pt-0 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="flex items-start gap-4">
-                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-sm font-bold text-blue-700">ABC</div>
-                            <div>
-                                <h3 class="font-bold text-slate-900">Web Developer</h3>
-                                <p class="mt-1 text-sm text-slate-500">ABC Company <span class="mx-1 text-slate-300">|</span> Cebu City</p>
-                                <span class="mt-2 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Full-time</span>
-                            </div>
-                        </div>
-                        <button type="button" class="self-start rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-900 hover:text-slate-900 sm:self-auto">View opening</button>
-                    </article>
-                    <article class="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="flex items-start gap-4">
-                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-sm font-bold text-rose-700">XYZ</div>
-                            <div>
-                                <h3 class="font-bold text-slate-900">Graphic Designer</h3>
-                                <p class="mt-1 text-sm text-slate-500">XYZ Solutions <span class="mx-1 text-slate-300">|</span> Mandaue City</p>
-                                <span class="mt-2 inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">Hybrid</span>
-                            </div>
-                        </div>
-                        <button type="button" class="self-start rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-900 hover:text-slate-900 sm:self-auto">View opening</button>
-                    </article>
-                    <article class="flex flex-col gap-4 py-4 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="flex items-start gap-4">
-                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-sm font-bold text-violet-700">CG</div>
-                            <div>
-                                <h3 class="font-bold text-slate-900">Office Staff</h3>
-                                <p class="mt-1 text-sm text-slate-500">City Government <span class="mx-1 text-slate-300">|</span> Cebu City</p>
-                                <span class="mt-2 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">New listing</span>
-                            </div>
-                        </div>
-                        <button type="button" class="self-start rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-900 hover:text-slate-900 sm:self-auto">View opening</button>
-                    </article>
                 </div>
             </section>
+        @else
+            <!-- Fallback Welcome Hero -->
+            <section class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-8 text-white shadow-xl border border-emerald-500/20">
+                <h1 class="text-3xl font-extrabold sm:text-4xl">Welcome to DMDP TrabaGo</h1>
+                <p class="mt-2 text-slate-300">Start discovering jobs matched to your verified skills matrix.</p>
+                <a href="{{ route('jobseeker.jobs') }}" class="mt-5 inline-flex rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-md">Explore Openings</a>
+            </section>
+        @endif
 
-            <aside class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p class="text-xs font-bold uppercase tracking-widest text-amber-600">Your progress</p>
-                <h2 class="mt-1 text-2xl font-bold text-slate-900">Profile strength</h2>
-                <div class="mt-6 flex items-end justify-between">
-                    <p class="text-4xl font-bold text-slate-900">70<span class="text-xl text-slate-400">%</span></p>
-                    <p class="text-sm font-semibold text-amber-600">Almost there</p>
+        <!-- =================================================================== -->
+        <!-- 2. QUICK STATS METRICS -->
+        <!-- =================================================================== -->
+        <section class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <a href="{{ route('jobseeker.jobs') }}" class="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all">
+                <div class="flex items-center justify-between">
+                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Available Openings</p>
+                    <span class="rounded-xl bg-emerald-50 p-2.5 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    </span>
                 </div>
-                <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
-                    <div class="h-full w-[70%] rounded-full bg-amber-500"></div>
+                <p class="mt-4 text-3xl font-black text-slate-900">{{ $availableJobsCount }}</p>
+                <p class="mt-1 text-xs font-bold text-emerald-600 flex items-center gap-1">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                    Curated with AI Skill Matrix
+                </p>
+            </a>
+
+            <a href="{{ route('jobseeker.applications') }}" class="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all">
+                <div class="flex items-center justify-between">
+                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Active Applications</p>
+                    <span class="rounded-xl bg-teal-50 p-2.5 text-teal-700 group-hover:bg-teal-600 group-hover:text-white transition-colors">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </span>
                 </div>
-                <p class="mt-5 text-sm leading-6 text-slate-500">A complete profile helps employers understand your experience and skills faster.</p>
-                <a href="{{ route('jobseeker.profile') }}" class="mt-6 inline-flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-700">Update profile</a>
-            </aside>
+                <p class="mt-4 text-3xl font-black text-slate-900">{{ $activeApplicationsCount }}</p>
+                <p class="mt-1 text-xs font-medium text-slate-500">Track stage & interview dates</p>
+            </a>
+
+            <a href="{{ route('jobseeker.training') }}" class="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all">
+                <div class="flex items-center justify-between">
+                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Skills Training Courses</p>
+                    <span class="rounded-xl bg-emerald-50 p-2.5 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                    </span>
+                </div>
+                <p class="mt-4 text-3xl font-black text-slate-900">{{ $availableTrainingsCount }}</p>
+                <p class="mt-1 text-xs font-bold text-emerald-600">Earn certified skills & raise match score</p>
+            </a>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- 3. MAIN SECTION: RANKED JOB FEED + SIDEBAR PROGRESS -->
+        <!-- =================================================================== -->
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+            
+            <!-- Left 2 Cols: AI Recommended Job Feed -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-900">Ranked Opportunities</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Matched using your verified skill matrix</p>
+                    </div>
+                    <a href="{{ route('jobseeker.jobs') }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1">
+                        View All Openings
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </a>
+                </div>
+
+                <div class="space-y-4">
+                    @forelse ($rankedJobs as $item)
+                        @php
+                            $job = $item['job'];
+                            $match = $item['match'];
+                            $company = $job->employer->company_name ?? 'Partner Employer';
+                        @endphp
+                        <article class="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-extrabold border {{ $match['badgeClass'] ?? 'bg-emerald-50 text-emerald-700 border-emerald-200' }}">
+                                        <span class="h-1.5 w-1.5 rounded-full {{ $match['dotColor'] ?? 'bg-emerald-500' }}"></span>
+                                        {{ $match['percentage'] ?? 0 }}% Match
+                                    </span>
+                                    @if ($job->accepts_disability)
+                                        <span class="inline-flex items-center rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-bold text-teal-800 border border-teal-200">
+                                            ♿ PWD Inclusive
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <h3 class="text-lg font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
+                                    <a href="{{ route('jobseeker.jobs.show', $job->job_id) }}">
+                                        {{ $job->title }}
+                                    </a>
+                                </h3>
+
+                                <p class="text-xs text-slate-500 font-medium">
+                                    {{ $company }} &bull; Cebu City &bull; ₱18,000 - ₱35,000
+                                </p>
+
+                                <!-- Matched Skills Chips -->
+                                <div class="flex flex-wrap gap-1.5 pt-1">
+                                    @foreach (array_slice($match['matchedSkills'] ?? [], 0, 3) as $skill)
+                                        <span class="rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[11px] font-bold">
+                                            ✓ {{ $skill }}
+                                        </span>
+                                    @endforeach
+                                    @if(count($match['missingSkills'] ?? []) > 0)
+                                        <span class="rounded-lg bg-slate-100 text-slate-600 px-2 py-0.5 text-[11px]">
+                                            Needs {{ count($match['missingSkills']) }} skill(s)
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 shrink-0">
+                                <a href="{{ route('jobseeker.jobs.show', $job->job_id) }}" 
+                                   class="w-full sm:w-auto inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-600 transition-colors shadow-sm">
+                                    View Details
+                                </a>
+                            </div>
+                        </article>
+                    @empty
+                        <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
+                            No job openings found at the moment.
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+
+            <!-- Right Column: Profile Strength & Recommended Training -->
+            <div class="space-y-6">
+                
+                <!-- Profile Strength Widget -->
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Profile Readiness</h3>
+                        <span class="text-xs font-extrabold text-emerald-700">{{ $profileStrength }}%</span>
+                    </div>
+
+                    <div class="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                        <div class="h-full rounded-full bg-gradient-to-r from-emerald-600 to-teal-400 transition-all duration-500" style="width: {{ $profileStrength }}%"></div>
+                    </div>
+
+                    <p class="text-xs text-slate-500 leading-relaxed">
+                        Add verified skills and upload your resume to maximize your match scores with Cebu employers.
+                    </p>
+
+                    <!-- Quick Skill Chips -->
+                    <div class="pt-2 border-t border-slate-100">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-800">My Skills Matrix</span>
+                            <a href="{{ route('jobseeker.profile') }}" class="text-[11px] font-bold text-emerald-600 hover:underline">Manage</a>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5">
+                            @forelse($userSkills as $skill)
+                                <span class="inline-flex items-center rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-bold text-emerald-800">
+                                    {{ $skill }}
+                                </span>
+                            @empty
+                                <p class="text-xs text-slate-400 italic">No skills added yet. Go to Profile to add skills!</p>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommended Training Courses -->
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Skill Certifications</h3>
+                        <a href="{{ route('jobseeker.training') }}" class="text-xs font-bold text-emerald-600 hover:underline">View All</a>
+                    </div>
+
+                    <div class="space-y-3">
+                        @foreach($trainings as $training)
+                            <div class="rounded-xl border border-emerald-100/80 bg-emerald-50/40 p-3.5 space-y-2">
+                                <div class="flex items-start justify-between gap-2">
+                                    <h4 class="text-xs font-bold text-slate-900">{{ $training->title }}</h4>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 shrink-0">Free</span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 line-clamp-2">{{ $training->description }}</p>
+                                <div class="flex items-center justify-between pt-1">
+                                    <span class="text-[10px] text-slate-400">{{ $training->topics->count() }} Modules</span>
+                                    <a href="{{ route('jobseeker.training.show', $training->training_id) }}" class="text-xs font-bold text-emerald-700 hover:underline">
+                                        Start Learning &rarr;
+                                    </a>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+            </div>
+
         </div>
+
     </div>
 </div>
 @endsection

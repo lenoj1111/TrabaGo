@@ -17,10 +17,10 @@
         </div>
 
         <!-- Header -->
-        <div class="relative overflow-hidden rounded-2xl mb-8" style="background: linear-gradient(135deg, #1b2739 0%, #33455e 50%, #405673 100%);">
+        <div class="relative overflow-hidden rounded-3xl mb-8 shadow-xl" style="background: linear-gradient(135deg, #022c22 0%, #064e3b 50%, #047857 100%);">
             <div class="relative px-6 py-8 md:px-8 md:py-10">
-                <h1 class="text-2xl md:text-3xl font-bold text-white">Jobseeker Registration</h1>
-                <p class="text-brand-300 text-sm">Department of Manpower Development and Placement</p>
+                <h1 class="text-2xl md:text-3xl font-black text-white">Jobseeker Registration</h1>
+                <p class="text-emerald-200 text-sm mt-1">Department of Manpower Development and Placement</p>
             </div>
         </div>
 
@@ -481,15 +481,14 @@
                         </svg>
                         Back
                     </button>
-                    <button type="button" id="nextBtn" class="px-8 py-2.5 text-white font-semibold rounded-lg transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2" 
-                            style="background: linear-gradient(135deg, #1b2739 0%, #33455e 100%);">
+                    <button type="button" id="nextBtn" class="px-8 py-2.5 text-white font-semibold rounded-lg transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400">
                         Next
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                         </svg>
                     </button>
-                    <button type="submit" id="submitBtn" class="px-8 py-2.5 text-white font-semibold rounded-lg transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2" 
-                            style="background: linear-gradient(135deg, #1b2739 0%, #33455e 100%); display:none;">
+                    <button type="submit" id="submitBtn" class="px-8 py-2.5 text-white font-semibold rounded-lg transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400" 
+                            style="display:none;">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
@@ -541,13 +540,14 @@
 }
 
 .step-dot.active .step-number {
-    background: linear-gradient(135deg, #1b2739 0%, #33455e 100%);
+    background: linear-gradient(135deg, #022c22 0%, #059669 100%);
     color: white;
-    box-shadow: 0 2px 8px rgba(27, 39, 57, 0.3);
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
 }
 
 .step-dot.active .step-label {
-    color: #1b2739;
+    color: #064e3b;
+    font-weight: 700;
 }
 
 .step-dot.completed .step-number {

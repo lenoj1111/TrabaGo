@@ -43,10 +43,10 @@
         <div class="bg-white p-6 rounded-lg shadow">
             <h2 class="text-xl font-bold mb-4">Quick Actions</h2>
             <div class="flex gap-4 flex-wrap">
-                <a href="{{ route('admin.job-postings.index') }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                <a href="{{ route('admin.job-postings.index') }}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-700 shadow-sm transition">
                     Manage Job Postings
                 </a>
-                <a href="{{ route('admin.job-postings.create') }}" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                <a href="{{ route('admin.job-postings.create') }}" class="bg-teal-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-teal-700 shadow-sm transition">
                     Create New Job
                 </a>
             </div>

@@ -79,7 +79,7 @@ class UserManagementController extends Controller
      */
     public function create()
     {
-        $roles = ['admin', 'jpo', 'trainer', 'lmo'];
+        $roles = ['admin', 'supervisor', 'pesd_supervisor', 'jpo', 'trainer', 'lmo'];
         return view('admin.users.create', compact('roles'));
     }
 
@@ -91,7 +91,7 @@ class UserManagementController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8|confirmed',
-            'role' => 'required|in:admin,jpo,trainer,lmo',
+            'role' => 'required|in:admin,supervisor,pesd_supervisor,jpo,trainer,lmo',
             'full_name' => 'required|string|max:150',
             'position' => 'required|string|max:100',
             'department' => 'nullable|string|max:150',
@@ -159,14 +159,50 @@ class UserManagementController extends Controller
     {
         $user = DB::table('users')
             ->leftJoin('user_profiles', 'users.user_id', '=', 'user_profiles.user_id')
+            ->leftJoin('employers', 'users.user_id', '=', 'employers.user_id')
+            ->leftJoin('jobseekers', 'users.user_id', '=', 'jobseekers.user_id')
             ->where('users.user_id', $id)
+            ->select(
+                'users.user_id',
+                'users.email',
+                'users.role',
+                'users.status',
+                'users.is_approved',
+                'users.created_at',
+                'users.updated_at',
+                'user_profiles.profile_id',
+                'user_profiles.full_name',
+                'user_profiles.position',
+                'user_profiles.department',
+                'user_profiles.office',
+                'user_profiles.phone',
+                'user_profiles.specialization',
+                'user_profiles.trainer_type',
+                'user_profiles.partner_institution',
+                'employers.company_name',
+                'employers.is_accredited',
+                'jobseekers.first_name',
+                'jobseekers.last_name',
+                'jobseekers.mobile_number as jobseeker_phone'
+            )
             ->first();
 
         if (!$user) {
             return redirect()->route('admin.users.index')->with('error', 'User not found.');
         }
 
-        $roles = ['admin', 'jpo', 'trainer', 'lmo', 'employer', 'jobseeker'];
+        if (empty($user->full_name)) {
+            if (!empty($user->first_name) || !empty($user->last_name)) {
+                $user->full_name = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
+            } elseif (!empty($user->company_name)) {
+                $user->full_name = $user->company_name;
+            }
+        }
+        if (empty($user->phone)) {
+            $user->phone = $user->jobseeker_phone ?? null;
+        }
+
+        $roles = ['admin', 'supervisor', 'pesd_supervisor', 'jpo', 'trainer', 'lmo', 'employer', 'jobseeker'];
         $statuses = ['active', 'inactive'];
 
         return view('admin.users.edit', compact('user', 'roles', 'statuses'));
@@ -178,7 +214,7 @@ class UserManagementController extends Controller
     public function update(Request $request, int $id)
     {
         $validator = Validator::make($request->all(), [
-            'role' => 'required|in:admin,jpo,trainer,lmo,employer,jobseeker',
+            'role' => 'required|in:admin,supervisor,pesd_supervisor,jpo,trainer,lmo,employer,jobseeker',
             'status' => 'required|in:active,inactive',
             'is_approved' => 'nullable|boolean',
             'full_name' => 'nullable|string|max:150',
@@ -207,17 +243,31 @@ class UserManagementController extends Controller
                     'updated_at' => Carbon::now(),
                 ]);
 
-            // 2. Update user profile
-            DB::table('user_profiles')
-                ->where('user_id', $id)
-                ->update([
+            // 2. Update user profile if exists or insert if profile data provided
+            $profileExists = DB::table('user_profiles')->where('user_id', $id)->exists();
+            if ($profileExists) {
+                DB::table('user_profiles')
+                    ->where('user_id', $id)
+                    ->update([
+                        'full_name' => $request->full_name,
+                        'position' => $request->position,
+                        'department' => $request->department,
+                        'office' => $request->office,
+                        'phone' => $request->phone,
+                        'updated_at' => Carbon::now(),
+                    ]);
+            } elseif ($request->filled('full_name') || $request->filled('position') || $request->filled('department') || $request->filled('office') || $request->filled('phone')) {
+                DB::table('user_profiles')->insert([
+                    'user_id' => $id,
                     'full_name' => $request->full_name,
                     'position' => $request->position,
                     'department' => $request->department,
                     'office' => $request->office,
                     'phone' => $request->phone,
+                    'created_at' => Carbon::now(),
                     'updated_at' => Carbon::now(),
                 ]);
+            }
 
             // 3. Create notification for status change
             if ($request->status === 'inactive') {

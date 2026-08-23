@@ -1,21 +1,11 @@
-<a href="{{ route('home') }}" class="flex items-center gap-3">
-
-    <div class="w-10 h-10 bg-blue-700 rounded flex items-center justify-center">
-
+<div class="flex items-center gap-3">
+    <div class="w-10 h-10 bg-gradient-to-tr from-emerald-600 via-emerald-500 to-teal-400 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-md shadow-emerald-500/25">
         💼
-
     </div>
-
-    <div>
-
-        <h2 class="font-bold">
-
-            Traba<span class="text-yellow-500">Go</span>
-
+    <div class="flex flex-col">
+        <h2 class="font-extrabold text-slate-900 leading-none text-lg tracking-tight">
+            Traba<span class="text-emerald-600">Go</span>
         </h2>
-
-        <small>DMDP Cebu City</small>
-
+        <small class="text-[10px] font-bold text-emerald-600 tracking-wider uppercase mt-0.5">DMDP Cebu City</small>
     </div>
-
-</a>
+</div>

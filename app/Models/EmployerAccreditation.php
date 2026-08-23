@@ -32,23 +32,29 @@ class EmployerAccreditation extends Model
      *
      * @var array<int, string>
      */
-    protected $fillable = [
-        'employer_id',
-        'documents',
-        'ocr_raw_text',
-        'ocr_classified_document_type',
-        'ocr_extracted_fields',
-        'ocr_confidence_score',
-        'ocr_validation_status',
-        'auto_approved_at',
-        'jpo_reviewed',
-        'jpo_reviewed_at',
-        'jpo_remarks',
-        'admin_approved',
-        'admin_approved_at',
-        'submitted_at',
-        'approved_at',
-    ];
+     protected $fillable = [
+         'employer_id',
+         'documents',
+         'ocr_raw_text',
+         'ocr_classified_document_type',
+         'ocr_extracted_fields',
+         'ocr_confidence_score',
+         'ocr_validation_status',
+         'auto_approved_at',
+         'status',
+         'jpo_reviewed',
+         'jpo_reviewed_at',
+         'jpo_remarks',
+         'jpo_id',
+         'supervisor_approved',
+         'supervisor_approved_at',
+         'supervisor_remarks',
+         'supervisor_id',
+         'admin_approved',
+         'admin_approved_at',
+         'submitted_at',
+         'approved_at',
+     ];
 
     /**
      * Get the attributes that should be cast.
@@ -62,9 +68,12 @@ class EmployerAccreditation extends Model
             'ocr_extracted_fields' => 'array',
             'ocr_confidence_score' => 'float',
             'jpo_reviewed' => 'boolean',
+            'supervisor_approved' => 'boolean',
             'admin_approved' => 'boolean',
             'auto_approved_at' => 'datetime',
             'jpo_reviewed_at' => 'datetime',
+            'supervisor_approved_at' => 'datetime',
+            'admin_approved_at' => 'date',
             'submitted_at' => 'date',
             'approved_at' => 'date',
         ];

@@ -191,7 +191,7 @@ class JobPostingController extends Controller
                 'js.mobile_number'
             )
             ->where('ja.job_id', $id)
-            ->orderBy('ja.created_at', 'desc')
+            ->orderBy('ja.application_id', 'desc')
             ->get();
 
         return view('admin.jobpostings.show', compact('jobPosting', 'applications'));

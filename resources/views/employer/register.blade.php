@@ -17,10 +17,10 @@
         </div>
 
         <!-- Header -->
-        <div class="relative overflow-hidden rounded-2xl mb-8" style="background: linear-gradient(135deg, #1b2739 0%, #33455e 50%, #405673 100%);">
+        <div class="relative overflow-hidden rounded-3xl mb-8 shadow-xl" style="background: linear-gradient(135deg, #022c22 0%, #064e3b 50%, #047857 100%);">
             <div class="relative px-6 py-8 md:px-8 md:py-10">
-                <h1 class="text-2xl md:text-3xl font-bold text-white">Employer Registration</h1>
-                <p class="text-brand-300 text-sm">Department of Manpower Development and Placement</p>
+                <h1 class="text-2xl md:text-3xl font-black text-white">Employer Registration</h1>
+                <p class="text-emerald-200 text-sm mt-1">Department of Manpower Development and Placement</p>
             </div>
         </div>
 
@@ -313,9 +313,9 @@
                                    class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
                             <p class="text-xs text-brand-400 mt-1">Accepted formats: PDF, JPG, PNG (Max: 5MB)</p>
                         </div>
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <p class="text-sm text-blue-700">
-                                <strong>Note:</strong> Your submitted documents will be reviewed by JPO and DMDP for accreditation. 
+                        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                            <p class="text-xs text-emerald-900 font-medium">
+                                <strong class="font-bold text-emerald-950">Note:</strong> Your submitted documents will be reviewed by JPO and DMDP officers for accreditation. 
                                 You will be notified once your accreditation is approved.
                             </p>
                         </div>
@@ -342,15 +342,14 @@
                         </svg>
                         Back
                     </button>
-                    <button type="button" id="nextBtn" class="px-8 py-2.5 text-white font-semibold rounded-lg transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2" 
-                            style="background: linear-gradient(135deg, #1b2739 0%, #33455e 100%);">
+                    <button type="button" id="nextBtn" class="px-8 py-2.5 text-white font-semibold rounded-lg transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400">
                         Next
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                         </svg>
                     </button>
-                    <button type="submit" id="submitBtn" class="px-8 py-2.5 text-white font-semibold rounded-lg transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2" 
-                            style="background: linear-gradient(135deg, #1b2739 0%, #33455e 100%); display:none;">
+                    <button type="submit" id="submitBtn" class="px-8 py-2.5 text-white font-semibold rounded-lg transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400" 
+                            style="display:none;">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
@@ -402,13 +401,14 @@
 }
 
 .step-dot.active .step-number {
-    background: linear-gradient(135deg, #1b2739 0%, #33455e 100%);
+    background: linear-gradient(135deg, #022c22 0%, #059669 100%);
     color: white;
-    box-shadow: 0 2px 8px rgba(27, 39, 57, 0.3);
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
 }
 
 .step-dot.active .step-label {
-    color: #1b2739;
+    color: #064e3b;
+    font-weight: 700;
 }
 
 .step-dot.completed .step-number {

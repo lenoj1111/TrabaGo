@@ -39,6 +39,9 @@ class PlacementReport extends Model
         'report_month',
         'report_data',
         'status',
+        'jpo_evaluated',
+        'jpo_evaluated_at',
+        'jpo_remarks',
         'admin_remarks',
         'approved_by',
         'approved_at',
@@ -54,6 +57,8 @@ class PlacementReport extends Model
         return [
             'report_month' => 'date',
             'report_data' => 'array',
+            'jpo_evaluated' => 'boolean',
+            'jpo_evaluated_at' => 'datetime',
             'approved_at' => 'date',
         ];
     }

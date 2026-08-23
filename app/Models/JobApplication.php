@@ -25,7 +25,7 @@ class JobApplication extends Model
      *
      * @var bool
      */
-    public $timestamps = false;
+    public $timestamps = true;
 
     /**
      * The attributes that are mass assignable.
@@ -37,6 +37,9 @@ class JobApplication extends Model
         'jobseeker_id',
         'status',
         'referred_by_jpo',
+        'jpo_notes',
+        'jpo_evaluated_at',
+        'jpo_id',
         'interview_schedule',
         'interview_mode',
         'interview_location',
@@ -54,6 +57,7 @@ class JobApplication extends Model
     {
         return [
             'referred_by_jpo' => 'boolean',
+            'jpo_evaluated_at' => 'datetime',
             'interview_schedule' => 'datetime',
             'hired_date' => 'date',
         ];
