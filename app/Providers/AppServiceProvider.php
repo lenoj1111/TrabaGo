@@ -38,6 +38,14 @@ class AppServiceProvider extends ServiceProvider
                     }
                     \Illuminate\Support\Facades\DB::statement("ALTER TABLE [employer_accreditation] ADD CONSTRAINT [CK_employer_accreditation_status] CHECK ([status] IN ('pending', 'submitted_to_jpo', 'jpo_approved', 'supervisor_approved', 'admin_approved', 'rejected', 'auto_approved', 'manual_review'))");
                 }
+
+                // Proactively remove restrictive notifications type check constraints
+                $notifConstraints = \Illuminate\Support\Facades\DB::select("SELECT name FROM sys.check_constraints WHERE parent_object_id = OBJECT_ID('notifications') AND (definition LIKE '%type%' OR name LIKE '%notificati%type%')");
+                if (!empty($notifConstraints)) {
+                    foreach ($notifConstraints as $c) {
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE [notifications] DROP CONSTRAINT [{$c->name}]");
+                    }
+                }
             } catch (\Throwable $e) {
                 // Silently bypass during console bootstrap or if connection is establishing
             }

@@ -74,7 +74,7 @@
                             </div>
                             <p class="text-xs text-slate-600 leading-relaxed">{{ $notif->message }}</p>
                             <p class="text-[10px] text-slate-400 font-medium">
-                                {{ $notif->created_at ? $notif->created_at->diffForHumans() : 'Just now' }}
+                                {{ $notif->created_at ? \Carbon\Carbon::parse($notif->created_at)->diffForHumans() : 'Just now' }}
                             </p>
                         </div>
                     </div>
@@ -94,6 +94,13 @@
                 </div>
             @endforelse
         </div>
+
+        <!-- Pagination -->
+        @if($notifications->hasPages())
+            <div class="pt-4 border-t border-slate-200">
+                {{ $notifications->links() }}
+            </div>
+        @endif
 
     </div>
 </div>

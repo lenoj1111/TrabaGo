@@ -40,6 +40,7 @@ class Notification extends Model
         'is_read',
         'related_id',
         'created_at',
+        'updated_at',
     ];
 
     /**

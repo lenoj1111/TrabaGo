@@ -170,10 +170,10 @@
                 <button @click="show = false" class="text-emerald-300">&times;</button>
             </div>
         @endif
-        @if (session('error') || $errors->any())
+        @if (session('error') || (isset($errors) && $errors->any()))
             <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 7000)" 
                  class="pointer-events-auto flex items-center justify-between gap-3 rounded-xl bg-rose-900 text-white p-4 shadow-xl border border-rose-700">
-                <p class="text-xs font-bold">{{ session('error') ?: $errors->first() }}</p>
+                <p class="text-xs font-bold">{{ session('error') ?: (isset($errors) ? $errors->first() : '') }}</p>
                 <button @click="show = false" class="text-rose-300">&times;</button>
             </div>
         @endif

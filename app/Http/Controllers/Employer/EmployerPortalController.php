@@ -8,6 +8,7 @@ use App\Models\JobApplication;
 use App\Models\JobPosting;
 use App\Models\Notification;
 use App\Models\User;
+use App\Models\UserProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -390,8 +391,10 @@ class EmployerPortalController extends Controller
     {
         $employer = $this->getOrCreateEmployer();
         $user = Auth::user();
+        $profile = $user->profile ?: new UserProfile(['user_id' => $user->user_id]);
+        $accreditation = DB::table('employer_accreditation')->where('employer_id', $employer->employer_id)->first();
 
-        return view('employer.profile', compact('employer', 'user'));
+        return view('employer.profile', compact('employer', 'user', 'profile', 'accreditation'));
     }
 
     public function updateProfile(Request $request)
@@ -401,13 +404,26 @@ class EmployerPortalController extends Controller
 
         $request->validate([
             'company_name' => 'required|string|max:150',
+            'full_name' => 'nullable|string|max:150',
             'phone' => 'nullable|string|max:50',
-            'office_address' => 'nullable|string|max:255',
+            'position' => 'nullable|string|max:100',
+            'department' => 'nullable|string|max:150',
+            'office' => 'nullable|string|max:150',
+            'specialization' => 'nullable|string|max:150',
         ]);
 
         $employer->update(['company_name' => $request->input('company_name')]);
 
-        return redirect()->route('employer.profile')->with('success', 'Company profile updated successfully.');
+        $profile = $user->profile ?: new UserProfile(['user_id' => $user->user_id]);
+        $profile->full_name = $request->input('full_name', $profile->full_name);
+        $profile->phone = $request->input('phone', $profile->phone);
+        $profile->position = $request->input('position', $profile->position);
+        $profile->department = $request->input('department', $profile->department);
+        $profile->office = $request->input('office', $profile->office);
+        $profile->specialization = $request->input('specialization', $profile->specialization);
+        $profile->save();
+
+        return redirect()->route('employer.profile')->with('success', 'Company and representative profile updated successfully.');
     }
 
     // =========================================================================

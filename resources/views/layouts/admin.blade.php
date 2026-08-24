@@ -197,12 +197,12 @@
                 <button @click="show = false" class="text-slate-400 hover:text-white">&times;</button>
             </div>
         @endif
-        @if (session('error') || $errors->any())
+        @if (session('error') || (isset($errors) && $errors->any()))
             <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 7000)" 
                  class="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-rose-950 text-white p-4 shadow-2xl border border-rose-600/40">
                 <div class="flex items-center gap-2.5">
                     <span class="h-8 w-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-black">!</span>
-                    <p class="text-xs font-bold">{{ session('error') ?: $errors->first() }}</p>
+                    <p class="text-xs font-bold">{{ session('error') ?: (isset($errors) ? $errors->first() : '') }}</p>
                 </div>
                 <button @click="show = false" class="text-rose-300 hover:text-white">&times;</button>
             </div>

@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Jobseeker;
 use App\Http\Controllers\Controller;
 use App\Models\JobApplication;
 use App\Models\JobPosting;
+use App\Models\JobPreference;
 use App\Models\Jobseeker;
 use App\Models\JobseekerDetail;
 use App\Models\JobseekerSkill;
 use App\Models\Notification;
+use App\Models\SocialStatus;
 use App\Models\TrainingEnrollment;
 use App\Models\TrainingProgram;
 use App\Models\TrainingTopic;
@@ -636,10 +638,18 @@ class JobseekerPortalController extends Controller
         $query = Notification::where('user_id', $user->user_id);
 
         if ($filter !== 'all') {
-            $query->where('type', $filter);
+            if ($filter === 'application') {
+                $query->whereIn('type', ['application', 'approval', 'rejection', 'interview', 'manual_review', 'referral', 'hired']);
+            } elseif ($filter === 'training') {
+                $query->whereIn('type', ['training', 'certificate', 'course', 'quiz']);
+            } elseif ($filter === 'interview') {
+                $query->where('type', 'interview');
+            } else {
+                $query->where('type', $filter);
+            }
         }
 
-        $notifications = $query->orderByDesc('created_at')->paginate(15);
+        $notifications = $query->orderByDesc('created_at')->paginate(15)->appends(['category' => $filter]);
         $unreadCount = Notification::where('user_id', $user->user_id)->where('is_read', false)->count();
 
         return view('jobseeker.notifications.index', compact('notifications', 'unreadCount', 'filter'));
@@ -676,7 +686,9 @@ class JobseekerPortalController extends Controller
         $skills = $jobseeker->skills ? $jobseeker->skills->pluck('skill_name')->filter(function ($s) {
             return !empty($s) && $s !== '[object Object]' && $s !== 'object Object' && !preg_match('/\.(pdf|docx?|jpe?g|png)$/i', $s);
         })->values()->toArray() : [];
-        $details = $jobseeker->details;
+        $details = $jobseeker->details ?: new JobseekerDetail(['jobseeker_id' => $jobseeker->jobseeker_id]);
+        $preferences = $jobseeker->preferences ?: new JobPreference(['jobseeker_id' => $jobseeker->jobseeker_id]);
+        $socialStatus = $jobseeker->socialStatus ?: new SocialStatus(['jobseeker_id' => $jobseeker->jobseeker_id]);
         $profileStrength = $this->calculateProfileStrength($jobseeker);
 
         $certificates = DB::table('training_enrollments')
@@ -691,7 +703,16 @@ class JobseekerPortalController extends Controller
             ->orderBy('training_enrollments.certificate_issued_at', 'desc')
             ->get();
 
-        return view('jobseeker.profile', compact('user', 'jobseeker', 'skills', 'details', 'profileStrength', 'certificates'));
+        return view('jobseeker.profile', compact(
+            'user', 
+            'jobseeker', 
+            'skills', 
+            'details', 
+            'preferences', 
+            'socialStatus', 
+            'profileStrength', 
+            'certificates'
+        ));
     }
 
     public function updateProfile(Request $request)
@@ -701,33 +722,86 @@ class JobseekerPortalController extends Controller
         $request->validate([
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
-            'mobile_number' => 'nullable|string|max:30',
-            'civil_status' => 'nullable|string|max:50',
+            'middle_name' => 'nullable|string|max:100',
+            'birth_date' => 'nullable|date',
             'sex' => 'nullable|string|max:20',
+            'civil_status' => 'nullable|string|max:50',
             'citizenship' => 'nullable|string|max:50',
+            'mobile_number' => 'nullable|string|max:30',
             'employment_status' => 'nullable|string|max:100',
         ]);
 
+        // 1. Update Core Jobseeker Info
         $jobseeker->update($request->only([
             'first_name', 'last_name', 'middle_name', 'mobile_number',
             'civil_status', 'sex', 'citizenship', 'employment_status', 'birth_date'
         ]));
 
-        // Update details
+        // 2. Update Details (Address, Education, Work Experience, Eligibility, Language, Bio)
         $details = $jobseeker->details ?: new JobseekerDetail(['jobseeker_id' => $jobseeker->jobseeker_id]);
-        if ($request->has('address')) {
-            $addr = $request->input('address');
-            $details->address = is_array($addr) ? $addr : ['city' => $addr, 'full' => $addr];
+        
+        $currentAddress = is_array($details->address) ? $details->address : (json_decode($details->address ?? '', true) ?: []);
+        $currentAddress['street'] = $request->input('address_street', $currentAddress['street'] ?? '');
+        $currentAddress['barangay'] = $request->input('address_barangay', $currentAddress['barangay'] ?? '');
+        $currentAddress['city'] = $request->input('address_city', $currentAddress['city'] ?? 'Cebu City');
+        $currentAddress['province'] = $request->input('address_province', $currentAddress['province'] ?? 'Cebu');
+        $currentAddress['zip'] = $request->input('address_zip', $currentAddress['zip'] ?? '');
+        $currentAddress['full'] = trim(implode(', ', array_filter([
+            $currentAddress['street'],
+            $currentAddress['barangay'],
+            $currentAddress['city'],
+            $currentAddress['province']
+        ])));
+        $details->address = $currentAddress;
+
+        $currentEdu = is_array($details->education) ? $details->education : (json_decode($details->education ?? '', true) ?: []);
+        $currentEdu['level'] = $request->input('education_level', $currentEdu['level'] ?? '');
+        $currentEdu['school'] = $request->input('education_school', $currentEdu['school'] ?? '');
+        $currentEdu['course'] = $request->input('education_course', $currentEdu['course'] ?? '');
+        $currentEdu['year_graduated'] = $request->input('education_year', $currentEdu['year_graduated'] ?? '');
+        $details->education = $currentEdu;
+
+        $currentExp = is_array($details->work_experience) ? $details->work_experience : (json_decode($details->work_experience ?? '', true) ?: []);
+        $currentExp['company'] = $request->input('experience_company', $currentExp['company'] ?? '');
+        $currentExp['position'] = $request->input('experience_position', $currentExp['position'] ?? '');
+        $currentExp['duration'] = $request->input('experience_duration', $currentExp['duration'] ?? '');
+        $currentExp['description'] = $request->input('experience_description', $currentExp['description'] ?? '');
+        $currentExp['summary'] = $request->input('bio', $currentExp['summary'] ?? '');
+        $details->work_experience = $currentExp;
+
+        $currentElig = is_array($details->eligibility) ? $details->eligibility : (json_decode($details->eligibility ?? '', true) ?: []);
+        $currentElig['civil_service'] = $request->input('eligibility_civil_service', $currentElig['civil_service'] ?? '');
+        $currentElig['prc_license'] = $request->input('eligibility_prc_license', $currentElig['prc_license'] ?? '');
+        $currentElig['tesda_nc'] = $request->input('eligibility_tesda_nc', $currentElig['tesda_nc'] ?? '');
+        $currentElig['driver_license'] = $request->input('eligibility_driver_license', $currentElig['driver_license'] ?? '');
+        $details->eligibility = $currentElig;
+
+        $languages = $request->input('languages', []);
+        if (is_string($languages)) {
+            $languages = array_map('trim', explode(',', $languages));
         }
-        if ($request->has('education')) {
-            $details->education = $request->input('education');
-        }
-        if ($request->has('work_experience')) {
-            $details->work_experience = $request->input('work_experience');
-        }
+        $details->language_proficiency = is_array($languages) ? array_values(array_filter($languages)) : [];
         $details->save();
 
-        return redirect()->route('jobseeker.profile')->with('success', 'Profile updated successfully.');
+        // 3. Update Preferences
+        $preferences = $jobseeker->preferences ?: new JobPreference(['jobseeker_id' => $jobseeker->jobseeker_id]);
+        $preferences->occupation1 = $request->input('occupation1', $preferences->occupation1);
+        $preferences->occupation2 = $request->input('occupation2', $preferences->occupation2);
+        $preferences->industry1 = $request->input('industry1', $preferences->industry1);
+        $preferences->preferred_location = $request->input('preferred_location', $preferences->preferred_location);
+        $preferences->salary_expectation = $request->input('salary_expectation', $preferences->salary_expectation);
+        $preferences->save();
+
+        // 4. Update Social Status (PWD, 4Ps, OFW)
+        $social = $jobseeker->socialStatus ?: new SocialStatus(['jobseeker_id' => $jobseeker->jobseeker_id]);
+        $social->is_pwd = $request->boolean('is_pwd');
+        $social->pwd_type = $request->boolean('is_pwd') ? $request->input('pwd_type', '') : null;
+        $social->is_4ps = $request->boolean('is_4ps');
+        $social->household_id = $request->boolean('is_4ps') ? $request->input('household_id', '') : null;
+        $social->is_ofw = $request->boolean('is_ofw');
+        $social->save();
+
+        return redirect()->route('jobseeker.profile')->with('success', 'Comprehensive profile updated successfully.');
     }
 
     public function syncSkills(Request $request)
