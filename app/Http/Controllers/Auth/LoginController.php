@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -22,22 +24,29 @@ class LoginController extends Controller
         ]);
 
         // Find user in database
-        $user = DB::table('users')->where('email', $request->email)->first();
+        $user = User::where('email', $request->email)->first();
 
         if ($user && Hash::check($request->password, $user->password)) {
-            // Store user in session
-            session(['user_id' => $user->user_id]);
-            session(['user_role' => $user->role]);
-            session(['user_email' => $user->email]);
+            Auth::login($user, $request->boolean('remember'));
+            $request->session()->regenerate();
 
-            // Debug: Check if session is set
-            echo "User ID: " . session('user_id') . "<br>";
-            echo "User Role: " . session('user_role') . "<br>";
-            echo "Redirecting to: " . route('admin.users.index') . "<br>";
-            
+            session([
+                'user_id' => $user->user_id,
+                'user_role' => $user->role,
+                'user_email' => $user->email,
+            ]);
+
             // Redirect based on role
             if ($user->role === 'admin') {
                 return redirect()->route('admin.users.index');
+            }
+
+            if ($user->role === 'employer') {
+                return redirect()->route('employer.home');
+            }
+
+            if ($user->role === 'jobseeker') {
+                return redirect()->route('jobseeker.home');
             }
 
             return redirect()->route('home');
@@ -50,7 +59,10 @@ class LoginController extends Controller
 
     public function logout()
     {
-        session()->flush();
+        Auth::logout();
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+
         return redirect()->route('login');
     }
 }
