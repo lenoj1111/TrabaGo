@@ -275,7 +275,7 @@ class UserManagementController extends Controller
     /**
      * Approve a user
      */
-    public function approve(int $id)
+    public function approve(Request $request, int $id)
     {
         try {
             $user = DB::table('users')->where('user_id', $id)->first();
@@ -289,18 +289,118 @@ class UserManagementController extends Controller
                 ->update([
                     'is_approved' => 1,
                     'status' => 'active',
-                    'updated_at' => Carbon::now(),
                 ]);
 
             $this->createNotification($id, 'Account Approved', 
                 "Your account has been approved. You can now access the system.");
 
-            return redirect()->back()
-                ->with('success', 'User approved successfully!');
+            if ($request->expectsJson()) {
+                return response()->json(['success' => 'User approved successfully!']);
+            }
+
+            return redirect()->back()->with('success', 'User approved successfully!');
 
         } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Approval failed: ' . $e->getMessage()], 500);
+            }
+
             return redirect()->back()->with('error', 'Approval failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Display an employer's submitted accreditation documents.
+     */
+    public function showEmployerDocuments(int $id)
+    {
+        $employer = DB::table('employers')
+            ->join('users', 'employers.user_id', '=', 'users.user_id')
+            ->leftJoin('employer_accreditation', 'employers.employer_id', '=', 'employer_accreditation.employer_id')
+            ->where('employers.employer_id', $id)
+            ->select(
+                'employers.employer_id',
+                'employers.company_name',
+                'employers.is_accredited',
+                'employers.accredited_at',
+                'users.email',
+                'employer_accreditation.documents',
+                'employer_accreditation.submitted_at',
+                'employer_accreditation.approved_at'
+            )
+            ->first();
+
+        if (!$employer) {
+            abort(404, 'Employer not found.');
+        }
+
+        $documents = json_decode($employer->documents ?? '{}', true) ?: [];
+
+        return view('admin.employer-documents', compact('employer', 'documents'));
+    }
+
+    /**
+     * Accredit an employer and mark its submitted review as approved.
+     */
+    public function accreditEmployer(Request $request, int $id)
+    {
+        try {
+            $employer = DB::table('employers')
+                ->where('employer_id', $id)
+                ->first();
+
+            if (!$employer) {
+                return $this->approvalResponse($request, 'Employer not found.', 404);
+            }
+
+            DB::beginTransaction();
+
+            DB::table('employers')
+                ->where('employer_id', $id)
+                ->update([
+                    'is_accredited' => 1,
+                    'accredited_at' => Carbon::now()->toDateString(),
+                ]);
+
+            DB::table('users')
+                ->where('user_id', $employer->user_id)
+                ->update([
+                    'is_approved' => 1,
+                    'status' => 'active',
+                ]);
+
+            DB::table('employer_accreditation')
+                ->where('employer_id', $id)
+                ->update([
+                    'admin_approved' => 1,
+                    'admin_approved_at' => Carbon::now()->toDateString(),
+                    'approved_at' => Carbon::now()->toDateString(),
+                ]);
+
+            $this->createNotification(
+                $employer->user_id,
+                'Employer Accreditation Approved',
+                'Your employer account and accreditation have been approved.'
+            );
+
+            DB::commit();
+
+            return $this->approvalResponse($request, 'Employer accredited successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return $this->approvalResponse($request, 'Accreditation failed: ' . $e->getMessage(), 500);
+        }
+    }
+
+    private function approvalResponse(Request $request, string $message, int $status = 200)
+    {
+        if ($request->expectsJson()) {
+            $key = $status >= 400 ? 'error' : 'success';
+            return response()->json([$key => $message], $status);
+        }
+
+        return redirect()->back()->with($status >= 400 ? 'error' : 'success', $message);
     }
 
     /**

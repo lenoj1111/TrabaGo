@@ -126,7 +126,7 @@
                                 <td class="text-center">{{ $employer->jobs_count ?? 0 }}</td>
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center gap-1">
-                                        <a href="#" class="btn btn-sm btn-outline-primary" title="View">
+                                        <a href="{{ route('admin.employers.documents', $employer->employer_id) }}" class="btn btn-sm btn-outline-primary" title="View submitted documents">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         <a href="#" class="btn btn-sm btn-outline-secondary" title="Edit">
@@ -169,8 +169,20 @@ function accreditEmployer(id) {
         confirmButtonText: 'Yes, accredit!'
     }).then((result) => {
         if (result.isConfirmed) {
-            // Add your accreditation logic here
-            Swal.fire('Success!', 'Employer accredited successfully.', 'success').then(() => location.reload());
+            fetch(`{{ url('/admin/employers') }}/${id}/accredit`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Accreditation failed.');
+                return data;
+            })
+            .then(data => Swal.fire('Success!', data.success, 'success').then(() => location.reload()))
+            .catch(error => Swal.fire('Error', error.message, 'error'));
         }
     });
 }

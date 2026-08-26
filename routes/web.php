@@ -5,6 +5,7 @@ use App\Http\Controllers\EmployerRegistrationController;
 use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\JobPostingController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -77,7 +78,34 @@ Route::prefix('jobseeker')->name('jobseeker.')->middleware(['auth'])->group(func
 
 Route::prefix('employer')->name('employer.')->middleware(['auth'])->group(function () {
     Route::get('/home', function () {
-        return view('employer.homepage');
+        $user = auth()->user();
+        $employer = DB::table('employers')
+            ->where('user_id', $user->user_id)
+            ->first();
+
+        $activePostings = $employer
+            ? DB::table('job_postings')->where('employer_id', $employer->employer_id)->where('status', 'approved')->count()
+            : 0;
+        $totalApplications = $employer
+            ? DB::table('job_applications')
+                ->join('job_postings', 'job_applications.job_id', '=', 'job_postings.job_id')
+                ->where('job_postings.employer_id', $employer->employer_id)
+                ->count()
+            : 0;
+        $shortlistedApplications = $employer
+            ? DB::table('job_applications')
+                ->join('job_postings', 'job_applications.job_id', '=', 'job_postings.job_id')
+                ->where('job_postings.employer_id', $employer->employer_id)
+                ->whereIn('job_applications.status', ['reviewed', 'interview', 'hired'])
+                ->count()
+            : 0;
+
+        return view('employer.homepage', compact(
+            'employer',
+            'activePostings',
+            'totalApplications',
+            'shortlistedApplications'
+        ));
     })->name('home');
 
     Route::get('/dashboard', function () {
@@ -89,8 +117,79 @@ Route::prefix('employer')->name('employer.')->middleware(['auth'])->group(functi
     })->name('profile');
 
     Route::get('/job-postings', function () {
-        return view('employer.job-postings');
+        $employer = DB::table('employers')
+            ->where('user_id', auth()->user()->user_id)
+            ->first();
+
+        abort_unless($employer, 404, 'Employer profile not found.');
+
+        $jobPostings = DB::table('job_postings')
+            ->where('employer_id', $employer->employer_id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('employer.job-postings', compact('employer', 'jobPostings'));
     })->name('job-postings');
+
+    Route::post('/job-postings', function (Request $request) {
+        $validated = $request->validate([
+            'title' => 'required|string|max:150',
+            'description' => 'required|string',
+            'qualifications' => 'nullable|string',
+            'vacancy_count' => 'required|integer|min:1',
+            'valid_until' => 'required|date|after:today',
+            'accepts_disability' => 'nullable|boolean',
+            'disability_type' => 'nullable|string|max:100',
+        ]);
+
+        $employer = DB::table('employers')
+            ->where('user_id', auth()->user()->user_id)
+            ->first();
+
+        abort_unless($employer, 404, 'Employer profile not found.');
+
+        if (!$employer->is_accredited) {
+            return redirect()->back()
+                ->with('error', 'Your employer account must be accredited before posting a job.')
+                ->withInput();
+        }
+
+        DB::table('job_postings')->insert([
+            'employer_id' => $employer->employer_id,
+            'admin_id' => null,
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+            'qualifications' => $validated['qualifications'] ?? null,
+            'vacancy_count' => $validated['vacancy_count'],
+            'valid_until' => $validated['valid_until'],
+            'accepts_disability' => $validated['accepts_disability'] ?? 0,
+            'disability_type' => $validated['disability_type'] ?? null,
+            'status' => 'pending',
+            'created_by' => 'employer',
+            'created_at' => now()->toDateString(),
+            'approved_at' => null,
+        ]);
+
+        return redirect()->route('employer.job-postings')
+            ->with('success', 'Job posting submitted for admin review.');
+    })->name('job-postings.store');
+
+    Route::post('/job-postings/{id}/close', function (int $id) {
+        $employer = DB::table('employers')
+            ->where('user_id', auth()->user()->user_id)
+            ->first();
+
+        abort_unless($employer, 404, 'Employer profile not found.');
+
+        DB::table('job_postings')
+            ->where('job_id', $id)
+            ->where('employer_id', $employer->employer_id)
+            ->whereIn('status', ['pending', 'approved'])
+            ->update(['status' => 'closed']);
+
+        return redirect()->route('employer.job-postings')
+            ->with('success', 'Job posting closed successfully.');
+    })->name('job-postings.close');
 
     Route::get('/applications', function () {
         return view('employer.applications');
@@ -154,6 +253,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         
         return view('admin.employers', compact('employers', 'totalEmployers', 'accreditedEmployers', 'pendingAccreditation'));
     })->name('employers');
+    Route::get('/employers/{id}/documents', [UserManagementController::class, 'showEmployerDocuments'])->name('employers.documents');
+    Route::post('/employers/{id}/accredit', [UserManagementController::class, 'accreditEmployer'])->name('employers.accredit');
     
     // Job Postings - Static View (Your Design) - Inside jobpostings folder
     Route::get('/job-postings', function () {
