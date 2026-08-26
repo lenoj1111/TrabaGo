@@ -26,13 +26,26 @@ Route::get('/contact', function () {
 
 /*
 |--------------------------------------------------------------------------
-| AUTH ROUTES
+| AUTH ROUTES - Single Login for ALL Users
 |--------------------------------------------------------------------------
 */
 
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+// Redirect role-specific login URLs to main login
+Route::get('/jobseeker/login', function () {
+    return redirect('/login');
+})->name('jobseeker.login');
+
+Route::get('/employer/login', function () {
+    return redirect('/login');
+})->name('employer.login');
+
+Route::get('/admin/login', function () {
+    return redirect('/login');
+})->name('admin.login');
 
 /*
 |--------------------------------------------------------------------------
@@ -256,7 +269,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/employers/{id}/documents', [UserManagementController::class, 'showEmployerDocuments'])->name('employers.documents');
     Route::post('/employers/{id}/accredit', [UserManagementController::class, 'accreditEmployer'])->name('employers.accredit');
     
-    // Job Postings - Static View (Your Design) - Inside jobpostings folder
+    // Job Postings - Static View (Your Design)
     Route::get('/job-postings', function () {
         $stats = [
             'total' => DB::table('job_postings')->count(),
@@ -272,7 +285,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         
         $jobPostings = DB::table('job_postings')
             ->leftJoin('employers', 'job_postings.employer_id', '=', 'employers.employer_id')
-            ->select('job_postings.*', 'employers.company_name')
+            ->select(
+                'job_postings.*',
+                DB::raw("CASE WHEN job_postings.employer_id IS NULL THEN 'DMDP' ELSE employers.company_name END as company_name")
+            )
             ->paginate(15);
         
         // Get employers for the modal dropdown

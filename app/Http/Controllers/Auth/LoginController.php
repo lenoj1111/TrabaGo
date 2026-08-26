@@ -1,11 +1,11 @@
 <?php
-// app/Http/Controllers/Auth/LoginController.php
 
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class LoginController extends Controller
 {
@@ -21,35 +21,26 @@ class LoginController extends Controller
             'password' => 'required',
         ]);
 
-        $credentials = $request->only('email', 'password');
-        $remember = $request->boolean('remember');
+        // Find user in database
+        $user = DB::table('users')->where('email', $request->email)->first();
 
-        if (Auth::attempt($credentials, $remember)) {
-            $request->session()->regenerate();
+        if ($user && Hash::check($request->password, $user->password)) {
+            // Store user in session
+            session(['user_id' => $user->user_id]);
+            session(['user_role' => $user->role]);
+            session(['user_email' => $user->email]);
 
-            $user = Auth::user();
-
-            // Check if user is active
-            if ($user->status !== 'active') {
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-                return back()->withErrors([
-                    'email' => 'Your account is inactive. Please contact support.',
-                ]);
+            // Debug: Check if session is set
+            echo "User ID: " . session('user_id') . "<br>";
+            echo "User Role: " . session('user_role') . "<br>";
+            echo "Redirecting to: " . route('admin.users.index') . "<br>";
+            
+            // Redirect based on role
+            if ($user->role === 'admin') {
+                return redirect()->route('admin.users.index');
             }
 
-            // ✅ FIXED: Use direct URLs instead of named routes
-            switch ($user->role) {
-                case 'admin':
-                    return redirect('/admin/dashboard');
-                case 'employer':
-                    return redirect('/employer/home');
-                case 'jobseeker':
-                    return redirect('/jobseeker/home');
-                default:
-                    return redirect('/');
-            }
+            return redirect()->route('home');
         }
 
         return back()->withErrors([
@@ -57,12 +48,9 @@ class LoginController extends Controller
         ]);
     }
 
-    public function logout(Request $request)
+    public function logout()
     {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return redirect('/login');
+        session()->flush();
+        return redirect()->route('login');
     }
 }

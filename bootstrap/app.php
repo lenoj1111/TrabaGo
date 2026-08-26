@@ -1,15 +1,10 @@
 <?php
-// bootstrap/app.php
 
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\AdminMiddleware;
-use App\Http\Middleware\EmployerMiddleware;
-use App\Http\Middleware\JobseekerMiddleware;
-use App\Http\Middleware\JpoMiddleware;
-use App\Http\Middleware\TrainerMiddleware;
-use App\Http\Middleware\LmoMiddleware;
+use App\Http\Middleware\Authenticate;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -19,25 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Register your custom route middleware here
         $middleware->alias([
             'admin' => AdminMiddleware::class,
-            'employer' => EmployerMiddleware::class,
-            'jobseeker' => JobseekerMiddleware::class,
-            'jpo' => JpoMiddleware::class,
-            'trainer' => TrainerMiddleware::class,
-            'lmo' => LmoMiddleware::class,
+            'auth' => Authenticate::class,
         ]);
-        
-        // Add global middleware (runs on every request)
-        // $middleware->append([
-        //     \App\Http\Middleware\SomeGlobalMiddleware::class,
-        // ]);
-        
-        // Add middleware groups
-        // $middleware->group('api', [
-        //     \Illuminate\Routing\Middleware\ThrottleRequests::class,
-        // ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
