@@ -20,6 +20,10 @@
             </div>
 
             <div class="flex items-center gap-3 shrink-0">
+                <a href="{{ route('admin.placement-reports.index') }}" 
+                   class="inline-flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-3 text-xs font-bold text-white transition-all">
+                    <span>📊 Placement Reports Directory &rarr;</span>
+                </a>
                 <button onclick="window.print()" 
                         class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-5 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
                     <span>🖨️ Print / Export Report</span>
@@ -197,6 +201,22 @@
                             </div>
                         </div>
                         <span class="text-sm font-black text-slate-900">{{ $stats['admin_count'] ?? 0 }}</span>
+                    </div>
+
+                    <div class="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-100 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="h-8 w-8 rounded-xl bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center">
+                                📊
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-900">Placement Reports Filed</h4>
+                                <p class="text-[10px] text-slate-500">{{ $stats['approved_placements'] ?? 0 }} approved & archived into PESO records</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-black text-emerald-800">{{ $stats['total_placement_reports'] ?? 0 }}</span>
+                            <a href="{{ route('admin.placement-reports.index') }}" class="text-[10px] text-emerald-700 hover:underline font-bold">View &rarr;</a>
+                        </div>
                     </div>
                 </div>
             </div>

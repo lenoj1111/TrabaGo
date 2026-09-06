@@ -7,17 +7,39 @@ use App\Models\TrainingProgram;
 class TrainingQuizService
 {
     /**
-     * Get at least 5 structured quiz questions for a training program.
+     * Get trainer-created assessment questions for a training program.
+     * Note: Assessments must be created by the trainer and are NOT built-in or automatically generated.
      *
      * @param TrainingProgram $training
-     * @param int $minCount Minimum required questions (defaults to 5)
+     * @param int $minCount Unused/deprecated parameter kept for backward compatibility
      * @return array
      */
-    public function getQuestionsForTraining(TrainingProgram $training, int $minCount = 5): array
+    public function getQuestionsForTraining(TrainingProgram $training, int $minCount = 0): array
     {
         $questions = [];
 
-        // 1. Extract existing questions from topic JSONs
+        // 1. Fetch trainer-authored questions from training_assessments table
+        $assessments = \Illuminate\Support\Facades\DB::table('training_assessments')
+            ->where('training_id', $training->training_id)
+            ->orderBy('assessment_id', 'asc')
+            ->get();
+
+        foreach ($assessments as $item) {
+            $choices = is_array($item->options) ? $item->options : json_decode($item->options ?? '[]', true);
+            if (is_array($choices) && count($choices) >= 2) {
+                $questions[] = [
+                    'id' => $item->assessment_id,
+                    'question' => $item->question,
+                    'choices' => array_values($choices),
+                    'options' => array_values($choices),
+                    'answer' => (int) $item->correct_answer,
+                    'explanation' => $item->explanation ?? '',
+                    'points' => (int) ($item->points ?? 1),
+                ];
+            }
+        }
+
+        // 2. Also check topic questions if custom questions were defined by trainer
         if ($training->relationLoaded('topics') || $training->topics) {
             foreach ($training->topics as $topic) {
                 $qData = is_array($topic->questions) ? $topic->questions : json_decode($topic->questions ?? '[]', true);
@@ -31,7 +53,8 @@ class TrainingQuizService
                                     'choices' => array_values($choices),
                                     'options' => array_values($choices),
                                     'answer' => is_numeric($q['answer'] ?? 0) ? (int)$q['answer'] : 0,
-                                    'explanation' => $q['explanation'] ?? 'Correct standard procedure for this competency.',
+                                    'explanation' => $q['explanation'] ?? '',
+                                    'points' => 1,
                                 ];
                             }
                         }
@@ -40,29 +63,8 @@ class TrainingQuizService
             }
         }
 
-        // 2. If questions count < 5, fill from course-tailored question bank
-        if (count($questions) < $minCount) {
-            $bank = $this->getQuestionBankForTitle($training->title, $training->description ?? '');
-            
-            foreach ($bank as $item) {
-                // Avoid exact duplicate questions
-                $exists = false;
-                foreach ($questions as $existing) {
-                    if (strcasecmp($existing['question'], $item['question']) === 0) {
-                        $exists = true;
-                        break;
-                    }
-                }
-
-                if (!$exists) {
-                    $questions[] = $item;
-                    if (count($questions) >= $minCount) {
-                        break;
-                    }
-                }
-            }
-        }
-
+        // Assessments MUST be created by the trainer.
+        // It should NOT be built-in or automatically generated.
         return array_values($questions);
     }
 

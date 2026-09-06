@@ -152,7 +152,22 @@ class JobseekerComprehensiveFunctionalityTest extends TestCase
                         'question' => 'What command runs database migrations in Laravel?',
                         'choices' => ['php artisan migrate', 'php run migrate', 'composer update', 'npm run build'],
                         'answer' => 0,
-                    ]
+                    ],
+                    [
+                        'question' => 'Which directory contains Eloquent models in standard Laravel 11?',
+                        'choices' => ['app/Models', 'config', 'resources/views', 'database/factories'],
+                        'answer' => 0,
+                    ],
+                    [
+                        'question' => 'What method starts a database transaction in Laravel?',
+                        'choices' => ['DB::beginTransaction()', 'DB::start()', 'DB::open()', 'DB::lock()'],
+                        'answer' => 0,
+                    ],
+                    [
+                        'question' => 'Which template engine is used natively in Laravel?',
+                        'choices' => ['Blade', 'Twig', 'Smarty', 'Pug'],
+                        'answer' => 0,
+                    ],
                 ]),
             ],
         ]);

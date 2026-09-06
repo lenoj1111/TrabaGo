@@ -38,7 +38,24 @@ class TrainingProgram extends Model
         'training_type',
         'duration_months',
         'description',
+        'auto_generate_certificate',
+        'skills',
+        'passing_score',
     ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'auto_generate_certificate' => 'boolean',
+            'duration_months' => 'integer',
+            'passing_score' => 'integer',
+        ];
+    }
 
     // =============================================
     // RELATIONSHIPS
@@ -58,6 +75,14 @@ class TrainingProgram extends Model
     public function topics()
     {
         return $this->hasMany(TrainingTopic::class, 'training_id', 'training_id');
+    }
+
+    /**
+     * Get the trainer-created assessments for this training program.
+     */
+    public function assessments()
+    {
+        return $this->hasMany(TrainingAssessment::class, 'training_id', 'training_id');
     }
 
     /**

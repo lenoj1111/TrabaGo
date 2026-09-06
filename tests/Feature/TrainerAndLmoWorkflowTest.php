@@ -198,34 +198,63 @@ class TrainerAndLmoWorkflowTest extends TestCase
 
     public function test_lmo_dashboard_access_and_funnel(): void
     {
-        // Figure 13: LMO Dashboard
+        // LMO role removed - routes redirect to Admin
         $response = $this->actingAs($this->lmoUser)->get('/lmo/dashboard');
-        $response->assertOk();
-        $response->assertSee('Labor Market Oversight');
-        $response->assertSee('Jobseeker Workflow Supervision Funnel');
-        $response->assertSee('Labor Market Skills Supply');
+        $response->assertRedirect('/admin/dashboard');
+
+        // Admin handles Dashboard
+        $adminUser = User::create([
+            'email' => 'admin_lmo@trabago.gov.ph',
+            'password' => Hash::make('password'),
+            'role' => 'admin',
+            'status' => 'active',
+            'is_approved' => 1,
+        ]);
+        $adminResponse = $this->actingAs($adminUser)->get('/admin/dashboard');
+        $adminResponse->assertOk();
     }
 
     public function test_lmo_supervises_jobseeker_workflow_directory(): void
     {
-        // Figure 13: Supervise Jobseeker Workflow
-        $response = $this->actingAs($this->lmoUser)->get('/lmo/jobseekers/supervise');
+        // Legacy /lmo/jobseekers/supervise redirects to /admin/jobseekers
+        $redirectResponse = $this->actingAs($this->lmoUser)->get('/lmo/jobseekers/supervise');
+        $redirectResponse->assertRedirect('/admin/jobseekers');
+
+        // Admin handles Jobseeker Workflow Supervision
+        $adminUser = User::create([
+            'email' => 'admin_sup@trabago.gov.ph',
+            'password' => Hash::make('password'),
+            'role' => 'admin',
+            'status' => 'active',
+            'is_approved' => 1,
+        ]);
+        $response = $this->actingAs($adminUser)->get('/admin/jobseekers');
         $response->assertOk();
-        $response->assertSee('Jobseeker Workflow Supervision Registry');
         $response->assertSee('Maria');
         $response->assertSee('Santos');
 
         // Test filtering by stage
-        $filteredResponse = $this->actingAs($this->lmoUser)->get('/lmo/jobseekers/supervise?stage=in_training');
+        $filteredResponse = $this->actingAs($adminUser)->get('/admin/jobseekers?stage=in_training');
         $filteredResponse->assertOk();
     }
 
     public function test_lmo_market_insights_analytics(): void
     {
-        // Figure 13: Labor Market Analytics
-        $response = $this->actingAs($this->lmoUser)->get('/lmo/analytics');
+        // Legacy /lmo/analytics redirects to /admin/analytics
+        $redirectResponse = $this->actingAs($this->lmoUser)->get('/lmo/analytics');
+        $redirectResponse->assertRedirect('/admin/analytics');
+
+        // Admin handles Labor Market Analytics & Insights
+        $adminUser = User::create([
+            'email' => 'admin_analytics@trabago.gov.ph',
+            'password' => Hash::make('password'),
+            'role' => 'admin',
+            'status' => 'active',
+            'is_approved' => 1,
+        ]);
+        $response = $this->actingAs($adminUser)->get('/admin/analytics');
         $response->assertOk();
-        $response->assertSee('Market Intelligence');
+        $response->assertSee('Labor Market Intelligence');
         $response->assertSee('Top Verified Skills');
     }
 }

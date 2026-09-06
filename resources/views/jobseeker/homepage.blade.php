@@ -6,6 +6,34 @@
 <div class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-7xl space-y-8">
         
+        @if($jobseeker->isEmployed())
+            <!-- Employment Placement Success Banner -->
+            <div class="rounded-3xl bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-900 p-6 sm:p-8 text-white shadow-xl border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="h-16 w-16 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-3xl shadow-inner shrink-0">
+                        💼
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="rounded-full bg-emerald-500 text-white font-black text-[11px] px-3 py-0.5 shadow-sm">
+                                Employed
+                            </span>
+                            <span class="text-xs text-emerald-300 font-bold">Official DMDP Placement</span>
+                        </div>
+                        <h2 class="text-xl sm:text-2xl font-black mt-1">Profile Tagged as Employed</h2>
+                        @if($jobseeker->hired_company)
+                            <p class="text-sm text-slate-200 mt-0.5 font-medium">
+                                Hired by: <strong class="text-white underline decoration-emerald-400 decoration-2 font-black">{{ $jobseeker->hired_company }}</strong>
+                            </p>
+                        @endif
+                    </div>
+                </div>
+                <a href="{{ route('jobseeker.profile') }}" class="shrink-0 px-6 py-3 rounded-xl bg-white text-emerald-950 hover:bg-emerald-50 text-xs font-black shadow-md transition-all">
+                    View Employment Record &rarr;
+                </a>
+            </div>
+        @endif
+
         <!-- =================================================================== -->
         <!-- 1. FEATURED "BEST MATCH" HERO BANNER (GREEN/EMERALD PALETTE) -->
         <!-- =================================================================== -->
@@ -34,8 +62,15 @@
                         <h1 class="mt-4 text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl">
                             {{ $topJob->title }}
                         </h1>
-                        <p class="mt-2 text-base font-semibold text-emerald-300">
-                            {{ $topCompany }} &bull; Cebu City &bull; ₱18,000 - ₱35,000 / mo
+                        <p class="mt-2 text-base font-semibold text-emerald-300 flex flex-wrap items-center gap-2">
+                            <span>{{ $topCompany }} &bull; Cebu City &bull; ₱18,000 - ₱35,000 / mo</span>
+                            @if ($topJob->valid_until)
+                                <span>&bull;</span>
+                                <span class="text-xs font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                                    <svg class="h-3 w-3 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    Available until {{ $topJob->valid_until->format('M d, Y') }}
+                                </span>
+                            @endif
                         </p>
                         <p class="mt-4 text-sm leading-relaxed text-slate-300 line-clamp-2">
                             {{ $topJob->description ?: 'Explore this top-recommended position specifically matched to your verified skillset profile.' }}
@@ -177,8 +212,15 @@
                                     </a>
                                 </h3>
 
-                                <p class="text-xs text-slate-500 font-medium">
-                                    {{ $company }} &bull; Cebu City &bull; ₱18,000 - ₱35,000
+                                <p class="text-xs text-slate-500 font-medium flex flex-wrap items-center gap-2">
+                                    <span>{{ $company }} &bull; Cebu City &bull; ₱18,000 - ₱35,000</span>
+                                    @if ($job->valid_until)
+                                        <span>&bull;</span>
+                                        <span class="inline-flex items-center gap-1 font-medium {{ $job->valid_until->isPast() ? 'text-rose-600 font-bold' : ($job->valid_until->diffInDays(now()) <= 7 ? 'text-amber-700 font-semibold' : 'text-slate-500') }}">
+                                            <svg class="h-3 w-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                            Until {{ $job->valid_until->format('M d, Y') }}
+                                        </span>
+                                    @endif
                                 </p>
 
                                 <!-- Matched Skills Chips -->

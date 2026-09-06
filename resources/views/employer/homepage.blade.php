@@ -28,8 +28,11 @@
                 <a href="{{ route('employer.job-postings') }}" class="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/25 transition-all hover:scale-105">
                     + Post New Job Vacancy
                 </a>
+                <a href="{{ route('employer.placement-reports') }}" class="px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all flex items-center gap-1.5">
+                    <span>📊</span> Placement Reports
+                </a>
                 <a href="{{ route('employer.profile') }}" class="px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all">
-                    Edit Company Profile
+                    Company Profile
                 </a>
             </div>
         </div>
@@ -169,6 +172,15 @@
                         <p class="text-[11px] text-slate-500 mt-0.5">View cosine similarity scores and schedule onsite or online interviews.</p>
                     </div>
                     <a href="{{ route('employer.referred-jobseekers') }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-800">View &rarr;</a>
+                </div>
+
+                <div class="flex items-start gap-3.5 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                    <div class="h-6 w-6 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">4</div>
+                    <div class="flex-1">
+                        <p class="text-xs font-bold text-slate-900">File Monthly Placement Reports</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Generate statutory hiring reports to DMDP Job Placement Officers for PESO audit.</p>
+                    </div>
+                    <a href="{{ route('employer.placement-reports') }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-800">Reports &rarr;</a>
                 </div>
             </div>
         </div>

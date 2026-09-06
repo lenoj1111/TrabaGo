@@ -17,18 +17,27 @@
 
         @php
             $isCompleted = $enrollment && $enrollment->status === 'completed';
+            $isEnrolled = $enrollment && in_array($enrollment->status, ['enrolled', 'in_progress', 'completed']);
         @endphp
 
         <!-- Course Header Card in Emerald Theme -->
         <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-2 max-w-2xl">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                     <span class="rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
                         {{ ucfirst($training->training_type ?: 'Online') }}
                     </span>
                     @if($isCompleted)
                         <span class="rounded-full bg-emerald-500/30 px-3 py-1 text-xs font-bold text-emerald-200 border border-emerald-400/40 flex items-center gap-1">
                             ✓ Certificate Earned
+                        </span>
+                    @elseif($isEnrolled)
+                        <span class="rounded-full bg-amber-400/20 px-3 py-1 text-xs font-bold text-amber-300 border border-amber-400/30 flex items-center gap-1">
+                            📚 Enrolled &bull; {{ ucfirst(str_replace('_', ' ', $enrollment->status)) }}
+                        </span>
+                    @else
+                        <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-300">
+                            Available for Enrollment
                         </span>
                     @endif
                 </div>
@@ -43,13 +52,42 @@
                         <span>🎓</span> View & Download Certificate
                     </a>
                 @endif
-                <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}" 
-                   class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-6 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
-                    {{ $isCompleted ? 'Retake Quiz' : 'Take Skill Quiz' }}
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                </a>
+
+                @if(!$isEnrolled)
+                    <form action="{{ route('jobseeker.training.enroll', $training->training_id) }}" method="POST">
+                        @csrf
+                        <button type="submit" 
+                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-7 py-3.5 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 cursor-pointer">
+                            <span>+</span> Enroll in Course
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                        </button>
+                    </form>
+                @else
+                    <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}" 
+                       class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-6 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                        {{ $isCompleted ? 'Retake Quiz' : 'Take Skill Quiz' }}
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </a>
+                @endif
             </div>
         </div>
+
+        @if(!$isEnrolled)
+            <div class="rounded-2xl bg-emerald-50 border border-emerald-200 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="space-y-0.5">
+                    <h3 class="text-sm font-black text-emerald-950 flex items-center gap-2">
+                        <span>🎓</span> Not yet enrolled in this course
+                    </h3>
+                    <p class="text-xs text-emerald-800">Enroll now to register your participation with DMDP, study the curriculum modules, and take the skill competency quiz.</p>
+                </div>
+                <form action="{{ route('jobseeker.training.enroll', $training->training_id) }}" method="POST" class="shrink-0">
+                    @csrf
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md shadow-emerald-600/20 transition-all cursor-pointer">
+                        Enroll Now &rarr;
+                    </button>
+                </form>
+            </div>
+        @endif
 
         <!-- Topics & Modules Section -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

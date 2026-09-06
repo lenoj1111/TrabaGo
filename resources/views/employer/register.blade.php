@@ -287,38 +287,124 @@
                     </div>
                 </div>
 
-                <div class="px-6 py-6">
-                    <div class="grid grid-cols-1 gap-5">
+                <div class="px-6 py-6 space-y-5">
+                    <!-- Official Notice Banner -->
+                    <div class="rounded-2xl border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 via-teal-50 to-white p-4 space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-700 text-white uppercase tracking-wider">Official Requirements</span>
+                            <span class="text-xs text-emerald-800 font-bold">Cebu City DMDP &bull; DOLE Prescribed Guidelines</span>
+                        </div>
+                        <h3 class="text-sm font-black text-slate-900">Employer Documentary Requirements & Validity Period</h3>
+                        <p class="text-xs text-slate-600 font-medium">Original and other documents, when applicable, should be presented for validation.</p>
+                    </div>
+
+                    <!-- 1. Core Mandatory Documents -->
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                            <span>Mandatory Business Credentials</span>
+                        </h4>
+
+                        <!-- BIR Form 2303 -->
                         <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">Business Permit / DTI Registration</label>
-                            <input type="file" name="documents[business_permit]" accept=".pdf,.jpg,.jpeg,.png" 
-                                   class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
-                            <p class="text-xs text-brand-400 mt-1">Accepted formats: PDF, JPG, PNG (Max: 5MB)</p>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-xs font-bold text-slate-800">
+                                    BIR Certificate of Registration (Form 2303) <span class="text-emerald-700 font-semibold text-[11px]">&bull; Validity: Current / Valid</span>
+                                </label>
+                            </div>
+                            <input type="file" name="documents[bir_2303]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
+                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100" />
                         </div>
+
+                        <!-- SEC or DTI Registration -->
                         <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">SEC Registration (if applicable)</label>
-                            <input type="file" name="documents[sec_registration]" accept=".pdf,.jpg,.jpeg,.png" 
-                                   class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
-                            <p class="text-xs text-brand-400 mt-1">Accepted formats: PDF, JPG, PNG (Max: 5MB)</p>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-xs font-bold text-slate-800">
+                                    SEC Registration or DTI Registration <span class="text-emerald-700 font-semibold text-[11px]">&bull; Validity: Perpetual / Registered</span>
+                                </label>
+                            </div>
+                            <input type="file" name="documents[sec_dti]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
+                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100" />
                         </div>
+
+                        <!-- Mayor's Business Permit -->
                         <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">Mayor's Permit / Barangay Clearance</label>
-                            <input type="file" name="documents[mayors_permit]" accept=".pdf,.jpg,.jpeg,.png" 
-                                   class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
-                            <p class="text-xs text-brand-400 mt-1">Accepted formats: PDF, JPG, PNG (Max: 5MB)</p>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-xs font-bold text-slate-800">
+                                    Mayor’s Business Permit (current year) <span class="text-emerald-700 font-semibold text-[11px]">&bull; Validity: Calendar Year {{ date('Y') }}</span>
+                                </label>
+                            </div>
+                            <input type="file" name="documents[mayors_permit]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
+                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100" />
                         </div>
+
+                        <!-- PhilJobNet Proof of Registration -->
                         <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">Tax Identification Number (TIN)</label>
-                            <input type="file" name="documents[tin]" accept=".pdf,.jpg,.jpeg,.png" 
-                                   class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
-                            <p class="text-xs text-brand-400 mt-1">Accepted formats: PDF, JPG, PNG (Max: 5MB)</p>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-xs font-bold text-slate-800">
+                                    PhilJobNet Proof of Registration <span class="text-emerald-700 font-semibold text-[11px]">&bull; Validity: Active Registration</span>
+                                </label>
+                            </div>
+                            <input type="file" name="documents[philjobnet_proof]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
+                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100" />
                         </div>
-                        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-                            <p class="text-xs text-emerald-900 font-medium">
-                                <strong class="font-bold text-emerald-950">Note:</strong> Your submitted documents will be reviewed by JPO and DMDP officers for accreditation. 
-                                You will be notified once your accreditation is approved.
-                            </p>
+
+                        <!-- Letter of Intent -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-xs font-bold text-slate-800">
+                                    Letter of Intent <span class="text-emerald-700 font-semibold text-[11px]">&bull; For specific services & assistance needed with details</span>
+                                </label>
+                            </div>
+                            <input type="file" name="documents[letter_of_intent]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
+                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100" />
                         </div>
+                    </div>
+
+                    <!-- 2. Specialized Agency Credentials (When Applicable) -->
+                    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="text-xs font-black uppercase tracking-wider text-slate-800">Specialized Agency Documents</h4>
+                                <p class="text-[11px] text-slate-500">Applicable for Recruitment Agencies & Subcontractors only.</p>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 uppercase">When Applicable</span>
+                        </div>
+
+                        <!-- DOLE License / DO 174 -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">
+                                DOLE License / DO 174 <span class="font-normal text-slate-500">(for Licensed Private Recruitment & Placement Agency / Subcontractor)</span>
+                            </label>
+                            <input type="file" name="documents[dole_license]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
+                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700" />
+                        </div>
+
+                        <!-- DMW License -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">
+                                DMW License <span class="font-normal text-slate-500">(for Overseas Recruitment & Placement Agency)</span>
+                            </label>
+                            <input type="file" name="documents[dmw_license]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
+                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700" />
+                        </div>
+
+                        <!-- DMW Approved Job Orders -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">
+                                DMW Approved and Validated Job Orders <span class="font-normal text-slate-500">(for Overseas Recruitment)</span>
+                            </label>
+                            <input type="file" name="documents[dmw_job_orders]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
+                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700" />
+                        </div>
+                    </div>
+
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                        <p class="text-xs text-emerald-900 font-medium">
+                            <strong class="font-bold text-emerald-950">Note:</strong> Your submitted documents will be reviewed by JPO and DMDP officers for accreditation. 
+                            You will be notified once your accreditation is approved.
+                        </p>
+                    </div>
                         <div>
                             <label class="flex items-center gap-2 text-sm text-brand-700 cursor-pointer">
                                 <input type="checkbox" name="terms" value="1" {{ old('terms') ? 'checked' : '' }} 

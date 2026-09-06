@@ -58,13 +58,21 @@
                            class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('trainer.dashboard*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
                             Dashboard
                         </a>
-                        <a href="{{ route('trainer.enrollments.index') }}" 
-                           class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('trainer.enrollments*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
-                            Manage Enrollments
-                        </a>
                         <a href="{{ route('trainer.courses') }}" 
                            class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('trainer.courses*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
                             Training Courses
+                        </a>
+                        <a href="{{ route('trainer.skills.enrollment') }}" 
+                           class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('trainer.skills.enrollment*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
+                            Skills Enrollment
+                        </a>
+                        <a href="{{ route('trainer.enrollments.index') }}" 
+                           class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('trainer.enrollments*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
+                            Enrolled Job Seekers
+                        </a>
+                        <a href="{{ route('trainer.collaborators') }}" 
+                           class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('trainer.collaborators*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
+                            Collaborators
                         </a>
                     </nav>
                 </div>
@@ -122,6 +130,14 @@
                                 <span>📚</span> Course Modules
                             </a>
 
+                            <a href="{{ route('trainer.skills.enrollment') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors">
+                                <span>🎯</span> Skills Enrollment
+                            </a>
+
+                            <a href="{{ route('trainer.collaborators') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors">
+                                <span>👥</span> Collaborators
+                            </a>
+
                             <div class="border-t border-slate-100 my-1"></div>
                             <form action="{{ route('logout') }}" method="POST">
                                 @csrf
@@ -143,15 +159,17 @@
             <!-- Mobile Drawer -->
             <div x-show="mobileOpen" x-cloak class="md:hidden border-t border-emerald-100 py-3 space-y-1">
                 <a href="{{ route('trainer.dashboard') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('trainer.dashboard*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">Dashboard</a>
-                <a href="{{ route('trainer.enrollments.index') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('trainer.enrollments*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">Manage Enrollments</a>
                 <a href="{{ route('trainer.courses') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('trainer.courses*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">Training Courses</a>
+                <a href="{{ route('trainer.skills.enrollment') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('trainer.skills.enrollment*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">Skills Enrollment</a>
+                <a href="{{ route('trainer.enrollments.index') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('trainer.enrollments*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">Enrolled Job Seekers</a>
+                <a href="{{ route('trainer.collaborators') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('trainer.collaborators*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">Collaborators</a>
                 <a href="{{ route('trainer.notifications') }}" class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('trainer.notifications*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">
                     <span>Notifications</span>
                     @if($trainerUnreadCount > 0)
                         <span class="px-2 py-0.5 text-[10px] bg-emerald-600 text-white rounded-full font-bold">{{ $trainerUnreadCount }}</span>
                     @endif
                 </a>
-                <a href="{{ route('trainer.profile') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('trainer.profile*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">Edit Profile</a>
+                <a href="{{ route('trainer.profile') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('trainer.profile*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">Edit Profile & Security</a>
             </div>
         </div>
     </header>

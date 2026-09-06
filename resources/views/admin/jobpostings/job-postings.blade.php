@@ -175,7 +175,22 @@
                                         </span>
                                     @else
                                         <div class="font-bold text-slate-900">{{ $job->company_name ?? 'N/A' }}</div>
-                                        <div class="text-[10px] text-slate-400">{{ $job->employer_email ?? '' }}</div>
+                                        <div class="text-[10px] text-slate-400 mb-1">{{ $job->employer_email ?? '' }}</div>
+                                        <div>
+                                            @if($job->is_accredited || ($job->accreditation_status ?? '') === 'admin_approved')
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200">
+                                                    🛡️ Accredited
+                                                </span>
+                                            @elseif(in_array($job->accreditation_status ?? '', ['submitted_to_jpo', 'jpo_approved', 'supervisor_approved', 'manual_review', 'pending']))
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200">
+                                                    ⏳ Pending
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-bold border border-slate-200">
+                                                    ✕ Not Accredited
+                                                </span>
+                                            @endif
+                                        </div>
                                     @endif
                                 </td>
                                 <td class="py-4 px-6 text-center">

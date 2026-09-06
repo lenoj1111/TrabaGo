@@ -81,6 +81,14 @@
                            class="px-3 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('admin.employers*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
                             Employers
                         </a>
+                        <a href="{{ route('admin.placement-reports.index') }}" 
+                           class="px-3 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('admin.placement-reports*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
+                            Placement Reports
+                        </a>
+                        <a href="{{ route('admin.analytics.index') }}" 
+                           class="px-3 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('admin.analytics*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
+                            Market Analytics
+                        </a>
                     </nav>
                 </div>
 
@@ -139,6 +147,14 @@
                                 <span>📈</span> Platform Reports
                             </a>
 
+                            <a href="{{ route('admin.placement-reports.index') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors {{ request()->routeIs('admin.placement-reports*') ? 'bg-emerald-50 text-emerald-800' : '' }}">
+                                <span>📊</span> Placement Reports
+                            </a>
+
+                            <a href="{{ route('admin.analytics.index') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors {{ request()->routeIs('admin.analytics*') ? 'bg-emerald-50 text-emerald-800' : '' }}">
+                                <span>📈</span> Labor Market Insights
+                            </a>
+
                             <a href="{{ route('admin.users.index') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors">
                                 <span>👥</span> Manage Accounts
                             </a>
@@ -173,6 +189,8 @@
                 <a href="{{ route('admin.jobseekers.index') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('admin.jobseekers*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">Jobseekers</a>
                 <a href="{{ route('admin.job-postings') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('admin.job-postings*') || request()->routeIs('admin.job-postings-list*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">Job Postings</a>
                 <a href="{{ route('admin.employers') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('admin.employers*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">Employers</a>
+                <a href="{{ route('admin.placement-reports.index') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('admin.placement-reports*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">Placement Reports</a>
+                <a href="{{ route('admin.analytics.index') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('admin.analytics*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">Market Analytics</a>
                 <a href="{{ route('admin.reports') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('admin.reports*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">Reports</a>
                 <a href="{{ route('admin.notifications') }}" class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('admin.notifications*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">
                     <span>Notifications</span>

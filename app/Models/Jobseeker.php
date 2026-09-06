@@ -44,7 +44,76 @@ class Jobseeker extends Model
         'mobile_number',
         'email',
         'employment_status',
+        'hired_company',
     ];
+
+    /**
+     * Check if the jobseeker is currently employed.
+     */
+    public function isEmployed(): bool
+    {
+        // Check for active hired application without approved resignation
+        $hasActiveHired = $this->applications()
+            ->where('status', 'hired')
+            ->where(function ($q) {
+                $q->whereNull('resignation_status')
+                  ->orWhere('resignation_status', '!=', 'approved');
+            })
+            ->exists();
+
+        if ($hasActiveHired) {
+            return true;
+        }
+
+        if (strtolower($this->employment_status ?? '') === 'unemployed') {
+            return false;
+        }
+
+        if (strtolower($this->employment_status ?? '') === 'employed') {
+            // If flagged as employed but all hired applications have approved resignations, treat as not employed
+            if ($this->applications()->where('status', 'hired')->exists()) {
+                return false;
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Get the active hired application.
+     */
+    public function activeHiredApplication()
+    {
+        return $this->hasOne(JobApplication::class, 'jobseeker_id', 'jobseeker_id')
+            ->where('status', 'hired')
+            ->where(function ($q) {
+                $q->whereNull('resignation_status')
+                  ->orWhere('resignation_status', '!=', 'approved');
+            })
+            ->latestOfMany('application_id');
+    }
+
+    /**
+     * Get the company that currently employs the jobseeker.
+     */
+    public function getHiredCompanyAttribute(): ?string
+    {
+        if (!$this->isEmployed()) {
+            return null;
+        }
+
+        if (!empty($this->attributes['hired_company'])) {
+            return $this->attributes['hired_company'];
+        }
+
+        $hiredApp = $this->activeHiredApplication;
+        if ($hiredApp && $hiredApp->jobPosting && $hiredApp->jobPosting->employer) {
+            return $hiredApp->jobPosting->employer->company_name;
+        }
+
+        return null;
+    }
 
     /**
      * Get the attributes that should be cast.

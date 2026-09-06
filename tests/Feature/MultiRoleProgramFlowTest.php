@@ -145,7 +145,17 @@ class MultiRoleProgramFlowTest extends TestCase
 
         $acc = DB::table('employer_accreditation')->where('employer_id', $this->employer->employer_id)->first();
 
-        // Stage 2: JPO evaluates & recommends to PESD Supervisor (Figure 8)
+        // Stage 1.5: Verify Admin CANNOT accredit without JPO recommendation
+        $prematureAdminResponse = $this->actingAs($this->adminUser)->post("/admin/approvals/accreditations/{$acc->accreditation_id}/approve", [
+            'remarks' => 'Trying to accredit before JPO evaluation.',
+        ]);
+        $prematureAdminResponse->assertSessionHas('error');
+        $this->assertDatabaseHas('employers', [
+            'employer_id' => $this->employer->employer_id,
+            'is_accredited' => 0,
+        ]);
+
+        // Stage 2: JPO evaluates & recommends directly to Admin (Supervisor removed)
         $jpoResponse = $this->actingAs($this->jpoUser)->post("/jpo/evaluations/accreditations/{$acc->accreditation_id}/recommend", [
             'action' => 'recommend',
             'remarks' => 'Mayor permit and DTI verified authentic.',
@@ -158,20 +168,7 @@ class MultiRoleProgramFlowTest extends TestCase
             'jpo_reviewed' => 1,
         ]);
 
-        // Stage 3: PESD Supervisor approves & sends to Admin (Figure 11)
-        $supResponse = $this->actingAs($this->supervisorUser)->post("/supervisor/accreditations/{$acc->accreditation_id}/approve", [
-            'action' => 'approve',
-            'remarks' => 'Endorsed for official accreditation by PESD Supervisor.',
-        ]);
-        $supResponse->assertRedirect();
-
-        $this->assertDatabaseHas('employer_accreditation', [
-            'accreditation_id' => $acc->accreditation_id,
-            'status' => 'supervisor_approved',
-            'supervisor_approved' => 1,
-        ]);
-
-        // Stage 4: Admin officially accredits the Employer (Figure 10)
+        // Stage 3: Admin officially accredits the Employer now that JPO recommended approval
         $adminResponse = $this->actingAs($this->adminUser)->post("/admin/approvals/accreditations/{$acc->accreditation_id}/approve", [
             'remarks' => 'Official DMDP accreditation granted.',
         ]);

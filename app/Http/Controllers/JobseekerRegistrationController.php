@@ -133,6 +133,32 @@ class JobseekerRegistrationController extends Controller
                 }
             }
 
+            // 4b. 21st Century Skills (DOLE NSRP Section VII)
+            if ($request->has('skills_century')) {
+                foreach ((array) $request->skills_century as $cSkill) {
+                    if (!empty($cSkill)) {
+                        DB::table('jobseeker_skills')->insert([
+                            'jobseeker_id' => $jobseekerId,
+                            'skill_name' => $cSkill,
+                            'skill_type' => '21st_century',
+                        ]);
+                    }
+                }
+            }
+
+            // 4c. Technical Skills Acquired Without Formal Training (DOLE NSRP Section IX)
+            if ($request->has('skills_informal_tech')) {
+                foreach ((array) $request->skills_informal_tech as $iSkill) {
+                    if (!empty($iSkill)) {
+                        DB::table('jobseeker_skills')->insert([
+                            'jobseeker_id' => $jobseekerId,
+                            'skill_name' => $iSkill,
+                            'skill_type' => 'technical_informal',
+                        ]);
+                    }
+                }
+            }
+
             // 5. Create Job Preferences
             DB::table('job_preferences')->insert([
                 'jobseeker_id' => $jobseekerId,

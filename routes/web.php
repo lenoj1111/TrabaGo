@@ -85,10 +85,16 @@ Route::prefix('jobseeker')->name('jobseeker.')->group(function () {
 
         // Application Pipeline & Tracking
         Route::get('/applications', [JobseekerPortalController::class, 'applications'])->name('applications');
+        Route::post('/applications/{id}/accept-offer', [JobseekerPortalController::class, 'acceptOffer'])->name('applications.accept_offer');
+        Route::post('/applications/{id}/decline-offer', [JobseekerPortalController::class, 'declineOffer'])->name('applications.decline_offer');
         Route::delete('/applications/{id}/withdraw', [JobseekerPortalController::class, 'withdrawApplication'])->name('applications.withdraw');
+        Route::post('/resignation/request', [JobseekerPortalController::class, 'requestResignation'])->name('resignation.request');
 
         // Training Programs, Lessons & Quizzes
         Route::get('/training', [JobseekerPortalController::class, 'trainingIndex'])->name('training');
+        Route::get('/training/skills', [JobseekerPortalController::class, 'trainingSkills'])->name('training.skills');
+        Route::get('/training/enrollments', [JobseekerPortalController::class, 'trainingEnrollments'])->name('training.enrollments');
+        Route::post('/training/{id}/enroll', [JobseekerPortalController::class, 'enrollTraining'])->name('training.enroll');
         Route::get('/training/{id}', [JobseekerPortalController::class, 'trainingShow'])->name('training.show');
         Route::get('/training/{id}/quiz', [JobseekerPortalController::class, 'trainingQuiz'])->name('training.quiz');
         Route::post('/training/{id}/quiz', [JobseekerPortalController::class, 'submitQuiz'])->name('training.quiz.submit');
@@ -111,6 +117,7 @@ Route::prefix('jobseeker')->name('jobseeker.')->group(function () {
         Route::post('/profile/skills/sync', [JobseekerPortalController::class, 'syncSkills'])->name('profile.update_skills');
         Route::post('/profile/skills', [JobseekerPortalController::class, 'addSkill'])->name('profile.skills.add');
         Route::delete('/profile/skills/{id}', [JobseekerPortalController::class, 'removeSkill'])->name('profile.skills.remove');
+        Route::post('/password/change', [JobseekerPortalController::class, 'changePassword'])->name('password.change');
     });
 });
 
@@ -131,26 +138,40 @@ Route::prefix('employer')->name('employer.')->group(function () {
         Route::get('/home', [EmployerPortalController::class, 'homepage'])->name('home');
         Route::get('/dashboard', [EmployerPortalController::class, 'homepage'])->name('dashboard');
 
-        // 1. Create Job Postings (Send to Admin)
+        // 1. Manage Job Postings (Full CRUD & Administration Review)
         Route::get('/job-postings', [EmployerPortalController::class, 'jobPostings'])->name('job-postings');
+        Route::get('/job-postings/create', [EmployerPortalController::class, 'createJobPosting'])->name('job-postings.create');
         Route::post('/job-postings', [EmployerPortalController::class, 'storeJobPosting'])->name('job-postings.store');
+        Route::get('/job-postings/{id}', [EmployerPortalController::class, 'showJobPosting'])->name('job-postings.show');
+        Route::get('/job-postings/{id}/edit', [EmployerPortalController::class, 'editJobPosting'])->name('job-postings.edit');
+        Route::put('/job-postings/{id}', [EmployerPortalController::class, 'updateJobPosting'])->name('job-postings.update');
+        Route::post('/job-postings/{id}/update', [EmployerPortalController::class, 'updateJobPosting'])->name('job-postings.update.post');
+        Route::delete('/job-postings/{id}', [EmployerPortalController::class, 'destroyJobPosting'])->name('job-postings.destroy');
+        Route::post('/job-postings/{id}/close', [EmployerPortalController::class, 'closeJobPosting'])->name('job-postings.close');
 
         // 2. Pass Accreditation Papers (Send to JPO)
         Route::get('/accreditation', [EmployerPortalController::class, 'accreditation'])->name('accreditation');
         Route::post('/accreditation/upload', [EmployerPortalController::class, 'submitAccreditation'])->name('accreditation.upload');
+        Route::get('/accreditation/print', [EmployerPortalController::class, 'printAccreditation'])->name('accreditation.print');
 
-        // 3. Review Referred Jobseekers (From JPO) & Schedule Interview / Hire
+        // 3. Review Referred Jobseekers (From JPO) & Schedule Interview / Hire / Mark Not Qualified
         Route::get('/referred-jobseekers', [EmployerPortalController::class, 'referredJobseekers'])->name('referred-jobseekers');
         Route::get('/applications', [EmployerPortalController::class, 'referredJobseekers'])->name('applications');
         Route::post('/applicants/{id}/status', [EmployerPortalController::class, 'updateApplicantStatus'])->name('applicants.update_status');
+        Route::post('/applicants/{id}/resignation', [EmployerPortalController::class, 'respondResignation'])->name('applicants.resignation');
 
-        // 4. Generate Placement Report (Send to JPO)
+        // 4. Generate & View Placement Reports (Send to JPO)
         Route::get('/placement-reports', [EmployerPortalController::class, 'placementReports'])->name('placement-reports');
         Route::post('/placement-reports/generate', [EmployerPortalController::class, 'generatePlacementReport'])->name('placement-reports.generate');
+        Route::get('/placement-reports/{id}', [EmployerPortalController::class, 'showPlacementReport'])->name('placement-reports.show');
+        Route::get('/placement-reports/{id}/print', [EmployerPortalController::class, 'showPlacementReport'])->name('placement-reports.print');
 
-        // 5. Company Profile
+        // 5. Company Profile & Password Management
         Route::get('/profile', [EmployerPortalController::class, 'profile'])->name('profile');
         Route::post('/profile/update', [EmployerPortalController::class, 'updateProfile'])->name('profile.update');
+        Route::put('/profile', [EmployerPortalController::class, 'updateProfile'])->name('profile.update.put');
+        Route::post('/password/reset', [EmployerPortalController::class, 'resetPassword'])->name('password.reset');
+        Route::post('/password/change', [EmployerPortalController::class, 'resetPassword'])->name('password.change');
 
         // 6. Notifications Center
         Route::get('/notifications', [EmployerPortalController::class, 'notifications'])->name('notifications');
@@ -170,21 +191,29 @@ Route::prefix('jpo')->name('jpo.')->middleware(['auth', 'jpo'])->group(function 
     // Dashboard
     Route::get('/dashboard', [JpoPortalController::class, 'dashboard'])->name('dashboard');
 
-    // 1. Evaluate Jobseekers (Refer to Employer)
+    // 1. Evaluate Jobseekers (Refer to Employer) & NSRP Form
     Route::get('/evaluations/jobseekers', [JpoPortalController::class, 'evaluateJobseekers'])->name('evaluations.jobseekers');
     Route::post('/evaluations/jobseekers/{id}/refer', [JpoPortalController::class, 'referJobseeker'])->name('evaluations.jobseekers.refer');
+    Route::get('/evaluations/jobseekers/{id}/nsrp', [JpoPortalController::class, 'showNsrpForm'])->name('evaluations.jobseekers.nsrp');
 
-    // 2. Evaluate Accreditation Papers (Send to PESD Supervisor)
+    // 2. Evaluate Accreditation Papers (Recommend to Admin)
     Route::get('/evaluations/accreditations', [JpoPortalController::class, 'evaluateAccreditations'])->name('evaluations.accreditations');
     Route::post('/evaluations/accreditations/{id}/recommend', [JpoPortalController::class, 'recommendAccreditation'])->name('evaluations.accreditations.recommend');
+    Route::post('/evaluations/accreditations/{id}/document-status', [JpoPortalController::class, 'updateDocumentStatus'])->name('evaluations.accreditations.document-status');
+    Route::get('/evaluations/accreditations/{id}/print', [JpoPortalController::class, 'printAccreditation'])->name('evaluations.accreditations.print');
 
     // 3. Evaluate Placement Reports (Send to Admin)
     Route::get('/evaluations/placement-reports', [JpoPortalController::class, 'evaluatePlacementReports'])->name('evaluations.placement-reports');
+    Route::get('/placement-reports', [JpoPortalController::class, 'evaluatePlacementReports'])->name('placement-reports');
     Route::post('/evaluations/placement-reports/{id}/forward', [JpoPortalController::class, 'forwardPlacementReport'])->name('evaluations.placement-reports.forward');
+    Route::get('/evaluations/placement-reports/{id}', [JpoPortalController::class, 'showPlacementReport'])->name('evaluations.placement-reports.show');
+    Route::get('/evaluations/placement-reports/{id}/print', [JpoPortalController::class, 'showPlacementReport'])->name('evaluations.placement-reports.print');
 
-    // Officer Profile & Notifications
+    // Officer Profile & Security Settings
     Route::get('/profile', [JpoPortalController::class, 'profile'])->name('profile');
     Route::post('/profile/update', [JpoPortalController::class, 'updateProfile'])->name('profile.update');
+    Route::post('/profile/password', [JpoPortalController::class, 'resetPassword'])->name('password.update');
+    Route::post('/profile/reset-password', [JpoPortalController::class, 'resetPassword'])->name('profile.password');
     Route::get('/notifications', [JpoPortalController::class, 'notifications'])->name('notifications');
     Route::post('/notifications/read-all', [JpoPortalController::class, 'markAllNotificationsRead'])->name('notifications.read_all');
     Route::post('/notifications/{id}/read', [JpoPortalController::class, 'markNotificationRead'])->name('notifications.read');
@@ -196,21 +225,14 @@ Route::prefix('jpo')->name('jpo.')->middleware(['auth', 'jpo'])->group(function 
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('supervisor')->name('supervisor.')->middleware(['auth', 'supervisor'])->group(function () {
-
-    // Dashboard
-    Route::get('/dashboard', [SupervisorPortalController::class, 'dashboard'])->name('dashboard');
-
-    // Review & Endorse Accreditation Papers (Send to Admin)
-    Route::get('/accreditations', [SupervisorPortalController::class, 'accreditations'])->name('accreditations');
-    Route::post('/accreditations/{id}/approve', [SupervisorPortalController::class, 'approveAccreditation'])->name('accreditations.approve');
-
-    // Supervisor Profile & Notifications
-    Route::get('/profile', [SupervisorPortalController::class, 'profile'])->name('profile');
-    Route::post('/profile/update', [SupervisorPortalController::class, 'updateProfile'])->name('profile.update');
-    Route::get('/notifications', [SupervisorPortalController::class, 'notifications'])->name('notifications');
-    Route::post('/notifications/read-all', [SupervisorPortalController::class, 'markAllNotificationsRead'])->name('notifications.read_all');
-    Route::post('/notifications/{id}/read', [SupervisorPortalController::class, 'markNotificationRead'])->name('notifications.read');
+Route::prefix('supervisor')->name('supervisor.')->middleware(['auth'])->group(function () {
+    // Supervisor role removed - redirect all traffic to Admin portal
+    Route::get('/dashboard', fn() => redirect()->route('admin.dashboard'))->name('dashboard');
+    Route::get('/accreditations', fn() => redirect()->route('admin.approvals.index'))->name('accreditations');
+    Route::post('/accreditations/{id}/approve', fn() => redirect()->route('admin.approvals.index'))->name('accreditations.approve');
+    Route::get('/profile', fn() => redirect()->route('admin.profile'))->name('profile');
+    Route::get('/notifications', fn() => redirect()->route('admin.notifications'))->name('notifications');
+    Route::any('{any}', fn() => redirect()->route('admin.dashboard'))->where('any', '.*');
 });
 
 /*
@@ -227,10 +249,13 @@ Route::prefix('trainer')->name('trainer.')->middleware(['auth', 'trainer'])->gro
     // 1. Manage Enrollments
     Route::get('/enrollments', [TrainerPortalController::class, 'enrollments'])->name('enrollments.index');
 
-    // 2. Update Enrollment Status
+    // 2. Update Enrollment Status & Mark Completion
     Route::post('/enrollments/{id}/status', [TrainerPortalController::class, 'updateEnrollmentStatus'])->name('enrollments.status');
+    Route::post('/enrollments/{id}/complete', [TrainerPortalController::class, 'markCompletion'])->name('enrollments.complete');
 
-    // 3. Evaluate Training Course Answer
+    // 3. Conduct Assessment / Evaluate Training Course Answer
+    Route::get('/enrollments/{id}/assessment', [TrainerPortalController::class, 'conductAssessment'])->name('enrollments.assessment');
+    Route::post('/enrollments/{id}/assessment', [TrainerPortalController::class, 'submitAssessment'])->name('enrollments.assessment.submit');
     Route::get('/enrollments/{id}/evaluate', [TrainerPortalController::class, 'evaluateAnswer'])->name('enrollments.evaluate');
     Route::post('/enrollments/{id}/evaluate', [TrainerPortalController::class, 'evaluateAnswer'])->name('enrollments.evaluate.submit');
 
@@ -238,13 +263,32 @@ Route::prefix('trainer')->name('trainer.')->middleware(['auth', 'trainer'])->gro
     Route::post('/enrollments/{id}/certificate', [TrainerPortalController::class, 'generateCertificate'])->name('enrollments.certificate');
     Route::get('/certificates/{id}/preview', [TrainerPortalController::class, 'previewCertificate'])->name('certificates.preview');
 
-    // Course Modules
+    // Course Modules & Full CRUD
     Route::get('/courses', [TrainerPortalController::class, 'courses'])->name('courses');
     Route::post('/courses', [TrainerPortalController::class, 'storeCourse'])->name('courses.store');
+    Route::get('/courses/{id}', [TrainerPortalController::class, 'showCourse'])->name('courses.show');
+    Route::put('/courses/{id}', [TrainerPortalController::class, 'updateCourse'])->name('courses.update');
+    Route::delete('/courses/{id}', [TrainerPortalController::class, 'destroyCourse'])->name('courses.destroy');
 
-    // Profile & Notifications
+    // Trainer Assessment Question Management (Trainer-authored)
+    Route::post('/courses/{id}/assessments', [TrainerPortalController::class, 'storeAssessment'])->name('courses.assessments.store');
+    Route::put('/courses/{id}/assessments/{assessmentId}', [TrainerPortalController::class, 'updateAssessment'])->name('courses.assessments.update');
+    Route::delete('/courses/{id}/assessments/{assessmentId}', [TrainerPortalController::class, 'destroyAssessment'])->name('courses.assessments.destroy');
+
+    // Collaborator Trainer Accounts (Requires Admin Approval)
+    Route::get('/collaborators', [TrainerPortalController::class, 'collaborators'])->name('collaborators');
+    Route::post('/collaborators', [TrainerPortalController::class, 'storeCollaborator'])->name('collaborators.store');
+
+    // Training Skills Enrollment
+    Route::get('/skills-enrollment', [TrainerPortalController::class, 'skillsEnrollment'])->name('skills.enrollment');
+    Route::post('/skills-enrollment', [TrainerPortalController::class, 'storeSkillsEnrollment'])->name('skills.enrollment.store');
+
+    // Profile & Password Reset
     Route::get('/profile', [TrainerPortalController::class, 'profile'])->name('profile');
     Route::post('/profile/update', [TrainerPortalController::class, 'updateProfile'])->name('profile.update');
+    Route::post('/profile/reset-password', [TrainerPortalController::class, 'resetPassword'])->name('password.update');
+
+    // Notifications
     Route::get('/notifications', [TrainerPortalController::class, 'notifications'])->name('notifications');
     Route::post('/notifications/read-all', [TrainerPortalController::class, 'markAllNotificationsRead'])->name('notifications.read_all');
     Route::post('/notifications/{id}/read', [TrainerPortalController::class, 'markNotificationRead'])->name('notifications.read');
@@ -256,23 +300,14 @@ Route::prefix('trainer')->name('trainer.')->middleware(['auth', 'trainer'])->gro
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('lmo')->name('lmo.')->middleware(['auth', 'lmo'])->group(function () {
-
-    // Dashboard
-    Route::get('/dashboard', [LmoPortalController::class, 'dashboard'])->name('dashboard');
-
-    // Supervise Jobseeker Workflow (Monitoring training, applications, evaluations)
-    Route::get('/jobseekers/supervise', [LmoPortalController::class, 'superviseJobseekers'])->name('jobseekers.supervise');
-
-    // Market Insights & Analytics
-    Route::get('/analytics', [LmoPortalController::class, 'marketInsights'])->name('analytics.index');
-
-    // Profile & Notifications
-    Route::get('/profile', [LmoPortalController::class, 'profile'])->name('profile');
-    Route::post('/profile/update', [LmoPortalController::class, 'updateProfile'])->name('profile.update');
-    Route::get('/notifications', [LmoPortalController::class, 'notifications'])->name('notifications');
-    Route::post('/notifications/read-all', [LmoPortalController::class, 'markAllNotificationsRead'])->name('notifications.read_all');
-    Route::post('/notifications/{id}/read', [LmoPortalController::class, 'markNotificationRead'])->name('notifications.read');
+Route::prefix('lmo')->name('lmo.')->middleware(['auth'])->group(function () {
+    // LMO role removed - Admin handles all responsibilities
+    Route::get('/dashboard', fn() => redirect()->route('admin.dashboard'))->name('dashboard');
+    Route::get('/jobseekers/supervise', fn() => redirect()->route('admin.jobseekers.index'))->name('jobseekers.supervise');
+    Route::get('/analytics', fn() => redirect()->route('admin.analytics.index'))->name('analytics.index');
+    Route::get('/profile', fn() => redirect()->route('admin.profile'))->name('profile');
+    Route::get('/notifications', fn() => redirect()->route('admin.notifications'))->name('notifications');
+    Route::any('{any}', fn() => redirect()->route('admin.dashboard'))->where('any', '.*');
 });
 
 /*
@@ -292,8 +327,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/approvals/job-postings/{id}/reject', [ApprovalsController::class, 'rejectJobPosting'])->name('approvals.job-postings.reject');
     Route::post('/approvals/accreditations/{id}/approve', [ApprovalsController::class, 'approveAccreditation'])->name('approvals.accreditations.approve');
     Route::post('/approvals/accreditations/{id}/reject', [ApprovalsController::class, 'rejectAccreditation'])->name('approvals.accreditations.reject');
+    Route::get('/approvals/accreditations/{id}/print', [ApprovalsController::class, 'printAccreditation'])->name('approvals.accreditations.print');
     Route::post('/approvals/placement-reports/{id}/approve', [ApprovalsController::class, 'approvePlacementReport'])->name('approvals.placement-reports.approve');
     Route::post('/approvals/placement-reports/{id}/reject', [ApprovalsController::class, 'rejectPlacementReport'])->name('approvals.placement-reports.reject');
+    Route::post('/approvals/trainers/{id}/approve', [ApprovalsController::class, 'approveTrainer'])->name('approvals.trainers.approve');
+    Route::post('/approvals/trainers/{id}/reject', [ApprovalsController::class, 'rejectTrainer'])->name('approvals.trainers.reject');
+
+    // Placement Reports Management Directory
+    Route::get('/placement-reports', [ApprovalsController::class, 'placementReports'])->name('placement-reports.index');
+    Route::get('/placement-reports/{id}', [ApprovalsController::class, 'showPlacementReport'])->name('placement-reports.show');
+    Route::get('/placement-reports/{id}/print', [ApprovalsController::class, 'showPlacementReport'])->name('placement-reports.print');
 
     // View Jobseeker Status Directory
     Route::get('/jobseekers', [ApprovalsController::class, 'jobseekers'])->name('jobseekers.index');
@@ -315,10 +358,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
             ->leftJoin('employer_accreditation', 'employers.employer_id', '=', 'employer_accreditation.employer_id')
             ->select(
                 'employers.*',
+                'users.user_id',
                 'users.email',
                 'users.status as user_status',
+                'users.is_approved as user_approved',
+                'employer_accreditation.accreditation_id',
                 'employer_accreditation.documents',
-                'employer_accreditation.status as accreditation_status'
+                'employer_accreditation.status as accreditation_status',
+                'employer_accreditation.jpo_reviewed',
+                'employer_accreditation.jpo_remarks'
             )
             ->selectRaw('(SELECT COUNT(*) FROM job_postings WHERE employer_id = employers.employer_id) as jobs_count');
 
@@ -344,7 +392,30 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     })->name('employers');
 
     Route::post('/employers/{id}/accredit', function ($id) {
-        DB::table('employers')->where('employer_id', $id)->update(['is_accredited' => 1]);
+        $accreditation = DB::table('employer_accreditation')
+            ->where('employer_id', $id)
+            ->first();
+
+        // Enforce: Admin cannot accredit an employer without the recommending approval of the JPO
+        if (!$accreditation || !$accreditation->jpo_reviewed || !in_array($accreditation->status, ['jpo_approved', 'supervisor_approved'])) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Cannot accredit employer without the recommending approval of the JPO. JPO evaluation is required first.'
+            ], 422);
+        }
+
+        DB::table('employers')->where('employer_id', $id)->update([
+            'is_accredited' => 1,
+            'accredited_at' => now()->toDateString(),
+        ]);
+
+        DB::table('employer_accreditation')->where('employer_id', $id)->update([
+            'status' => 'admin_approved',
+            'admin_approved' => 1,
+            'admin_approved_at' => now(),
+            'approved_at' => now()->toDateString(),
+        ]);
+
         return response()->json(['success' => 'Employer accredited successfully.']);
     })->name('employers.accredit');
 
@@ -389,15 +460,23 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
             'total_jobseekers' => DB::table('jobseekers')->count(),
             'total_applications' => DB::table('job_applications')->count(),
             'admin_count' => DB::table('users')->where('role', 'admin')->count(),
-            'staff_count' => DB::table('users')->whereIn('role', ['jpo', 'trainer', 'lmo', 'supervisor'])->count(),
+            'staff_count' => DB::table('users')->whereIn('role', ['jpo', 'trainer'])->count(),
+            'total_placement_reports' => DB::table('placement_reports')->count(),
+            'approved_placements' => DB::table('placement_reports')->where('status', 'approved')->count(),
         ];
 
         return view('admin.reports', compact('stats'));
     })->name('reports');
 
-    // Admin Profile
+    // Labor Market Insights & Analytics (Admin handling LMO responsibilities)
+    Route::get('/analytics', [DashboardController::class, 'analytics'])->name('analytics.index');
+    Route::get('/market-insights', [DashboardController::class, 'analytics'])->name('market-insights');
+
+    // Admin Profile & Security Credentials
     Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
     Route::post('/profile/update', [DashboardController::class, 'updateProfile'])->name('profile.update');
+    Route::post('/profile/reset-password', [DashboardController::class, 'resetPassword'])->name('profile.reset-password');
+    Route::post('/password/reset', [DashboardController::class, 'resetPassword'])->name('password.reset');
 
     // Admin Notification Center
     Route::get('/notifications', [DashboardController::class, 'notifications'])->name('notifications');

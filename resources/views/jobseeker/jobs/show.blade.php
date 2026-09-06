@@ -55,6 +55,13 @@
                         <span class="font-bold text-slate-900">₱18,000 - ₱35,000 / month</span>
                         <span>&bull;</span>
                         <span>Full-time Position</span>
+                        @if ($job->valid_until)
+                            <span>&bull;</span>
+                            <span class="inline-flex items-center gap-1 font-bold {{ $job->valid_until->isPast() ? 'text-rose-600' : 'text-emerald-700' }}">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                Application Deadline: Available until {{ $job->valid_until->format('F d, Y') }} ({{ $job->valid_until->isPast() ? 'Expired' : $job->valid_until->diffForHumans() }})
+                            </span>
+                        @endif
                     </div>
                 </div>
 
@@ -162,6 +169,22 @@
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         You Have Already Applied
                     </div>
+                @elseif($job->isExpired())
+                    <div class="inline-flex items-center gap-2 rounded-xl bg-slate-200 px-8 py-3.5 text-sm font-bold text-slate-600">
+                        <svg class="h-5 w-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Job Posting Expired
+                    </div>
+                @elseif($jobseeker->isEmployed())
+                    <div class="space-y-1.5 text-right">
+                        <div class="inline-flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-300 px-6 py-3.5 text-xs font-bold text-amber-900 shadow-xs">
+                            <span class="text-base">💼</span>
+                            <span>Currently Employed at {{ $jobseeker->hired_company ?: 'Partner Employer' }}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 max-w-sm ml-auto">
+                            Employed candidates cannot apply for another job. You must request a resignation from your employer and receive approval before applying for other positions.
+                            <a href="{{ route('jobseeker.applications') }}" class="text-emerald-700 font-bold underline">Manage Resignation &rarr;</a>
+                        </p>
+                    </div>
                 @else
                     <button @click="applyModalOpen = true" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-10 py-3.5 text-sm font-black text-white shadow-xl shadow-emerald-600/30 transition-all hover:scale-105">
                         Submit Application
@@ -201,9 +224,13 @@
                 </div>
 
                 <div class="space-y-2">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Attach Updated Resume (Optional)</label>
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Attach Updated Resume (Optional)</label>
+                        <span class="text-[11px] text-emerald-700 font-bold">Profile auto-attached</span>
+                    </div>
                     <input type="file" name="resume" accept=".pdf,.doc,.docx" 
                            class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100">
+                    <p class="text-[11px] text-slate-400">Accepted formats: PDF, DOC, DOCX (Max 5MB). If omitted, the employer will evaluate your application using your verified TrabaGo profile details and skills matrix.</p>
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">

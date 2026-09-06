@@ -91,4 +91,28 @@ class JobPosting extends Model
     {
         return $this->hasMany(JobApplication::class, 'job_id', 'job_id');
     }
+
+    /**
+     * Scope a query to only include active and unexpired job postings for jobseekers.
+     */
+    public function scopeAvailableForJobseekers($query)
+    {
+        return $query->where('status', 'approved')
+            ->where(function ($q) {
+                $q->whereNull('valid_until')
+                  ->orWhere('valid_until', '>=', now()->toDateString());
+            });
+    }
+
+    /**
+     * Check if the job posting is expired.
+     */
+    public function isExpired(): bool
+    {
+        if (!$this->valid_until) {
+            return false;
+        }
+
+        return $this->valid_until->format('Y-m-d') < now()->toDateString();
+    }
 }

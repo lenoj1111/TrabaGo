@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
@@ -40,15 +41,24 @@ class DashboardController extends Controller
      */
     public function updateProfile(Request $request)
     {
+        $user = Auth::user();
+
         $request->validate([
             'full_name' => 'required|string|max:150',
+            'email' => 'nullable|email|unique:users,email,' . $user->user_id . ',user_id',
             'phone' => 'nullable|string|max:50',
             'position' => 'nullable|string|max:100',
             'department' => 'nullable|string|max:150',
             'office' => 'nullable|string|max:150',
         ]);
 
-        $user = Auth::user();
+        if ($request->filled('email') && $request->email !== $user->email) {
+            DB::table('users')->where('user_id', $user->user_id)->update([
+                'email' => $request->email,
+                'updated_at' => now(),
+            ]);
+        }
+
         DB::table('user_profiles')->updateOrInsert(
             ['user_id' => $user->user_id],
             [
@@ -62,6 +72,66 @@ class DashboardController extends Controller
         );
 
         return back()->with('success', 'Admin profile updated successfully.');
+    }
+
+    /**
+     * Reset / Change Admin Password.
+     */
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'current_password.current_password' => 'The provided current password does not match your current credentials.',
+            'password.confirmed' => 'The new password confirmation does not match.',
+            'password.min' => 'The new password must be at least 8 characters.',
+        ]);
+
+        $user = Auth::user();
+        DB::table('users')->where('user_id', $user->user_id)->update([
+            'password' => Hash::make($request->password),
+            'updated_at' => now(),
+        ]);
+
+        return back()->with('success', 'Admin password has been reset successfully.');
+    }
+
+    /**
+     * Labor Market Insights & Analytics (Admin handling LMO responsibilities).
+     */
+    public function analytics()
+    {
+        $skillDistribution = DB::table('jobseeker_skills')
+            ->select('skill_name', DB::raw('COUNT(*) as total'))
+            ->groupBy('skill_name')
+            ->orderBy('total', 'desc')
+            ->limit(10)
+            ->get();
+
+        $employmentByStatus = DB::table('jobseekers')
+            ->select(DB::raw("COALESCE(employment_status, 'Looking for job') as status_name"), DB::raw('COUNT(*) as total'))
+            ->groupBy('employment_status')
+            ->get();
+
+        $driver = DB::getDriverName();
+        $dateExpr = match ($driver) {
+            'sqlsrv' => "SUBSTRING(CAST(hired_date AS VARCHAR(10)), 1, 7)",
+            'sqlite' => "SUBSTR(hired_date, 1, 7)",
+            'pgsql'  => "TO_CHAR(hired_date, 'YYYY-MM')",
+            default  => "SUBSTRING(CAST(hired_date AS CHAR(10)), 1, 7)",
+        };
+
+        $monthlyHiredTrends = DB::table('job_applications')
+            ->where('status', 'hired')
+            ->whereNotNull('hired_date')
+            ->select(DB::raw("{$dateExpr} as hire_month"), DB::raw('COUNT(*) as total'))
+            ->groupBy(DB::raw($dateExpr))
+            ->orderBy('hire_month', 'desc')
+            ->limit(6)
+            ->get();
+
+        return view('admin.analytics', compact('skillDistribution', 'employmentByStatus', 'monthlyHiredTrends'));
     }
 
     /**

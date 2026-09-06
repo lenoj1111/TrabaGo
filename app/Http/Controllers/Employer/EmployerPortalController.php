@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Employer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Employer;
+use App\Models\EmployerAccreditation;
 use App\Models\JobApplication;
 use App\Models\JobPosting;
 use App\Models\Notification;
@@ -12,6 +13,7 @@ use App\Models\UserProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
 class EmployerPortalController extends Controller
@@ -71,15 +73,44 @@ class EmployerPortalController extends Controller
     }
 
     // =========================================================================
-    // 1. CREATE JOB POSTING (SEND TO ADMIN)
+    // 1. MANAGE JOB POSTINGS (FULL CRUD & APPROVAL PIPELINE)
     // =========================================================================
 
-    public function jobPostings()
+    public function jobPostings(Request $request)
     {
         $employer = $this->getOrCreateEmployer();
-        $jobs = JobPosting::where('employer_id', $employer->employer_id)->latest()->paginate(10);
 
-        return view('employer.job-postings', compact('employer', 'jobs'));
+        $query = JobPosting::where('employer_id', $employer->employer_id);
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('qualifications', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('status') && $request->input('status') !== 'all') {
+            $query->where('status', $request->input('status'));
+        }
+
+        $jobs = $query->withCount('applications')->latest('job_id')->paginate(10)->withQueryString();
+
+        $stats = [
+            'total' => JobPosting::where('employer_id', $employer->employer_id)->count(),
+            'approved' => JobPosting::where('employer_id', $employer->employer_id)->where('status', 'approved')->count(),
+            'pending' => JobPosting::where('employer_id', $employer->employer_id)->where('status', 'pending')->count(),
+            'rejected' => JobPosting::where('employer_id', $employer->employer_id)->where('status', 'rejected')->count(),
+            'closed' => JobPosting::where('employer_id', $employer->employer_id)->where('status', 'closed')->count(),
+        ];
+
+        return view('employer.job-postings', compact('employer', 'jobs', 'stats'));
+    }
+
+    public function createJobPosting()
+    {
+        return redirect()->route('employer.job-postings', ['create' => 1]);
     }
 
     public function storeJobPosting(Request $request)
@@ -91,9 +122,11 @@ class EmployerPortalController extends Controller
             'description' => 'required|string',
             'qualifications' => 'nullable|string',
             'vacancy_count' => 'required|integer|min:1',
-            'valid_until' => 'nullable|date',
+            'valid_until' => ['nullable', 'date', 'after_or_equal:today'],
             'accepts_disability' => 'nullable|boolean',
             'disability_type' => 'nullable|string|max:100',
+        ], [
+            'valid_until.after_or_equal' => 'The valid until date cannot be in the past.',
         ]);
 
         $job = JobPosting::create([
@@ -126,6 +159,97 @@ class EmployerPortalController extends Controller
         return redirect()->route('employer.job-postings')->with('success', 'Job posting created successfully and forwarded to the Admin for approval.');
     }
 
+    public function showJobPosting($id)
+    {
+        $employer = $this->getOrCreateEmployer();
+        $job = JobPosting::with(['applications.jobseeker', 'applications.jobseeker.skills'])
+            ->where('employer_id', $employer->employer_id)
+            ->findOrFail($id);
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json($job);
+        }
+
+        return view('employer.job-postings-show', compact('employer', 'job'));
+    }
+
+    public function editJobPosting($id)
+    {
+        $employer = $this->getOrCreateEmployer();
+        $job = JobPosting::where('employer_id', $employer->employer_id)->findOrFail($id);
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json($job);
+        }
+
+        return redirect()->route('employer.job-postings', ['edit_id' => $id]);
+    }
+
+    public function updateJobPosting(Request $request, $id)
+    {
+        $employer = $this->getOrCreateEmployer();
+        $job = JobPosting::where('employer_id', $employer->employer_id)->findOrFail($id);
+
+        $request->validate([
+            'title' => 'required|string|max:150',
+            'description' => 'required|string',
+            'qualifications' => 'nullable|string',
+            'vacancy_count' => 'required|integer|min:1',
+            'valid_until' => ['nullable', 'date', 'after_or_equal:today'],
+            'accepts_disability' => 'nullable|boolean',
+            'disability_type' => 'nullable|string|max:100',
+        ], [
+            'valid_until.after_or_equal' => 'The valid until date cannot be in the past.',
+        ]);
+
+        $status = $job->status;
+        // If the job posting was previously rejected, re-submitting moves it to pending for re-review
+        if ($job->status === 'rejected') {
+            $status = 'pending';
+        }
+
+        $job->update([
+            'title' => $request->input('title'),
+            'description' => $request->input('description'),
+            'qualifications' => $request->input('qualifications'),
+            'vacancy_count' => $request->input('vacancy_count'),
+            'valid_until' => $request->input('valid_until'),
+            'accepts_disability' => $request->boolean('accepts_disability'),
+            'disability_type' => $request->input('disability_type'),
+            'status' => $status,
+        ]);
+
+        return redirect()->route('employer.job-postings')->with('success', 'Job posting updated successfully.');
+    }
+
+    public function destroyJobPosting($id)
+    {
+        $employer = $this->getOrCreateEmployer();
+        $job = JobPosting::where('employer_id', $employer->employer_id)->findOrFail($id);
+
+        // Check if there are applications
+        $applicationsCount = JobApplication::where('job_id', $job->job_id)->count();
+        if ($applicationsCount > 0) {
+            $job->update(['status' => 'closed']);
+            return redirect()->route('employer.job-postings')->with('info', "Job posting '{$job->title}' has active applications, so it has been closed rather than removed.");
+        }
+
+        $jobTitle = $job->title;
+        $job->delete();
+
+        return redirect()->route('employer.job-postings')->with('success', "Job posting '{$jobTitle}' deleted successfully.");
+    }
+
+    public function closeJobPosting($id)
+    {
+        $employer = $this->getOrCreateEmployer();
+        $job = JobPosting::where('employer_id', $employer->employer_id)->findOrFail($id);
+
+        $job->update(['status' => 'closed']);
+
+        return redirect()->route('employer.job-postings')->with('success', "Job posting '{$job->title}' marked as closed.");
+    }
+
     // =========================================================================
     // 2. PASS ACCREDITATION PAPERS (SEND TO JPO)
     // =========================================================================
@@ -143,14 +267,33 @@ class EmployerPortalController extends Controller
         $employer = $this->getOrCreateEmployer();
 
         $request->validate([
-            'business_permit' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'sec_dti' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'bir_2303' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'company_profile' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'bir_2303' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'sec_dti' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'mayors_permit' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'business_permit' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'philjobnet_proof' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'job_vacancies_form' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'dole_license' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'dmw_license' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'dmw_job_orders' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'letter_of_intent' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'company_profile' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
         ]);
 
         $docs = [];
-        $files = ['business_permit', 'sec_dti', 'bir_2303', 'company_profile'];
+        $files = [
+            'bir_2303',
+            'sec_dti',
+            'mayors_permit',
+            'business_permit',
+            'philjobnet_proof',
+            'job_vacancies_form',
+            'dole_license',
+            'dmw_license',
+            'dmw_job_orders',
+            'letter_of_intent',
+            'company_profile',
+        ];
         foreach ($files as $fileKey) {
             if ($request->hasFile($fileKey)) {
                 $path = $request->file($fileKey)->store('accreditation_docs', 'public');
@@ -207,18 +350,60 @@ class EmployerPortalController extends Controller
     // 3. REVIEW REFERRED JOBSEEKERS (FROM JPO)
     // =========================================================================
 
-    public function referredJobseekers()
+    public function referredJobseekers(Request $request)
     {
         $employer = $this->getOrCreateEmployer();
         $jobIds = JobPosting::where('employer_id', $employer->employer_id)->pluck('job_id');
 
-        $referredApplicants = JobApplication::with(['jobseeker.skills', 'jobseeker.details', 'jobPosting'])
-            ->whereIn('job_id', $jobIds)
-            ->where('referred_by_jpo', 1)
-            ->latest()
-            ->paginate(15);
+        $query = JobApplication::with(['jobseeker.skills', 'jobseeker.details', 'jobPosting'])
+            ->whereIn('job_id', $jobIds);
 
-        return view('employer.referred-jobseekers', compact('employer', 'referredApplicants'));
+        // Filter by specific job if requested
+        if ($request->filled('job_id')) {
+            $query->where('job_id', $request->input('job_id'));
+        }
+
+        // Filter by status tab
+        if ($request->filled('status') && $request->input('status') !== 'all') {
+            $status = $request->input('status');
+            if ($status === 'not_qualified') {
+                $query->where('status', 'rejected');
+            } elseif ($status === 'resignation_requested') {
+                $query->where('resignation_status', 'requested');
+            } else {
+                $query->where('status', $status);
+            }
+        }
+
+        // Search by candidate name or job title
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('jobseeker', function ($jq) use ($search) {
+                    $jq->where('first_name', 'like', "%{$search}%")
+                       ->orWhere('last_name', 'like', "%{$search}%")
+                       ->orWhere('email', 'like', "%{$search}%");
+                })->orWhereHas('jobPosting', function ($jq) use ($search) {
+                    $jq->where('title', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        $referredApplicants = $query->latest('application_id')->paginate(15)->withQueryString();
+
+        $stats = [
+            'total' => JobApplication::whereIn('job_id', $jobIds)->count(),
+            'pending' => JobApplication::whereIn('job_id', $jobIds)->whereIn('status', ['pending', 'reviewed'])->count(),
+            'interview' => JobApplication::whereIn('job_id', $jobIds)->where('status', 'interview')->count(),
+            'offered' => JobApplication::whereIn('job_id', $jobIds)->where('status', 'offered')->count(),
+            'hired' => JobApplication::whereIn('job_id', $jobIds)->where('status', 'hired')->count(),
+            'not_qualified' => JobApplication::whereIn('job_id', $jobIds)->where('status', 'rejected')->count(),
+            'resignation_requested' => JobApplication::whereIn('job_id', $jobIds)->where('resignation_status', 'requested')->count(),
+        ];
+
+        $employerJobs = JobPosting::where('employer_id', $employer->employer_id)->select('job_id', 'title')->get();
+
+        return view('employer.referred-jobseekers', compact('employer', 'referredApplicants', 'stats', 'employerJobs'));
     }
 
     public function updateApplicantStatus(Request $request, $id)
@@ -246,7 +431,7 @@ class EmployerPortalController extends Controller
             ]);
 
             // Notify jobseeker
-            $jobseekerUser = $application->jobseeker->user;
+            $jobseekerUser = $application->jobseeker->user ?? null;
             if ($jobseekerUser) {
                 Notification::create([
                     'user_id' => $jobseekerUser->user_id,
@@ -259,13 +444,51 @@ class EmployerPortalController extends Controller
             }
 
             return redirect()->back()->with('success', 'Interview scheduled and invitation sent to applicant.');
+        } elseif ($action === 'offer') {
+            $request->validate([
+                'offer_salary' => 'nullable|numeric|min:0',
+                'offer_start_date' => 'nullable|date',
+                'offer_notes' => 'nullable|string|max:1000',
+            ]);
+
+            $application->update([
+                'status' => 'offered',
+                'offered_at' => now(),
+                'offer_salary' => $request->input('offer_salary'),
+                'offer_start_date' => $request->input('offer_start_date'),
+                'offer_notes' => $request->input('offer_notes'),
+            ]);
+
+            // Notify jobseeker
+            $jobseekerUser = $application->jobseeker->user ?? null;
+            if ($jobseekerUser) {
+                $salaryTxt = $request->filled('offer_salary') ? ' with an offered salary of ₱' . number_format($request->input('offer_salary'), 2) : '';
+                Notification::create([
+                    'user_id' => $jobseekerUser->user_id,
+                    'title' => 'Job Offer Received!',
+                    'message' => "Congratulations! {$employer->company_name} has extended you a formal Job Offer for the '{$application->jobPosting->title}' position{$salaryTxt}. Please review and respond in your Applications dashboard.",
+                    'type' => 'approval',
+                    'is_read' => false,
+                    'related_id' => $application->application_id,
+                ]);
+            }
+
+            return redirect()->back()->with('success', "Formal job offer sent to {$application->jobseeker->first_name} {$application->jobseeker->last_name}!");
         } elseif ($action === 'hire') {
             $application->update([
                 'status' => 'hired',
                 'hired_date' => now()->toDateString(),
             ]);
 
-            $jobseekerUser = $application->jobseeker->user;
+            // Automatically tag jobseeker profile as Employed and record hiring company
+            if ($application->jobseeker) {
+                $application->jobseeker->update([
+                    'employment_status' => 'Employed',
+                    'hired_company' => $employer->company_name,
+                ]);
+            }
+
+            $jobseekerUser = $application->jobseeker->user ?? null;
             if ($jobseekerUser) {
                 Notification::create([
                     'user_id' => $jobseekerUser->user_id,
@@ -277,13 +500,100 @@ class EmployerPortalController extends Controller
                 ]);
             }
 
-            return redirect()->back()->with('success', 'Jobseeker status updated to Hired!');
-        } elseif ($action === 'reject') {
-            $application->update(['status' => 'rejected']);
-            return redirect()->back()->with('info', 'Applicant marked as rejected.');
+            return redirect()->back()->with('success', "Candidate '{$application->jobseeker->first_name} {$application->jobseeker->last_name}' status updated to Hired!");
+        } elseif ($action === 'not_qualified' || $action === 'reject') {
+            $remarks = $request->input('remarks') ?: ($request->input('notes') ?: 'Candidate does not meet the specified qualifications for this role.');
+
+            $application->update([
+                'status' => 'rejected',
+                'jpo_notes' => $remarks,
+            ]);
+
+            $jobseekerUser = $application->jobseeker->user ?? null;
+            if ($jobseekerUser) {
+                Notification::create([
+                    'user_id' => $jobseekerUser->user_id,
+                    'title' => 'Application Status: Not Qualified',
+                    'message' => "{$employer->company_name} reviewed your application for '{$application->jobPosting->title}' and marked it as Not Qualified. Reason: {$remarks}",
+                    'type' => 'manual_review',
+                    'is_read' => false,
+                    'related_id' => $application->application_id,
+                ]);
+            }
+
+            return redirect()->back()->with('info', "Candidate '{$application->jobseeker->first_name} {$application->jobseeker->last_name}' marked as Not Qualified.");
         }
 
         return redirect()->back();
+    }
+
+    public function respondResignation(Request $request, $id)
+    {
+        $employer = $this->getOrCreateEmployer();
+        $jobIds = JobPosting::where('employer_id', $employer->employer_id)->pluck('job_id');
+
+        $application = JobApplication::whereIn('job_id', $jobIds)
+            ->with(['jobseeker', 'jobPosting'])
+            ->findOrFail($id);
+
+        $request->validate([
+            'action' => 'required|in:approve,reject',
+            'remarks' => 'nullable|string|max:1000',
+        ]);
+
+        $action = $request->input('action');
+        $remarks = $request->input('remarks');
+
+        if ($action === 'approve') {
+            $application->update([
+                'resignation_status' => 'approved',
+                'resignation_approved_at' => now(),
+                'resignation_remarks' => $remarks,
+            ]);
+
+            // Untag jobseeker profile: set to Unemployed and clear hired_company
+            if ($application->jobseeker) {
+                $application->jobseeker->update([
+                    'employment_status' => 'Unemployed',
+                    'hired_company' => null,
+                ]);
+            }
+
+            // Notify jobseeker
+            $jobseekerUser = $application->jobseeker?->user;
+            if ($jobseekerUser) {
+                Notification::create([
+                    'user_id' => $jobseekerUser->user_id,
+                    'title' => 'Resignation Approved',
+                    'message' => "Your resignation request for '{$application->jobPosting->title}' has been approved by {$employer->company_name}. Your profile has been updated to Unemployed, and you may now apply for other job opportunities.",
+                    'type' => 'approval',
+                    'is_read' => false,
+                    'related_id' => $application->application_id,
+                ]);
+            }
+
+            return redirect()->back()->with('success', "Resignation request for {$application->jobseeker->first_name} {$application->jobseeker->last_name} has been approved. The candidate is now marked as Unemployed.");
+        } else {
+            $application->update([
+                'resignation_status' => 'rejected',
+                'resignation_remarks' => $remarks,
+            ]);
+
+            // Notify jobseeker
+            $jobseekerUser = $application->jobseeker?->user;
+            if ($jobseekerUser) {
+                Notification::create([
+                    'user_id' => $jobseekerUser->user_id,
+                    'title' => 'Resignation Request Declined',
+                    'message' => "Your resignation request for '{$application->jobPosting->title}' was declined by {$employer->company_name}." . ($remarks ? " Reason: {$remarks}" : ''),
+                    'type' => 'manual_review',
+                    'is_read' => false,
+                    'related_id' => $application->application_id,
+                ]);
+            }
+
+            return redirect()->back()->with('info', "Resignation request for {$application->jobseeker->first_name} {$application->jobseeker->last_name} was declined.");
+        }
     }
 
     // =========================================================================
@@ -383,6 +693,32 @@ class EmployerPortalController extends Controller
         return redirect()->route('employer.placement-reports')->with('success', 'Monthly placement report generated and sent to the Job Placement Officer (JPO) for evaluation.');
     }
 
+    public function showPlacementReport($id)
+    {
+        $employer = $this->getOrCreateEmployer();
+        $report = DB::table('placement_reports')
+            ->join('employers', 'placement_reports.employer_id', '=', 'employers.employer_id')
+            ->where('placement_reports.report_id', $id)
+            ->where('placement_reports.employer_id', $employer->employer_id)
+            ->select('placement_reports.*', 'employers.company_name')
+            ->first();
+
+        if (!$report) {
+            abort(404, 'Placement report not found or unauthorized.');
+        }
+
+        return view('reports.placement-printable', compact('report'));
+    }
+
+    public function printAccreditation()
+    {
+        $employer = $this->getOrCreateEmployer();
+        $accreditation = EmployerAccreditation::where('employer_id', $employer->employer_id)->first();
+        $jobPostings = $employer->jobPostings ?? collect();
+
+        return view('reports.establishment-registration-printable', compact('accreditation', 'employer', 'jobPostings'));
+    }
+
     // =========================================================================
     // 5. PROFILE & SETTINGS
     // =========================================================================
@@ -424,6 +760,40 @@ class EmployerPortalController extends Controller
         $profile->save();
 
         return redirect()->route('employer.profile')->with('success', 'Company and representative profile updated successfully.');
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'password.confirmed' => 'The password confirmation does not match.',
+            'password.min' => 'The new password must be at least 8 characters in length.',
+        ]);
+
+        $user = Auth::user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return redirect()->route('employer.profile', ['tab' => 'security'])
+                ->withErrors(['current_password' => 'The provided current password does not match your account password.'])
+                ->withInput();
+        }
+
+        $user->forceFill([
+            'password' => Hash::make($request->password),
+        ])->save();
+
+        Notification::create([
+            'user_id' => $user->user_id,
+            'title' => 'Password Reset Successfully',
+            'message' => 'Your employer account password was recently updated. If you did not initiate this change, please contact DMDP administrator immediately.',
+            'type' => 'manual_review',
+            'is_read' => false,
+        ]);
+
+        return redirect()->route('employer.profile', ['tab' => 'security'])
+            ->with('success', 'Your password has been successfully reset and updated.');
     }
 
     // =========================================================================

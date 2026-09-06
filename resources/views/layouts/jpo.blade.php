@@ -110,7 +110,7 @@
                             </div>
                             
                             <a href="{{ route('jpo.profile') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors {{ request()->routeIs('jpo.profile*') ? 'bg-emerald-50 text-emerald-800' : '' }}">
-                                <span>👤</span> Edit Officer Profile
+                                <span>👤</span> Officer Profile & Security
                             </a>
 
                             <a href="{{ route('jpo.notifications') }}" class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors {{ request()->routeIs('jpo.notifications*') ? 'bg-emerald-50 text-emerald-800' : '' }}">
@@ -156,7 +156,7 @@
                         <span class="px-2 py-0.5 text-[10px] bg-emerald-600 text-white rounded-full font-bold">{{ $jpoUnreadCount }}</span>
                     @endif
                 </a>
-                <a href="{{ route('jpo.profile') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('jpo.profile*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">Edit Profile</a>
+                <a href="{{ route('jpo.profile') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('jpo.profile*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600' }}">Officer Profile & Security</a>
             </div>
         </div>
     </header>

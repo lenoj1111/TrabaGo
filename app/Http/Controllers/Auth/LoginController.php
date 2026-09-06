@@ -29,6 +29,18 @@ class LoginController extends Controller
 
             $user = Auth::user();
 
+            // Check if user is pending approval
+            if ($user->status === 'pending' || !$user->is_approved) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                return back()->withErrors([
+                    'email' => ($user->role === 'trainer')
+                        ? 'Your trainer account is pending Administrator approval. Please contact the DMDP administrator.'
+                        : 'Your account is pending approval.',
+                ]);
+            }
+
             // Check if user is active
             if ($user->status !== 'active') {
                 Auth::logout();
@@ -42,12 +54,9 @@ class LoginController extends Controller
             // Route each role to its own dedicated dashboard
             switch ($user->role) {
                 case 'admin':
-                    return redirect('/admin/dashboard');
                 case 'supervisor':
                 case 'pesd_supervisor':
-                    return redirect('/supervisor/dashboard');
-                case 'lmo':
-                    return redirect('/lmo/dashboard');
+                    return redirect('/admin/dashboard');
                 case 'jpo':
                     return redirect('/jpo/dashboard');
                 case 'trainer':

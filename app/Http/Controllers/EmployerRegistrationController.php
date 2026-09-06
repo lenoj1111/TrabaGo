@@ -49,11 +49,19 @@ class EmployerRegistrationController extends Controller
             'postal_code' => 'nullable|string|max:20',
             'country' => 'nullable|string|max:100',
 
-            // Step 4: Documents
-            'documents.business_permit' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'documents.sec_registration' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'documents.mayors_permit' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'documents.tin' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            // Step 4: Documents (Official DOLE/DMDP Requirements)
+            'documents.bir_2303' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'documents.sec_dti' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'documents.mayors_permit' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'documents.business_permit' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'documents.sec_registration' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'documents.tin' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'documents.philjobnet_proof' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'documents.job_vacancies_form' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'documents.letter_of_intent' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'documents.dole_license' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'documents.dmw_license' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'documents.dmw_job_orders' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
             'terms' => 'required|accepted',
         ]);
 
@@ -80,7 +88,20 @@ class EmployerRegistrationController extends Controller
 
             // 3. Store documents if uploaded
             $documents = [];
-            $documentTypes = ['business_permit', 'sec_registration', 'mayors_permit', 'tin'];
+            $documentTypes = [
+                'bir_2303',
+                'sec_dti',
+                'mayors_permit',
+                'business_permit',
+                'sec_registration',
+                'tin',
+                'philjobnet_proof',
+                'job_vacancies_form',
+                'letter_of_intent',
+                'dole_license',
+                'dmw_license',
+                'dmw_job_orders',
+            ];
             
             foreach ($documentTypes as $docType) {
                 if ($request->hasFile("documents.{$docType}")) {

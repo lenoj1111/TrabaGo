@@ -157,15 +157,23 @@
 
                     <!-- Evaluation Action -->
                     <div class="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <a href="{{ route('jpo.evaluations.jobseekers.nsrp', $app->application_id) }}" 
+                           target="_blank"
+                           class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors flex items-center gap-1"
+                           title="Inspect official DOLE NSRP Form 1.REV 3 for this candidate">
+                            <span>📑 NSRP Form 1</span>
+                            <span class="text-[9px] text-slate-400">↗</span>
+                        </a>
+
                         @if(!$isReferred)
                             <button type="button" 
                                     @click="openRefer({{ $app->application_id }}, '{{ $jobseeker->first_name }} {{ $jobseeker->last_name }}', '{{ $job->title }}')"
-                                    class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md shadow-emerald-600/30 transition-all">
-                                Evaluate & Refer to Employer &rarr;
+                                    class="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md shadow-emerald-600/30 transition-all text-center">
+                                Evaluate & Refer &rarr;
                             </button>
                         @else
                             <span class="text-xs font-bold text-emerald-700 flex items-center gap-1">
-                                ✓ Endorsed to Employer on {{ $app->jpo_evaluated_at ? date('M d, Y', strtotime($app->jpo_evaluated_at)) : 'Today' }}
+                                ✓ Endorsed
                             </span>
                         @endif
                     </div>
@@ -199,9 +207,15 @@
             <form :action="'/jpo/evaluations/jobseekers/' + selectedAppId + '/refer'" method="POST" class="space-y-4">
                 @csrf
 
-                <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs space-y-1">
+                <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs space-y-1.5">
                     <p class="font-bold text-emerald-950">Candidate: <span x-text="selectedName" class="text-slate-900 font-extrabold"></span></p>
-                    <p class="text-emerald-800">Target Role: <span x-text="selectedJob" class="font-semibold"></span></p>
+                    <div class="flex items-center justify-between">
+                        <p class="text-emerald-800">Target Role: <span x-text="selectedJob" class="font-semibold"></span></p>
+                        <a :href="'/jpo/evaluations/jobseekers/' + selectedAppId + '/nsrp'" target="_blank" class="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1">
+                            <span>📑 Inspect NSRP Form 1</span>
+                            <span>↗</span>
+                        </a>
+                    </div>
                 </div>
 
                 <div class="space-y-1">

@@ -168,11 +168,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if the user is a supervisor.
+     * Check if the user is a supervisor (Role removed).
      */
     public function isSupervisor(): bool
     {
-        return in_array($this->role, ['supervisor', 'pesd_supervisor']);
+        return false;
     }
 
     /**
@@ -192,11 +192,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if the user is a LMO.
+     * Check if the user is a LMO (Role removed, responsibilities handled by Admin).
      */
     public function isLmo(): bool
     {
-        return $this->role === 'lmo';
+        return false;
     }
 
     /**

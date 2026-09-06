@@ -26,8 +26,8 @@
                     <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     Learner Progress & Certification
                 </span>
-                <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Manage Course Enrollments</h1>
-                <p class="text-sm text-slate-300">Oversee active students, update training milestone statuses, evaluate course answers, and issue completion certificates.</p>
+                <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Enrolled Job Seekers & Training Progress</h1>
+                <p class="text-sm text-slate-300">Oversee active learners, update enrollment statuses, conduct assessments, mark completions, and generate official skills certificates.</p>
             </div>
 
             <div class="shrink-0 bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/10 text-center min-w-[150px]">
@@ -124,27 +124,42 @@
                                     @endif
                                 </td>
                                 <td class="py-4 px-3 text-right">
-                                    <div class="flex items-center justify-end gap-1.5">
-                                        <!-- 1. Update Status Button -->
+                                    <div class="flex items-center justify-end gap-1.5 flex-wrap">
+                                        <!-- 1. Update Enrollment Status -->
                                         <button type="button" 
                                                 @click="openStatus({{ $enr->enrollment_id }}, '{{ $enr->first_name }} {{ $enr->last_name }}', '{{ $enr->status }}', '{{ addslashes($enr->lab_remarks ?? '') }}')"
-                                                class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-colors">
+                                                class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-colors"
+                                                title="Update Enrollment Status">
                                             Status
                                         </button>
 
-                                        <!-- 2. Evaluate Course Answers -->
-                                        <a href="{{ route('trainer.enrollments.evaluate', $enr->enrollment_id) }}" 
-                                           class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-[11px] font-bold transition-colors">
-                                            Evaluate
+                                        <!-- 2. Conduct Assessment -->
+                                        <a href="{{ route('trainer.enrollments.assessment', $enr->enrollment_id) }}" 
+                                           class="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-[11px] font-bold transition-colors"
+                                           title="Conduct Assessment">
+                                            Assess
                                         </a>
 
-                                        <!-- 3. Generate Certificate -->
+                                        <!-- 3. Mark Completion -->
+                                        @if($enr->status !== 'completed')
+                                            <form action="{{ route('trainer.enrollments.complete', $enr->enrollment_id) }}" method="POST" class="inline">
+                                                @csrf
+                                                <button type="submit" onclick="return confirm('Mark this enrollment as Completed and award verified skills to the jobseeker?')"
+                                                        class="px-2.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-[11px] font-black transition-colors"
+                                                        title="Mark Completion">
+                                                    ✓ Complete
+                                                </button>
+                                            </form>
+                                        @endif
+
+                                        <!-- 4. Generate Skills Certificate -->
                                         @if(!$enr->certificate_issued)
                                             <form action="{{ route('trainer.enrollments.certificate', $enr->enrollment_id) }}" method="POST" class="inline">
                                                 @csrf
-                                                <button type="submit" onclick="return confirm('Issue official completion certificate and award verified skill?')"
-                                                        class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black shadow-md shadow-emerald-600/20">
-                                                    🎓 Issue Cert
+                                                <button type="submit" onclick="return confirm('Generate and issue official skills certificate?')"
+                                                        class="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black shadow-md shadow-emerald-600/20"
+                                                        title="Generate Skills Certificate">
+                                                    🎓 Generate Cert
                                                 </button>
                                             </form>
                                         @endif

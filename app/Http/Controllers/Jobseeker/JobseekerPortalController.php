@@ -19,7 +19,9 @@ use App\Services\TrainingQuizService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class JobseekerPortalController extends Controller
 {
@@ -38,7 +40,7 @@ class JobseekerPortalController extends Controller
     private function getOrCreateJobseeker(): Jobseeker
     {
         $user = Auth::user();
-        $jobseeker = $user->jobseeker;
+        $jobseeker = $user->jobseeker()->first();
 
         if (!$jobseeker) {
             $nameParts = explode(' ', $user->full_name ?? '', 2);
@@ -65,9 +67,9 @@ class JobseekerPortalController extends Controller
         $jobseeker = $this->getOrCreateJobseeker();
         $userSkills = $this->matchingService->getJobseekerSkills($jobseeker);
 
-        // Fetch all active/approved jobs
+        // Fetch all active/approved and non-expired jobs
         $allJobs = JobPosting::with('employer')
-            ->where('status', 'approved')
+            ->availableForJobseekers()
             ->orderByDesc('job_id')
             ->get();
 
@@ -128,7 +130,7 @@ class JobseekerPortalController extends Controller
         $jobseeker = $this->getOrCreateJobseeker();
         $userSkills = $this->matchingService->getJobseekerSkills($jobseeker);
 
-        $query = JobPosting::with('employer')->where('status', 'approved');
+        $query = JobPosting::with('employer')->availableForJobseekers();
 
         // Search by keyword
         if ($search = $request->input('q')) {
@@ -202,6 +204,13 @@ class JobseekerPortalController extends Controller
     public function jobShow($id)
     {
         $job = JobPosting::with('employer')->findOrFail($id);
+
+        // Expired or unapproved jobs cannot be viewed by jobseekers
+        if ($job->status !== 'approved' || $job->isExpired()) {
+            return redirect()->route('jobseeker.jobs')
+                ->with('error', 'This job posting has expired or is no longer available.');
+        }
+
         $jobseeker = $this->getOrCreateJobseeker();
         $userSkills = $this->matchingService->getJobseekerSkills($jobseeker);
         $jobSkills = $this->matchingService->getJobSkills($job);
@@ -241,6 +250,19 @@ class JobseekerPortalController extends Controller
     {
         $jobseeker = $this->getOrCreateJobseeker();
         $job = JobPosting::findOrFail($jobId);
+
+        // Expired or unapproved jobs cannot be applied to
+        if ($job->status !== 'approved' || $job->isExpired()) {
+            return redirect()->route('jobseeker.jobs')
+                ->with('error', 'This job posting has expired or is no longer accepting applications.');
+        }
+
+        // Employed check: cannot apply for another job while currently hired/employed
+        if ($jobseeker->isEmployed()) {
+            $company = $jobseeker->hired_company ?: 'your current employer';
+            return redirect()->route('jobseeker.jobs')
+                ->with('error', "You cannot apply for another job while currently employed at {$company}. You must request a resignation from your employer and have it approved before applying for other positions.");
+        }
 
         // Duplicate check
         $existing = JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)
@@ -329,6 +351,7 @@ class JobseekerPortalController extends Controller
         // Counts by status
         $counts = [
             'all' => JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->count(),
+            'offered' => JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->where('status', 'offered')->count(),
             'pending' => JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->where('status', 'pending')->count(),
             'reviewed' => JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->where('status', 'reviewed')->count(),
             'interview' => JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->where('status', 'interview')->count(),
@@ -337,6 +360,130 @@ class JobseekerPortalController extends Controller
         ];
 
         return view('jobseeker.applications.index', compact('applications', 'counts', 'filter', 'jobseeker'));
+    }
+
+    public function acceptOffer($id)
+    {
+        $jobseeker = $this->getOrCreateJobseeker();
+        $application = JobApplication::with(['jobPosting.employer.user', 'jobseeker'])
+            ->where('jobseeker_id', $jobseeker->jobseeker_id)
+            ->findOrFail($id);
+
+        if ($application->status !== 'offered') {
+            return redirect()->back()->with('error', 'This application does not have an active job offer to accept.');
+        }
+
+        $jobTitle = $application->jobPosting?->title ?? 'Position';
+        $employer = $application->jobPosting?->employer;
+        $companyName = $employer?->company_name ?? 'Company';
+
+        // 1. Mark this application as hired
+        $application->update([
+            'status' => 'hired',
+            'hired_date' => now()->toDateString(),
+        ]);
+
+        // 2. Automatically update jobseeker profile to Employed
+        $jobseeker->update([
+            'employment_status' => 'Employed',
+            'hired_company' => $companyName,
+        ]);
+
+        // 3. Notify the hiring employer
+        if ($employer?->user) {
+            Notification::create([
+                'user_id' => $employer->user->user_id,
+                'title' => 'Job Offer Accepted!',
+                'message' => "Candidate {$jobseeker->first_name} {$jobseeker->last_name} has accepted your job offer for the position '{$jobTitle}'.",
+                'type' => 'approval',
+                'is_read' => false,
+                'related_id' => $application->application_id,
+            ]);
+        }
+
+        // 4. Auto-withdraw all other active applications
+        $otherActiveApps = JobApplication::with(['jobPosting.employer.user'])
+            ->where('jobseeker_id', $jobseeker->jobseeker_id)
+            ->where('application_id', '!=', $application->application_id)
+            ->whereIn('status', ['pending', 'reviewed', 'interview', 'offered'])
+            ->get();
+
+        foreach ($otherActiveApps as $otherApp) {
+            $otherApp->update([
+                'status' => 'withdrawn',
+            ]);
+
+            // Notify other employers
+            $otherEmployerUser = $otherApp->jobPosting?->employer?->user;
+            if ($otherEmployerUser) {
+                Notification::create([
+                    'user_id' => $otherEmployerUser->user_id,
+                    'title' => 'Application Withdrawn (Candidate Accepted Another Offer)',
+                    'message' => "Candidate {$jobseeker->first_name} {$jobseeker->last_name} has accepted an offer from another company and their application for '{$otherApp->jobPosting->title}' has been automatically withdrawn.",
+                    'type' => 'info',
+                    'is_read' => false,
+                    'related_id' => $otherApp->application_id,
+                ]);
+            }
+        }
+
+        // 5. Notify the jobseeker
+        Notification::create([
+            'user_id' => Auth::id(),
+            'title' => 'Congratulations on Your New Job!',
+            'message' => "You have officially accepted the job offer for '{$jobTitle}' at {$companyName}. Your employment status is now active!",
+            'type' => 'approval',
+            'is_read' => false,
+            'related_id' => $application->application_id,
+        ]);
+
+        $withdrawnCount = $otherActiveApps->count();
+        $msg = "Congratulations! You have accepted the job offer from {$companyName}. You are now officially hired!";
+        if ($withdrawnCount > 0) {
+            $msg .= " Your other {$withdrawnCount} active application(s) were automatically withdrawn.";
+        }
+
+        return redirect()->route('jobseeker.applications')->with('success', $msg);
+    }
+
+    public function declineOffer(Request $request, $id)
+    {
+        $jobseeker = $this->getOrCreateJobseeker();
+        $application = JobApplication::with(['jobPosting.employer.user', 'jobseeker'])
+            ->where('jobseeker_id', $jobseeker->jobseeker_id)
+            ->findOrFail($id);
+
+        if ($application->status !== 'offered') {
+            return redirect()->back()->with('error', 'This application does not have an active job offer to decline.');
+        }
+
+        $request->validate([
+            'decline_reason' => 'nullable|string|max:1000',
+        ]);
+
+        $reason = $request->input('decline_reason') ?: 'Candidate declined the offer.';
+        $jobTitle = $application->jobPosting?->title ?? 'Position';
+        $employer = $application->jobPosting?->employer;
+
+        $application->update([
+            'status' => 'declined',
+            'declined_at' => now(),
+            'decline_reason' => $reason,
+        ]);
+
+        // Notify employer
+        if ($employer?->user) {
+            Notification::create([
+                'user_id' => $employer->user->user_id,
+                'title' => 'Job Offer Declined',
+                'message' => "Candidate {$jobseeker->first_name} {$jobseeker->last_name} has declined the job offer for '{$jobTitle}'. Reason: {$reason}",
+                'type' => 'manual_review',
+                'is_read' => false,
+                'related_id' => $application->application_id,
+            ]);
+        }
+
+        return redirect()->route('jobseeker.applications')->with('info', "You have declined the job offer for '{$jobTitle}'. Your other applications remain active.");
     }
 
     public function withdrawApplication($id)
@@ -349,28 +496,217 @@ class JobseekerPortalController extends Controller
         return redirect()->back()->with('info', 'Your application has been withdrawn.');
     }
 
+    public function requestResignation(Request $request)
+    {
+        $jobseeker = $this->getOrCreateJobseeker();
+        
+        $hiredApplication = $jobseeker->activeHiredApplication;
+        if (!$hiredApplication) {
+            $hiredApplication = $jobseeker->applications()
+                ->where('status', 'hired')
+                ->latest('application_id')
+                ->first();
+        }
+
+        if (!$hiredApplication) {
+            return redirect()->back()->withErrors(['error' => 'You do not have an active employment record to resign from.']);
+        }
+
+        $request->validate([
+            'reason' => 'required|string|max:1000',
+        ], [
+            'reason.required' => 'Please provide a reason for requesting resignation.',
+        ]);
+
+        $hiredApplication->update([
+            'resignation_status' => 'requested',
+            'resignation_reason' => $request->input('reason'),
+            'resignation_requested_at' => now(),
+        ]);
+
+        // Notify employer
+        $employerUser = $hiredApplication->jobPosting?->employer?->user;
+        if ($employerUser) {
+            Notification::create([
+                'user_id' => $employerUser->user_id,
+                'title' => 'Resignation Request Submitted',
+                'message' => "Jobseeker {$jobseeker->first_name} {$jobseeker->last_name} has requested resignation from '{$hiredApplication->jobPosting->title}'. Reason: " . $request->input('reason'),
+                'type' => 'manual_review',
+                'is_read' => false,
+                'related_id' => $hiredApplication->application_id,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Your resignation request has been sent to your employer for approval.');
+    }
+
     // =========================================================================
     // 4. TRAINING PROGRAMS & QUIZZES
     // =========================================================================
 
-    public function trainingIndex()
+    public function trainingIndex(Request $request)
     {
         $jobseeker = $this->getOrCreateJobseeker();
         $userSkills = $this->matchingService->getJobseekerSkills($jobseeker);
+        $filter = $request->input('filter', 'all');
 
-        $trainings = TrainingProgram::with(['topics', 'enrollments' => function ($q) use ($jobseeker) {
+        $allTrainings = TrainingProgram::with(['topics', 'enrollments' => function ($q) use ($jobseeker) {
             $q->where('jobseeker_id', $jobseeker->jobseeker_id);
         }])->get();
 
+        $enrolledCount = $allTrainings->filter(function ($t) {
+            $enr = $t->enrollments->first();
+            return $enr && in_array($enr->status, ['enrolled', 'in_progress', 'completed']);
+        })->count();
+
+        $completedCount = $allTrainings->filter(function ($t) {
+            $enr = $t->enrollments->first();
+            return $enr && $enr->status === 'completed';
+        })->count();
+
+        $counts = [
+            'all' => $allTrainings->count(),
+            'enrolled' => $enrolledCount,
+            'completed' => $completedCount,
+        ];
+
+        if ($filter === 'enrolled') {
+            $trainings = $allTrainings->filter(function ($t) {
+                $enr = $t->enrollments->first();
+                return $enr && in_array($enr->status, ['enrolled', 'in_progress', 'completed']);
+            });
+        } elseif ($filter === 'completed') {
+            $trainings = $allTrainings->filter(function ($t) {
+                $enr = $t->enrollments->first();
+                return $enr && $enr->status === 'completed';
+            });
+        } else {
+            $trainings = $allTrainings;
+        }
+
         // Identify earned vs available skills
         $allTrainingSkills = [];
-        foreach ($trainings as $t) {
+        foreach ($allTrainings as $t) {
             // Extract keywords or predefined skills
             $words = array_filter(explode(' ', $t->title), fn($w) => strlen($w) > 3);
             $allTrainingSkills[$t->training_id] = array_values($words);
         }
 
-        return view('jobseeker.training.index', compact('trainings', 'userSkills', 'allTrainingSkills', 'jobseeker'));
+        return view('jobseeker.training.index', compact('trainings', 'userSkills', 'allTrainingSkills', 'jobseeker', 'filter', 'counts'));
+    }
+
+    /**
+     * View Training Skills catalog and pathways.
+     */
+    public function trainingSkills(Request $request)
+    {
+        $jobseeker = $this->getOrCreateJobseeker();
+        $userSkills = $this->matchingService->getJobseekerSkills($jobseeker);
+        $userSkillNames = array_map('strtolower', $userSkills);
+
+        $trainings = TrainingProgram::with(['trainer', 'topics', 'enrollments' => function ($q) use ($jobseeker) {
+            $q->where('jobseeker_id', $jobseeker->jobseeker_id);
+        }])->get();
+
+        $skillsCatalog = [];
+        foreach ($trainings as $training) {
+            $enrollment = $training->enrollments->first();
+            $status = $enrollment ? $enrollment->status : 'unregistered';
+            $certIssued = $enrollment ? (bool)$enrollment->certificate_issued : false;
+
+            $skillsList = [];
+            if (!empty($training->skills)) {
+                $skillsList = array_map('trim', explode(',', $training->skills));
+            } else {
+                $skillsList = [trim($training->title)];
+            }
+
+            foreach ($skillsList as $sName) {
+                if (empty($sName)) continue;
+                $isEarned = in_array(strtolower($sName), $userSkillNames) || ($status === 'completed');
+                $skillsCatalog[] = [
+                    'skill_name' => $sName,
+                    'course_id' => $training->training_id,
+                    'course_title' => $training->title,
+                    'course_type' => $training->training_type,
+                    'duration_months' => $training->duration_months,
+                    'topics_count' => $training->topics->count(),
+                    'passing_score' => $training->passing_score ?: 80,
+                    'status' => $status,
+                    'is_earned' => $isEarned,
+                    'certificate_issued' => $certIssued,
+                    'enrollment_id' => $enrollment ? $enrollment->enrollment_id : null,
+                ];
+            }
+        }
+
+        if ($request->filled('search')) {
+            $search = strtolower($request->search);
+            $skillsCatalog = array_filter($skillsCatalog, function ($item) use ($search) {
+                return str_contains(strtolower($item['skill_name']), $search)
+                    || str_contains(strtolower($item['course_title']), $search);
+            });
+        }
+
+        return view('jobseeker.training.skills', compact('skillsCatalog', 'userSkills', 'jobseeker'));
+    }
+
+    /**
+     * View Training Enrollments dashboard (My Enrollments).
+     */
+    public function trainingEnrollments(Request $request)
+    {
+        $jobseeker = $this->getOrCreateJobseeker();
+        $userSkills = $this->matchingService->getJobseekerSkills($jobseeker);
+
+        $enrollments = TrainingEnrollment::with(['trainingProgram.topics', 'trainingProgram.trainer'])
+            ->where('jobseeker_id', $jobseeker->jobseeker_id)
+            ->orderBy('enrollment_id', 'desc')
+            ->get();
+
+        $stats = [
+            'total' => $enrollments->count(),
+            'in_progress' => $enrollments->whereIn('status', ['enrolled', 'in_progress'])->count(),
+            'completed' => $enrollments->where('status', 'completed')->count(),
+            'certificates' => $enrollments->where('certificate_issued', 1)->count(),
+        ];
+
+        return view('jobseeker.training.enrollments', compact('enrollments', 'jobseeker', 'userSkills', 'stats'));
+    }
+
+    public function enrollTraining($id)
+    {
+        $jobseeker = $this->getOrCreateJobseeker();
+        $training = TrainingProgram::findOrFail($id);
+
+        $enrollment = TrainingEnrollment::where('jobseeker_id', $jobseeker->jobseeker_id)
+            ->where('training_id', $id)
+            ->first();
+
+        if ($enrollment) {
+            return redirect()->route('jobseeker.training.show', $id)
+                ->with('info', "You are already enrolled in '{$training->title}'.");
+        }
+
+        TrainingEnrollment::create([
+            'jobseeker_id' => $jobseeker->jobseeker_id,
+            'training_id' => $id,
+            'training_type' => $training->training_type ?: 'online',
+            'status' => 'enrolled',
+            'start_date' => now()->toDateString(),
+        ]);
+
+        Notification::create([
+            'user_id' => Auth::id(),
+            'title' => 'Enrolled in Training Course',
+            'message' => "You have successfully enrolled in '{$training->title}'. Start learning to complete modules and earn your certification!",
+            'type' => 'training',
+            'is_read' => false,
+            'related_id' => $training->training_id,
+        ]);
+
+        return redirect()->route('jobseeker.training.show', $id)
+            ->with('success', "Successfully enrolled in '{$training->title}'! You can now start the learning modules and assessment quiz.");
     }
 
     public function trainingShow($id)
@@ -396,10 +732,11 @@ class JobseekerPortalController extends Controller
     public function submitQuiz(Request $request, $id)
     {
         $jobseeker = $this->getOrCreateJobseeker();
-        $training = TrainingProgram::findOrFail($id);
+        $training = TrainingProgram::with('trainer')->findOrFail($id);
 
         $score = (int) $request->input('score', 0);
-        $passed = $score >= 80;
+        $passingThreshold = $training->passing_score ?: 80;
+        $passed = $score >= $passingThreshold;
 
         $enrollment = TrainingEnrollment::where('jobseeker_id', $jobseeker->jobseeker_id)
             ->where('training_id', $id)
@@ -414,48 +751,144 @@ class JobseekerPortalController extends Controller
             ]);
         }
 
-        $enrollment->status = $passed ? 'completed' : 'in_progress';
+        $enrollment->score = $score;
+        $enrollment->passed = $passed ? 1 : 0;
         $enrollment->answers = ['score' => $score, 'passed' => $passed, 'submitted_at' => now()->toIso8601String()];
+
         if ($passed) {
             $enrollment->end_date = now()->toDateString();
+            $enrollment->status = 'completed';
 
-            // Automatically grant the training skill to the jobseeker's profile!
-            $skillName = trim($training->title);
-            $exists = JobseekerSkill::where('jobseeker_id', $jobseeker->jobseeker_id)
-                ->where('skill_name', $skillName)
-                ->first();
+            // Check if trainer enabled automatic certificate generation
+            $autoGenCert = (bool) ($training->auto_generate_certificate ?? true);
 
-            if (!$exists) {
-                JobseekerSkill::create([
-                    'jobseeker_id' => $jobseeker->jobseeker_id,
-                    'skill_name' => $skillName,
-                    'skill_type' => 'technical',
+            if ($autoGenCert) {
+                // Automatically generate certificate
+                $certNo = 'DMDP-CERT-' . date('Y') . '-' . strtoupper(Str::random(6));
+                $enrollment->certificate_no = $certNo;
+                $enrollment->certificate_issued = 1;
+                $enrollment->certificate_issued_at = now();
+
+                // Store certificate in jobseeker Document Hub vault (training_certificates)
+                $jobseekerDetail = JobseekerDetail::where('jobseeker_id', $jobseeker->jobseeker_id)->first();
+                $existingCerts = [];
+                if ($jobseekerDetail && !empty($jobseekerDetail->training_certificates)) {
+                    $existingCerts = is_array($jobseekerDetail->training_certificates)
+                        ? $jobseekerDetail->training_certificates
+                        : (json_decode($jobseekerDetail->training_certificates, true) ?: []);
+                }
+
+                // Filter out previous entry if any
+                $existingCerts = array_values(array_filter($existingCerts, fn($c) => ($c['enrollment_id'] ?? null) != $enrollment->enrollment_id));
+                $certUrl = route('jobseeker.certificates.preview', $enrollment->enrollment_id ?: $id);
+
+                $existingCerts[] = [
+                    'id' => 'cert_' . ($enrollment->enrollment_id ?: $id),
+                    'enrollment_id' => $enrollment->enrollment_id ?: $id,
+                    'category' => 'certificate',
+                    'name' => "Certificate of Completion - {$training->title} (#{$certNo})",
+                    'file_url' => $certUrl,
+                    'status' => 'verified',
+                    'certificate_no' => $certNo,
+                    'course_title' => $training->title,
+                    'uploaded_at' => now()->toIso8601String(),
+                ];
+
+                JobseekerDetail::updateOrCreate(
+                    ['jobseeker_id' => $jobseeker->jobseeker_id],
+                    ['training_certificates' => json_encode($existingCerts)]
+                );
+
+                // Automatically grant skill tag to jobseeker's profile
+                $skillName = trim($training->title);
+                $exists = JobseekerSkill::where('jobseeker_id', $jobseeker->jobseeker_id)
+                    ->where('skill_name', $skillName)
+                    ->first();
+
+                if (!$exists) {
+                    JobseekerSkill::create([
+                        'jobseeker_id' => $jobseeker->jobseeker_id,
+                        'skill_name' => $skillName,
+                        'skill_type' => 'technical',
+                    ]);
+                }
+
+                // Celebratory achievement notification
+                Notification::create([
+                    'user_id' => Auth::id(),
+                    'title' => '🎓 Official Certificate Issued!',
+                    'message' => "Congratulations! You passed '{$training->title}' with {$score}%. Your official Certificate of Completion (#{$certNo}) has been automatically generated and is ready in your Document Hub.",
+                    'type' => 'training',
+                    'is_read' => false,
+                    'related_id' => $training->training_id,
                 ]);
-            }
+            } else {
+                // Trainer chose manual certificate review/assessment
+                $enrollment->certificate_issued = 0;
 
-            // Create achievement notification
-            Notification::create([
-                'user_id' => Auth::id(),
-                'title' => 'Skill Certified!',
-                'message' => "Congratulations! You passed the '{$training->title}' assessment with {$score}%. The skill '{$skillName}' has been added to your profile, raising your AI match score!",
-                'type' => 'training',
-                'is_read' => false,
-                'related_id' => $training->training_id,
-            ]);
+                Notification::create([
+                    'user_id' => Auth::id(),
+                    'title' => 'Assessment Completed (Pending Trainer Review)',
+                    'message' => "You scored {$score}% on '{$training->title}'. Your assessment will be reviewed by your trainer before your official certificate is released.",
+                    'type' => 'training',
+                    'is_read' => false,
+                    'related_id' => $training->training_id,
+                ]);
+
+                if ($training->trainer && $training->trainer->user_id) {
+                    Notification::create([
+                        'user_id' => $training->trainer->user_id,
+                        'title' => 'Trainee Assessment Completed',
+                        'message' => "{$jobseeker->first_name} {$jobseeker->last_name} completed the assessment for '{$training->title}' (Score: {$score}%). Review to issue their certificate.",
+                        'type' => 'training',
+                        'is_read' => false,
+                        'related_id' => $enrollment->enrollment_id ?: $id,
+                    ]);
+                }
+            }
+        } else {
+            $enrollment->status = 'in_progress';
         }
+
         $enrollment->save();
+
+        // If enrollment_id was newly generated, sync with certificate if auto-generated
+        if ($passed && ($training->auto_generate_certificate ?? true) && !empty($enrollment->certificate_no)) {
+            $jobseekerDetail = JobseekerDetail::where('jobseeker_id', $jobseeker->jobseeker_id)->first();
+            if ($jobseekerDetail && !empty($jobseekerDetail->training_certificates)) {
+                $docs = json_decode($jobseekerDetail->training_certificates, true) ?: [];
+                foreach ($docs as &$doc) {
+                    if (($doc['certificate_no'] ?? '') === $enrollment->certificate_no) {
+                        $doc['enrollment_id'] = $enrollment->enrollment_id;
+                        $doc['id'] = 'cert_' . $enrollment->enrollment_id;
+                        $doc['file_url'] = route('jobseeker.certificates.preview', $enrollment->enrollment_id);
+                    }
+                }
+                $jobseekerDetail->training_certificates = json_encode($docs);
+                $jobseekerDetail->save();
+            }
+        }
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'passed' => $passed,
                 'score' => $score,
-                'message' => $passed ? "Skill certified! Added '{$training->title}' to your profile." : "Quiz completed. Keep practicing!",
+                'certificate_issued' => $enrollment->certificate_issued ?? 0,
+                'message' => $passed 
+                    ? (($training->auto_generate_certificate ?? true) 
+                        ? "Congratulations! Certificate generated and awarded for '{$training->title}'." 
+                        : "Assessment submitted! Score recorded. Trainer will review before issuing certificate.")
+                    : "Quiz completed with score {$score}%. Review the course materials and try again!",
             ]);
         }
 
         return redirect()->route('jobseeker.training.show', $id)
-            ->with($passed ? 'success' : 'info', $passed ? "Congratulations! You scored {$score}% and earned the skill certification." : "You scored {$score}%. Review the lessons and try again to earn your certificate!");
+            ->with($passed ? 'success' : 'info', $passed 
+                ? (($training->auto_generate_certificate ?? true) 
+                    ? "Congratulations! You scored {$score}% and your official certificate has been issued." 
+                    : "You scored {$score}%. Your submission has been sent to your trainer for evaluation.")
+                : "You scored {$score}%. Review the lessons and try again to earn your certificate!");
     }
 
     /**
@@ -729,12 +1162,13 @@ class JobseekerPortalController extends Controller
             'citizenship' => 'nullable|string|max:50',
             'mobile_number' => 'nullable|string|max:30',
             'employment_status' => 'nullable|string|max:100',
+            'hired_company' => 'nullable|string|max:150',
         ]);
 
         // 1. Update Core Jobseeker Info
         $jobseeker->update($request->only([
             'first_name', 'last_name', 'middle_name', 'mobile_number',
-            'civil_status', 'sex', 'citizenship', 'employment_status', 'birth_date'
+            'civil_status', 'sex', 'citizenship', 'employment_status', 'hired_company', 'birth_date'
         ]));
 
         // 2. Update Details (Address, Education, Work Experience, Eligibility, Language, Bio)
@@ -889,5 +1323,36 @@ class JobseekerPortalController extends Controller
         }
 
         return min(100, $strength);
+    }
+
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = Auth::user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return redirect()->route('jobseeker.profile', ['tab' => 'security'])
+                ->withErrors(['current_password' => 'The provided current password does not match your account password.'])
+                ->withInput();
+        }
+
+        $user->forceFill([
+            'password' => Hash::make($request->password),
+        ])->save();
+
+        Notification::create([
+            'user_id' => $user->user_id,
+            'title' => 'Password Reset Successfully',
+            'message' => 'Your account password was recently updated. If you did not make this change, please contact DMDP administrator immediately.',
+            'type' => 'manual_review',
+            'is_read' => false,
+        ]);
+
+        return redirect()->route('jobseeker.profile', ['tab' => 'security'])
+            ->with('success', 'Your password has been successfully reset and updated.');
     }
 }

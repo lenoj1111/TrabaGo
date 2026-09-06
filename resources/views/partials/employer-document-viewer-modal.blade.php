@@ -42,7 +42,7 @@
         <div class="p-6 overflow-y-auto space-y-6 flex-1">
             
             <!-- Document Meta Bar -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-0.5">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Document Classification</span>
                     <p class="text-xs font-black text-slate-900 truncate" x-text="currentDoc.label || 'Legal Certificate'"></p>
@@ -50,6 +50,13 @@
                 <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-0.5">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Issuing Authority</span>
                     <p class="text-xs font-black text-slate-900 truncate" x-text="currentDoc.issuer || 'Government Regulatory Agency'"></p>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-0.5">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Validity Period</span>
+                    <p class="text-xs font-black text-emerald-800 truncate flex items-center gap-1">
+                        <span>⏱️</span>
+                        <span x-text="currentDoc.validity || 'Current / Valid'"></span>
+                    </p>
                 </div>
                 <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-0.5">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Verification Status</span>
@@ -89,6 +96,14 @@
                     </div>
 
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-slate-100 gap-1">
+                        <span class="font-bold text-slate-500">Validity Period:</span>
+                        <span class="font-bold text-emerald-800 flex items-center gap-1">
+                            <span>⏱️</span>
+                            <span x-text="currentDoc.validity || 'Current / Valid'"></span>
+                        </span>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-slate-100 gap-1">
                         <span class="font-bold text-slate-500">Attached File Reference:</span>
                         <span class="font-mono text-slate-700 font-semibold" x-text="currentDoc.filename || 'electronic_record.pdf'"></span>
                     </div>
@@ -100,9 +115,14 @@
                         </span>
                     </div>
 
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between py-2 gap-1">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-slate-100 gap-1">
                         <span class="font-bold text-slate-500">Evaluation Compliance:</span>
                         <span class="font-bold text-slate-800">Meets DMDP City Ordinance Standards for Employment Facilitation</span>
+                    </div>
+
+                    <div class="pt-2 p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/80 text-[11px] text-emerald-900 flex items-center gap-2">
+                        <span class="text-sm">⚖️</span>
+                        <span><strong>Official Notice:</strong> Original and other documents, when applicable, should be presented for validation.</span>
                     </div>
                 </div>
 
@@ -118,19 +138,21 @@
                         </div>
                     </div>
 
-                    <template x-if="currentDoc.url">
-                        <a :href="currentDoc.url" 
-                           target="_blank" 
-                           class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all shrink-0">
-                            <span>Open / Download File</span>
-                            <span class="text-[10px]">↗</span>
-                        </a>
-                    </template>
-                    <template x-if="!currentDoc.url">
-                        <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200 shrink-0">
-                            <span>✓</span> Verified Digital Copy
-                        </span>
-                    </template>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <template x-if="currentDoc.url">
+                            <a :href="currentDoc.url" 
+                               target="_blank" 
+                               class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all shrink-0">
+                                <span>Open / Download File</span>
+                                <span class="text-[10px]">↗</span>
+                            </a>
+                        </template>
+                        <template x-if="!currentDoc.url">
+                            <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200 shrink-0">
+                                <span>✓</span> Verified Digital Copy
+                            </span>
+                        </template>
+                    </div>
                 </div>
 
             </div>

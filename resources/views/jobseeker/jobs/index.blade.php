@@ -70,6 +70,23 @@
             </div>
         </div>
 
+        @if($jobseeker->isEmployed())
+            <div class="rounded-2xl bg-amber-50 border border-amber-300 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-xl bg-amber-100 border border-amber-200 text-amber-900 flex items-center justify-center text-lg font-bold shrink-0">
+                        💼
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-amber-950 text-sm">You are Currently Employed at {{ $jobseeker->hired_company ?: 'Partner Employer' }}</h3>
+                        <p class="text-amber-800 text-xs mt-0.5">While actively employed, you cannot submit applications for other positions. To apply for new opportunities, you must request resignation from your employer and receive approval.</p>
+                    </div>
+                </div>
+                <a href="{{ route('jobseeker.applications') }}" class="shrink-0 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-xs transition-colors text-center">
+                    Manage Resignation &rarr;
+                </a>
+            </div>
+        @endif
+
         <!-- =================================================================== -->
         <!-- 2-COLUMN JOB EXPLORER -->
         <!-- =================================================================== -->
@@ -128,6 +145,18 @@
                                     <span>&bull;</span>
                                     <span class="text-teal-700 font-bold">♿ PWD</span>
                                 @endif
+                                @if ($job->valid_until)
+                                    <span>&bull;</span>
+                                    <span class="inline-flex items-center gap-1 font-medium {{ $job->valid_until->isPast() ? 'text-rose-600 font-bold' : ($job->valid_until->diffInDays(now()) <= 7 ? 'text-amber-700 font-bold' : 'text-slate-500') }}">
+                                        <svg class="h-3.5 w-3.5 {{ $job->valid_until->isPast() ? 'text-rose-500' : 'text-emerald-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                        Until {{ $job->valid_until->format('M d, Y') }}
+                                        @if(!$job->valid_until->isPast() && $job->valid_until->diffInDays(now()) <= 7)
+                                            <span class="rounded bg-amber-100 text-amber-800 text-[9px] px-1 font-extrabold">Soon</span>
+                                        @elseif($job->valid_until->isPast())
+                                            <span class="rounded bg-rose-100 text-rose-800 text-[9px] px-1 font-extrabold">Expired</span>
+                                        @endif
+                                    </span>
+                                @endif
                             </div>
 
                             <!-- Skills preview pills -->
@@ -176,7 +205,16 @@
                                         @endif
                                     </div>
                                     <h2 class="text-2xl font-black text-slate-900 mt-1">{{ $job->title }}</h2>
-                                    <p class="text-xs text-slate-500 mt-1">Cebu City, Philippines &bull; Full-time Position &bull; ₱18,000 - ₱35,000 / month</p>
+                                    <p class="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
+                                        <span>Cebu City, Philippines &bull; Full-time Position &bull; ₱18,000 - ₱35,000 / month</span>
+                                        @if ($job->valid_until)
+                                            <span>&bull;</span>
+                                            <span class="inline-flex items-center gap-1 font-bold {{ $job->valid_until->isPast() ? 'text-rose-600' : 'text-emerald-700' }}">
+                                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                                Available until: {{ $job->valid_until->format('F d, Y') }} ({{ $job->valid_until->isPast() ? 'Expired' : $job->valid_until->diffForHumans() }})
+                                            </span>
+                                        @endif
+                                    </p>
                                 </div>
 
                                 <div class="shrink-0 flex sm:flex-col items-center sm:items-end justify-between bg-emerald-50/70 rounded-2xl p-4 border border-emerald-100">
@@ -269,6 +307,22 @@
                                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                                         Application Submitted
                                     </button>
+                                @elseif($job->isExpired())
+                                    <button disabled class="inline-flex items-center gap-2 rounded-xl bg-slate-200 px-6 py-3 text-sm font-bold text-slate-600 cursor-not-allowed">
+                                        <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        Position Expired
+                                    </button>
+                                @elseif($jobseeker->isEmployed())
+                                    <div class="text-right space-y-1">
+                                        <button disabled class="inline-flex items-center gap-2 rounded-xl bg-amber-100 border border-amber-300 px-5 py-2.5 text-xs font-bold text-amber-900 cursor-not-allowed">
+                                            <span>💼</span>
+                                            <span>Employed ({{ $jobseeker->hired_company ?: 'Currently Hired' }})</span>
+                                        </button>
+                                        <p class="text-[10px] text-slate-500">
+                                            Resignation approval required to apply.
+                                            <a href="{{ route('jobseeker.applications') }}" class="text-emerald-700 font-bold underline">Resignation Details</a>
+                                        </p>
+                                    </div>
                                 @else
                                     <button @click="applyModalOpen = true" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-8 py-3 text-sm font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
                                         Apply for Position
@@ -324,10 +378,13 @@
 
                 <!-- Resume Attachment -->
                 <div class="space-y-2">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Attach Resume / CV (Optional)</label>
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Attach Resume / CV (Optional)</label>
+                        <span class="text-[11px] text-emerald-700 font-bold">Profile auto-attached</span>
+                    </div>
                     <input type="file" name="resume" accept=".pdf,.doc,.docx" 
                            class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100">
-                    <p class="text-[11px] text-slate-400">Accepted formats: PDF, DOC, DOCX (Max 5MB)</p>
+                    <p class="text-[11px] text-slate-400">Accepted formats: PDF, DOC, DOCX (Max 5MB). If omitted, the employer will evaluate your application using your verified TrabaGo profile details and skills matrix.</p>
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">

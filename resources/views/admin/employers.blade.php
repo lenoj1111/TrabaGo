@@ -29,28 +29,61 @@
                     url = (val.startsWith('http') || val.startsWith('/')) ? val : ('/storage/' + val);
                 }
 
-                if (key.includes('sec') || key.includes('dti')) {
-                    label = 'SEC / DTI Registration';
-                    icon = '📜';
-                    issuer = 'Securities and Exchange Commission (SEC) / DTI';
-                } else if (key.includes('permit') || key.includes('mayor')) {
-                    label = 'Mayor\'s Business Permit';
-                    icon = '🏢';
-                    issuer = 'City Government of Cebu - BPLO';
-                } else if (key.includes('bir') || key.includes('tin')) {
-                    label = 'BIR Form 2303 Certificate';
+                let validity = 'Current / Valid';
+
+                if (key.includes('bir') || key.includes('2303') || key.includes('tin')) {
+                    label = 'BIR Certificate of Registration (Form 2303)';
                     icon = '📑';
                     issuer = 'Bureau of Internal Revenue (BIR District 080)';
+                    validity = 'Current / Valid';
+                } else if (key.includes('sec') || key.includes('dti')) {
+                    label = 'SEC Registration or DTI Registration';
+                    icon = '📜';
+                    issuer = 'Securities and Exchange Commission (SEC) / DTI';
+                    validity = 'Perpetual / Registered';
+                } else if (key.includes('mayor') || key.includes('permit') || key.includes('business')) {
+                    label = 'Mayor’s Business Permit (current year)';
+                    icon = '🏢';
+                    issuer = 'City Government of Cebu - BPLO';
+                    validity = 'Calendar Year ' + new Date().getFullYear();
+                } else if (key.includes('philjobnet')) {
+                    label = 'PhilJobNet Proof of Registration';
+                    icon = '🌐';
+                    issuer = 'PhilJobNet / DOLE Bureau of Local Employment';
+                    validity = 'Active Registration Certificate';
+                } else if (key.includes('vacanc') || key.includes('job_vacanc')) {
+                    label = 'Updated Job Vacancies (prescribed form)';
+                    icon = '💼';
+                    issuer = 'Cebu City DMDP Prescribed Template';
+                    validity = 'Active Hiring Needs';
                 } else if (key.includes('dole')) {
-                    label = 'DOLE Certificate of Registration';
+                    label = 'DOLE License / DO 174';
                     icon = '🛡️';
                     issuer = 'Department of Labor and Employment (DOLE RO-7)';
+                    validity = 'Valid License (PRPA / Subcontractor)';
+                } else if (key.includes('dmw_license') || (key.includes('dmw') && !key.includes('order'))) {
+                    label = 'DMW License (Overseas Agency)';
+                    icon = '✈️';
+                    issuer = 'Department of Migrant Workers (DMW / POEA)';
+                    validity = 'Valid DMW License';
+                } else if (key.includes('order') || key.includes('job_order')) {
+                    label = 'DMW Approved and Validated Job Orders';
+                    icon = '📋';
+                    issuer = 'Department of Migrant Workers (DMW)';
+                    validity = 'Verified Job Orders Period';
+                } else if (key.includes('intent') || key.includes('letter')) {
+                    label = 'Letter of Intent (Services & Assistance Details)';
+                    icon = '✉️';
+                    issuer = 'Corporate Executive / Authorized Signatory';
+                    validity = 'Official Signed Request';
                 } else if (key.includes('profile')) {
-                    label = 'Company Overview Profile';
+                    label = 'Company Overview Profile / Org Chart';
                     icon = '📁';
                     issuer = 'Corporate Executive Board';
+                    validity = 'Corporate Registry Reference';
                 } else {
                     label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    validity = 'Supporting Verification Document';
                 }
 
                 this.activeDocList.push({
@@ -60,7 +93,8 @@
                     issuer: issuer,
                     filename: filename,
                     url: url,
-                    status: 'Verified Valid'
+                    status: 'Verified Valid',
+                    validity: validity
                 });
             }
 
@@ -171,9 +205,9 @@
                     <thead class="bg-slate-50 border-b border-slate-100 text-[11px] uppercase font-bold text-slate-500 tracking-wider">
                         <tr>
                             <th class="py-4 px-6">Company</th>
-                            <th class="py-4 px-6">Account Email</th>
+                            <th class="py-4 px-6">Account Status</th>
                             <th class="py-4 px-6">Legal Verification Documents</th>
-                            <th class="py-4 px-6 text-center">Accreditation</th>
+                            <th class="py-4 px-6 text-center">Accreditation Status</th>
                             <th class="py-4 px-6 text-center">Jobs Posted</th>
                             <th class="py-4 px-6 text-right">Actions</th>
                         </tr>
@@ -182,6 +216,8 @@
                         @forelse($employers ?? [] as $employer)
                             @php
                                 $docs = is_array($employer->documents ?? null) ? $employer->documents : json_decode($employer->documents ?? '[]', true);
+                                $isAccountApproved = ($employer->user_status === 'active' && ($employer->user_approved ?? 1));
+                                $isJpoRecommended = ($employer->accreditation_status === 'jpo_approved' || $employer->accreditation_status === 'supervisor_approved');
                             @endphp
                             <tr class="hover:bg-slate-50/80 transition-colors">
                                 <td class="py-4 px-6">
@@ -195,8 +231,21 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="py-4 px-6 text-slate-600 font-bold">
-                                    {{ $employer->email ?? 'N/A' }}
+                                <td class="py-4 px-6">
+                                    <div class="space-y-1">
+                                        <div class="text-xs font-bold text-slate-900">{{ $employer->email ?? 'N/A' }}</div>
+                                        <div>
+                                            @if($isAccountApproved)
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200">
+                                                    ✓ Account Active
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200">
+                                                    ⏳ Account Pending Approval
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="py-4 px-6">
                                     @if(is_array($docs) && count($docs) > 0)
@@ -218,9 +267,23 @@
                                     @endif
                                 </td>
                                 <td class="py-4 px-6 text-center">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold border {{ $employer->is_accredited ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200' }}">
-                                        {{ $employer->is_accredited ? '🛡️ Accredited' : '⏳ Pending' }}
-                                    </span>
+                                    @if($employer->is_accredited)
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold border bg-emerald-50 text-emerald-800 border-emerald-200">
+                                            🛡️ Accredited
+                                        </span>
+                                    @elseif($isJpoRecommended)
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold border bg-blue-50 text-blue-800 border-blue-200" title="JPO has evaluated and recommended this employer">
+                                            ⭐ JPO Recommended
+                                        </span>
+                                    @elseif($employer->accreditation_status === 'submitted_to_jpo')
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold border bg-amber-50 text-amber-800 border-amber-200" title="Awaiting JPO evaluation">
+                                            ⏳ Under JPO Review
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold border bg-slate-100 text-slate-600 border-slate-200">
+                                            ✕ Not Accredited
+                                        </span>
+                                    @endif
                                 </td>
                                 <td class="py-4 px-6 text-center">
                                     <span class="inline-flex items-center px-2.5 py-1 rounded-xl bg-slate-100 text-slate-800 font-bold border border-slate-200">
@@ -232,18 +295,33 @@
                                         @if(is_array($docs) && count($docs) > 0)
                                             <button type="button" 
                                                     @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($docs))'
-                                                    class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors">
+                                                    class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors"
+                                                    title="View Legal Documents">
                                                 👁️ Docs
                                             </button>
                                         @endif
 
+                                        {{-- 1. Employer Account Approval (Independent from Accreditation) --}}
+                                        @if(!$isAccountApproved && !empty($employer->user_id))
+                                            <form action="{{ route('admin.users.approve', $employer->user_id) }}" method="POST" class="inline">
+                                                @csrf
+                                                <button type="submit" 
+                                                        class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-colors shadow-sm"
+                                                        title="Approve Employer Account">
+                                                    ✓ Approve Account
+                                                </button>
+                                            </form>
+                                        @endif
+
+                                        {{-- 2. Employer Accreditation (Gated by JPO Recommending Approval) --}}
                                         @if(!$employer->is_accredited)
-                                            <button onclick="accreditEmployer({{ $employer->employer_id }})" 
-                                                    class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm" title="Accredit Company">
+                                            <button onclick="accreditEmployer({{ $employer->employer_id }}, {{ $isJpoRecommended ? 'true' : 'false' }})" 
+                                                    class="px-3 py-1.5 rounded-lg {{ $isJpoRecommended ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm' : 'bg-slate-100 text-slate-400 border border-slate-200 hover:bg-slate-200' }} font-bold text-xs transition-colors" 
+                                                    title="{{ $isJpoRecommended ? 'Accredit Company' : 'JPO Recommending Approval is required first' }}">
                                                 🛡️ Accredit
                                             </button>
                                         @else
-                                            <span class="text-[11px] font-bold text-emerald-700">✓ Verified</span>
+                                            <span class="text-[11px] font-bold text-emerald-700">✓ Accredited</span>
                                         @endif
                                     </div>
                                 </td>
@@ -276,10 +354,21 @@
 </div>
 
 <script>
-function accreditEmployer(id) {
+function accreditEmployer(id, isJpoRecommended) {
+    if (!isJpoRecommended) {
+        Swal.fire({
+            title: 'JPO Recommendation Required',
+            text: 'Admin cannot accredit an employer without the recommending approval of the JPO. Please wait for the JPO to complete document evaluation.',
+            icon: 'warning',
+            confirmButtonColor: '#059669',
+            confirmButtonText: 'Understood'
+        });
+        return;
+    }
+
     Swal.fire({
-        title: 'Grant Employer Accreditation?',
-        text: 'This will officially accredit this employer account and enable candidate referrals.',
+        title: 'Grant Official Employer Accreditation?',
+        text: 'JPO has recommended this company. This will officially accredit the employer and authorize applicant referrals.',
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#059669',
@@ -298,7 +387,7 @@ function accreditEmployer(id) {
                 if (data.success) {
                     Swal.fire('Success!', data.success, 'success').then(() => location.reload());
                 } else {
-                    Swal.fire('Error', data.error || 'Something went wrong.', 'error');
+                    Swal.fire('Cannot Accredit', data.error || 'Something went wrong.', 'error');
                 }
             })
             .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));

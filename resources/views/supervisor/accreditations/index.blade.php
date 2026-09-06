@@ -38,28 +38,61 @@
                 url = (val.startsWith('http') || val.startsWith('/')) ? val : ('/storage/' + val);
             }
 
-            if (key.includes('sec') || key.includes('dti')) {
-                label = 'SEC / DTI Registration';
-                icon = '📜';
-                issuer = 'Securities and Exchange Commission (SEC) / DTI';
-            } else if (key.includes('permit') || key.includes('mayor')) {
-                label = 'Mayor\'s Business Permit';
-                icon = '🏢';
-                issuer = 'City Government of Cebu - BPLO';
-            } else if (key.includes('bir') || key.includes('tin')) {
-                label = 'BIR Form 2303 Certificate';
+            let validity = 'Current / Valid';
+
+            if (key.includes('bir') || key.includes('2303') || key.includes('tin')) {
+                label = 'BIR Certificate of Registration (Form 2303)';
                 icon = '📑';
                 issuer = 'Bureau of Internal Revenue (BIR District 080)';
+                validity = 'Current / Valid';
+            } else if (key.includes('sec') || key.includes('dti')) {
+                label = 'SEC Registration or DTI Registration';
+                icon = '📜';
+                issuer = 'Securities and Exchange Commission (SEC) / DTI';
+                validity = 'Perpetual / Registered';
+            } else if (key.includes('mayor') || key.includes('permit') || key.includes('business')) {
+                label = 'Mayor’s Business Permit (current year)';
+                icon = '🏢';
+                issuer = 'City Government of Cebu - BPLO';
+                validity = 'Calendar Year ' + new Date().getFullYear();
+            } else if (key.includes('philjobnet')) {
+                label = 'PhilJobNet Proof of Registration';
+                icon = '🌐';
+                issuer = 'PhilJobNet / DOLE Bureau of Local Employment';
+                validity = 'Active Registration Certificate';
+            } else if (key.includes('vacanc') || key.includes('job_vacanc')) {
+                label = 'Updated Job Vacancies (prescribed form)';
+                icon = '💼';
+                issuer = 'Cebu City DMDP Prescribed Template';
+                validity = 'Active Hiring Needs';
             } else if (key.includes('dole')) {
-                label = 'DOLE Certificate of Registration';
+                label = 'DOLE License / DO 174';
                 icon = '🛡️';
                 issuer = 'Department of Labor and Employment (DOLE RO-7)';
+                validity = 'Valid License (PRPA / Subcontractor)';
+            } else if (key.includes('dmw_license') || (key.includes('dmw') && !key.includes('order'))) {
+                label = 'DMW License (Overseas Agency)';
+                icon = '✈️';
+                issuer = 'Department of Migrant Workers (DMW / POEA)';
+                validity = 'Valid DMW License';
+            } else if (key.includes('order') || key.includes('job_order')) {
+                label = 'DMW Approved and Validated Job Orders';
+                icon = '📋';
+                issuer = 'Department of Migrant Workers (DMW)';
+                validity = 'Verified Job Orders Period';
+            } else if (key.includes('intent') || key.includes('letter')) {
+                label = 'Letter of Intent (Services & Assistance Details)';
+                icon = '✉️';
+                issuer = 'Corporate Executive / Authorized Signatory';
+                validity = 'Official Signed Request';
             } else if (key.includes('profile')) {
-                label = 'Company Overview Profile';
+                label = 'Company Overview Profile / Org Chart';
                 icon = '📁';
                 issuer = 'Corporate Executive Board';
+                validity = 'Corporate Registry Reference';
             } else {
                 label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                validity = 'Supporting Verification Document';
             }
 
             this.activeDocList.push({
@@ -69,7 +102,8 @@
                 issuer: issuer,
                 filename: filename,
                 url: url,
-                status: 'Verified Valid'
+                status: 'Verified Valid',
+                validity: validity
             });
         }
 
@@ -191,6 +225,13 @@
                                 </td>
                                 <td class="py-4 px-3 text-right">
                                     <div class="flex items-center justify-end gap-2">
+                                        <a href="{{ route('jpo.evaluations.accreditations.print', $acc->accreditation_id) }}" target="_blank"
+                                           class="px-2.5 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 transition-colors flex items-center gap-1"
+                                           title="Inspect Official Form (PDF)">
+                                            <span>📑 PDF</span>
+                                            <span class="text-[10px] text-slate-400">↗</span>
+                                        </a>
+
                                         @if(is_array($docs) && count($docs) > 0)
                                             <button type="button" 
                                                     @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs))'

@@ -37,9 +37,13 @@
                        class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('jobseeker.applications*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
                         Applications
                     </a>
-                    <a href="{{ route('jobseeker.training') }}" 
-                       class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('jobseeker.training*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
-                        Skill Training
+                    <a href="{{ route('jobseeker.training.skills') }}" 
+                       class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('jobseeker.training.skills*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
+                        Training Skills
+                    </a>
+                    <a href="{{ route('jobseeker.training.enrollments') }}" 
+                       class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('jobseeker.training.enrollments*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
+                        Training Enrollment
                     </a>
                 </nav>
             </div>
@@ -96,9 +100,19 @@
                             <p class="text-[11px] text-slate-500 truncate">{{ $user->email }}</p>
                         </div>
 
-                        <a href="{{ route('jobseeker.profile') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors">
+                        <a href="{{ route('jobseeker.profile', ['tab' => 'view']) }}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors">
                             <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                            My Profile & Skills
+                            My Profile (View)
+                        </a>
+
+                        <a href="{{ route('jobseeker.profile', ['tab' => 'edit']) }}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors">
+                            <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            Update Profile
+                        </a>
+
+                        <a href="{{ route('jobseeker.profile', ['tab' => 'security']) }}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors">
+                            <svg class="h-4 w-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            Reset Password
                         </a>
 
                         <a href="{{ route('jobseeker.documents') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors">
@@ -155,8 +169,11 @@
             <a href="{{ route('jobseeker.applications') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('jobseeker.applications*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600 hover:bg-slate-50' }}">
                 Applications
             </a>
-            <a href="{{ route('jobseeker.training') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('jobseeker.training*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600 hover:bg-slate-50' }}">
-                Training Courses
+            <a href="{{ route('jobseeker.training.skills') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('jobseeker.training.skills*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600 hover:bg-slate-50' }}">
+                Training Skills
+            </a>
+            <a href="{{ route('jobseeker.training.enrollments') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('jobseeker.training.enrollments*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600 hover:bg-slate-50' }}">
+                Training Enrollment
             </a>
             <a href="{{ route('jobseeker.documents') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('jobseeker.documents*') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600 hover:bg-slate-50' }}">
                 Document Hub
@@ -167,8 +184,14 @@
                     <span class="px-2 py-0.5 text-[10px] bg-emerald-600 text-white rounded-full font-bold">{{ $unreadCount }}</span>
                 @endif
             </a>
-            <a href="{{ route('jobseeker.profile') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('jobseeker.profile') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600 hover:bg-slate-50' }}">
-                My Profile & Skills
+            <a href="{{ route('jobseeker.profile', ['tab' => 'view']) }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('jobseeker.profile') && request('tab', 'view') === 'view' ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600 hover:bg-slate-50' }}">
+                My Profile
+            </a>
+            <a href="{{ route('jobseeker.profile', ['tab' => 'edit']) }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('jobseeker.profile') && request('tab') === 'edit' ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600 hover:bg-slate-50' }}">
+                Update Profile
+            </a>
+            <a href="{{ route('jobseeker.profile', ['tab' => 'security']) }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-bold {{ request()->routeIs('jobseeker.profile') && request('tab') === 'security' ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600 hover:bg-slate-50' }}">
+                Reset Password
             </a>
         </div>
     </div>

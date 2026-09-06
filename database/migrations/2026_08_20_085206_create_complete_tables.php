@@ -56,6 +56,7 @@ return new class extends Migration
             $table->string('mobile_number', 50)->nullable();
             $table->string('email', 150)->nullable();
             $table->string('employment_status', 50)->nullable();
+            $table->string('hired_company', 150)->nullable();
             $table->foreign('user_id')->references('user_id')->on('users');
         });
 
@@ -143,7 +144,7 @@ return new class extends Migration
             $table->id('application_id');
             $table->unsignedBigInteger('job_id');
             $table->unsignedBigInteger('jobseeker_id');
-            $table->enum('status', ['pending', 'reviewed', 'interview', 'hired', 'rejected'])->default('pending');
+            $table->enum('status', ['pending', 'reviewed', 'interview', 'offered', 'hired', 'declined', 'rejected', 'withdrawn', 'cancelled'])->default('pending');
             $table->boolean('referred_by_jpo')->default(0);
             $table->text('jpo_notes')->nullable();
             $table->dateTime('jpo_evaluated_at')->nullable();
@@ -153,6 +154,11 @@ return new class extends Migration
             $table->enum('interview_status', ['scheduled', 'completed', 'cancelled'])->nullable();
             $table->enum('jobseeker_response', ['pending', 'confirmed', 'declined'])->nullable();
             $table->date('hired_date')->nullable();
+            $table->string('resignation_status', 50)->nullable();
+            $table->text('resignation_reason')->nullable();
+            $table->dateTime('resignation_requested_at')->nullable();
+            $table->dateTime('resignation_approved_at')->nullable();
+            $table->text('resignation_remarks')->nullable();
             $table->timestamps();
             $table->foreign('job_id')->references('job_id')->on('job_postings');
             $table->foreign('jobseeker_id')->references('jobseeker_id')->on('jobseekers');
@@ -268,6 +274,7 @@ return new class extends Migration
             $table->text('admin_remarks')->nullable();
             $table->unsignedBigInteger('approved_by')->nullable();
             $table->date('approved_at')->nullable();
+            $table->timestamps();
             $table->foreign('jpo_id')->references('profile_id')->on('user_profiles');
             $table->foreign('employer_id')->references('employer_id')->on('employers');
         });

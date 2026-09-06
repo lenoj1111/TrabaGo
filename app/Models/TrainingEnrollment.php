@@ -48,6 +48,7 @@ class TrainingEnrollment extends Model
         'certificate_issued',
         'certificate_issued_at',
         'trainer_feedback',
+        'enrolled_skills',
     ];
 
     /**

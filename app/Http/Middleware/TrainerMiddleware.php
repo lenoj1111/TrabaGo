@@ -19,6 +19,15 @@ class TrainerMiddleware
             abort(403, 'Unauthorized. Trainer only.');
         }
 
+        if (Auth::user()->status === 'pending' || !Auth::user()->is_approved) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            return redirect()->route('login')->withErrors([
+                'email' => 'Your trainer account is pending Administrator approval. Please contact the DMDP administrator.',
+            ]);
+        }
+
         return $next($request);
     }
 }

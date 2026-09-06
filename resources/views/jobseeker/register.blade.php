@@ -344,34 +344,85 @@
             <div class="step-content" data-step="5" style="display:none;">
                 <div class="relative overflow-hidden" style="background: linear-gradient(135deg, #f5f7fa 0%, #e9edf3 100%);">
                     <div class="relative px-6 py-5">
-                        <h2 class="text-lg font-bold text-brand-900">Skills</h2>
-                        <p class="text-sm text-brand-600">What are you good at?</p>
+                        <h2 class="text-lg font-bold text-brand-900">Skills Assessment (DOLE NSRP Form 1)</h2>
+                        <p class="text-sm text-brand-600">Select your 21st century skills and any technical skills acquired with or without formal training.</p>
                     </div>
                 </div>
 
-                <div class="px-6 py-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">Technical Skills</label>
-                            <input type="text" name="skills[0][name]" value="{{ old('skills.0.name') }}" placeholder="e.g., JavaScript, SQL, Design" 
-                                   class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
+                <div class="px-6 py-6 space-y-6">
+                    <!-- VII. 21st Century Skills -->
+                    <div class="space-y-3">
+                        <div class="border-b border-brand-100 pb-2">
+                            <h3 class="text-xs font-bold text-brand-900 uppercase tracking-wider">VII. 21st Century Skills</h3>
+                            <p class="text-[11px] text-brand-500">Check five (5) skills you possess (self-assessment)</p>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                            @php
+                                $centuryList1 = ['Innovation', 'Team Work', 'Multitasking', 'Work Ethics', 'Self Motivation'];
+                                $centuryList2 = ['Creative Problem Solving', 'Problem Solving', 'Critical Thinking', 'Decision Making', 'Stress Tolerance'];
+                                $centuryList3 = ['Planning and Organizing', 'Social Perceptiveness', 'English Functional Skills', 'English Comprehension', 'Math Functional Skill'];
+                            @endphp
+                            <div class="space-y-1.5">
+                                @foreach($centuryList1 as $cs)
+                                    <label class="flex items-center gap-2 p-2 rounded-xl border border-brand-100 bg-white hover:bg-brand-50 cursor-pointer transition-colors">
+                                        <input type="checkbox" name="skills_century[]" value="{{ $cs }}" class="rounded border-brand-300 text-brand-600 focus:ring-brand-400">
+                                        <span class="font-medium text-brand-900">{{ $cs }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            <div class="space-y-1.5">
+                                @foreach($centuryList2 as $cs)
+                                    <label class="flex items-center gap-2 p-2 rounded-xl border border-brand-100 bg-white hover:bg-brand-50 cursor-pointer transition-colors">
+                                        <input type="checkbox" name="skills_century[]" value="{{ $cs }}" class="rounded border-brand-300 text-brand-600 focus:ring-brand-400">
+                                        <span class="font-medium text-brand-900">{{ $cs }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            <div class="space-y-1.5">
+                                @foreach($centuryList3 as $cs)
+                                    <label class="flex items-center gap-2 p-2 rounded-xl border border-brand-100 bg-white hover:bg-brand-50 cursor-pointer transition-colors">
+                                        <input type="checkbox" name="skills_century[]" value="{{ $cs }}" class="rounded border-brand-300 text-brand-600 focus:ring-brand-400">
+                                        <span class="font-medium text-brand-900">{{ $cs }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- IX. Technical Skills Acquired Without Formal Training -->
+                    <div class="space-y-3">
+                        <div class="border-b border-brand-100 pb-2">
+                            <h3 class="text-xs font-bold text-brand-900 uppercase tracking-wider">IX. Technical Skills Acquired Without Formal Training</h3>
+                            <p class="text-[11px] text-brand-500">Check any practical/vocational skills you have developed through experience</p>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                            @php
+                                $informalList = [
+                                    'Carpentry', 'Masonry', 'Welding', 'Auto Mechanic',
+                                    'Plumbing', 'Driving', 'Gardening', 'Tailoring',
+                                    'Photography', 'Hairdressing', 'Cooking', 'Baking'
+                                ];
+                            @endphp
+                            @foreach($informalList as $is)
+                                <label class="flex items-center gap-2 p-2 rounded-xl border border-brand-100 bg-white hover:bg-brand-50 cursor-pointer transition-colors">
+                                    <input type="checkbox" name="skills_informal_tech[]" value="{{ $is }}" class="rounded border-brand-300 text-brand-600 focus:ring-brand-400">
+                                    <span class="font-medium text-brand-900">{{ $is }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <!-- Other Specialized Skills -->
+                    <div class="space-y-2 border-t border-brand-100 pt-4">
+                        <label class="block text-xs font-bold text-brand-900 uppercase tracking-wider">Other Specialized Technical Skills (Optional)</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <input type="text" name="skills[0][name]" value="{{ old('skills.0.name') }}" placeholder="e.g. IT, Programming, Accounting, CAD" 
+                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-xl focus:ring-2 focus:ring-brand-400 text-xs outline-none" />
                             <input type="hidden" name="skills[0][type]" value="technical" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">21st Century Skills</label>
-                            <input type="text" name="skills[1][name]" value="{{ old('skills.1.name') }}" placeholder="e.g., Communication, Teamwork" 
-                                   class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
-                            <input type="hidden" name="skills[1][type]" value="21st_century" />
-                        </div>
-                        <div>
-                            <input type="text" name="skills[2][name]" value="{{ old('skills.2.name') }}" placeholder="Additional skill..." 
-                                   class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
-                            <input type="hidden" name="skills[2][type]" value="technical" />
-                        </div>
-                        <div>
-                            <input type="text" name="skills[3][name]" value="{{ old('skills.3.name') }}" placeholder="Additional skill..." 
-                                   class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
-                            <input type="hidden" name="skills[3][type]" value="21st_century" />
+
+                            <input type="text" name="skills[1][name]" value="{{ old('skills.1.name') }}" placeholder="Additional skill or certification..." 
+                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-xl focus:ring-2 focus:ring-brand-400 text-xs outline-none" />
+                            <input type="hidden" name="skills[1][type]" value="technical" />
                         </div>
                     </div>
                 </div>

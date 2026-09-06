@@ -19,6 +19,7 @@ class JobPostingController extends Controller
         $query = DB::table('job_postings as jp')
             ->leftJoin('employers as e', 'jp.employer_id', '=', 'e.employer_id')
             ->leftJoin('users as u', 'e.user_id', '=', 'u.user_id')
+            ->leftJoin('employer_accreditation as ea', 'e.employer_id', '=', 'ea.employer_id')
             ->select(
                 'jp.job_id',
                 'jp.title',
@@ -30,6 +31,8 @@ class JobPostingController extends Controller
                 'jp.created_at',
                 'jp.approved_at',
                 'jp.employer_id',
+                'e.is_accredited',
+                'ea.status as accreditation_status',
                 DB::raw("CASE WHEN jp.employer_id IS NULL THEN 'DMDP' ELSE e.company_name END as company_name"),
                 'u.email as employer_email'
             )

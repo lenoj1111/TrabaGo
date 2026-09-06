@@ -63,12 +63,11 @@ class UserManagementController extends Controller
             'admins' => DB::table('users')->where('role', 'admin')->count(),
             'jpos' => DB::table('users')->where('role', 'jpo')->count(),
             'trainers' => DB::table('users')->where('role', 'trainer')->count(),
-            'lmos' => DB::table('users')->where('role', 'lmo')->count(),
             'employers' => DB::table('users')->where('role', 'employer')->count(),
             'jobseekers' => DB::table('users')->where('role', 'jobseeker')->count(),
         ];
 
-        $roles = ['admin', 'jpo', 'trainer', 'lmo', 'employer', 'jobseeker'];
+        $roles = ['admin', 'jpo', 'trainer', 'employer', 'jobseeker'];
         $statuses = ['active', 'inactive'];
 
         return view('admin.users.index', compact('users', 'counts', 'roles', 'statuses'));
@@ -79,7 +78,7 @@ class UserManagementController extends Controller
      */
     public function create()
     {
-        $roles = ['admin', 'supervisor', 'pesd_supervisor', 'jpo', 'trainer', 'lmo'];
+        $roles = ['admin', 'jpo', 'trainer'];
         return view('admin.users.create', compact('roles'));
     }
 
@@ -91,7 +90,7 @@ class UserManagementController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8|confirmed',
-            'role' => 'required|in:admin,supervisor,pesd_supervisor,jpo,trainer,lmo',
+            'role' => 'required|in:admin,jpo,trainer',
             'full_name' => 'required|string|max:150',
             'position' => 'required|string|max:100',
             'department' => 'nullable|string|max:150',
@@ -112,13 +111,17 @@ class UserManagementController extends Controller
         try {
             DB::beginTransaction();
 
+            // If admin creates a trainer account, it is automatically approved per requirements
+            $isApproved = ($request->role === 'trainer') ? 1 : ($request->is_approved ?? 1);
+            $isTrainerApproved = ($request->role === 'trainer') ? 1 : ($request->is_approved ?? 0);
+
             // 1. Create user account
             $user = DB::table('users')->insertGetId([
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'role' => $request->role,
                 'status' => 'active',
-                'is_approved' => $request->is_approved ?? 1,
+                'is_approved' => $isApproved,
                 'created_at' => Carbon::now(),
             ]);
 
@@ -133,7 +136,9 @@ class UserManagementController extends Controller
                 'specialization' => $request->specialization,
                 'trainer_type' => $request->trainer_type ?? 'dmdp',
                 'partner_institution' => $request->partner_institution,
-                'is_trainer_approved' => $request->role === 'trainer' ? ($request->is_approved ?? 1) : 0,
+                'is_trainer_approved' => $isTrainerApproved,
+                'trainer_approved_by' => $request->role === 'trainer' ? \Illuminate\Support\Facades\Auth::id() : null,
+                'trainer_approved_at' => $request->role === 'trainer' ? Carbon::now() : null,
                 'created_at' => Carbon::now(),
             ]);
 
@@ -202,7 +207,7 @@ class UserManagementController extends Controller
             $user->phone = $user->jobseeker_phone ?? null;
         }
 
-        $roles = ['admin', 'supervisor', 'pesd_supervisor', 'jpo', 'trainer', 'lmo', 'employer', 'jobseeker'];
+        $roles = ['admin', 'jpo', 'trainer', 'employer', 'jobseeker'];
         $statuses = ['active', 'inactive'];
 
         return view('admin.users.edit', compact('user', 'roles', 'statuses'));
@@ -214,7 +219,7 @@ class UserManagementController extends Controller
     public function update(Request $request, int $id)
     {
         $validator = Validator::make($request->all(), [
-            'role' => 'required|in:admin,supervisor,pesd_supervisor,jpo,trainer,lmo,employer,jobseeker',
+            'role' => 'required|in:admin,jpo,trainer,employer,jobseeker',
             'status' => 'required|in:active,inactive',
             'is_approved' => 'nullable|boolean',
             'full_name' => 'nullable|string|max:150',
@@ -404,6 +409,7 @@ class UserManagementController extends Controller
             'type' => 'approval',
             'is_read' => 0,
             'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now(),
         ]);
     }
 }
