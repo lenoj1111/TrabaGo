@@ -153,7 +153,7 @@ class JobseekerRegistrationController extends Controller
                         DB::table('jobseeker_skills')->insert([
                             'jobseeker_id' => $jobseekerId,
                             'skill_name' => $iSkill,
-                            'skill_type' => 'technical_informal',
+                            'skill_type' => 'technical',
                         ]);
                     }
                 }

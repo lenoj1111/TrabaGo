@@ -67,23 +67,23 @@
                         </a>
                         <a href="{{ route('admin.users.index') }}" 
                            class="px-3 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('admin.users*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
-                            Employee Accounts
+                            Manage Accounts
                         </a>
                         <a href="{{ route('admin.jobseekers.index') }}" 
                            class="px-3 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('admin.jobseekers*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
-                            Jobseekers
+                            View Jobseekers
                         </a>
                         <a href="{{ route('admin.job-postings') }}" 
                            class="px-3 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('admin.job-postings*') || request()->routeIs('admin.job-postings-list*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
-                            Job Postings
+                            Manage Job Postings
                         </a>
                         <a href="{{ route('admin.employers') }}" 
                            class="px-3 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('admin.employers*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
-                            Employers
+                            View Employers
                         </a>
                         <a href="{{ route('admin.placement-reports.index') }}" 
                            class="px-3 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('admin.placement-reports*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">
-                            Placement Reports
+                            View Placement Reports
                         </a>
                         <a href="{{ route('admin.analytics.index') }}" 
                            class="px-3 py-2 rounded-xl text-xs font-bold transition-all {{ request()->routeIs('admin.analytics*') ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }}">

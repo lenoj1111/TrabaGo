@@ -72,11 +72,19 @@
                 <p class="text-sm text-slate-300">Create, edit, and manage company vacancies. Openings sent to DMDP Administration are reviewed and matched with jobseekers via AI.</p>
             </div>
 
-            <button @click="createModal = true" 
-                    class="shrink-0 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-6 py-3.5 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                + Create New Job Opening
-            </button>
+            @if($employer->is_accredited || ($accreditation && $accreditation->status === 'admin_approved'))
+                <button @click="createModal = true" 
+                        class="shrink-0 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-6 py-3.5 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                    + Create New Job Opening
+                </button>
+            @else
+                <a href="{{ route('employer.accreditation') }}" 
+                   class="shrink-0 inline-flex items-center gap-2 rounded-2xl bg-amber-100 border border-amber-200 text-amber-800 px-6 py-3.5 text-xs font-black shadow-sm hover:bg-amber-200 transition-all">
+                    <span>⚠</span>
+                    Accreditation Required
+                </a>
+            @endif
         </div>
 
         <!-- Flash Messages & Validation Alerts -->
@@ -88,6 +96,11 @@
         @if(session('info'))
             <div class="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 text-xs font-bold flex items-center gap-2">
                 <span>ℹ</span> {{ session('info') }}
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2">
+                <span>⚠</span> {{ session('error') }}
             </div>
         @endif
         @if($errors->any())
