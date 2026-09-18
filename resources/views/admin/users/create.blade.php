@@ -9,11 +9,11 @@
         <!-- Header -->
         <div class="flex items-center justify-between">
             <div class="space-y-1">
-                <a href="{{ route('admin.users.index') }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-900 inline-flex items-center gap-1">
+                <a href="{{ route('admin.users.index') }}" class="text-xs font-bold text-green-700 hover:text-green-900 inline-flex items-center gap-1">
                     &larr; Back to Users Directory
                 </a>
                 <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Provision Employee Account</h1>
-                <p class="text-xs text-slate-500">Create a new staff account (JPO, Trainer, Supervisor, LMO, or Admin) with system privileges.</p>
+                <p class="text-xs text-slate-500">Create a new staff account (JPO, Trainer, or Admin) with system privileges.</p>
             </div>
         </div>
 
@@ -25,7 +25,8 @@
                 <!-- Account Credentials Section -->
                 <div>
                     <h3 class="text-sm font-black text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
-                        <span>🔐</span> Account Credentials
+                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        <span>Account Credentials</span>
                     </h3>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -33,7 +34,7 @@
                             <label class="text-xs font-bold text-slate-700">Official Email <span class="text-rose-500">*</span></label>
                             <input type="email" name="email" value="{{ old('email') }}" required 
                                    placeholder="staff@trabago.gov.ph"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none @error('email') border-rose-400 @enderror">
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none @error('email') border-rose-400 @enderror">
                             @error('email')
                                 <p class="text-[11px] font-bold text-rose-600">{{ $message }}</p>
                             @enderror
@@ -42,9 +43,9 @@
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-700">System Role <span class="text-rose-500">*</span></label>
                             <select name="role" id="roleSelect" required
-                                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none @error('role') border-rose-400 @enderror">
+                                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none @error('role') border-rose-400 @enderror">
                                 <option value="">Select Account Role...</option>
-                                @foreach($roles ?? ['admin', 'jpo', 'trainer', 'lmo'] as $role)
+                                @foreach($roles ?? ['admin', 'jpo', 'trainer'] as $role)
                                     <option value="{{ $role }}" {{ old('role') == $role ? 'selected' : '' }}>
                                         {{ strtoupper(str_replace('_', ' ', $role)) }}
                                     </option>
@@ -59,7 +60,7 @@
                             <label class="text-xs font-bold text-slate-700">Password <span class="text-rose-500">*</span></label>
                             <input type="password" name="password" required 
                                    placeholder="Minimum 8 characters"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none @error('password') border-rose-400 @enderror">
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none @error('password') border-rose-400 @enderror">
                             @error('password')
                                 <p class="text-[11px] font-bold text-rose-600">{{ $message }}</p>
                             @enderror
@@ -69,7 +70,7 @@
                             <label class="text-xs font-bold text-slate-700">Confirm Password <span class="text-rose-500">*</span></label>
                             <input type="password" name="password_confirmation" required 
                                    placeholder="Re-enter password"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                         </div>
                     </div>
                 </div>
@@ -77,7 +78,8 @@
                 <!-- Staff Profile Details Section -->
                 <div>
                     <h3 class="text-sm font-black text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
-                        <span>👤</span> Employee Profile Information
+                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        <span>Employee Profile Information</span>
                     </h3>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -85,7 +87,7 @@
                             <label class="text-xs font-bold text-slate-700">Full Name <span class="text-rose-500">*</span></label>
                             <input type="text" name="full_name" value="{{ old('full_name') }}" required 
                                    placeholder="e.g. Maria Santos"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none @error('full_name') border-rose-400 @enderror">
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none @error('full_name') border-rose-400 @enderror">
                             @error('full_name')
                                 <p class="text-[11px] font-bold text-rose-600">{{ $message }}</p>
                             @enderror
@@ -95,7 +97,7 @@
                             <label class="text-xs font-bold text-slate-700">Official Position <span class="text-rose-500">*</span></label>
                             <input type="text" name="position" value="{{ old('position') }}" required 
                                    placeholder="e.g. Labor Employment Officer II"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none @error('position') border-rose-400 @enderror">
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none @error('position') border-rose-400 @enderror">
                             @error('position')
                                 <p class="text-[11px] font-bold text-rose-600">{{ $message }}</p>
                             @enderror
@@ -105,28 +107,28 @@
                             <label class="text-xs font-bold text-slate-700">Department</label>
                             <input type="text" name="department" value="{{ old('department', 'DMDP Cebu City') }}" 
                                    placeholder="e.g. Skills Training Division"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-700">Office Location</label>
                             <input type="text" name="office" value="{{ old('office') }}" 
                                    placeholder="e.g. Ramos DMDP Building"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-700">Phone Number</label>
                             <input type="text" name="phone" value="{{ old('phone') }}" 
                                    placeholder="e.g. +63 912 345 6789"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-700">Specialization / Expertise</label>
                             <input type="text" name="specialization" value="{{ old('specialization') }}" 
                                    placeholder="e.g. Technical Skills, IT, Hospitality"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                         </div>
                     </div>
                 </div>
@@ -138,8 +140,9 @@
                         Cancel
                     </a>
                     <button type="submit" 
-                            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-xs shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
-                        ✓ Provision Account
+                            class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-black text-xs shadow-lg shadow-green-600/30 transition-all hover:scale-105">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <span>Provision Account</span>
                     </button>
                 </div>
 

@@ -8,7 +8,7 @@
         
         <!-- Back Navigation -->
         <div class="flex items-center justify-between">
-            <a href="{{ route('jobseeker.jobs') }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-emerald-700">
+            <a href="{{ route('jobseeker.jobs') }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-green-700">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 Back to All Jobs
             </a>
@@ -26,19 +26,19 @@
             <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-6 pb-8 border-b border-slate-100">
                 <div class="space-y-2">
                     <div class="flex items-center gap-2 flex-wrap">
-                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">{{ $company }}</span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-green-700">{{ $company }}</span>
                         @if ($job->employer && $job->employer->is_accredited)
                             <button type="button" 
                                     @click="accredModalOpen = true"
-                                    class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 px-3 py-0.5 text-xs font-black hover:bg-emerald-100 transition-colors shadow-2xs cursor-pointer"
+                                    class="inline-flex items-center gap-1.5 rounded-full bg-green-50 text-green-800 border border-green-300 px-3 py-0.5 text-xs font-black hover:bg-green-100 transition-colors shadow-2xs cursor-pointer"
                                     title="Click to view verified employer accreditation details">
                                 <span>🛡️</span>
                                 <span>DMDP Verified Employer</span>
-                                <span class="text-[10px] text-emerald-600">↗</span>
+                                <span class="text-[10px] text-green-600">↗</span>
                             </button>
                         @endif
                         @if ($job->accepts_disability)
-                            <span class="rounded-full bg-teal-50 text-teal-800 border border-teal-200 px-2.5 py-0.5 text-xs font-bold">
+                            <span class="rounded-full bg-green-50 text-green-800 border border-green-200 px-2.5 py-0.5 text-xs font-bold">
                                 ♿ PWD Inclusive ({{ $job->disability_type ?: 'All eligible' }})
                             </span>
                         @endif
@@ -48,7 +48,7 @@
                     
                     <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500 pt-1">
                         <span class="flex items-center gap-1">
-                            <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+                            <svg class="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
                             Cebu City, Philippines
                         </span>
                         <span>&bull;</span>
@@ -57,7 +57,7 @@
                         <span>Full-time Position</span>
                         @if ($job->valid_until)
                             <span>&bull;</span>
-                            <span class="inline-flex items-center gap-1 font-bold {{ $job->valid_until->isPast() ? 'text-rose-600' : 'text-emerald-700' }}">
+                            <span class="inline-flex items-center gap-1 font-bold {{ $job->valid_until->isPast() ? 'text-rose-600' : 'text-green-700' }}">
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                 Application Deadline: Available until {{ $job->valid_until->format('F d, Y') }} ({{ $job->valid_until->isPast() ? 'Expired' : $job->valid_until->diffForHumans() }})
                             </span>
@@ -65,33 +65,33 @@
                     </div>
                 </div>
 
-                <!-- Match Score Badge in Emerald Theme -->
-                <div class="shrink-0 rounded-2xl bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 text-white p-5 text-center min-w-[140px] shadow-lg border border-emerald-500/30">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-300">AI Skill Match</span>
-                    <p class="text-4xl font-black text-emerald-400 mt-1">{{ $match['percentage'] ?? 0 }}%</p>
-                    <span class="inline-block mt-1 text-xs font-semibold text-emerald-300">
+                <!-- Match Score Badge in green Theme -->
+                <div class="shrink-0 rounded-2xl bg-gradient-to-br from-slate-950 via-green-950 to-slate-900 text-white p-5 text-center min-w-[140px] shadow-lg border border-green-500/30">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-green-300">AI Skill Match</span>
+                    <p class="text-4xl font-black text-green-400 mt-1">{{ $match['percentage'] ?? 0 }}%</p>
+                    <span class="inline-block mt-1 text-xs font-semibold text-green-300">
                         {{ $match['tier'] ?? 'Calculated' }}
                     </span>
                 </div>
             </div>
 
             <!-- AI Skill Matrix Deep-dive -->
-            <div class="rounded-2xl bg-emerald-50/40 p-6 border border-emerald-100 space-y-4">
+            <div class="rounded-2xl bg-green-50/40 p-6 border border-green-100 space-y-4">
                 <div class="flex items-center justify-between">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700">Skill Compatibility Breakdown</h3>
-                    <span class="text-xs font-semibold text-emerald-800">{{ $match['matchedCount'] ?? 0 }} of {{ $match['totalRequired'] ?? 0 }} requirements met</span>
+                    <span class="text-xs font-semibold text-green-800">{{ $match['matchedCount'] ?? 0 }} of {{ $match['totalRequired'] ?? 0 }} requirements met</span>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
                     <!-- Matched Skills -->
                     <div class="space-y-2">
-                        <span class="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
-                            <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                        <span class="text-xs font-bold text-green-800 flex items-center gap-1.5">
+                            <svg class="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                             Your Matching Skills
                         </span>
                         <div class="flex flex-wrap gap-1.5">
                             @forelse($match['matchedSkills'] ?? [] as $skill)
-                                <span class="rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 px-3 py-1 text-xs font-bold">
+                                <span class="rounded-lg bg-green-100 text-green-900 border border-green-300 px-3 py-1 text-xs font-bold">
                                     {{ $skill }}
                                 </span>
                             @empty
@@ -112,7 +112,7 @@
                                     {{ $missing }}
                                 </span>
                             @empty
-                                <p class="text-xs text-emerald-700 font-extrabold">Congratulations! You meet all requirements for this role.</p>
+                                <p class="text-xs text-green-700 font-extrabold">Congratulations! You meet all requirements for this role.</p>
                             @endforelse
                         </div>
                     </div>
@@ -139,19 +139,19 @@
 
             <!-- Suggested Training Modules -->
             @if(!empty($recommendedTrainings) && count($recommendedTrainings) > 0)
-                <div class="rounded-2xl bg-emerald-50/70 p-5 border border-emerald-200 space-y-3">
+                <div class="rounded-2xl bg-green-50/70 p-5 border border-green-200 space-y-3">
                     <div class="flex items-center justify-between">
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-900">Recommended Skill Certifications</h4>
-                        <span class="text-[11px] text-emerald-700 font-semibold">Boost your match rating</span>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-green-900">Recommended Skill Certifications</h4>
+                        <span class="text-[11px] text-green-700 font-semibold">Boost your match rating</span>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         @foreach($recommendedTrainings as $recT)
-                            <div class="rounded-xl bg-white p-3.5 border border-emerald-200 shadow-sm flex items-center justify-between">
+                            <div class="rounded-xl bg-white p-3.5 border border-green-200 shadow-sm flex items-center justify-between">
                                 <div>
                                     <p class="text-xs font-bold text-slate-900">{{ $recT->title }}</p>
                                     <p class="text-[10px] text-slate-500">Free Online Assessment</p>
                                 </div>
-                                <a href="{{ route('jobseeker.training.show', $recT->training_id) }}" class="text-xs font-bold text-emerald-700 hover:underline">
+                                <a href="{{ route('jobseeker.training.show', $recT->training_id) }}" class="text-xs font-bold text-green-700 hover:underline">
                                     Start &rarr;
                                 </a>
                             </div>
@@ -165,7 +165,7 @@
                 <p class="text-xs text-slate-500">Applications are reviewed directly by verified Cebu employers.</p>
 
                 @if($hasApplied)
-                    <div class="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-8 py-3.5 text-sm font-bold text-white shadow-md">
+                    <div class="inline-flex items-center gap-2 rounded-xl bg-green-700 px-8 py-3.5 text-sm font-bold text-white shadow-md">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         You Have Already Applied
                     </div>
@@ -182,11 +182,11 @@
                         </div>
                         <p class="text-[11px] text-slate-500 max-w-sm ml-auto">
                             Employed candidates cannot apply for another job. You must request a resignation from your employer and receive approval before applying for other positions.
-                            <a href="{{ route('jobseeker.applications') }}" class="text-emerald-700 font-bold underline">Manage Resignation &rarr;</a>
+                            <a href="{{ route('jobseeker.applications') }}" class="text-green-700 font-bold underline">Manage Resignation &rarr;</a>
                         </p>
                     </div>
                 @else
-                    <button @click="applyModalOpen = true" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-10 py-3.5 text-sm font-black text-white shadow-xl shadow-emerald-600/30 transition-all hover:scale-105">
+                    <button @click="applyModalOpen = true" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 px-10 py-3.5 text-sm font-black text-white shadow-xl shadow-green-600/30 transition-all hover:scale-105">
                         Submit Application
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                     </button>
@@ -206,7 +206,7 @@
             
             <div class="flex items-start justify-between">
                 <div>
-                    <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider">Confirm Application</span>
+                    <span class="text-xs font-bold text-green-600 uppercase tracking-wider">Confirm Application</span>
                     <h3 class="text-xl font-extrabold text-slate-900 mt-0.5">{{ $job->title }}</h3>
                     <p class="text-xs text-slate-500">{{ $company }}</p>
                 </div>
@@ -216,7 +216,7 @@
             <form action="{{ route('jobseeker.jobs.apply', $job->job_id) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                 @csrf
                 
-                <div class="rounded-2xl bg-emerald-50/50 p-4 border border-emerald-100 space-y-2 text-xs">
+                <div class="rounded-2xl bg-green-50/50 p-4 border border-green-100 space-y-2 text-xs">
                     <p class="font-bold text-slate-800">Your Applicant Profile:</p>
                     <p class="text-slate-600"><span class="font-semibold">Name:</span> {{ Auth::user()->full_name }}</p>
                     <p class="text-slate-600"><span class="font-semibold">Email:</span> {{ Auth::user()->email }}</p>
@@ -226,10 +226,10 @@
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Attach Updated Resume (Optional)</label>
-                        <span class="text-[11px] text-emerald-700 font-bold">Profile auto-attached</span>
+                        <span class="text-[11px] text-green-700 font-bold">Profile auto-attached</span>
                     </div>
                     <input type="file" name="resume" accept=".pdf,.doc,.docx" 
-                           class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100">
+                           class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-green-50 file:text-green-800 hover:file:bg-green-100">
                     <p class="text-[11px] text-slate-400">Accepted formats: PDF, DOC, DOCX (Max 5MB). If omitted, the employer will evaluate your application using your verified TrabaGo profile details and skills matrix.</p>
                 </div>
 
@@ -237,7 +237,7 @@
                     <button type="button" @click="applyModalOpen = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
                         Cancel
                     </button>
-                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md">
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-black shadow-md">
                         Confirm Application
                     </button>
                 </div>
@@ -252,20 +252,20 @@
             
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div class="flex items-center gap-3">
-                    <div class="h-10 w-10 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-xl font-bold">
+                    <div class="h-10 w-10 rounded-2xl bg-green-100 text-green-800 flex items-center justify-center text-xl font-bold">
                         🛡️
                     </div>
                     <div>
-                        <span class="text-[10px] font-black text-emerald-800 uppercase tracking-widest block">DMDP Verified Enterprise</span>
+                        <span class="text-[10px] font-black text-green-800 uppercase tracking-widest block">DMDP Verified Enterprise</span>
                         <h3 class="text-lg font-black text-slate-900 leading-tight">{{ $company }}</h3>
                     </div>
                 </div>
                 <button @click="accredModalOpen = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
             </div>
 
-            <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2 text-xs">
-                <p class="font-bold text-emerald-950">Official Cebu City DMDP Accreditation Certificate</p>
-                <p class="text-emerald-800 leading-relaxed">
+            <div class="p-4 rounded-2xl bg-green-50/70 border border-green-200 space-y-2 text-xs">
+                <p class="font-bold text-green-950">Official Cebu City DMDP Accreditation Certificate</p>
+                <p class="text-green-800 leading-relaxed">
                     This employer has undergone rigorous 4-stage legal credential verification by the City Government of Cebu Department of Manpower Development and Placement.
                 </p>
             </div>
@@ -273,19 +273,19 @@
             <div class="space-y-2.5 text-xs">
                 <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
                     <span class="font-bold text-slate-700">📜 SEC / DTI Registration</span>
-                    <span class="font-bold text-emerald-700">✓ Verified Legal Entity</span>
+                    <span class="font-bold text-green-700">✓ Verified Legal Entity</span>
                 </div>
                 <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
                     <span class="font-bold text-slate-700">🏢 Mayor's Business Permit</span>
-                    <span class="font-bold text-emerald-700">✓ Cebu City BPLO Authorized</span>
+                    <span class="font-bold text-green-700">✓ Cebu City BPLO Authorized</span>
                 </div>
                 <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
                     <span class="font-bold text-slate-700">📑 BIR 2303 Tax Compliance</span>
-                    <span class="font-bold text-emerald-700">✓ Active Taxpayer (District 080)</span>
+                    <span class="font-bold text-green-700">✓ Active Taxpayer (District 080)</span>
                 </div>
                 <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
                     <span class="font-bold text-slate-700">🛡️ PESD Supervisor Audit</span>
-                    <span class="font-bold text-emerald-700">✓ Endorsed & Approved</span>
+                    <span class="font-bold text-green-700">✓ Endorsed & Approved</span>
                 </div>
             </div>
 

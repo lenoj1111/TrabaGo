@@ -12,16 +12,16 @@
     <div class="mx-auto max-w-4xl space-y-8">
         
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="flex items-center gap-5">
-                <div class="h-16 w-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white text-2xl font-black shrink-0 shadow-lg shadow-emerald-500/30">
+                <div class="h-16 w-16 rounded-2xl bg-gradient-to-tr from-green-600 to-green-400 flex items-center justify-center text-white text-2xl font-black shrink-0 shadow-lg shadow-green-500/30">
                     🏢
                 </div>
                 <div class="space-y-1">
                     <div class="flex items-center gap-2 flex-wrap">
                         <h1 class="text-2xl sm:text-3xl font-black">{{ $employer->company_name }}</h1>
                         @if($employer->is_accredited)
-                            <span class="rounded-full bg-emerald-400/20 border border-emerald-400/30 px-2.5 py-0.5 text-[11px] font-bold text-emerald-300">
+                            <span class="rounded-full bg-green-400/20 border border-green-400/30 px-2.5 py-0.5 text-[11px] font-bold text-green-300">
                                 ✓ Officially Accredited
                             </span>
                         @else
@@ -31,7 +31,7 @@
                         @endif
                     </div>
                     <p class="text-xs text-slate-300">{{ $user->email }} &bull; Employer ID #{{ $employer->employer_id }}</p>
-                    <p class="text-xs text-emerald-300 font-semibold">{{ $profile->position ?? 'Corporate Partner' }} {{ $profile->office ? '&bull; ' . $profile->office : '' }}</p>
+                    <p class="text-xs text-green-300 font-semibold">{{ $profile->position ?? 'Corporate Partner' }} {{ $profile->office ? '&bull; ' . $profile->office : '' }}</p>
                 </div>
             </div>
 
@@ -42,8 +42,8 @@
 
         <!-- Flash Messages -->
         @if(session('success'))
-            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-sm">
-                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+            <div class="p-4 rounded-2xl bg-green-50 border border-green-200 text-green-800 text-xs font-bold flex items-center gap-2 shadow-sm">
+                <span class="h-2 w-2 rounded-full bg-green-500"></span>
                 {{ session('success') }}
             </div>
         @endif
@@ -58,13 +58,13 @@
         <div class="flex items-center gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
             <button type="button" 
                     @click="activeTab = 'profile'"
-                    :class="activeTab === 'profile' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-slate-100'"
+                    :class="activeTab === 'profile' ? 'bg-green-600 text-white shadow-md shadow-green-600/20' : 'text-slate-600 hover:bg-slate-100'"
                     class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2">
                 <span>🏢</span> Company & Representative Profile
             </button>
             <button type="button" 
                     @click="activeTab = 'security'"
-                    :class="activeTab === 'security' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-slate-100'"
+                    :class="activeTab === 'security' ? 'bg-green-600 text-white shadow-md shadow-green-600/20' : 'text-slate-600 hover:bg-slate-100'"
                     class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2">
                 <span>🔐</span> Security & Reset Password
                 @if($errors->has('current_password') || $errors->has('password'))
@@ -81,7 +81,7 @@
                 <!-- Section 1: Enterprise Information -->
                 <div class="space-y-4">
                     <div class="border-b border-slate-100 pb-3 flex items-center gap-2">
-                        <span class="text-emerald-700 font-black">🏛️</span>
+                        <span class="text-green-700 font-black">🏛️</span>
                         <h2 class="text-sm font-black text-slate-900 uppercase tracking-wider">Enterprise & Establishment Information</h2>
                     </div>
 
@@ -89,7 +89,7 @@
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Registered Business / Company Name <span class="text-rose-500">*</span></label>
                             <input type="text" name="company_name" value="{{ old('company_name', $employer->company_name) }}" required
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
                             @error('company_name')
                                 <p class="text-[11px] text-rose-600 font-bold">{{ $message }}</p>
                             @enderror
@@ -97,7 +97,7 @@
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Industry / Line of Business</label>
-                            <select name="specialization" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            <select name="specialization" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
                                 <option value="">-- Select Industry Sector --</option>
                                 <option value="Information Technology & BPO" {{ old('specialization', $profile->specialization ?? '') === 'Information Technology & BPO' ? 'selected' : '' }}>Information Technology & BPO</option>
                                 <option value="Retail, Wholesale & Distribution" {{ old('specialization', $profile->specialization ?? '') === 'Retail, Wholesale & Distribution' ? 'selected' : '' }}>Retail, Wholesale & Distribution</option>
@@ -113,7 +113,7 @@
                         <div class="sm:col-span-2 space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Headquarters / Cebu Branch Address</label>
                             <input type="text" name="office" value="{{ old('office', $profile->office ?? '') }}" placeholder="e.g. 8th Floor, Cebu IT Park, Lahug, Cebu City"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
                         </div>
                     </div>
                 </div>
@@ -121,7 +121,7 @@
                 <!-- Section 2: Authorized Company Representative -->
                 <div class="space-y-4">
                     <div class="border-b border-slate-100 pb-3 flex items-center gap-2">
-                        <span class="text-emerald-700 font-black">👤</span>
+                        <span class="text-green-700 font-black">👤</span>
                         <h2 class="text-sm font-black text-slate-900 uppercase tracking-wider">Authorized Company Representative / HR Contact</h2>
                     </div>
 
@@ -129,25 +129,25 @@
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Representative Full Name</label>
                             <input type="text" name="full_name" value="{{ old('full_name', $profile->full_name ?? ($user->full_name ?? '')) }}" placeholder="e.g. Maria Santos"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Position / Designation</label>
                             <input type="text" name="position" value="{{ old('position', $profile->position ?? 'HR Manager') }}" placeholder="e.g. Human Resources Officer / Talent Lead"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Department / Division</label>
                             <input type="text" name="department" value="{{ old('department', $profile->department ?? 'Human Resources') }}" placeholder="e.g. Talent Acquisition & Placement"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Official Contact Number / Mobile</label>
                             <input type="text" name="phone" value="{{ old('phone', $profile->phone ?? '') }}" placeholder="e.g. (032) 234-5678 / 0912-345-6789"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
                         </div>
 
                         <div class="sm:col-span-2 space-y-1.5">
@@ -161,7 +161,7 @@
 
                 <div class="pt-6 border-t border-slate-100 flex items-center justify-between">
                     <p class="text-[11px] text-slate-400">Accredited employer profile data is shared with the Cebu City DMDP Placement Division.</p>
-                    <button type="submit" class="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-8 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                    <button type="submit" class="rounded-xl bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 px-8 py-3 text-xs font-black text-white shadow-lg shadow-green-600/30 transition-all hover:scale-105">
                         ✓ Save Company Profile
                     </button>
                 </div>
@@ -172,7 +172,7 @@
         <div x-show="activeTab === 'security'" x-cloak class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-8">
             <div class="border-b border-slate-100 pb-4">
                 <div class="flex items-center gap-2">
-                    <span class="text-emerald-700 font-black">🔐</span>
+                    <span class="text-green-700 font-black">🔐</span>
                     <h2 class="text-base font-black text-slate-900">Reset Account Password</h2>
                 </div>
                 <p class="text-xs text-slate-500 mt-1">
@@ -193,7 +193,7 @@
                                name="current_password" 
                                required 
                                placeholder="Enter your current account password"
-                               class="w-full rounded-xl border border-slate-200 pl-4 pr-10 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                               class="w-full rounded-xl border border-slate-200 pl-4 pr-10 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
                         <button type="button" @click="showCurrent = !showCurrent" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs">
                             <span x-text="showCurrent ? '🙈' : '👁️'"></span>
                         </button>
@@ -213,7 +213,7 @@
                                name="password" 
                                required 
                                placeholder="At least 8 characters"
-                               class="w-full rounded-xl border border-slate-200 pl-4 pr-10 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                               class="w-full rounded-xl border border-slate-200 pl-4 pr-10 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
                         <button type="button" @click="showNew = !showNew" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs">
                             <span x-text="showNew ? '🙈' : '👁️'"></span>
                         </button>
@@ -233,7 +233,7 @@
                                name="password_confirmation" 
                                required 
                                placeholder="Re-enter your new password"
-                               class="w-full rounded-xl border border-slate-200 pl-4 pr-10 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                               class="w-full rounded-xl border border-slate-200 pl-4 pr-10 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
                         <button type="button" @click="showConfirm = !showConfirm" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs">
                             <span x-text="showConfirm ? '🙈' : '👁️'"></span>
                         </button>
@@ -251,7 +251,7 @@
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
-                    <button type="submit" class="rounded-xl bg-slate-900 hover:bg-emerald-600 px-8 py-3 text-xs font-black text-white shadow-lg transition-all hover:scale-105">
+                    <button type="submit" class="rounded-xl bg-slate-900 hover:bg-green-600 px-8 py-3 text-xs font-black text-white shadow-lg transition-all hover:scale-105">
                         🔐 Update & Reset Password
                     </button>
                 </div>

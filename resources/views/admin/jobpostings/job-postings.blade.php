@@ -7,10 +7,10 @@
     <div class="mx-auto max-w-7xl space-y-8">
 
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
+                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
                     DMDP Job Postings Hub
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Job Postings Management</h1>
@@ -25,7 +25,7 @@
                     <span>📥 Export CSV</span>
                 </a>
                 <button type="button" @click="createModalOpen = true" 
-                        class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-5 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                        class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 px-5 py-3 text-xs font-black text-white shadow-lg shadow-green-600/30 transition-all hover:scale-105">
                     <span>+ Create Job Posting</span>
                 </button>
             </div>
@@ -58,10 +58,10 @@
             <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm flex items-center justify-between gap-4">
                 <div class="space-y-1">
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Active Listings</span>
-                    <p class="text-3xl font-black text-emerald-700">{{ $stats['approved'] ?? 0 }}</p>
-                    <span class="text-[11px] text-emerald-800">Live on portal</span>
+                    <p class="text-3xl font-black text-green-700">{{ $stats['approved'] ?? 0 }}</p>
+                    <span class="text-[11px] text-green-800">Live on portal</span>
                 </div>
-                <div class="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-center text-xl font-black">
+                <div class="h-12 w-12 rounded-2xl bg-green-50 text-green-800 border border-green-200 flex items-center justify-center text-xl font-black">
                     ✓
                 </div>
             </div>
@@ -85,12 +85,12 @@
                     <label class="text-xs font-bold text-slate-700">Search Title or Company</label>
                     <input type="text" name="search" value="{{ request('search') }}" 
                            placeholder="Job title, employer..."
-                           class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                           class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                 </div>
 
                 <div class="lg:col-span-2 space-y-1">
                     <label class="text-xs font-bold text-slate-700">Status</label>
-                    <select name="status" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                    <select name="status" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                         <option value="">All Statuses</option>
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
@@ -101,7 +101,7 @@
 
                 <div class="lg:col-span-2 space-y-1">
                     <label class="text-xs font-bold text-slate-700">Created By</label>
-                    <select name="created_by" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                    <select name="created_by" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                         <option value="">All Creators</option>
                         <option value="employer" {{ request('created_by') == 'employer' ? 'selected' : '' }}>Employer</option>
                         <option value="admin" {{ request('created_by') == 'admin' ? 'selected' : '' }}>Admin</option>
@@ -111,11 +111,11 @@
                 <div class="lg:col-span-2 space-y-1">
                     <label class="text-xs font-bold text-slate-700">Date From</label>
                     <input type="date" name="date_from" value="{{ request('date_from') }}" 
-                           class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                           class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                 </div>
 
                 <div class="lg:col-span-2 flex items-center gap-2">
-                    <button type="submit" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-xs font-bold transition-colors">
+                    <button type="submit" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-green-600 text-white text-xs font-bold transition-colors">
                         Filter
                     </button>
                     <a href="{{ route('admin.job-postings-list.index') }}" class="px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">
@@ -154,7 +154,7 @@
                                 $isExpired = $job->status === 'approved' && $job->valid_until < now()->toDateString();
                                 $statusBadge = match($job->status) {
                                     'pending' => 'bg-amber-50 text-amber-800 border-amber-200',
-                                    'approved' => $isExpired ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                                    'approved' => $isExpired ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-green-50 text-green-800 border-green-200',
                                     'rejected' => 'bg-rose-50 text-rose-800 border-rose-200',
                                     'closed' => 'bg-slate-100 text-slate-700 border-slate-200',
                                     default => 'bg-slate-100 text-slate-700 border-slate-200',
@@ -163,14 +163,14 @@
                             @endphp
                             <tr class="hover:bg-slate-50/80 transition-colors">
                                 <td class="py-4 px-6">
-                                    <a href="{{ route('admin.job-postings-list.show', $job->job_id) }}" class="font-black text-slate-900 text-sm hover:text-emerald-700 transition-colors">
+                                    <a href="{{ route('admin.job-postings-list.show', $job->job_id) }}" class="font-black text-slate-900 text-sm hover:text-green-700 transition-colors">
                                         {{ $job->title }}
                                     </a>
                                     <div class="text-[11px] text-slate-500">{{ $job->applications_count ?? 0 }} candidate applications</div>
                                 </td>
                                 <td class="py-4 px-6">
                                     @if($job->company_name === 'DMDP')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 font-bold text-[10px] border border-emerald-200">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-green-50 text-green-800 font-bold text-[10px] border border-green-200">
                                             🏛️ DMDP Direct
                                         </span>
                                     @else
@@ -178,7 +178,7 @@
                                         <div class="text-[10px] text-slate-400 mb-1">{{ $job->employer_email ?? '' }}</div>
                                         <div>
                                             @if($job->is_accredited || ($job->accreditation_status ?? '') === 'admin_approved')
-                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200">
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-green-50 text-green-800 text-[10px] font-bold border border-green-200">
                                                     🛡️ Accredited
                                                 </span>
                                             @elseif(in_array($job->accreditation_status ?? '', ['submitted_to_jpo', 'jpo_approved', 'supervisor_approved', 'manual_review', 'pending']))
@@ -227,7 +227,7 @@
 
                                         @if($job->status === 'pending')
                                             <button onclick="approveJob({{ $job->job_id }})" 
-                                                    class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm" title="Approve">
+                                                    class="px-2.5 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold text-xs transition-colors shadow-sm" title="Approve">
                                                 ✓
                                             </button>
                                             <button onclick="rejectJob({{ $job->job_id }})" 
@@ -282,10 +282,10 @@
              x-transition:leave="transition ease-in duration-200"
              x-transition:leave-start="opacity-100 scale-100"
              x-transition:leave-end="opacity-0 scale-95"
-             class="w-full max-w-3xl rounded-3xl bg-white shadow-2xl border border-emerald-100 overflow-hidden">
+             class="w-full max-w-3xl rounded-3xl bg-white shadow-2xl border border-green-100 overflow-hidden">
             
             <!-- Modal Header -->
-            <div class="bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 text-white flex items-center justify-between">
+            <div class="bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 text-white flex items-center justify-between">
                 <div>
                     <h3 class="text-lg font-black tracking-tight">Create New Job Posting</h3>
                     <p class="text-xs text-slate-300">Admin-created job postings are automatically approved & live.</p>
@@ -300,7 +300,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-700">Employer Entity</label>
-                        <select name="employer_id" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                        <select name="employer_id" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                             <option value="">DMDP Direct (Default)</option>
                             @foreach($employers ?? [] as $emp)
                                 <option value="{{ $emp->employer_id }}">{{ $emp->company_name }}</option>
@@ -312,42 +312,42 @@
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-700">Number of Vacancies <span class="text-rose-500">*</span></label>
                         <input type="number" name="vacancy_count" value="1" min="1" required 
-                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                     </div>
 
                     <div class="sm:col-span-2 space-y-1.5">
                         <label class="text-xs font-bold text-slate-700">Job Title <span class="text-rose-500">*</span></label>
                         <input type="text" name="title" required placeholder="e.g. Senior Software Engineer, Administrative Officer"
-                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                     </div>
 
                     <div class="sm:col-span-2 space-y-1.5">
                         <label class="text-xs font-bold text-slate-700">Job Description & Responsibilities <span class="text-rose-500">*</span></label>
                         <textarea name="description" rows="4" required placeholder="Detailed job summary..."
-                                  class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"></textarea>
+                                  class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"></textarea>
                     </div>
 
                     <div class="sm:col-span-2 space-y-1.5">
                         <label class="text-xs font-bold text-slate-700">Qualifications & Skills Required</label>
                         <textarea name="qualifications" rows="3" placeholder="Education, years of experience, skill certifications..."
-                                  class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"></textarea>
+                                  class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"></textarea>
                     </div>
 
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-700">Application Deadline (Valid Until) <span class="text-rose-500">*</span></label>
                         <input type="date" name="valid_until" required min="{{ date('Y-m-d', strtotime('+1 day')) }}"
-                               class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                               class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                     </div>
 
                     <div class="space-y-2 p-4 rounded-2xl bg-slate-50 border border-slate-200">
                         <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 select-none">
                             <input type="checkbox" name="accepts_disability" value="1" x-model="acceptsDisability"
-                                   class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                                   class="rounded border-slate-300 text-green-600 focus:ring-green-500 h-4 w-4">
                             <span>♿ Accepts PWD Applicants</span>
                         </label>
                         <div x-show="acceptsDisability" style="display: none;" class="pt-1">
                             <input type="text" name="disability_type" placeholder="Specify disability types (e.g. Visual, Hearing, Orthopedic)"
-                                   class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                                   class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                         </div>
                     </div>
                 </div>
@@ -359,7 +359,7 @@
                         Cancel
                     </button>
                     <button type="submit" 
-                            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-xs shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-black text-xs shadow-lg shadow-green-600/30 transition-all hover:scale-105">
                         ✓ Publish & Approve
                     </button>
                 </div>

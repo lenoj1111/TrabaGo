@@ -117,10 +117,10 @@
     <div class="mx-auto max-w-7xl space-y-8">
 
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20">
             <div class="space-y-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
+                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
                     DMDP 3-Pillar Authorization Queue
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Manage Approvals Center</h1>
@@ -133,41 +133,41 @@
         <!-- Pill Tab Switcher -->
         <div class="flex flex-wrap gap-2 sm:gap-3 p-1.5 rounded-2xl bg-white border border-slate-200 shadow-sm max-w-fit">
             <button @click="tab = 'jobs'" 
-                    :class="tab === 'jobs' ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
+                    :class="tab === 'jobs' ? 'bg-green-50 text-green-800 ring-1 ring-green-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
                     class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs transition-all">
                 <span>💼 Job Postings</span>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-black" 
-                      :class="tab === 'jobs' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'">
+                      :class="tab === 'jobs' ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-700'">
                     {{ $pendingJobs->count() }}
                 </span>
             </button>
 
             <button @click="tab = 'accreditations'" 
-                    :class="tab === 'accreditations' ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
+                    :class="tab === 'accreditations' ? 'bg-green-50 text-green-800 ring-1 ring-green-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
                     class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs transition-all">
                 <span>🏛️ Accreditations</span>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-black" 
-                      :class="tab === 'accreditations' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'">
+                      :class="tab === 'accreditations' ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-700'">
                     {{ $pendingAccreditations->count() }}
                 </span>
             </button>
 
             <button @click="tab = 'reports'" 
-                    :class="tab === 'reports' ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
+                    :class="tab === 'reports' ? 'bg-green-50 text-green-800 ring-1 ring-green-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
                     class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs transition-all">
                 <span>📊 Placement Reports</span>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-black" 
-                      :class="tab === 'reports' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'">
+                      :class="tab === 'reports' ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-700'">
                     {{ $pendingPlacementReports->count() }}
                 </span>
             </button>
 
             <button @click="tab = 'trainers'" 
-                    :class="tab === 'trainers' ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
+                    :class="tab === 'trainers' ? 'bg-green-50 text-green-800 ring-1 ring-green-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
                     class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs transition-all">
                 <span>👥 Collaborator Trainers</span>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-black" 
-                      :class="tab === 'trainers' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'">
+                      :class="tab === 'trainers' ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-700'">
                     {{ $pendingTrainers->count() }}
                 </span>
             </button>
@@ -212,7 +212,7 @@
                                     </td>
                                     <td class="py-4 px-6 text-center">
                                         @if(($job->employer_accreditation_state ?? '') === 'accredited')
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200" title="Accredited with DMDP">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-green-50 text-green-800 text-[10px] font-bold border border-green-200" title="Accredited with DMDP">
                                                 🛡️ Accredited
                                             </span>
                                         @elseif(($job->employer_accreditation_state ?? '') === 'pending')
@@ -232,7 +232,7 @@
                                     </td>
                                     <td class="py-4 px-6">
                                         @if($job->accepts_disability)
-                                            <span class="inline-flex items-center gap-1 rounded-xl bg-emerald-50 text-emerald-800 px-2.5 py-1 font-bold border border-emerald-200">
+                                            <span class="inline-flex items-center gap-1 rounded-xl bg-green-50 text-green-800 px-2.5 py-1 font-bold border border-green-200">
                                                 ♿ {{ $job->disability_type ?: 'PWD Inclusive' }}
                                             </span>
                                         @else
@@ -246,7 +246,7 @@
                                         <div class="inline-flex items-center gap-2">
                                             <form action="{{ route('admin.approvals.job-postings.approve', $job->job_id) }}" method="POST">
                                                 @csrf
-                                                <button type="submit" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm">
+                                                <button type="submit" class="px-3.5 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs transition-colors shadow-sm">
                                                     ✓ Approve
                                                 </button>
                                             </form>
@@ -318,10 +318,10 @@
                                                     @foreach($docs as $k => $d)
                                                         <button type="button" 
                                                                 @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs))'
-                                                                class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-emerald-100 hover:text-emerald-900 text-slate-700 text-[10px] font-bold border border-slate-200 transition-colors cursor-pointer"
+                                                                class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-green-100 hover:text-green-900 text-slate-700 text-[10px] font-bold border border-slate-200 transition-colors cursor-pointer"
                                                                 title="Click to inspect this document">
                                                             <span>📄 {{ ucfirst(str_replace('_', ' ', $k)) }}</span>
-                                                            <span class="text-[9px] text-emerald-600">↗</span>
+                                                            <span class="text-[9px] text-green-600">↗</span>
                                                         </button>
                                                     @endforeach
                                                 @else
@@ -332,7 +332,7 @@
                                     </td>
                                     <td class="py-4 px-6">
                                         @if($isDocsComplete)
-                                            <span class="inline-flex items-center gap-1 rounded-xl bg-emerald-50 text-emerald-800 px-2.5 py-1 text-[11px] font-extrabold border border-emerald-200">
+                                            <span class="inline-flex items-center gap-1 rounded-xl bg-green-50 text-green-800 px-2.5 py-1 text-[11px] font-extrabold border border-green-200">
                                                 ✓ Complete
                                             </span>
                                         @elseif($docStatus === 'incomplete')
@@ -354,7 +354,7 @@
                                     </td>
                                     <td class="py-4 px-6">
                                         @if($acc->status === 'supervisor_approved')
-                                            <span class="inline-flex items-center gap-1 rounded-xl bg-emerald-50 text-emerald-800 px-2.5 py-1 font-bold border border-emerald-200">
+                                            <span class="inline-flex items-center gap-1 rounded-xl bg-green-50 text-green-800 px-2.5 py-1 font-bold border border-green-200">
                                                 🏛️ PESD Endorsed
                                             </span>
                                         @elseif($acc->status === 'jpo_approved')
@@ -390,7 +390,7 @@
                                             @if($isDocsComplete && in_array($acc->status, ['jpo_approved', 'supervisor_approved']))
                                                 <form action="{{ route('admin.approvals.accreditations.approve', $acc->accreditation_id) }}" method="POST">
                                                     @csrf
-                                                    <button type="submit" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm cursor-pointer">
+                                                    <button type="submit" class="px-3.5 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs transition-colors shadow-sm cursor-pointer">
                                                         🛡️ Officially Accredit
                                                     </button>
                                                 </form>
@@ -437,7 +437,7 @@
                         <p class="text-xs text-slate-500">Authorize official placement figures and archive into City PESO archives</p>
                     </div>
                     <div class="flex items-center gap-4">
-                        <a href="{{ route('admin.placement-reports.index') }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-xl transition-colors">
+                        <a href="{{ route('admin.placement-reports.index') }}" class="text-xs font-bold text-green-700 hover:text-green-800 bg-green-50 border border-green-200 px-3.5 py-1.5 rounded-xl transition-colors">
                             Browse All Placement Reports Directory &rarr;
                         </a>
                         <span class="text-xs font-bold text-slate-400">{{ $pendingPlacementReports->count() }} Pending</span>
@@ -488,7 +488,7 @@
                                         {{ date('F Y', strtotime($rep->report_month)) }}
                                     </td>
                                     <td class="py-4 px-6 text-center">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 font-black border border-emerald-200">
+                                        <span class="inline-flex items-center px-3 py-1 rounded-xl bg-green-50 text-green-800 font-black border border-green-200">
                                             {{ $rData['total_hired'] ?? 0 }} hired
                                         </span>
                                     </td>
@@ -499,7 +499,7 @@
                                         <div class="inline-flex items-center gap-2">
                                             <button type="button" 
                                                     @click='viewReport({!! $repJson !!})'
-                                                    class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-bold text-xs border border-slate-200 transition-colors flex items-center gap-1">
+                                                    class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-green-50 text-slate-700 hover:text-green-800 font-bold text-xs border border-slate-200 transition-colors flex items-center gap-1">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                                 View
                                             </button>
@@ -513,7 +513,7 @@
 
                                             <form action="{{ route('admin.approvals.placement-reports.approve', $rep->report_id) }}" method="POST">
                                                 @csrf
-                                                <button type="submit" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm">
+                                                <button type="submit" class="px-3.5 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs transition-colors shadow-sm">
                                                     ✓ Authorize
                                                 </button>
                                             </form>
@@ -547,7 +547,7 @@
                         <div class="space-y-6">
                             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                                 <div>
-                                    <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Placement Report Inspector</span>
+                                    <span class="text-xs font-bold text-green-700 uppercase tracking-wider">Placement Report Inspector</span>
                                     <h3 class="text-xl font-black text-slate-900 mt-0.5">
                                         <span x-text="selectedReport.company_name"></span> &bull; <span x-text="selectedReport.report_month"></span>
                                     </h3>
@@ -559,7 +559,7 @@
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs">
                                 <div>
                                     <span class="text-slate-400 font-bold uppercase text-[10px]">Total Placements</span>
-                                    <p class="text-lg font-black text-emerald-800"><span x-text="selectedReport.total_hired"></span> Candidates</p>
+                                    <p class="text-lg font-black text-green-800"><span x-text="selectedReport.total_hired"></span> Candidates</p>
                                 </div>
                                 <div>
                                     <span class="text-slate-400 font-bold uppercase text-[10px]">Status</span>
@@ -602,7 +602,7 @@
                                                     <td class="py-2.5 px-3 text-slate-600" x-text="item.hired_date"></td>
                                                     <td class="py-2.5 px-3 text-right">
                                                         <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold"
-                                                              :class="item.referred_by_jpo === 'Yes' || item.referred_by_jpo === true ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'"
+                                                              :class="item.referred_by_jpo === 'Yes' || item.referred_by_jpo === true ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-700'"
                                                               x-text="item.referred_by_jpo === 'Yes' || item.referred_by_jpo === true ? 'JPO Referred' : 'Direct'">
                                                         </span>
                                                     </td>
@@ -640,7 +640,7 @@
                                 <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
                                     <form :action="selectedReport.approve_url" method="POST">
                                         @csrf
-                                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md">
+                                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-black text-xs shadow-md">
                                             ✓ Authorize & Archive
                                         </button>
                                     </form>
@@ -709,7 +709,7 @@
                                         <div class="flex items-center justify-end gap-2">
                                             <form action="{{ route('admin.approvals.trainers.approve', $trainer->user_id) }}" method="POST" class="inline">
                                                 @csrf
-                                                <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-sm">
+                                                <button type="submit" class="px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-extrabold text-xs shadow-sm">
                                                     ✓ Approve Trainer
                                                 </button>
                                             </form>

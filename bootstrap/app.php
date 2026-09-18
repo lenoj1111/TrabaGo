@@ -9,8 +9,6 @@ use App\Http\Middleware\EmployerMiddleware;
 use App\Http\Middleware\JobseekerMiddleware;
 use App\Http\Middleware\JpoMiddleware;
 use App\Http\Middleware\TrainerMiddleware;
-use App\Http\Middleware\LmoMiddleware;
-use App\Http\Middleware\SupervisorMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -26,9 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'employer' => EmployerMiddleware::class,
             'jobseeker' => JobseekerMiddleware::class,
             'jpo' => JpoMiddleware::class,
-            'supervisor' => SupervisorMiddleware::class,
             'trainer' => TrainerMiddleware::class,
-            'lmo' => LmoMiddleware::class,
         ]);
         
         // Add global middleware (runs on every request)

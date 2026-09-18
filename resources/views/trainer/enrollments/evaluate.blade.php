@@ -7,10 +7,10 @@
     <div class="mx-auto max-w-4xl space-y-8">
         
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
+                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
                     Figure 12: Evaluate Training Course Answer
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Assess Learner Submission</h1>
@@ -32,7 +32,7 @@
 
             <div class="space-y-1">
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Course Track</span>
-                <h3 class="text-xl font-black text-emerald-800">{{ $enrollment->course_title }}</h3>
+                <h3 class="text-xl font-black text-green-800">{{ $enrollment->course_title }}</h3>
                 <p class="text-xs text-slate-500 line-clamp-1">{{ $enrollment->course_desc }}</p>
             </div>
         </div>
@@ -51,7 +51,7 @@
                             <div class="flex items-center justify-between text-xs font-bold">
                                 <span class="text-slate-900">Question {{ is_numeric($idx) ? ($idx + 1) : $idx }}</span>
                                 @if(is_array($ans) && isset($ans['is_correct']))
-                                    <span class="{{ $ans['is_correct'] ? 'text-emerald-700' : 'text-rose-600' }}">
+                                    <span class="{{ $ans['is_correct'] ? 'text-green-700' : 'text-rose-600' }}">
                                         {{ $ans['is_correct'] ? '✓ Auto-Validated Correct' : '✕ Incorrect' }}
                                     </span>
                                 @endif
@@ -60,7 +60,7 @@
                             @if(is_array($ans))
                                 <p class="text-xs text-slate-700 font-semibold">{{ $ans['question'] ?? 'Answer detail:' }}</p>
                                 <p class="text-xs text-slate-900 bg-white p-3 rounded-xl border border-slate-200">
-                                    <strong class="text-emerald-800">Student Response:</strong> {{ $ans['selected_answer'] ?? ($ans['answer'] ?? json_encode($ans)) }}
+                                    <strong class="text-green-800">Student Response:</strong> {{ $ans['selected_answer'] ?? ($ans['answer'] ?? json_encode($ans)) }}
                                 </p>
                             @else
                                 <p class="text-xs text-slate-900 bg-white p-3 rounded-xl border border-slate-200">
@@ -85,13 +85,13 @@
                     <div class="space-y-1">
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Final Assessment Score (%) *</label>
                         <input type="number" name="score" min="0" max="100" step="0.1" value="{{ $enrollment->score ?? 85 }}" required
-                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
                         <p class="text-[11px] text-slate-400">Passing threshold is 80.0% or higher.</p>
                     </div>
 
                     <div class="space-y-1">
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Qualification Outcome</label>
-                        <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-950 flex items-center gap-2">
+                        <div class="p-3.5 rounded-2xl bg-green-50 border border-green-200 text-xs font-bold text-green-950 flex items-center gap-2">
                             <span>🎓 Scores &ge; 80% mark as Completed & qualify for Certificate.</span>
                         </div>
                     </div>
@@ -100,14 +100,14 @@
                 <div class="space-y-1">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Trainer Evaluation Remarks & Practical Feedback</label>
                     <textarea name="trainer_feedback" rows="3" placeholder="Provide feedback on learner strengths, practical capabilities, and areas for professional growth..."
-                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">{{ $enrollment->trainer_feedback ?? '' }}</textarea>
+                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">{{ $enrollment->trainer_feedback ?? '' }}</textarea>
                 </div>
 
                 <div class="flex items-center justify-end gap-3">
                     <a href="{{ route('trainer.enrollments.index') }}" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
                         Cancel
                     </a>
-                    <button type="submit" class="px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                    <button type="submit" class="px-8 py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-black shadow-lg shadow-green-600/30 transition-all hover:scale-105">
                         Save Evaluation & Grade Learner &rarr;
                     </button>
                 </div>

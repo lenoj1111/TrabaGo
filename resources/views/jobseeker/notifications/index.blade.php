@@ -9,8 +9,8 @@
         <!-- Header -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
-                    <span class="h-2 w-2 rounded-full bg-emerald-600"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-800 border border-green-200">
+                    <span class="h-2 w-2 rounded-full bg-green-600"></span>
                     Activity & Updates
                 </span>
                 <h1 class="text-3xl font-black text-slate-900 tracking-tight mt-1">Notifications Center</h1>
@@ -21,7 +21,7 @@
                 <form action="{{ route('jobseeker.notifications.read_all') }}" method="POST">
                     @csrf
                     <button type="submit" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-700 shadow-xs transition-colors">
-                        <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <svg class="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         Mark All as Read
                     </button>
                 </form>
@@ -35,15 +35,15 @@
                 All Alerts
             </a>
             <a href="{{ route('jobseeker.notifications', ['category' => 'application']) }}" 
-               class="px-4 py-2 rounded-xl text-xs font-bold transition-all {{ $filter === 'application' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' }}">
+               class="px-4 py-2 rounded-xl text-xs font-bold transition-all {{ $filter === 'application' ? 'bg-green-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' }}">
                 Applications
             </a>
             <a href="{{ route('jobseeker.notifications', ['category' => 'training']) }}" 
-               class="px-4 py-2 rounded-xl text-xs font-bold transition-all {{ $filter === 'training' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' }}">
+               class="px-4 py-2 rounded-xl text-xs font-bold transition-all {{ $filter === 'training' ? 'bg-green-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' }}">
                 Training & Certs
             </a>
             <a href="{{ route('jobseeker.notifications', ['category' => 'interview']) }}" 
-               class="px-4 py-2 rounded-xl text-xs font-bold transition-all {{ $filter === 'interview' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' }}">
+               class="px-4 py-2 rounded-xl text-xs font-bold transition-all {{ $filter === 'interview' ? 'bg-green-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' }}">
                 Interviews
             </a>
         </div>
@@ -51,9 +51,9 @@
         <!-- Notifications Stream -->
         <div class="space-y-3">
             @forelse($notifications as $notif)
-                <div class="rounded-2xl border p-5 shadow-sm transition-all flex items-start justify-between gap-4 {{ $notif->is_read ? 'bg-white border-slate-200' : 'bg-emerald-50/40 border-emerald-300 ring-1 ring-emerald-200' }}">
+                <div class="rounded-2xl border p-5 shadow-sm transition-all flex items-start justify-between gap-4 {{ $notif->is_read ? 'bg-white border-slate-200' : 'bg-green-50/40 border-green-300 ring-1 ring-green-200' }}">
                     <div class="flex items-start gap-4">
-                        <div class="h-10 w-10 rounded-xl flex items-center justify-center text-lg shrink-0 {{ $notif->is_read ? 'bg-slate-100 text-slate-600' : 'bg-emerald-100 text-emerald-800' }}">
+                        <div class="h-10 w-10 rounded-xl flex items-center justify-center text-lg shrink-0 {{ $notif->is_read ? 'bg-slate-100 text-slate-600' : 'bg-green-100 text-green-800' }}">
                             @if(str_contains(strtolower($notif->title), 'interview'))
                                 📅
                             @elseif(str_contains(strtolower($notif->title), 'training') || str_contains(strtolower($notif->title), 'skill'))
@@ -69,7 +69,7 @@
                             <div class="flex items-center gap-2">
                                 <h3 class="text-sm font-bold text-slate-900">{{ $notif->title }}</h3>
                                 @if(!$notif->is_read)
-                                    <span class="h-2 w-2 rounded-full bg-emerald-600"></span>
+                                    <span class="h-2 w-2 rounded-full bg-green-600"></span>
                                 @endif
                             </div>
                             <p class="text-xs text-slate-600 leading-relaxed">{{ $notif->message }}</p>
@@ -82,7 +82,7 @@
                     @if(!$notif->is_read)
                         <form action="{{ route('jobseeker.notifications.read', $notif->notification_id) }}" method="POST" class="shrink-0">
                             @csrf
-                            <button type="submit" class="p-2 rounded-xl text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors" title="Mark as read">
+                            <button type="submit" class="p-2 rounded-xl text-slate-400 hover:text-green-700 hover:bg-green-50 transition-colors" title="Mark as read">
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             </button>
                         </form>

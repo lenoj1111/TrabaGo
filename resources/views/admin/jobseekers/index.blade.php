@@ -7,10 +7,10 @@
     <div class="mx-auto max-w-7xl space-y-8">
 
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
+                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
                     DMDP Jobseeker Workflow Supervision & Intelligence
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Jobseeker Status Directory</h1>
@@ -54,9 +54,9 @@
             </div>
 
             <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Hired Placements</span>
-                <p class="text-2xl font-black text-emerald-800 mt-1">{{ $employedJobseekers }}</p>
-                <span class="text-[10px] text-emerald-700">Employed candidates</span>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-green-700">Hired Placements</span>
+                <p class="text-2xl font-black text-green-800 mt-1">{{ $employedJobseekers }}</p>
+                <span class="text-[10px] text-green-700">Employed candidates</span>
             </div>
         </div>
 
@@ -88,13 +88,13 @@
                     <label class="text-xs font-bold text-slate-700">Search Jobseeker</label>
                     <input type="text" name="search" value="{{ request('search') }}" 
                            placeholder="Search by name, email, or keywords..."
-                           class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                           class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                 </div>
 
                 <div class="lg:col-span-3 space-y-1">
                     <label class="text-xs font-bold text-slate-700">Employment Status</label>
                     <select name="employment_status" onchange="this.form.submit()"
-                            class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                            class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                         <option value="">All Statuses</option>
                         <option value="Looking for job" {{ request('employment_status') == 'Looking for job' ? 'selected' : '' }}>Actively Seeking</option>
                         <option value="Employed" {{ request('employment_status') == 'Employed' ? 'selected' : '' }}>Employed</option>
@@ -105,7 +105,7 @@
                 <div class="lg:col-span-2 flex items-center gap-2 pb-2">
                     <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 select-none">
                         <input type="checkbox" name="pwd_only" value="1" {{ request('pwd_only') == 1 ? 'checked' : '' }} onchange="this.form.submit()"
-                                class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                                class="rounded border-slate-300 text-green-600 focus:ring-green-500 h-4 w-4">
                         <span>♿ PWD Only</span>
                     </label>
                 </div>
@@ -146,7 +146,7 @@
                             <tr class="hover:bg-slate-50/80 transition-colors">
                                 <td class="py-4 px-6">
                                     <div class="flex items-center gap-3">
-                                        <div class="h-9 w-9 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center justify-center ring-2 ring-emerald-500/30 shrink-0">
+                                        <div class="h-9 w-9 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center justify-center ring-2 ring-green-500/30 shrink-0">
                                             {{ strtoupper(substr($js->first_name ?? 'J', 0, 1)) }}
                                         </div>
                                         <div>
@@ -183,7 +183,7 @@
                                         </span>
                                         @if(($js->certs_count ?? 0) > 0)
                                             <div>
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-green-50 text-green-800 text-[10px] font-bold border border-green-200">
                                                     🏅 {{ $js->certs_count }} Certified
                                                 </span>
                                             </div>
@@ -202,7 +202,7 @@
                                 </td>
                                 <td class="py-4 px-6 text-right">
                                     @if(($js->hired_count ?? 0) > 0)
-                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-sm">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-green-600 text-white font-bold text-xs shadow-sm">
                                             ✓ Hired
                                         </span>
                                     @else

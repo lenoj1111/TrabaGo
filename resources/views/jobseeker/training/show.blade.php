@@ -8,7 +8,7 @@
         
         <!-- Navigation -->
         <div class="flex items-center justify-between">
-            <a href="{{ route('jobseeker.training') }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-emerald-700">
+            <a href="{{ route('jobseeker.training') }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-green-700">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 Back to All Courses
             </a>
@@ -20,15 +20,15 @@
             $isEnrolled = $enrollment && in_array($enrollment->status, ['enrolled', 'in_progress', 'completed']);
         @endphp
 
-        <!-- Course Header Card in Emerald Theme -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <!-- Course Header Card in green Theme -->
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-2 max-w-2xl">
                 <div class="flex items-center gap-2 flex-wrap">
-                    <span class="rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
+                    <span class="rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
                         {{ ucfirst($training->training_type ?: 'Online') }}
                     </span>
                     @if($isCompleted)
-                        <span class="rounded-full bg-emerald-500/30 px-3 py-1 text-xs font-bold text-emerald-200 border border-emerald-400/40 flex items-center gap-1">
+                        <span class="rounded-full bg-green-500/30 px-3 py-1 text-xs font-bold text-green-200 border border-green-400/40 flex items-center gap-1">
                             ✓ Certificate Earned
                         </span>
                     @elseif($isEnrolled)
@@ -57,14 +57,14 @@
                     <form action="{{ route('jobseeker.training.enroll', $training->training_id) }}" method="POST">
                         @csrf
                         <button type="submit" 
-                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-7 py-3.5 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 cursor-pointer">
+                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 px-7 py-3.5 text-xs font-black text-white shadow-lg shadow-green-600/30 transition-all hover:scale-105 cursor-pointer">
                             <span>+</span> Enroll in Course
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                         </button>
                     </form>
                 @else
                     <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}" 
-                       class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-6 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                       class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 px-6 py-3 text-xs font-black text-white shadow-lg shadow-green-600/30 transition-all hover:scale-105">
                         {{ $isCompleted ? 'Retake Quiz' : 'Take Skill Quiz' }}
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                     </a>
@@ -73,16 +73,16 @@
         </div>
 
         @if(!$isEnrolled)
-            <div class="rounded-2xl bg-emerald-50 border border-emerald-200 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="rounded-2xl bg-green-50 border border-green-200 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div class="space-y-0.5">
-                    <h3 class="text-sm font-black text-emerald-950 flex items-center gap-2">
+                    <h3 class="text-sm font-black text-green-950 flex items-center gap-2">
                         <span>🎓</span> Not yet enrolled in this course
                     </h3>
-                    <p class="text-xs text-emerald-800">Enroll now to register your participation with DMDP, study the curriculum modules, and take the skill competency quiz.</p>
+                    <p class="text-xs text-green-800">Enroll now to register your participation with DMDP, study the curriculum modules, and take the skill competency quiz.</p>
                 </div>
                 <form action="{{ route('jobseeker.training.enroll', $training->training_id) }}" method="POST" class="shrink-0">
                     @csrf
-                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md shadow-emerald-600/20 transition-all cursor-pointer">
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-black shadow-md shadow-green-600/20 transition-all cursor-pointer">
                         Enroll Now &rarr;
                     </button>
                 </form>
@@ -100,10 +100,10 @@
                     @forelse($training->topics as $index => $topic)
                         <button @click="activeTopic = {{ $index }}" 
                                 class="w-full text-left p-3.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-between"
-                                :class="activeTopic === {{ $index }} ? 'bg-emerald-50 text-emerald-900 border border-emerald-300 shadow-sm' : 'text-slate-600 hover:bg-slate-50'">
+                                :class="activeTopic === {{ $index }} ? 'bg-green-50 text-green-900 border border-green-300 shadow-sm' : 'text-slate-600 hover:bg-slate-50'">
                             <span class="flex items-center gap-2.5 truncate">
                                 <span class="h-6 w-6 rounded-lg bg-slate-100 flex items-center justify-center text-[11px] font-bold text-slate-700 shrink-0"
-                                      :class="activeTopic === {{ $index }} ? 'bg-emerald-600 text-white' : ''">
+                                      :class="activeTopic === {{ $index }} ? 'bg-green-600 text-white' : ''">
                                     {{ $index + 1 }}
                                 </span>
                                 <span class="truncate">{{ $topic->title }}</span>
@@ -117,7 +117,7 @@
 
                 <div class="pt-4 border-t border-slate-100">
                     <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}" 
-                       class="w-full inline-flex items-center justify-center rounded-xl bg-slate-900 text-white px-4 py-3 text-xs font-bold hover:bg-emerald-600 transition-colors">
+                       class="w-full inline-flex items-center justify-center rounded-xl bg-slate-900 text-white px-4 py-3 text-xs font-bold hover:bg-green-600 transition-colors">
                         Ready for Assessment? Take Quiz
                     </a>
                 </div>
@@ -129,7 +129,7 @@
                     @foreach($training->topics as $index => $topic)
                         <div x-show="activeTopic === {{ $index }}" class="space-y-6">
                             <div class="pb-4 border-b border-slate-100">
-                                <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Module {{ $index + 1 }} of {{ $training->topics->count() }}</span>
+                                <span class="text-xs font-bold text-green-700 uppercase tracking-wider">Module {{ $index + 1 }} of {{ $training->topics->count() }}</span>
                                 <h2 class="text-2xl font-black text-slate-900 mt-1">{{ $topic->title }}</h2>
                             </div>
 
@@ -159,25 +159,25 @@
                                 @else
                                     <div class="rounded-2xl p-6 bg-slate-900 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-md">
                                         <div class="flex items-center gap-3.5">
-                                            <div class="h-12 w-12 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-xl shrink-0">
+                                            <div class="h-12 w-12 rounded-xl bg-green-500/20 border border-green-500/30 flex items-center justify-center text-xl shrink-0">
                                                 🎬
                                             </div>
                                             <div>
-                                                <p class="text-xs font-bold text-emerald-300">Course Interactive Video Lecture</p>
+                                                <p class="text-xs font-bold text-green-300">Course Interactive Video Lecture</p>
                                                 <p class="text-[11px] text-slate-300 truncate max-w-sm mt-0.5">{{ $vUrl }}</p>
                                             </div>
                                         </div>
-                                        <a href="{{ $vUrl }}" target="_blank" rel="noopener noreferrer" class="rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 text-xs font-bold shrink-0 transition-all shadow-md">
+                                        <a href="{{ $vUrl }}" target="_blank" rel="noopener noreferrer" class="rounded-xl bg-green-600 hover:bg-green-500 text-white px-5 py-2.5 text-xs font-bold shrink-0 transition-all shadow-md">
                                             Open Lecture Video &rarr;
                                         </a>
                                     </div>
                                 @endif
                             @endif
 
-                            <!-- Key Lesson Takeaways in Emerald Theme -->
-                            <div class="rounded-2xl bg-emerald-50/50 p-6 border border-emerald-100 space-y-3">
-                                <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-2">
-                                    <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <!-- Key Lesson Takeaways in green Theme -->
+                            <div class="rounded-2xl bg-green-50/50 p-6 border border-green-100 space-y-3">
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-green-900 flex items-center gap-2">
+                                    <svg class="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                     Module Learning Objectives
                                 </h4>
                                 <ul class="space-y-2 text-xs text-slate-700 list-disc list-inside">
@@ -202,7 +202,7 @@
                                         Next Module &rarr;
                                     </button>
                                 @else
-                                    <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}" class="rounded-xl bg-emerald-600 text-white px-6 py-2.5 text-xs font-black hover:bg-emerald-500 shadow-md">
+                                    <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}" class="rounded-xl bg-green-600 text-white px-6 py-2.5 text-xs font-black hover:bg-green-500 shadow-md">
                                         Finish & Take Skill Quiz &rarr;
                                     </a>
                                 @endif
@@ -213,7 +213,7 @@
                     <div class="space-y-4">
                         <h2 class="text-xl font-bold text-slate-900">Course Overview & Study Guide</h2>
                         <p class="text-sm text-slate-700 leading-relaxed">{{ $training->description }}</p>
-                        <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}" class="inline-flex rounded-xl bg-emerald-600 px-6 py-3 text-xs font-black text-white">
+                        <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}" class="inline-flex rounded-xl bg-green-600 px-6 py-3 text-xs font-black text-white">
                             Proceed to Certification Assessment
                         </a>
                     </div>

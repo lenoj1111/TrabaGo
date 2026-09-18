@@ -7,10 +7,10 @@
     <div class="mx-auto max-w-7xl space-y-8">
         
         <!-- Hero Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="max-w-2xl space-y-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
+                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
                     Learner Progress Dashboard
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">My Training Enrollments</h1>
@@ -30,20 +30,20 @@
                     <p class="text-2xl font-black text-amber-400 mt-0.5">{{ $stats['in_progress'] }}</p>
                 </div>
                 <div>
-                    <span class="text-[10px] font-bold text-emerald-300 uppercase tracking-wider block">Certified</span>
-                    <p class="text-2xl font-black text-emerald-400 mt-0.5">{{ $stats['certificates'] }}</p>
+                    <span class="text-[10px] font-bold text-green-300 uppercase tracking-wider block">Certified</span>
+                    <p class="text-2xl font-black text-green-400 mt-0.5">{{ $stats['certificates'] }}</p>
                 </div>
             </div>
         </div>
 
         @if(session('success'))
-            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+            <div class="p-4 rounded-2xl bg-green-50 border border-green-200 text-green-800 text-xs font-bold flex items-center gap-2">
                 <span>✓</span> {{ session('success') }}
             </div>
         @endif
 
         @if(session('info'))
-            <div class="p-4 rounded-2xl bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold flex items-center gap-2">
+            <div class="p-4 rounded-2xl bg-green-50 border border-green-200 text-green-800 text-xs font-bold flex items-center gap-2">
                 <span>ℹ️</span> {{ session('info') }}
             </div>
         @endif
@@ -54,7 +54,7 @@
                 <a href="{{ route('jobseeker.training.enrollments') }}" 
                    class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white shadow-sm flex items-center gap-2">
                     <span>📋 My Training Enrollments</span>
-                    <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-600 text-white font-black">
+                    <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-green-600 text-white font-black">
                         {{ $stats['total'] }}
                     </span>
                 </a>
@@ -71,7 +71,7 @@
             </div>
 
             <a href="{{ route('jobseeker.training.skills') }}" 
-               class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:underline">
+               class="inline-flex items-center gap-1.5 text-xs font-bold text-green-700 hover:underline">
                 <span>+ Explore More Skills</span> &rarr;
             </a>
         </div>
@@ -85,24 +85,24 @@
                     $isInProgress = $enrollment->status === 'in_progress';
                     $isFailed = $enrollment->status === 'failed';
                 @endphp
-                <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm hover:border-emerald-300 transition-all space-y-6">
+                <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm hover:border-green-300 transition-all space-y-6">
                     
                     <!-- Header of Enrollment Card -->
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
                         <div class="space-y-1">
                             <div class="flex items-center gap-2 flex-wrap">
-                                <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase {{ $course && $course->training_type === 'laboratory_onsite' ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800' }}">
+                                <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase {{ $course && $course->training_type === 'laboratory_onsite' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800' }}">
                                     {{ $course ? ucfirst($course->training_type ?: 'Online') : 'Online' }}
                                 </span>
 
                                 @if($isCompleted)
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 px-3 py-0.5 text-xs font-extrabold">
-                                        <span class="h-2 w-2 rounded-full bg-emerald-600"></span>
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-800 border border-green-300 px-3 py-0.5 text-xs font-extrabold">
+                                        <span class="h-2 w-2 rounded-full bg-green-600"></span>
                                         Completed & Qualified
                                     </span>
                                 @elseif($isInProgress)
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-teal-100 text-teal-800 border border-teal-300 px-3 py-0.5 text-xs font-bold">
-                                        <span class="h-2 w-2 rounded-full bg-teal-600 animate-pulse"></span>
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-800 border border-green-300 px-3 py-0.5 text-xs font-bold">
+                                        <span class="h-2 w-2 rounded-full bg-green-600 animate-pulse"></span>
                                         In Progress (Active Training)
                                     </span>
                                 @elseif($isFailed)
@@ -144,23 +144,23 @@
                         <div class="grid grid-cols-4 gap-2 text-center text-xs font-bold">
                             <!-- Step 1 -->
                             <div class="space-y-1">
-                                <div class="h-2 rounded-full bg-emerald-600"></div>
-                                <span class="text-emerald-800 text-[11px]">1. Enrolled</span>
+                                <div class="h-2 rounded-full bg-green-600"></div>
+                                <span class="text-green-800 text-[11px]">1. Enrolled</span>
                             </div>
                             <!-- Step 2 -->
                             <div class="space-y-1">
-                                <div class="h-2 rounded-full {{ in_array($enrollment->status, ['in_progress', 'completed']) ? 'bg-emerald-600' : 'bg-slate-200' }}"></div>
-                                <span class="{{ in_array($enrollment->status, ['in_progress', 'completed']) ? 'text-emerald-800' : 'text-slate-400' }} text-[11px]">2. In Training</span>
+                                <div class="h-2 rounded-full {{ in_array($enrollment->status, ['in_progress', 'completed']) ? 'bg-green-600' : 'bg-slate-200' }}"></div>
+                                <span class="{{ in_array($enrollment->status, ['in_progress', 'completed']) ? 'text-green-800' : 'text-slate-400' }} text-[11px]">2. In Training</span>
                             </div>
                             <!-- Step 3 -->
                             <div class="space-y-1">
-                                <div class="h-2 rounded-full {{ !is_null($enrollment->score) || $isCompleted ? 'bg-emerald-600' : 'bg-slate-200' }}"></div>
-                                <span class="{{ !is_null($enrollment->score) || $isCompleted ? 'text-emerald-800' : 'text-slate-400' }} text-[11px]">3. Assessed</span>
+                                <div class="h-2 rounded-full {{ !is_null($enrollment->score) || $isCompleted ? 'bg-green-600' : 'bg-slate-200' }}"></div>
+                                <span class="{{ !is_null($enrollment->score) || $isCompleted ? 'text-green-800' : 'text-slate-400' }} text-[11px]">3. Assessed</span>
                             </div>
                             <!-- Step 4 -->
                             <div class="space-y-1">
-                                <div class="h-2 rounded-full {{ $enrollment->certificate_issued ? 'bg-emerald-600' : 'bg-slate-200' }}"></div>
-                                <span class="{{ $enrollment->certificate_issued ? 'text-emerald-800' : 'text-slate-400' }} text-[11px]">4. Certified</span>
+                                <div class="h-2 rounded-full {{ $enrollment->certificate_issued ? 'bg-green-600' : 'bg-slate-200' }}"></div>
+                                <span class="{{ $enrollment->certificate_issued ? 'text-green-800' : 'text-slate-400' }} text-[11px]">4. Certified</span>
                             </div>
                         </div>
                     </div>
@@ -170,7 +170,7 @@
                         <div>
                             <span class="text-slate-400 font-bold uppercase tracking-wider block text-[10px]">Assessment Score</span>
                             @if(!is_null($enrollment->score))
-                                <p class="text-base font-black {{ $enrollment->passed ? 'text-emerald-700' : 'text-rose-600' }} mt-0.5">
+                                <p class="text-base font-black {{ $enrollment->passed ? 'text-green-700' : 'text-rose-600' }} mt-0.5">
                                     {{ $enrollment->score }}% &bull; {{ $enrollment->passed ? 'PASSED' : 'FAILED' }}
                                 </p>
                             @else
@@ -188,7 +188,7 @@
                         <div>
                             <span class="text-slate-400 font-bold uppercase tracking-wider block text-[10px]">Certificate Status</span>
                             @if($enrollment->certificate_issued)
-                                <p class="font-bold text-emerald-800 mt-0.5">
+                                <p class="font-bold text-green-800 mt-0.5">
                                     ✓ Issued (#{{ $enrollment->certificate_no }})
                                 </p>
                             @else
@@ -227,7 +227,7 @@
                                 </a>
 
                                 <a href="{{ route('jobseeker.training.quiz', $course->training_id) }}" 
-                                   class="inline-flex items-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 text-xs font-black shadow-md shadow-emerald-600/20 transition-all">
+                                   class="inline-flex items-center gap-1 rounded-xl bg-green-600 hover:bg-green-500 text-white px-4 py-2 text-xs font-black shadow-md shadow-green-600/20 transition-all">
                                     <span>📝</span> {{ !is_null($enrollment->score) ? 'Retake Quiz' : 'Take Assessment Quiz' }} &rarr;
                                 </a>
                             @endif
@@ -244,7 +244,7 @@
                     </p>
                     <div class="pt-2">
                         <a href="{{ route('jobseeker.training.skills') }}" 
-                           class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 text-xs font-black shadow-lg shadow-emerald-600/25">
+                           class="inline-flex items-center gap-2 rounded-xl bg-green-600 hover:bg-green-500 text-white px-6 py-3 text-xs font-black shadow-lg shadow-green-600/25">
                             <span>🎯</span> Browse Training Skills &rarr;
                         </a>
                     </div>

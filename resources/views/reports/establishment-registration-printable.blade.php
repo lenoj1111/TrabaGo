@@ -77,14 +77,14 @@
 
     <!-- Top Action Bar (No-Print) -->
     <div class="no-print w-full max-w-4xl mb-5 flex items-center justify-between gap-4">
-        <a href="{{ $backUrl }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-emerald-700 bg-white px-4 py-2.5 rounded-xl shadow-xs border border-slate-200 transition-colors">
+        <a href="{{ $backUrl }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-green-700 bg-white px-4 py-2.5 rounded-xl shadow-xs border border-slate-200 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             Back to Portal
         </a>
 
         <div class="flex items-center gap-3">
             <span class="text-xs text-slate-500 font-semibold hidden sm:inline">Cebu City DMDP Official Accreditation Format</span>
-            <button onclick="window.print()" class="inline-flex items-center gap-2 text-xs font-black text-white bg-emerald-700 hover:bg-emerald-600 px-6 py-2.5 rounded-xl shadow-lg shadow-emerald-700/20 transition-all hover:scale-105">
+            <button onclick="window.print()" class="inline-flex items-center gap-2 text-xs font-black text-white bg-green-700 hover:bg-green-600 px-6 py-2.5 rounded-xl shadow-lg shadow-green-700/20 transition-all hover:scale-105">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 Print / Save PDF (2 Pages)
             </button>
@@ -112,7 +112,7 @@
                 <div class="w-14 h-14 rounded-full border-2 border-amber-600 bg-amber-400 p-0.5 flex flex-col items-center justify-center shadow-xs text-center">
                     <div class="w-full h-full rounded-full border border-amber-800 bg-white flex flex-col items-center justify-center leading-none p-0.5">
                         <span class="text-[6px] font-black text-amber-800 tracking-tighter">CEBU CITY</span>
-                        <span class="text-[8px] font-black text-emerald-800">DMDP</span>
+                        <span class="text-[8px] font-black text-green-800">DMDP</span>
                         <span class="text-[5.5px] font-bold text-slate-600">PESO</span>
                     </div>
                 </div>
@@ -290,7 +290,7 @@
                         <span class="font-mono font-bold">{{ $item[1] ? '[X]' : '[  ]' }}</span>
                         <span class="{{ $item[1] ? 'font-bold text-black' : 'text-slate-700' }}">{{ $item[0] }}</span>
                     </div>
-                    <div class="col-span-4 text-center font-semibold text-[9px] {{ $item[1] ? 'text-emerald-800' : 'text-slate-400' }}">
+                    <div class="col-span-4 text-center font-semibold text-[9px] {{ $item[1] ? 'text-green-800' : 'text-slate-400' }}">
                         {{ $item[1] ? ($isComplete ? '✓ Verified (' . $item[2] . ')' : $item[2]) : '____________________' }}
                     </div>
                 </div>
@@ -320,7 +320,7 @@
             <div class="pt-1 text-[9px] border-t border-slate-200">
                 <span class="font-bold text-black">Remarks:</span>
                 @if($isComplete)
-                    <span class="text-emerald-800 font-bold ml-1">Documents verified complete and approved for official accreditation.</span>
+                    <span class="text-green-800 font-bold ml-1">Documents verified complete and approved for official accreditation.</span>
                 @elseif($isIncomplete)
                     <span class="text-rose-700 font-bold ml-1">Documents marked Incomplete: {{ $incompleteReason }}</span>
                 @else
@@ -377,7 +377,7 @@
                     <span class="font-black text-[8px] text-blue-900 tracking-tight">BAGONG PILIPINAS</span>
                 </div>
 
-                <div class="w-6 h-6 rounded-full border border-emerald-600 bg-white flex items-center justify-center font-black text-[6px] text-emerald-800">
+                <div class="w-6 h-6 rounded-full border border-green-600 bg-white flex items-center justify-center font-black text-[6px] text-green-800">
                     7 TA!
                 </div>
             </div>
@@ -417,7 +417,7 @@
                 <div class="w-12 h-12 rounded-full border-2 border-amber-600 bg-amber-400 p-0.5 flex flex-col items-center justify-center shadow-xs text-center">
                     <div class="w-full h-full rounded-full border border-amber-800 bg-white flex flex-col items-center justify-center leading-none p-0.5">
                         <span class="text-[5.5px] font-black text-amber-800 tracking-tighter">CEBU CITY</span>
-                        <span class="text-[7px] font-black text-emerald-800">DMDP</span>
+                        <span class="text-[7px] font-black text-green-800">DMDP</span>
                     </div>
                 </div>
             </div>
@@ -552,7 +552,7 @@
                     <span class="font-black text-[8px] text-blue-900 tracking-tight">BAGONG PILIPINAS</span>
                 </div>
 
-                <div class="w-6 h-6 rounded-full border border-emerald-600 bg-white flex items-center justify-center font-black text-[6px] text-emerald-800">
+                <div class="w-6 h-6 rounded-full border border-green-600 bg-white flex items-center justify-center font-black text-[6px] text-green-800">
                     7 TA!
                 </div>
             </div>

@@ -14,16 +14,127 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // Get statistics from your database
+        $totalJobs = DB::table('job_postings')->count();
+        $approvedJobs = DB::table('job_postings')->where('status', 'approved')->count();
+        $pendingJobs = DB::table('job_postings')->where('status', 'pending')->count();
+        $closedJobs = DB::table('job_postings')->where('status', 'closed')->count();
+
+        $totalEmployers = DB::table('employers')->count();
+        $accreditedEmployers = DB::table('employers')->where('is_accredited', 1)->count();
+
+        $totalJobseekers = DB::table('jobseekers')->count();
+        $employedJobseekers = DB::table('jobseekers')->where('employment_status', 'employed')->count();
+
+        $totalApplications = DB::table('job_applications')->count();
+        $hiredApplications = DB::table('job_applications')->where('status', 'hired')->count();
+        $interviewApplications = DB::table('job_applications')->where('status', 'interview')->count();
+        $pendingApplications = DB::table('job_applications')->where('status', 'pending')->count();
+
+        $placementRate = $totalJobseekers > 0 ? round(($employedJobseekers / $totalJobseekers) * 100, 1) : 0;
+        $hireRate = $totalApplications > 0 ? round(($hiredApplications / $totalApplications) * 100, 1) : 0;
+
+        // Monthly placement trends (last 6 months)
+        $monthlyTrends = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $monthStart = now()->subMonths($i)->startOfMonth();
+            $monthEnd = now()->subMonths($i)->endOfMonth();
+            $monthLabel = $monthStart->format('M Y');
+            
+            $appsCount = DB::table('job_applications')
+                ->whereBetween('created_at', [$monthStart, $monthEnd])
+                ->count();
+
+            $hiresCount = DB::table('job_applications')
+                ->where('status', 'hired')
+                ->whereBetween('created_at', [$monthStart, $monthEnd])
+                ->count();
+
+            $monthlyTrends[] = [
+                'month' => $monthLabel,
+                'applications' => $appsCount,
+                'hires' => $hiresCount,
+            ];
+        }
+
+        // Pending Approval Items for Quick Action
+        $pendingApprovalsList = [];
+        $pendingJobPostings = DB::table('job_postings')
+            ->join('employers', 'job_postings.employer_id', '=', 'employers.employer_id')
+            ->select('job_postings.job_id', 'job_postings.title', 'employers.company_name', 'job_postings.created_at', DB::raw("'Job Posting' as item_type"))
+            ->where('job_postings.status', 'pending')
+            ->latest('job_postings.created_at')
+            ->limit(4)
+            ->get();
+
+        foreach ($pendingJobPostings as $job) {
+            $pendingApprovalsList[] = [
+                'type' => 'Job Posting',
+                'title' => $job->title,
+                'entity' => $job->company_name,
+                'date' => $job->created_at,
+                'link' => route('admin.job-postings.show', $job->job_id),
+            ];
+        }
+
+        if (Schema::hasTable('employer_accreditation')) {
+            $pendingAccreds = DB::table('employer_accreditation')
+                ->join('employers', 'employer_accreditation.employer_id', '=', 'employers.employer_id')
+                ->select('employer_accreditation.accreditation_id', 'employers.company_name', 'employer_accreditation.submitted_at', 'employer_accreditation.status')
+                ->whereIn('employer_accreditation.status', ['submitted_to_jpo', 'supervisor_approved', 'jpo_approved'])
+                ->latest('employer_accreditation.submitted_at')
+                ->limit(4)
+                ->get();
+
+            foreach ($pendingAccreds as $acc) {
+                $pendingApprovalsList[] = [
+                    'type' => 'Accreditation',
+                    'title' => 'Accreditation Review',
+                    'entity' => $acc->company_name,
+                    'date' => $acc->submitted_at ?? now(),
+                    'link' => route('admin.approvals.index'),
+                ];
+            }
+        }
+
+        // Recent System Hires / Activity
+        $recentHires = DB::table('job_applications')
+            ->join('job_postings', 'job_applications.job_id', '=', 'job_postings.job_id')
+            ->join('employers', 'job_postings.employer_id', '=', 'employers.employer_id')
+            ->join('jobseekers', 'job_applications.jobseeker_id', '=', 'jobseekers.jobseeker_id')
+            ->select(
+                'jobseekers.first_name', 'jobseekers.last_name',
+                'job_postings.title as job_title',
+                'employers.company_name',
+                'job_applications.created_at as hire_time'
+            )
+            ->where('job_applications.status', 'hired')
+            ->latest('job_applications.created_at')
+            ->limit(5)
+            ->get();
+
         $stats = [
-            'total_jobs' => DB::table('job_postings')->count(),
-            'pending_jobs' => DB::table('job_postings')->where('status', 'pending')->count(),
-            'total_employers' => DB::table('employers')->count(),
-            'total_jobseekers' => DB::table('jobseekers')->count(),
-            'total_applications' => DB::table('job_applications')->count(),
+            'total_jobs' => $totalJobs,
+            'approved_jobs' => $approvedJobs,
+            'pending_jobs' => $pendingJobs,
+            'closed_jobs' => $closedJobs,
+            'total_employers' => $totalEmployers,
+            'accredited_employers' => $accreditedEmployers,
+            'total_jobseekers' => $totalJobseekers,
+            'employed_jobseekers' => $employedJobseekers,
+            'total_applications' => $totalApplications,
+            'hired_applications' => $hiredApplications,
+            'interview_applications' => $interviewApplications,
+            'pending_applications' => $pendingApplications,
+            'placement_rate' => $placementRate,
+            'hire_rate' => $hireRate,
         ];
 
-        return view('admin.dashboard', compact('stats'));
+        return view('admin.dashboard', compact(
+            'stats',
+            'monthlyTrends',
+            'pendingApprovalsList',
+            'recentHires'
+        ));
     }
 
     /**

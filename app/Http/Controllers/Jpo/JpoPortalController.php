@@ -53,10 +53,38 @@ class JpoPortalController extends Controller
             ->take(5)
             ->get();
 
+        // Monthly referral trends (last 6 months)
+        $monthlyReferralTrends = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $monthStart = now()->subMonths($i)->startOfMonth();
+            $monthEnd = now()->subMonths($i)->endOfMonth();
+            $monthLabel = $monthStart->format('M Y');
+            
+            $referredMonthCount = JobApplication::where('referred_by_jpo', 1)
+                ->whereBetween('created_at', [$monthStart, $monthEnd])
+                ->count();
+
+            $hiredMonthCount = JobApplication::where('referred_by_jpo', 1)
+                ->where('status', 'hired')
+                ->whereBetween('created_at', [$monthStart, $monthEnd])
+                ->count();
+
+            $monthlyReferralTrends[] = [
+                'month' => $monthLabel,
+                'referred' => $referredMonthCount,
+                'hired' => $hiredMonthCount,
+            ];
+        }
+
+        $conversionRate = $totalReferredJobseekers > 0 
+            ? round(($totalHiredReferred / $totalReferredJobseekers) * 100, 1) 
+            : 0;
+
         return view('jpo.dashboard', compact(
             'user', 'pendingJobseekers', 'pendingAccreditations', 
             'pendingPlacementReports', 'totalReferredJobseekers', 
-            'totalHiredReferred', 'recentApplicants', 'recentAccreditations'
+            'totalHiredReferred', 'conversionRate', 'monthlyReferralTrends',
+            'recentApplicants', 'recentAccreditations'
         ));
     }
 

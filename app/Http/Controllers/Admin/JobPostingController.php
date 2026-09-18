@@ -321,10 +321,16 @@ class JobPostingController extends Controller
             ->first();
 
         if (!$jobPosting) {
+            if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+                return response()->json(['error' => 'Job posting not found.'], 404);
+            }
             return redirect()->back()->with('error', 'Job posting not found.');
         }
 
         if ($jobPosting->status !== 'pending') {
+            if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+                return response()->json(['error' => 'Job posting is not pending.'], 400);
+            }
             return redirect()->back()->with('error', 'Job posting is not pending.');
         }
 
@@ -333,6 +339,10 @@ class JobPostingController extends Controller
             ->update([
                 'status' => 'rejected',
             ]);
+
+        if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+            return response()->json(['success' => 'Job posting rejected successfully.']);
+        }
 
         return redirect()->route('admin.job-postings')
             ->with('success', 'Job posting rejected successfully.');

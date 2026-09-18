@@ -39,13 +39,13 @@
 
     <!-- Top Action Bar -->
     <div class="no-print w-full max-w-4xl mb-6 flex items-center justify-between gap-4">
-        <a href="{{ route('jpo.evaluations.jobseekers') }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-emerald-800 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-300 transition-colors">
+        <a href="{{ route('jpo.evaluations.jobseekers') }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-green-800 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-300 transition-colors">
             &larr; Back to Jobseeker Evaluations
         </a>
 
         <div class="flex items-center gap-3">
             <span class="text-xs font-bold text-slate-600">NSRP Form 1.REV 3 &bull; Candidate Ref #{{ $application->application_id }}</span>
-            <button onclick="window.print()" class="inline-flex items-center gap-2 text-xs font-black text-white bg-emerald-700 hover:bg-emerald-600 px-6 py-2.5 rounded-xl shadow-lg shadow-emerald-700/30 transition-all cursor-pointer">
+            <button onclick="window.print()" class="inline-flex items-center gap-2 text-xs font-black text-white bg-green-700 hover:bg-green-600 px-6 py-2.5 rounded-xl shadow-lg shadow-green-700/30 transition-all cursor-pointer">
                 🖨️ Print / Save as PDF
             </button>
         </div>

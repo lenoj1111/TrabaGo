@@ -9,7 +9,7 @@
         <!-- Header -->
         <div class="flex items-center justify-between">
             <div class="space-y-1">
-                <a href="{{ route('admin.job-postings') }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-900 inline-flex items-center gap-1">
+                <a href="{{ route('admin.job-postings') }}" class="text-xs font-bold text-green-700 hover:text-green-900 inline-flex items-center gap-1">
                     &larr; Back to Job Postings
                 </a>
                 <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Create New Job Posting</h1>
@@ -25,7 +25,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-700">Employer Entity</label>
-                        <select name="employer_id" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                        <select name="employer_id" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                             <option value="">DMDP Direct (Default)</option>
                             @foreach($employers as $employer)
                                 <option value="{{ $employer->employer_id }}" {{ old('employer_id') == $employer->employer_id ? 'selected' : '' }}>
@@ -39,7 +39,7 @@
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-700">Number of Vacancies <span class="text-rose-500">*</span></label>
                         <input type="number" name="vacancy_count" value="{{ old('vacancy_count', 1) }}" min="1" required 
-                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none @error('vacancy_count') border-rose-400 @enderror">
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none @error('vacancy_count') border-rose-400 @enderror">
                         @error('vacancy_count')
                             <p class="text-[11px] font-bold text-rose-600">{{ $message }}</p>
                         @enderror
@@ -48,7 +48,7 @@
                     <div class="sm:col-span-2 space-y-1.5">
                         <label class="text-xs font-bold text-slate-700">Job Title <span class="text-rose-500">*</span></label>
                         <input type="text" name="title" value="{{ old('title') }}" required placeholder="e.g. Senior Software Developer, Administrative Assistant"
-                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none @error('title') border-rose-400 @enderror">
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none @error('title') border-rose-400 @enderror">
                         @error('title')
                             <p class="text-[11px] font-bold text-rose-600">{{ $message }}</p>
                         @enderror
@@ -57,7 +57,7 @@
                     <div class="sm:col-span-2 space-y-1.5">
                         <label class="text-xs font-bold text-slate-700">Job Description & Responsibilities <span class="text-rose-500">*</span></label>
                         <textarea name="description" rows="5" required placeholder="Describe the job duties, benefits, and schedule..."
-                                  class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none @error('description') border-rose-400 @enderror">{{ old('description') }}</textarea>
+                                  class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none @error('description') border-rose-400 @enderror">{{ old('description') }}</textarea>
                         @error('description')
                             <p class="text-[11px] font-bold text-rose-600">{{ $message }}</p>
                         @enderror
@@ -66,7 +66,7 @@
                     <div class="sm:col-span-2 space-y-1.5">
                         <label class="text-xs font-bold text-slate-700">Qualifications & Requirements</label>
                         <textarea name="qualifications" rows="4" placeholder="Skills, certifications, education, experience required..."
-                                  class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none @error('qualifications') border-rose-400 @enderror">{{ old('qualifications') }}</textarea>
+                                  class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none @error('qualifications') border-rose-400 @enderror">{{ old('qualifications') }}</textarea>
                         @error('qualifications')
                             <p class="text-[11px] font-bold text-rose-600">{{ $message }}</p>
                         @enderror
@@ -75,7 +75,7 @@
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-700">Application Deadline (Valid Until) <span class="text-rose-500">*</span></label>
                         <input type="date" name="valid_until" value="{{ old('valid_until') }}" required min="{{ date('Y-m-d', strtotime('+1 day')) }}"
-                               class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none @error('valid_until') border-rose-400 @enderror">
+                               class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none @error('valid_until') border-rose-400 @enderror">
                         @error('valid_until')
                             <p class="text-[11px] font-bold text-rose-600">{{ $message }}</p>
                         @enderror
@@ -84,12 +84,12 @@
                     <div class="space-y-2 p-4 rounded-2xl bg-slate-50 border border-slate-200">
                         <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 select-none">
                             <input type="checkbox" name="accepts_disability" value="1" x-model="acceptsDisability"
-                                   class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                                   class="rounded border-slate-300 text-green-600 focus:ring-green-500 h-4 w-4">
                             <span>♿ Accepts applicants with disabilities (PWD)</span>
                         </label>
                         <div x-show="acceptsDisability" style="display: none;" class="pt-1">
                             <input type="text" name="disability_type" value="{{ old('disability_type') }}" placeholder="Specify disability type (e.g. Visual, Hearing, Orthopedic)"
-                                   class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                                   class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                         </div>
                     </div>
                 </div>
@@ -101,7 +101,7 @@
                         Cancel
                     </a>
                     <button type="submit" 
-                            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-xs shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-black text-xs shadow-lg shadow-green-600/30 transition-all hover:scale-105">
                         ✓ Create & Publish Job
                     </button>
                 </div>
