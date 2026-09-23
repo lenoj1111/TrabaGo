@@ -22,22 +22,22 @@
         <!-- Header -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
-                    <span class="h-2 w-2 rounded-full bg-emerald-600"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-800 border border-green-200">
+                    <span class="h-2 w-2 rounded-full bg-green-600"></span>
                     Application Lifecycle Tracker
                 </span>
                 <h1 class="text-3xl font-black text-slate-900 tracking-tight mt-1">My Job Applications</h1>
                 <p class="text-sm text-slate-500">Track your recruitment pipeline from initial review to interview schedules.</p>
             </div>
-            <a href="{{ route('jobseeker.jobs') }}" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all">
+            <a href="{{ route('jobseeker.jobs') }}" class="inline-flex items-center gap-2 rounded-xl bg-green-600 hover:bg-green-500 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 Find More Jobs
             </a>
         </div>
 
         @if(session('success'))
-            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center gap-2 shadow-xs">
-                <span class="text-emerald-700">✓</span> {{ session('success') }}
+            <div class="p-4 rounded-2xl bg-green-50 border border-green-200 text-green-900 text-xs font-bold flex items-center gap-2 shadow-xs">
+                <span class="text-green-700">✓</span> {{ session('success') }}
             </div>
         @endif
 
@@ -66,25 +66,25 @@
             </a>
 
             <a href="{{ route('jobseeker.applications', ['status' => 'pending']) }}" 
-               class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 {{ $filter === 'pending' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' }}">
+               class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 {{ $filter === 'pending' ? 'bg-green-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' }}">
                 <span>🟡 Pending</span>
-                <span class="px-1.5 py-0.5 rounded-full text-[10px] {{ $filter === 'pending' ? 'bg-emerald-800 text-white' : 'bg-emerald-50 text-emerald-800' }} font-bold">
+                <span class="px-1.5 py-0.5 rounded-full text-[10px] {{ $filter === 'pending' ? 'bg-green-800 text-white' : 'bg-green-50 text-green-800' }} font-bold">
                     {{ $counts['pending'] }}
                 </span>
             </a>
 
             <a href="{{ route('jobseeker.applications', ['status' => 'reviewed']) }}" 
-               class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 {{ $filter === 'reviewed' ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' }}">
+               class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 {{ $filter === 'reviewed' ? 'bg-green-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' }}">
                 <span>🔵 Under Review</span>
-                <span class="px-1.5 py-0.5 rounded-full text-[10px] {{ $filter === 'reviewed' ? 'bg-teal-800 text-white' : 'bg-teal-50 text-teal-800' }}">
+                <span class="px-1.5 py-0.5 rounded-full text-[10px] {{ $filter === 'reviewed' ? 'bg-green-800 text-white' : 'bg-green-50 text-green-800' }}">
                     {{ $counts['reviewed'] }}
                 </span>
             </a>
 
             <a href="{{ route('jobseeker.applications', ['status' => 'interview']) }}" 
-               class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 {{ $filter === 'interview' ? 'bg-emerald-700 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' }}">
+               class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 {{ $filter === 'interview' ? 'bg-green-700 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' }}">
                 <span>🟢 Interview</span>
-                <span class="px-1.5 py-0.5 rounded-full text-[10px] {{ $filter === 'interview' ? 'bg-emerald-900 text-white' : 'bg-emerald-50 text-emerald-800' }}">
+                <span class="px-1.5 py-0.5 rounded-full text-[10px] {{ $filter === 'interview' ? 'bg-green-900 text-white' : 'bg-green-50 text-green-800' }}">
                     {{ $counts['interview'] }}
                 </span>
             </a>
@@ -128,7 +128,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100">
                         <div>
                             <div class="flex items-center gap-2">
-                                <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">{{ $company }}</span>
+                                <span class="text-xs font-bold uppercase tracking-wider text-green-700">{{ $company }}</span>
                                 <span class="text-slate-300">&bull;</span>
                                 <span class="text-xs text-slate-500">Applied on {{ $app->created_at ? $app->created_at->format('M d, Y') : 'Recently' }}</span>
                             </div>
@@ -139,7 +139,7 @@
 
                         <!-- Status Badge & Cosine Rating -->
                         <div class="flex items-center gap-3">
-                            <span class="inline-flex items-center rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-xs font-bold text-emerald-800">
+                            <span class="inline-flex items-center rounded-xl bg-green-50 border border-green-200 px-3 py-1.5 text-xs font-bold text-green-800">
                                 ⚡ {{ $match['percentage'] ?? 0 }}% Skill Match
                             </span>
 
@@ -148,11 +148,11 @@
                                     🟡 Pending Review
                                 </span>
                             @elseif($app->status === 'reviewed')
-                                <span class="inline-flex items-center rounded-xl bg-teal-50 text-teal-900 border border-teal-200 px-3.5 py-1.5 text-xs font-extrabold">
+                                <span class="inline-flex items-center rounded-xl bg-green-50 text-green-900 border border-green-200 px-3.5 py-1.5 text-xs font-extrabold">
                                     🔵 Under Evaluation
                                 </span>
                             @elseif($app->status === 'interview')
-                                <span class="inline-flex items-center rounded-xl bg-emerald-100 text-emerald-900 border border-emerald-300 px-3.5 py-1.5 text-xs font-extrabold">
+                                <span class="inline-flex items-center rounded-xl bg-green-100 text-green-900 border border-green-300 px-3.5 py-1.5 text-xs font-extrabold">
                                     🟢 Interview Stage
                                 </span>
                             @elseif($app->status === 'offered')
@@ -181,7 +181,7 @@
                                         🏆 Hired (Resignation Declined)
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center rounded-xl bg-emerald-600 text-white px-3.5 py-1.5 text-xs font-extrabold shadow-sm">
+                                    <span class="inline-flex items-center rounded-xl bg-green-600 text-white px-3.5 py-1.5 text-xs font-extrabold shadow-sm">
                                         🏆 Hired & Employed
                                     </span>
                                 @endif
@@ -193,29 +193,29 @@
                         </div>
                     </div>
 
-                    <!-- Progress Stepper Pipeline in Emerald & Indigo Theme -->
+                    <!-- Progress Stepper Pipeline in green & Indigo Theme -->
                     <div class="py-2">
                         <div class="relative">
                             <div class="overflow-hidden h-2.5 mb-4 text-xs flex rounded-full bg-slate-100">
                                 <div style="width: {{ $step === 1 ? '20%' : ($step === 2 ? '40%' : ($step === 3 ? '60%' : ($step === 4 ? '80%' : '100%'))) }}" 
-                                     class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center {{ $app->status === 'rejected' ? 'bg-rose-500' : ($app->status === 'offered' ? 'bg-gradient-to-r from-blue-500 to-indigo-600' : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600') }} transition-all duration-500">
+                                     class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center {{ $app->status === 'rejected' ? 'bg-rose-500' : ($app->status === 'offered' ? 'bg-gradient-to-r from-blue-500 to-indigo-600' : 'bg-gradient-to-r from-green-500 via-green-500 to-green-600') }} transition-all duration-500">
                                 </div>
                             </div>
                             
                             <div class="grid grid-cols-5 text-center text-xs font-bold text-slate-500">
-                                <div class="{{ $step >= 1 ? 'text-emerald-700' : '' }}">
+                                <div class="{{ $step >= 1 ? 'text-green-700' : '' }}">
                                     1. Submitted
                                 </div>
-                                <div class="{{ $step >= 2 ? 'text-emerald-700' : '' }}">
+                                <div class="{{ $step >= 2 ? 'text-green-700' : '' }}">
                                     2. Review
                                 </div>
-                                <div class="{{ $step >= 3 ? 'text-emerald-700' : '' }}">
+                                <div class="{{ $step >= 3 ? 'text-green-700' : '' }}">
                                     3. Interview
                                 </div>
-                                <div class="{{ $step >= 4 ? ($app->status === 'offered' ? 'text-blue-700 font-black' : 'text-emerald-700') : '' }}">
+                                <div class="{{ $step >= 4 ? ($app->status === 'offered' ? 'text-blue-700 font-black' : 'text-green-700') : '' }}">
                                     4. Job Offer
                                 </div>
-                                <div class="{{ $step >= 5 ? ($app->status === 'rejected' ? 'text-rose-600 font-bold' : ($app->status === 'declined' ? 'text-slate-600 font-bold' : 'text-emerald-700 font-black')) : '' }}">
+                                <div class="{{ $step >= 5 ? ($app->status === 'rejected' ? 'text-rose-600 font-bold' : ($app->status === 'declined' ? 'text-slate-600 font-bold' : 'text-green-700 font-black')) : '' }}">
                                     {{ $app->status === 'rejected' ? '5. Not Qualified' : ($app->status === 'hired' ? '5. Hired!' : ($app->status === 'declined' ? '5. Declined' : '5. Employed')) }}
                                 </div>
                             </div>
@@ -224,13 +224,13 @@
 
                     <!-- Interview Details Alert (if status === interview) -->
                     @if($app->status === 'interview' && $app->interview_schedule)
-                        <div class="rounded-2xl bg-emerald-50 border border-emerald-200 p-5 space-y-2">
+                        <div class="rounded-2xl bg-green-50 border border-green-200 p-5 space-y-2">
                             <div class="flex items-center justify-between">
-                                <span class="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
-                                    <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <span class="text-xs font-bold uppercase tracking-wider text-green-800 flex items-center gap-1.5">
+                                    <svg class="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                     Interview Scheduled
                                 </span>
-                                <span class="text-xs font-bold text-emerald-700 uppercase">{{ $app->interview_mode ?: 'Online' }}</span>
+                                <span class="text-xs font-bold text-green-700 uppercase">{{ $app->interview_mode ?: 'Online' }}</span>
                             </div>
                             <p class="text-sm font-bold text-slate-900">
                                 Date & Time: {{ \Carbon\Carbon::parse($app->interview_schedule)->format('M d, Y @ h:i A') }}
@@ -243,7 +243,7 @@
 
                     <!-- Job Offer Banner (Option C) -->
                     @if($app->status === 'offered')
-                        <div class="rounded-3xl bg-gradient-to-br from-blue-500 via-indigo-600 to-emerald-600 p-1 shadow-xl animate-in fade-in">
+                        <div class="rounded-3xl bg-gradient-to-br from-blue-500 via-indigo-600 to-green-600 p-1 shadow-xl animate-in fade-in">
                             <div class="rounded-[22px] bg-white p-6 sm:p-7 space-y-5">
                                 
                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
@@ -271,9 +271,9 @@
                                             {{ $app->offer_salary ? '₱' . number_format($app->offer_salary, 2) : 'Negotiable / Per Contract' }}
                                         </p>
                                     </div>
-                                    <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-100 space-y-1">
-                                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Target Start Date</span>
-                                        <p class="text-2xl font-black text-emerald-950">
+                                    <div class="p-4 rounded-2xl bg-green-50/70 border border-green-100 space-y-1">
+                                        <span class="text-xs font-bold uppercase tracking-wider text-green-700">Target Start Date</span>
+                                        <p class="text-2xl font-black text-green-950">
                                             {{ $app->offer_start_date ? date('M d, Y', strtotime($app->offer_start_date)) : 'To Be Arranged' }}
                                         </p>
                                     </div>
@@ -310,7 +310,7 @@
                                         @csrf
                                         <button type="submit" 
                                                 onclick="return confirm('🎉 Congratulations! Are you sure you want to ACCEPT this job offer from {{ addslashes($company) }}?\n\nThis will tag your profile as Employed and automatically withdraw your other active applications.')"
-                                                class="w-full sm:w-auto px-8 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-xl shadow-emerald-600/30 transition-all hover:scale-105 flex items-center justify-center gap-2">
+                                                class="w-full sm:w-auto px-8 py-3 rounded-2xl bg-green-600 hover:bg-green-500 text-white font-black text-xs shadow-xl shadow-green-600/30 transition-all hover:scale-105 flex items-center justify-center gap-2">
                                             <span>✓</span>
                                             <span>Accept Job Offer</span>
                                             <span>&rarr;</span>
@@ -389,20 +389,20 @@
                                 </div>
                             </div>
                         @elseif($app->resignation_status === 'approved')
-                            <div class="rounded-2xl bg-emerald-50 border border-emerald-300 p-5 space-y-2">
+                            <div class="rounded-2xl bg-green-50 border border-green-300 p-5 space-y-2">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-xs font-black uppercase tracking-wider text-emerald-950 flex items-center gap-1.5">
+                                    <span class="text-xs font-black uppercase tracking-wider text-green-950 flex items-center gap-1.5">
                                         <span>✓</span> Resignation Approved by {{ $company }}
                                     </span>
-                                    <span class="text-[11px] text-emerald-800 font-semibold">
+                                    <span class="text-[11px] text-green-800 font-semibold">
                                         Approved {{ $app->resignation_approved_at ? \Carbon\Carbon::parse($app->resignation_approved_at)->format('M d, Y') : '' }}
                                     </span>
                                 </div>
-                                <p class="text-xs text-emerald-900 leading-relaxed">
+                                <p class="text-xs text-green-900 leading-relaxed">
                                     Your resignation was officially approved. Your platform profile is now set to <strong>Unemployed</strong> and you are fully authorized to apply for new vacancies!
                                 </p>
                                 @if($app->resignation_remarks)
-                                    <div class="bg-white/90 p-2.5 rounded-xl border border-emerald-200 text-xs text-slate-700">
+                                    <div class="bg-white/90 p-2.5 rounded-xl border border-green-200 text-xs text-slate-700">
                                         <span class="font-bold">Employer Clearance Remarks:</span> {{ $app->resignation_remarks }}
                                     </div>
                                 @endif
@@ -430,15 +430,15 @@
                                 </div>
                             </div>
                         @else
-                            <div class="rounded-2xl bg-emerald-50/80 border border-emerald-200 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div class="rounded-2xl bg-green-50/80 border border-green-200 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div class="space-y-1">
-                                    <p class="text-xs font-bold text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
+                                    <p class="text-xs font-bold text-green-950 uppercase tracking-wider flex items-center gap-1.5">
                                         <span>💼</span> Active Employment Record
                                     </p>
-                                    <p class="text-xs text-emerald-800 leading-relaxed">You are actively employed at <strong>{{ $company }}</strong>. You cannot apply for other jobs until you request and receive resignation approval from this employer.</p>
+                                    <p class="text-xs text-green-800 leading-relaxed">You are actively employed at <strong>{{ $company }}</strong>. You cannot apply for other jobs until you request and receive resignation approval from this employer.</p>
                                 </div>
                                 <button type="button" @click="activeCompany = '{{ addslashes($company) }}'; resignationModal = true"
-                                        class="shrink-0 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md shadow-emerald-600/20 transition-all">
+                                        class="shrink-0 px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-black shadow-md shadow-green-600/20 transition-all">
                                     Request Resignation &rarr;
                                 </button>
                             </div>
@@ -448,7 +448,7 @@
                     <!-- Bottom Actions -->
                     <div class="pt-4 border-t border-slate-100 flex items-center justify-between gap-4 flex-wrap">
                         @if($job)
-                            <a href="{{ route('jobseeker.jobs.show', $job->job_id) }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-800">
+                            <a href="{{ route('jobseeker.jobs.show', $job->job_id) }}" class="text-xs font-bold text-green-700 hover:text-green-800">
                                 View Job Posting &rarr;
                             </a>
                         @else
@@ -463,7 +463,7 @@
                                     </span>
                                 @elseif($app->resignation_status !== 'approved')
                                     <button type="button" @click="activeCompany = '{{ addslashes($company) }}'; resignationModal = true"
-                                            class="px-4 py-2 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-bold transition-colors">
+                                            class="px-4 py-2 rounded-xl border border-green-300 bg-green-50 hover:bg-green-100 text-green-900 text-xs font-bold transition-colors">
                                         Request Resignation
                                     </button>
                                 @endif
@@ -482,12 +482,12 @@
                 </div>
             @empty
                 <div class="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center space-y-3">
-                    <div class="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center font-bold text-xl">
+                    <div class="h-12 w-12 rounded-2xl bg-green-50 text-green-600 mx-auto flex items-center justify-center font-bold text-xl">
                         📋
                     </div>
                     <h3 class="text-base font-bold text-slate-900">No applications found in this status</h3>
                     <p class="text-xs text-slate-500">Explore open job positions and apply to track them here.</p>
-                    <a href="{{ route('jobseeker.jobs') }}" class="inline-flex rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm">
+                    <a href="{{ route('jobseeker.jobs') }}" class="inline-flex rounded-xl bg-green-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm">
                         Browse Openings
                     </a>
                 </div>
@@ -524,7 +524,7 @@
                 <div class="space-y-1">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Reason for Resignation *</label>
                     <textarea name="reason" rows="4" required placeholder="Please state the reason for requesting resignation (e.g., career transition, relocated, personal reasons)..."
-                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
+                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400"></textarea>
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">

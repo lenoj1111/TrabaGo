@@ -7,21 +7,21 @@
     <div class="mx-auto max-w-7xl space-y-8">
 
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
+                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
                     DMDP User Directory & Identity Management
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Employee Accounts & Users</h1>
                 <p class="text-sm text-slate-300">
-                    Manage system access, provision staff accounts (JPO, Trainer, Supervisor, LMO), and audit registered portal users.
+                    Manage system access, provision staff accounts (JPO, Trainer, and Admin), and audit registered portal users.
                 </p>
             </div>
 
             <div class="flex items-center gap-3 shrink-0">
                 <a href="{{ route('admin.users.create') }}" 
-                   class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-5 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                   class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 px-5 py-3 text-xs font-black text-white shadow-lg shadow-green-600/30 transition-all hover:scale-105">
                     <span>+ Provision Staff User</span>
                 </a>
             </div>
@@ -35,19 +35,19 @@
                     <p class="text-3xl font-black text-slate-900">{{ $counts['total'] ?? 0 }}</p>
                     <span class="text-[11px] text-slate-500">Across all system roles</span>
                 </div>
-                <div class="h-12 w-12 rounded-2xl bg-slate-100 text-slate-800 flex items-center justify-center text-xl font-black">
-                    👥
+                <div class="h-12 w-12 rounded-2xl bg-slate-100 text-slate-800 flex items-center justify-center font-black">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                 </div>
             </div>
 
             <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm flex items-center justify-between gap-4">
                 <div class="space-y-1">
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Active Accounts</span>
-                    <p class="text-3xl font-black text-emerald-700">{{ $counts['active'] ?? 0 }}</p>
-                    <span class="text-[11px] text-emerald-800">Operational users</span>
+                    <p class="text-3xl font-black text-green-700">{{ $counts['active'] ?? 0 }}</p>
+                    <span class="text-[11px] text-green-800">Operational users</span>
                 </div>
-                <div class="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-center text-xl font-black">
-                    ✓
+                <div class="h-12 w-12 rounded-2xl bg-green-50 text-green-800 border border-green-200 flex items-center justify-center font-black">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                 </div>
             </div>
 
@@ -57,8 +57,8 @@
                     <p class="text-3xl font-black text-rose-700">{{ $counts['inactive'] ?? 0 }}</p>
                     <span class="text-[11px] text-rose-800">Access disabled</span>
                 </div>
-                <div class="h-12 w-12 rounded-2xl bg-rose-50 text-rose-800 border border-rose-200 flex items-center justify-center text-xl font-black">
-                    ✕
+                <div class="h-12 w-12 rounded-2xl bg-rose-50 text-rose-800 border border-rose-200 flex items-center justify-center font-black">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 </div>
             </div>
 
@@ -68,8 +68,8 @@
                     <p class="text-3xl font-black text-amber-600">{{ $counts['pending'] ?? 0 }}</p>
                     <span class="text-[11px] text-amber-700">Awaiting authorization</span>
                 </div>
-                <div class="h-12 w-12 rounded-2xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-center text-xl font-black">
-                    ⏳
+                <div class="h-12 w-12 rounded-2xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-center font-black">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
             </div>
         </div>
@@ -81,14 +81,14 @@
                     <label class="text-xs font-bold text-slate-700">Search User</label>
                     <input type="text" name="search" value="{{ request('search') }}" 
                            placeholder="Search by email, name, or company..."
-                           class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                           class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                 </div>
 
                 <div class="lg:col-span-3 space-y-1">
                     <label class="text-xs font-bold text-slate-700">Role</label>
-                    <select name="role" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                    <select name="role" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                         <option value="">All Roles</option>
-                        @foreach($roles ?? ['admin', 'supervisor', 'jpo', 'trainer', 'lmo', 'employer', 'jobseeker'] as $role)
+                        @foreach($roles ?? ['admin', 'jpo', 'trainer', 'employer', 'jobseeker'] as $role)
                             <option value="{{ $role }}" {{ request('role') == $role ? 'selected' : '' }}>
                                 {{ ucfirst(str_replace('_', ' ', $role)) }}
                             </option>
@@ -98,7 +98,7 @@
 
                 <div class="lg:col-span-2 space-y-1">
                     <label class="text-xs font-bold text-slate-700">Status</label>
-                    <select name="status" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                    <select name="status" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                         <option value="">All Statuses</option>
                         @foreach($statuses ?? ['active', 'inactive'] as $status)
                             <option value="{{ $status }}" {{ request('status') == $status ? 'selected' : '' }}>
@@ -109,7 +109,7 @@
                 </div>
 
                 <div class="lg:col-span-2 flex items-center gap-2">
-                    <button type="submit" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-xs font-bold transition-colors">
+                    <button type="submit" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-green-600 text-white text-xs font-bold transition-colors">
                         Filter
                     </button>
                     <a href="{{ route('admin.users.index') }}" class="px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">
@@ -154,9 +154,9 @@
                                     'admin' => 'bg-rose-50 text-rose-800 border-rose-200',
                                     'supervisor', 'pesd_supervisor' => 'bg-purple-50 text-purple-800 border-purple-200',
                                     'jpo' => 'bg-blue-50 text-blue-800 border-blue-200',
-                                    'trainer' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                                    'trainer' => 'bg-green-50 text-green-800 border-green-200',
                                     'lmo' => 'bg-indigo-50 text-indigo-800 border-indigo-200',
-                                    'employer' => 'bg-teal-50 text-teal-800 border-teal-200',
+                                    'employer' => 'bg-green-50 text-green-800 border-green-200',
                                     'jobseeker' => 'bg-slate-100 text-slate-800 border-slate-200',
                                     default => 'bg-slate-100 text-slate-800 border-slate-200',
                                 };
@@ -164,7 +164,7 @@
                             <tr class="hover:bg-slate-50/80 transition-colors">
                                 <td class="py-4 px-6">
                                     <div class="flex items-center gap-3">
-                                        <div class="h-9 w-9 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center justify-center ring-2 ring-emerald-500/30 shrink-0">
+                                        <div class="h-9 w-9 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center justify-center ring-2 ring-green-500/30 shrink-0">
                                             {{ strtoupper(substr($user->email ?? 'U', 0, 1)) }}
                                         </div>
                                         <div>
@@ -179,13 +179,19 @@
                                     </span>
                                 </td>
                                 <td class="py-4 px-6 text-center">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold border {{ $user->status === 'active' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200' }}">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold border {{ $user->status === 'active' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-rose-50 text-rose-800 border-rose-200' }}">
                                         {{ ucfirst($user->status) }}
                                     </span>
                                 </td>
                                 <td class="py-4 px-6 text-center">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold border {{ $user->is_approved ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200' }}">
-                                        {{ $user->is_approved ? '✓ Approved' : '⏳ Pending' }}
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold border {{ $user->is_approved ? 'bg-green-50 text-green-800 border-green-200' : 'bg-amber-50 text-amber-800 border-amber-200' }}">
+                                        @if($user->is_approved)
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                            Approved
+                                        @else
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            Pending
+                                        @endif
                                     </span>
                                 </td>
                                 <td class="py-4 px-6 text-slate-500 text-[11px]">
@@ -194,32 +200,28 @@
                                 <td class="py-4 px-6 text-right">
                                     <div class="inline-flex items-center gap-1.5">
                                         <a href="{{ route('admin.users.edit', $user->user_id) }}" 
-                                           class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors" title="Edit User">
-                                            ✏️ Edit
+                                           class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors" title="Edit User">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            Edit
                                         </a>
 
                                         @if($user->status === 'active')
-                                            <button type="button"
-                                                    data-action="toggle-status"
-                                                    data-user-id="{{ $user->user_id }}"
+                                            <button onclick="toggleStatus({{ $user->user_id }})" 
                                                     class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors" title="Deactivate Account">
                                                 Deactivate
                                             </button>
                                         @else
-                                            <button type="button"
-                                                    data-action="toggle-status"
-                                                    data-user-id="{{ $user->user_id }}"
-                                                    class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs border border-emerald-200 transition-colors" title="Activate Account">
+                                            <button onclick="toggleStatus({{ $user->user_id }})" 
+                                                    class="px-2.5 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-700 font-bold text-xs border border-green-200 transition-colors" title="Activate Account">
                                                 Activate
                                             </button>
                                         @endif
 
                                         @if(!$user->is_approved && $user->role !== 'admin')
-                                            <button type="button"
-                                                    data-action="approve-user"
-                                                    data-user-id="{{ $user->user_id }}"
-                                                    class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm" title="Approve Account">
-                                                ✓ Approve
+                                            <button onclick="approveUser({{ $user->user_id }})" 
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold text-xs transition-colors shadow-sm" title="Approve Account">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                                Approve
                                             </button>
                                         @endif
                                     </div>
@@ -228,7 +230,9 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="py-12 text-center text-slate-400">
-                                    <div class="text-3xl mb-2">👥</div>
+                                    <div class="flex justify-center mb-2">
+                                        <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                    </div>
                                     <p class="font-bold text-slate-700">No users match your query</p>
                                     <p class="text-xs mt-0.5">Try clearing filters or search parameters.</p>
                                 </td>
@@ -250,72 +254,68 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('[data-action="toggle-status"]').forEach(function (button) {
-            button.addEventListener('click', function () {
-                const userId = this.dataset.userId;
-
-                Swal.fire({
-                    title: 'Toggle User Status?',
-                    text: 'Are you sure you want to change this user\'s access status?',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#059669',
-                    cancelButtonColor: '#64748b',
-                    confirmButtonText: 'Yes, change status'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        fetch(`/admin/users/${userId}/toggle-status`, {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            }
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                Swal.fire('Success!', data.success, 'success').then(() => location.reload());
-                            } else {
-                                Swal.fire('Error', data.error || 'Something went wrong.', 'error');
-                            }
-                        })
-                        .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));
-                    }
-                });
-            });
-        });
-
-        document.querySelectorAll('[data-action="approve-user"]').forEach(function (button) {
-            button.addEventListener('click', function () {
-                const userId = this.dataset.userId;
-
-                Swal.fire({
-                    title: 'Approve User Account?',
-                    text: 'This will authorize the user account to log in and access system functions.',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#059669',
-                    cancelButtonColor: '#64748b',
-                    confirmButtonText: 'Yes, approve'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        fetch(`/admin/users/${userId}/approve`, {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            }
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                Swal.fire('Approved!', data.success, 'success').then(() => location.reload());
-                            }
-                        })
-                        .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));
-                    }
-                });
-            });
-        });
+function toggleStatus(id) {
+    Swal.fire({
+        title: 'Toggle User Status?',
+        text: 'Are you sure you want to change this user\'s access status?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#059669',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, change status'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/admin/users/${id}/toggle-status`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(async response => {
+                const data = await response.json().catch(() => ({}));
+                if (response.ok && data.success) {
+                    Swal.fire('Success!', data.success, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Error', data.error || data.message || 'Something went wrong.', 'error');
+                }
+            })
+            .catch(err => Swal.fire('Error', err.message || 'Network error occurred.', 'error'));
+        }
     });
+}
+
+function approveUser(id) {
+    Swal.fire({
+        title: 'Approve User Account?',
+        text: 'This will authorize the user account to log in and access system functions.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#059669',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, approve'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/admin/users/${id}/approve`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(async response => {
+                const data = await response.json().catch(() => ({}));
+                if (response.ok && data.success) {
+                    Swal.fire('Approved!', data.success, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Error', data.error || data.message || 'Something went wrong.', 'error');
+                }
+            })
+            .catch(err => Swal.fire('Error', err.message || 'Network error occurred.', 'error'));
+        }
+    });
+}
 </script>
 @endsection

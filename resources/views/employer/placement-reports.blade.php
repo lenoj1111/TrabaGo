@@ -15,10 +15,10 @@
     <div class="mx-auto max-w-7xl space-y-8">
         
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
+                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
                     DMDP Placement Compliance
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Monthly Placement Reports</h1>
@@ -26,7 +26,7 @@
             </div>
 
             <button @click="reportModal = true" 
-                    class="shrink-0 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-6 py-3.5 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                    class="shrink-0 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 px-6 py-3.5 text-xs font-black text-white shadow-lg shadow-green-600/30 transition-all hover:scale-105">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 + Generate Placement Report
             </button>
@@ -84,12 +84,12 @@
                                         {{ str_replace('_', ' ', $rep->report_type) }}
                                     </span>
                                 </td>
-                                <td class="py-4 px-3 font-bold text-emerald-700">
+                                <td class="py-4 px-3 font-bold text-green-700">
                                     {{ $rData['total_hired'] ?? 0 }} hired
                                 </td>
                                 <td class="py-4 px-3">
                                     @if($rep->status === 'approved')
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-green-100 border border-green-300 px-2.5 py-0.5 text-xs font-bold text-green-800">
                                             ✓ Approved by Admin
                                         </span>
                                     @elseif($rep->status === 'jpo_evaluated')
@@ -116,7 +116,7 @@
                                     <div class="inline-flex items-center gap-2">
                                         <button type="button" 
                                                 @click='viewReport({!! $repJson !!})'
-                                                class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-bold text-xs border border-slate-200 transition-colors flex items-center gap-1">
+                                                class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-green-50 text-slate-700 hover:text-green-800 font-bold text-xs border border-slate-200 transition-colors flex items-center gap-1">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             View
                                         </button>
@@ -154,7 +154,7 @@
             
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
-                    <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Placement Compliance</span>
+                    <span class="text-xs font-bold text-green-700 uppercase tracking-wider">Placement Compliance</span>
                     <h3 class="text-xl font-black text-slate-900 mt-0.5">Generate Monthly Placement Report</h3>
                 </div>
                 <button @click="reportModal = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
@@ -166,13 +166,13 @@
                 <div class="space-y-1">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Report Month *</label>
                     <input type="month" name="report_month" value="{{ date('Y-m') }}" required
-                           class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                           class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
                 </div>
 
-                <div class="rounded-2xl bg-emerald-50/70 border border-emerald-200 p-4 space-y-2 text-xs">
-                    <span class="font-bold text-emerald-950">Hired Candidates Summary for this Report:</span>
-                    <p class="text-emerald-800 font-semibold">{{ $hiredApplicants->count() }} candidates currently confirmed as Hired.</p>
-                    <ul class="list-disc list-inside text-[11px] text-emerald-700 space-y-0.5">
+                <div class="rounded-2xl bg-green-50/70 border border-green-200 p-4 space-y-2 text-xs">
+                    <span class="font-bold text-green-950">Hired Candidates Summary for this Report:</span>
+                    <p class="text-green-800 font-semibold">{{ $hiredApplicants->count() }} candidates currently confirmed as Hired.</p>
+                    <ul class="list-disc list-inside text-[11px] text-green-700 space-y-0.5">
                         @foreach($hiredApplicants->take(5) as $h)
                             <li>{{ $h->jobseeker->first_name ?? 'Candidate' }} {{ $h->jobseeker->last_name ?? '' }} ({{ $h->jobPosting->title ?? 'N/A' }})</li>
                         @endforeach
@@ -182,14 +182,14 @@
                 <div class="space-y-1">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Employer Comments / Notes</label>
                     <textarea name="notes" rows="2" placeholder="Any additional notes or comments regarding hiring and onboarding..."
-                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
+                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400"></textarea>
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
                     <button type="button" @click="reportModal = false" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
                         Cancel
                     </button>
-                    <button type="submit" class="px-7 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-600/30">
+                    <button type="submit" class="px-7 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-black shadow-lg shadow-green-600/30">
                         Submit Report to JPO &rarr;
                     </button>
                 </div>
@@ -206,7 +206,7 @@
                 <div class="space-y-6">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                         <div>
-                            <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Placement Report Details</span>
+                            <span class="text-xs font-bold text-green-700 uppercase tracking-wider">Placement Report Details</span>
                             <h3 class="text-xl font-black text-slate-900 mt-0.5">
                                 Month: <span x-text="selectedReport.report_month"></span>
                             </h3>
@@ -219,7 +219,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs">
                         <div>
                             <span class="text-slate-400 font-bold uppercase text-[10px]">Total Hired</span>
-                            <p class="text-lg font-black text-emerald-800"><span x-text="selectedReport.total_hired"></span> Candidates</p>
+                            <p class="text-lg font-black text-green-800"><span x-text="selectedReport.total_hired"></span> Candidates</p>
                         </div>
                         <div>
                             <span class="text-slate-400 font-bold uppercase text-[10px]">Current Status</span>
@@ -264,7 +264,7 @@
                                             <td class="py-2.5 px-3 text-slate-600" x-text="item.hired_date"></td>
                                             <td class="py-2.5 px-3 text-right">
                                                 <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold"
-                                                      :class="item.referred_by_jpo === 'Yes' || item.referred_by_jpo === true ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'"
+                                                      :class="item.referred_by_jpo === 'Yes' || item.referred_by_jpo === true ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-700'"
                                                       x-text="item.referred_by_jpo === 'Yes' || item.referred_by_jpo === true ? 'JPO Referred' : 'Direct'">
                                                 </span>
                                             </td>

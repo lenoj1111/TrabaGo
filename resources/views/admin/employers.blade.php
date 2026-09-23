@@ -111,10 +111,10 @@
     <div class="mx-auto max-w-7xl space-y-8">
 
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20">
             <div class="space-y-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
+                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
                     DMDP Corporate Partnerships
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Employers Registry</h1>
@@ -140,10 +140,10 @@
             <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm flex items-center justify-between gap-4">
                 <div class="space-y-1">
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Accredited Partners</span>
-                    <p class="text-3xl font-black text-emerald-700">{{ $accreditedEmployers ?? 0 }}</p>
-                    <span class="text-[11px] text-emerald-800">Verified & authorized</span>
+                    <p class="text-3xl font-black text-green-700">{{ $accreditedEmployers ?? 0 }}</p>
+                    <span class="text-[11px] text-green-800">Verified & authorized</span>
                 </div>
-                <div class="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-center text-xl font-black">
+                <div class="h-12 w-12 rounded-2xl bg-green-50 text-green-800 border border-green-200 flex items-center justify-center text-xl font-black">
                     🛡️
                 </div>
             </div>
@@ -167,12 +167,12 @@
                     <label class="text-xs font-bold text-slate-700">Search Company</label>
                     <input type="text" name="search" value="{{ request('search') }}" 
                            placeholder="Company name..."
-                           class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                           class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                 </div>
 
                 <div class="lg:col-span-3 space-y-1">
                     <label class="text-xs font-bold text-slate-700">Accreditation Status</label>
-                    <select name="status" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                    <select name="status" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
                         <option value="">All Statuses</option>
                         <option value="accredited" {{ request('status') == 'accredited' ? 'selected' : '' }}>Accredited Only</option>
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending Only</option>
@@ -180,7 +180,7 @@
                 </div>
 
                 <div class="lg:col-span-3 flex items-center gap-2">
-                    <button type="submit" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-xs font-bold transition-colors">
+                    <button type="submit" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-green-600 text-white text-xs font-bold transition-colors">
                         Filter
                     </button>
                     <a href="{{ route('admin.employers') }}" class="px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">
@@ -222,7 +222,7 @@
                             <tr class="hover:bg-slate-50/80 transition-colors">
                                 <td class="py-4 px-6">
                                     <div class="flex items-center gap-3">
-                                        <div class="h-9 w-9 rounded-xl bg-teal-900 text-white font-bold text-xs flex items-center justify-center ring-2 ring-teal-500/30 shrink-0">
+                                        <div class="h-9 w-9 rounded-xl bg-green-900 text-white font-bold text-xs flex items-center justify-center ring-2 ring-green-500/30 shrink-0">
                                             🏢
                                         </div>
                                         <div>
@@ -236,7 +236,7 @@
                                         <div class="text-xs font-bold text-slate-900">{{ $employer->email ?? 'N/A' }}</div>
                                         <div>
                                             @if($isAccountApproved)
-                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200">
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-green-50 text-green-800 text-[10px] font-bold border border-green-200">
                                                     ✓ Account Active
                                                 </span>
                                             @else
@@ -254,10 +254,10 @@
                                                 @foreach($docs as $k => $d)
                                                     <button type="button" 
                                                             @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($docs))'
-                                                            class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-emerald-100 hover:text-emerald-900 text-slate-700 text-[10px] font-bold border border-slate-200 transition-colors cursor-pointer"
+                                                            class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-green-100 hover:text-green-900 text-slate-700 text-[10px] font-bold border border-slate-200 transition-colors cursor-pointer"
                                                             title="Click to inspect this document">
                                                         <span>📄 {{ ucfirst(str_replace('_', ' ', $k)) }}</span>
-                                                        <span class="text-[9px] text-emerald-600">↗</span>
+                                                        <span class="text-[9px] text-green-600">↗</span>
                                                     </button>
                                                 @endforeach
                                             </div>
@@ -268,7 +268,7 @@
                                 </td>
                                 <td class="py-4 px-6 text-center">
                                     @if($employer->is_accredited)
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold border bg-emerald-50 text-emerald-800 border-emerald-200">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold border bg-green-50 text-green-800 border-green-200">
                                             🛡️ Accredited
                                         </span>
                                     @elseif($isJpoRecommended)
@@ -316,12 +316,12 @@
                                         {{-- 2. Employer Accreditation (Gated by JPO Recommending Approval) --}}
                                         @if(!$employer->is_accredited)
                                             <button onclick="accreditEmployer({{ $employer->employer_id }}, {{ $isJpoRecommended ? 'true' : 'false' }})" 
-                                                    class="px-3 py-1.5 rounded-lg {{ $isJpoRecommended ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm' : 'bg-slate-100 text-slate-400 border border-slate-200 hover:bg-slate-200' }} font-bold text-xs transition-colors" 
+                                                    class="px-3 py-1.5 rounded-lg {{ $isJpoRecommended ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm' : 'bg-slate-100 text-slate-400 border border-slate-200 hover:bg-slate-200' }} font-bold text-xs transition-colors" 
                                                     title="{{ $isJpoRecommended ? 'Accredit Company' : 'JPO Recommending Approval is required first' }}">
                                                 🛡️ Accredit
                                             </button>
                                         @else
-                                            <span class="text-[11px] font-bold text-emerald-700">✓ Accredited</span>
+                                            <span class="text-[11px] font-bold text-green-700">✓ Accredited</span>
                                         @endif
                                     </div>
                                 </td>

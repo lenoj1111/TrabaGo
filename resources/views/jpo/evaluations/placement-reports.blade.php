@@ -24,10 +24,10 @@
     <div class="mx-auto max-w-7xl space-y-8">
         
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
+                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
                     Monthly Placement Compliance
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Evaluate Placement Reports</h1>
@@ -35,8 +35,8 @@
             </div>
 
             <div class="shrink-0 bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/10 text-center min-w-[150px]">
-                <span class="text-xs font-bold text-emerald-300 uppercase tracking-wider">Reports Log</span>
-                <p class="text-3xl font-black text-emerald-400 mt-0.5">{{ $reports->total() }}</p>
+                <span class="text-xs font-bold text-green-300 uppercase tracking-wider">Reports Log</span>
+                <p class="text-3xl font-black text-green-400 mt-0.5">{{ $reports->total() }}</p>
                 <span class="text-[10px] text-slate-300">Employer Submissions</span>
             </div>
         </div>
@@ -58,7 +58,7 @@
                     📋 Forwarded to Admin
                 </a>
                 <a href="{{ route('jpo.evaluations.placement-reports', ['status' => 'approved']) }}" 
-                   class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors {{ request('status') === 'approved' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100' }}">
+                   class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors {{ request('status') === 'approved' ? 'bg-green-600 text-white shadow-sm' : 'bg-green-50 text-green-800 hover:bg-green-100' }}">
                     ✓ Approved
                 </a>
             </div>
@@ -69,10 +69,10 @@
                 @endif
                 <div class="relative w-full md:w-64">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search company..."
-                           class="w-full rounded-xl border border-slate-200 pl-8 pr-3 py-1.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none">
+                           class="w-full rounded-xl border border-slate-200 pl-8 pr-3 py-1.5 text-xs text-slate-900 focus:border-green-500 focus:outline-none">
                     <span class="absolute left-2.5 top-2 text-slate-400 text-xs">🔍</span>
                 </div>
-                <button type="submit" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm">
+                <button type="submit" class="px-4 py-1.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-bold shadow-sm">
                     Search
                 </button>
             </form>
@@ -127,12 +127,12 @@
                                 <td class="py-4 px-3 font-bold text-slate-900">
                                     {{ date('F Y', strtotime($rep->report_month)) }}
                                 </td>
-                                <td class="py-4 px-3 font-bold text-emerald-700">
+                                <td class="py-4 px-3 font-bold text-green-700">
                                     {{ $rData['total_hired'] ?? 0 }} candidates
                                 </td>
                                 <td class="py-4 px-3">
                                     @if($rep->status === 'approved')
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-green-100 border border-green-300 px-2.5 py-0.5 text-xs font-bold text-green-800">
                                             ✓ Approved by Admin
                                         </span>
                                     @elseif($rep->status === 'jpo_evaluated')
@@ -156,7 +156,7 @@
                                     <div class="inline-flex items-center gap-2">
                                         <button type="button" 
                                                 @click='viewReport({!! $repJson !!})'
-                                                class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-bold text-xs border border-slate-200 transition-colors flex items-center gap-1">
+                                                class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-green-50 text-slate-700 hover:text-green-800 font-bold text-xs border border-slate-200 transition-colors flex items-center gap-1">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             View Report
                                         </button>
@@ -171,7 +171,7 @@
                                         @if($rep->status === 'submitted_to_jpo')
                                             <button type="button" 
                                                     @click="openForward({{ $rep->report_id }}, '{{ $rep->company_name }}', '{{ date('F Y', strtotime($rep->report_month)) }}')"
-                                                    class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-xs font-bold transition-colors">
+                                                    class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-green-600 text-white text-xs font-bold transition-colors">
                                                 Evaluate &rarr;
                                             </button>
                                         @endif
@@ -202,7 +202,7 @@
             
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
-                    <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Placement Report Verification</span>
+                    <span class="text-xs font-bold text-green-700 uppercase tracking-wider">Placement Report Verification</span>
                     <h3 class="text-xl font-black text-slate-900 mt-0.5">Evaluate Report: <span x-text="selectedCompany"></span></h3>
                 </div>
                 <button @click="forwardModal = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
@@ -211,22 +211,22 @@
             <form :action="'/jpo/evaluations/placement-reports/' + selectedRepId + '/forward'" method="POST" class="space-y-4">
                 @csrf
 
-                <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs space-y-1">
-                    <p class="font-bold text-emerald-950">Company: <span x-text="selectedCompany" class="text-slate-900 font-extrabold"></span></p>
-                    <p class="text-emerald-800">Reporting Period: <span x-text="selectedMonth" class="font-semibold"></span></p>
+                <div class="p-3.5 rounded-2xl bg-green-50 border border-green-200 text-xs space-y-1">
+                    <p class="font-bold text-green-950">Company: <span x-text="selectedCompany" class="text-slate-900 font-extrabold"></span></p>
+                    <p class="text-green-800">Reporting Period: <span x-text="selectedMonth" class="font-semibold"></span></p>
                 </div>
 
                 <div class="space-y-1">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">JPO Evaluation Remarks & Audit Notes *</label>
                     <textarea name="remarks" rows="3" required placeholder="State audit observations, verification of hired list, and endorsement for Admin..."
-                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
+                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400"></textarea>
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
                     <button type="button" @click="forwardModal = false" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
                         Cancel
                     </button>
-                    <button type="submit" class="px-7 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-600/30">
+                    <button type="submit" class="px-7 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-black shadow-lg shadow-green-600/30">
                         Verify & Send to Admin &rarr;
                     </button>
                 </div>
@@ -243,7 +243,7 @@
                 <div class="space-y-6">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                         <div>
-                            <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">JPO Placement Audit Inspector</span>
+                            <span class="text-xs font-bold text-green-700 uppercase tracking-wider">JPO Placement Audit Inspector</span>
                             <h3 class="text-xl font-black text-slate-900 mt-0.5">
                                 <span x-text="selectedReport.company_name"></span> &bull; <span x-text="selectedReport.report_month"></span>
                             </h3>
@@ -256,7 +256,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs">
                         <div>
                             <span class="text-slate-400 font-bold uppercase text-[10px]">Total Placements</span>
-                            <p class="text-lg font-black text-emerald-800"><span x-text="selectedReport.total_hired"></span> Candidates</p>
+                            <p class="text-lg font-black text-green-800"><span x-text="selectedReport.total_hired"></span> Candidates</p>
                         </div>
                         <div>
                             <span class="text-slate-400 font-bold uppercase text-[10px]">Audit Status</span>
@@ -301,7 +301,7 @@
                                             <td class="py-2.5 px-3 text-slate-600" x-text="item.hired_date"></td>
                                             <td class="py-2.5 px-3 text-right">
                                                 <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold"
-                                                      :class="item.referred_by_jpo === 'Yes' || item.referred_by_jpo === true ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'"
+                                                      :class="item.referred_by_jpo === 'Yes' || item.referred_by_jpo === true ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-700'"
                                                       x-text="item.referred_by_jpo === 'Yes' || item.referred_by_jpo === true ? 'DMDP Referred' : 'Direct'">
                                                 </span>
                                             </td>
@@ -343,7 +343,7 @@
                             <template x-if="selectedReport.status === 'submitted_to_jpo'">
                                 <button type="button" 
                                         @click="detailModal = false; openForward(selectedReport.report_id, selectedReport.company_name, selectedReport.report_month)"
-                                        class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-bold text-xs transition-colors">
+                                        class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-green-600 text-white font-bold text-xs transition-colors">
                                     Evaluate & Forward &rarr;
                                 </button>
                             </template>

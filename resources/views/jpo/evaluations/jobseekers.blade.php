@@ -18,10 +18,10 @@
     <div class="mx-auto max-w-7xl space-y-8">
         
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
+                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
                     Candidate Qualification & Referral
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Evaluate Jobseekers</h1>
@@ -30,11 +30,11 @@
 
             <div class="flex items-center gap-2">
                 <a href="{{ route('jpo.evaluations.jobseekers', ['status' => 'pending']) }}" 
-                   class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all {{ request('status') === 'pending' ? 'bg-emerald-600 text-white' : 'bg-white/10 text-slate-300 hover:bg-white/20' }}">
+                   class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all {{ request('status') === 'pending' ? 'bg-green-600 text-white' : 'bg-white/10 text-slate-300 hover:bg-white/20' }}">
                     Pending JPO
                 </a>
                 <a href="{{ route('jpo.evaluations.jobseekers', ['status' => 'referred']) }}" 
-                   class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all {{ request('status') === 'referred' ? 'bg-emerald-600 text-white' : 'bg-white/10 text-slate-300 hover:bg-white/20' }}">
+                   class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all {{ request('status') === 'referred' ? 'bg-green-600 text-white' : 'bg-white/10 text-slate-300 hover:bg-white/20' }}">
                     Referred to Employer
                 </a>
             </div>
@@ -49,13 +49,13 @@
                     $employer = $job->employer ?? null;
                     $isReferred = $app->referred_by_jpo;
                 @endphp
-                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between gap-5">
+                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-green-300 transition-all flex flex-col justify-between gap-5">
                     
                     <div class="space-y-4">
                         <!-- Top Header -->
                         <div class="flex items-start justify-between gap-2">
                             <div class="flex items-center gap-3">
-                                <div class="h-11 w-11 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white text-base font-black shrink-0 shadow-sm">
+                                <div class="h-11 w-11 rounded-2xl bg-gradient-to-tr from-green-600 to-green-400 flex items-center justify-center text-white text-base font-black shrink-0 shadow-sm">
                                     {{ strtoupper(substr($jobseeker->first_name ?? 'J', 0, 1)) }}
                                 </div>
                                 <div>
@@ -66,7 +66,7 @@
                                 </div>
                             </div>
 
-                            <span class="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase {{ $isReferred ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300' }}">
+                            <span class="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase {{ $isReferred ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-amber-100 text-amber-800 border border-amber-300' }}">
                                 {{ $isReferred ? '✓ Referred' : 'Pending JPO' }}
                             </span>
                         </div>
@@ -75,7 +75,7 @@
                         <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-0.5 text-xs">
                             <p class="text-slate-500 font-semibold">Target Opening:</p>
                             <p class="font-bold text-slate-900">{{ $job->title ?? 'N/A' }}</p>
-                            <p class="text-[11px] text-emerald-700 font-semibold">{{ $employer->company_name ?? 'Company' }}</p>
+                            <p class="text-[11px] text-green-700 font-semibold">{{ $employer->company_name ?? 'Company' }}</p>
                         </div>
 
                         <!-- Verified Skills Matrix -->
@@ -84,7 +84,7 @@
                                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Verified Skills:</span>
                                 <div class="flex flex-wrap gap-1">
                                     @foreach($jobseeker->skills->take(4) as $s)
-                                        <span class="rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                                        <span class="rounded-lg bg-green-50 border border-green-200 px-2 py-0.5 text-[10px] font-bold text-green-800">
                                             {{ $s->skill_name }}
                                         </span>
                                     @endforeach
@@ -116,7 +116,7 @@
                                             $url = $doc['file_url'] ?? null;
                                         @endphp
                                         @if($url)
-                                            <a href="{{ $url }}" target="_blank" class="inline-flex items-center gap-1 rounded-xl bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 border border-slate-200/80 px-2.5 py-1 text-[11px] font-bold text-slate-700 transition-colors shadow-2xs" title="Click to view/download {{ $doc['name'] ?? $label }}">
+                                            <a href="{{ $url }}" target="_blank" class="inline-flex items-center gap-1 rounded-xl bg-slate-100 hover:bg-green-50 hover:text-green-800 hover:border-green-300 border border-slate-200/80 px-2.5 py-1 text-[11px] font-bold text-slate-700 transition-colors shadow-2xs" title="Click to view/download {{ $doc['name'] ?? $label }}">
                                                 <span>{{ $icon }}</span>
                                                 <span>{{ $label }}</span>
                                                 <span class="text-[9px] text-slate-400">↗</span>
@@ -168,11 +168,11 @@
                         @if(!$isReferred)
                             <button type="button" 
                                     @click="openRefer({{ $app->application_id }}, '{{ $jobseeker->first_name }} {{ $jobseeker->last_name }}', '{{ $job->title }}')"
-                                    class="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md shadow-emerald-600/30 transition-all text-center">
+                                    class="flex-1 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-black shadow-md shadow-green-600/30 transition-all text-center">
                                 Evaluate & Refer &rarr;
                             </button>
                         @else
-                            <span class="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                            <span class="text-xs font-bold text-green-700 flex items-center gap-1">
                                 ✓ Endorsed
                             </span>
                         @endif
@@ -198,7 +198,7 @@
             
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
-                    <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">JPO Placement Endorsement</span>
+                    <span class="text-xs font-bold text-green-700 uppercase tracking-wider">JPO Placement Endorsement</span>
                     <h3 class="text-xl font-black text-slate-900 mt-0.5">Evaluate Candidate</h3>
                 </div>
                 <button @click="referModal = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
@@ -207,11 +207,11 @@
             <form :action="'/jpo/evaluations/jobseekers/' + selectedAppId + '/refer'" method="POST" class="space-y-4">
                 @csrf
 
-                <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs space-y-1.5">
-                    <p class="font-bold text-emerald-950">Candidate: <span x-text="selectedName" class="text-slate-900 font-extrabold"></span></p>
+                <div class="p-3.5 rounded-2xl bg-green-50 border border-green-200 text-xs space-y-1.5">
+                    <p class="font-bold text-green-950">Candidate: <span x-text="selectedName" class="text-slate-900 font-extrabold"></span></p>
                     <div class="flex items-center justify-between">
-                        <p class="text-emerald-800">Target Role: <span x-text="selectedJob" class="font-semibold"></span></p>
-                        <a :href="'/jpo/evaluations/jobseekers/' + selectedAppId + '/nsrp'" target="_blank" class="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1">
+                        <p class="text-green-800">Target Role: <span x-text="selectedJob" class="font-semibold"></span></p>
+                        <a :href="'/jpo/evaluations/jobseekers/' + selectedAppId + '/nsrp'" target="_blank" class="text-xs font-bold text-green-700 hover:underline flex items-center gap-1">
                             <span>📑 Inspect NSRP Form 1</span>
                             <span>↗</span>
                         </a>
@@ -221,7 +221,7 @@
                 <div class="space-y-1">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Evaluation Decision *</label>
                     <select name="recommendation" required
-                            class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none">
+                            class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-green-500 focus:outline-none">
                         <option value="refer">✓ Officially Refer & Endorse to Employer</option>
                         <option value="training">📚 Recommend Upskilling / Training Course</option>
                         <option value="reject">✕ Mark as Not Qualified for this Role</option>
@@ -231,14 +231,14 @@
                 <div class="space-y-1">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">JPO Endorsement Remarks</label>
                     <textarea name="remarks" rows="3" placeholder="State candidate qualifications, strengths, and endorsement justification..."
-                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
+                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400"></textarea>
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
                     <button type="button" @click="referModal = false" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
                         Cancel
                     </button>
-                    <button type="submit" class="px-7 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-600/30">
+                    <button type="submit" class="px-7 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-black shadow-lg shadow-green-600/30">
                         Confirm Endorsement & Send to Employer &rarr;
                     </button>
                 </div>

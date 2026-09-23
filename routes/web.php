@@ -5,6 +5,9 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\JobPostingController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\Employer\EmployerPortalController;
 use App\Http\Controllers\EmployerRegistrationController;
@@ -12,6 +15,7 @@ use App\Http\Controllers\Jobseeker\JobseekerPortalController;
 use App\Http\Controllers\JobseekerRegistrationController;
 use App\Http\Controllers\Jpo\JpoPortalController;
 use App\Http\Controllers\Lmo\LmoPortalController;
+use App\Http\Controllers\PublicJobController;
 use App\Http\Controllers\Supervisor\SupervisorPortalController;
 use App\Http\Controllers\Trainer\TrainerPortalController;
 use Illuminate\Http\Request;
@@ -29,6 +33,9 @@ Route::get('/', function () {
     return view('homepage');
 })->name('home');
 
+Route::get('/jobs', [PublicJobController::class, 'index'])->name('jobs.index');
+Route::get('/jobs/{id}', [PublicJobController::class, 'show'])->name('jobs.show');
+
 Route::get('/contact', [ContactController::class, 'index'])->name('contact');
 Route::post('/contact', [ContactController::class, 'submit'])->name('contact.submit');
 
@@ -41,6 +48,38 @@ Route::post('/contact', [ContactController::class, 'submit'])->name('contact.sub
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
+Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.post');
+
+Route::get('/dashboard', function () {
+    $user = Auth::user();
+    if (!$user) {
+        return redirect()->route('login');
+    }
+    switch ($user->role) {
+        case 'admin':
+        case 'supervisor':
+        case 'pesd_supervisor':
+            return redirect('/admin/dashboard');
+        case 'jpo':
+            return redirect('/jpo/dashboard');
+        case 'trainer':
+            return redirect('/trainer/dashboard');
+        case 'lmo':
+            return redirect('/lmo/dashboard');
+        case 'employer':
+            return redirect('/employer/dashboard');
+        case 'jobseeker':
+        default:
+            return redirect('/jobseeker/home');
+    }
+})->middleware('auth')->name('dashboard');
+
+Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
+Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
+Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.store');
 
 /*
 |--------------------------------------------------------------------------

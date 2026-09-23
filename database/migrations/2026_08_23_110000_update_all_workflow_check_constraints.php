@@ -44,6 +44,13 @@ return new class extends Migration
                 DB::statement("ALTER TABLE [training_enrollments] DROP CONSTRAINT [{$c->name}]");
             }
             DB::statement("ALTER TABLE [training_enrollments] ADD CONSTRAINT [CK_training_enrollments_status] CHECK ([status] IN ('enrolled', 'in_progress', 'completed', 'failed', 'cancelled'))");
+
+            // 6. jobseeker_skills skill_type check constraint
+            $skillConstraints = DB::select("SELECT name FROM sys.check_constraints WHERE parent_object_id = OBJECT_ID('jobseeker_skills') AND (definition LIKE '%skill_type%' OR name LIKE '%skill%type%')");
+            foreach ($skillConstraints as $c) {
+                DB::statement("ALTER TABLE [jobseeker_skills] DROP CONSTRAINT [{$c->name}]");
+            }
+            DB::statement("ALTER TABLE [jobseeker_skills] ADD CONSTRAINT [CK_jobseeker_skills_skill_type] CHECK ([skill_type] IN ('technical', '21st_century', 'technical_informal', 'soft_skill', 'vocational'))");
         }
     }
 

@@ -14,10 +14,10 @@
     <div class="mx-auto max-w-4xl space-y-8">
         
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
+                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
                     Figure 12: Conduct Competency Assessment
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Conduct Learner Assessment</h1>
@@ -53,11 +53,11 @@
 
             <div class="space-y-1">
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Course & Competency Track</span>
-                <h3 class="text-xl font-black text-emerald-800">{{ $enrollment->course_title }}</h3>
+                <h3 class="text-xl font-black text-green-800">{{ $enrollment->course_title }}</h3>
                 <p class="text-xs text-slate-500 line-clamp-2">{{ $enrollment->course_desc }}</p>
                 <div class="pt-2 flex items-center gap-2">
                     <span class="text-xs font-bold text-slate-600">Passing Requirement:</span>
-                    <span class="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 font-black text-xs border border-emerald-200">
+                    <span class="px-2 py-0.5 rounded-lg bg-green-50 text-green-800 font-black text-xs border border-green-200">
                         {{ $enrollment->passing_score ?: 80 }}% Score
                     </span>
                 </div>
@@ -72,7 +72,7 @@
                         <h2 class="text-base font-black text-slate-900">Course Assessment Questions</h2>
                         <p class="text-xs text-slate-500">Trainer-authored questions assigned to this course curriculum.</p>
                     </div>
-                    <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
+                    <span class="text-xs font-bold text-green-700 bg-green-50 px-2.5 py-1 rounded-xl border border-green-200">
                         {{ $assessments->count() }} Questions
                     </span>
                 </div>
@@ -117,7 +117,7 @@
                             Theory / Written Exam (40%)
                         </label>
                         <input type="number" name="theory_score" x-model="theoryScore" min="0" max="100" step="1" required
-                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
                         <p class="text-[11px] text-slate-400">Knowledge & module comprehension</p>
                     </div>
 
@@ -127,7 +127,7 @@
                             Practical Demonstration (60%)
                         </label>
                         <input type="number" name="practical_score" x-model="practicalScore" min="0" max="100" step="1" required
-                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
                         <p class="text-[11px] text-slate-400">Hands-on laboratory execution</p>
                     </div>
 
@@ -137,7 +137,7 @@
                             Final Composite Score (%) *
                         </label>
                         <input type="number" name="score" :value="finalScore" min="0" max="100" step="0.1" required
-                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-900 bg-slate-50 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-900 bg-slate-50 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
                         <p class="text-[11px] text-slate-400">Combined grade</p>
                     </div>
 
@@ -145,7 +145,7 @@
 
                 <!-- Outcome Preview Box -->
                 <div class="p-4 rounded-2xl border transition-all"
-                     :class="finalScore >= passingScore ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-rose-50 border-rose-200 text-rose-950'">
+                     :class="finalScore >= passingScore ? 'bg-green-50 border-green-200 text-green-950' : 'bg-rose-50 border-rose-200 text-rose-950'">
                     <div class="flex items-center justify-between text-xs font-bold">
                         <span class="flex items-center gap-2">
                             <span class="text-base" x-text="finalScore >= passingScore ? '🎓' : '⚠️'"></span>
@@ -162,7 +162,7 @@
                         Laboratory Observation & Attendance Remarks
                     </label>
                     <input type="text" name="lab_remarks" value="{{ $enrollment->lab_remarks ?? '' }}" placeholder="e.g. Attended all workshop sessions, demonstrated safety protocols..."
-                           class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                           class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
                 </div>
 
                 <!-- Trainer Practical Feedback -->
@@ -171,7 +171,7 @@
                         Trainer Assessment Feedback & Recommendations
                     </label>
                     <textarea name="trainer_feedback" rows="3" placeholder="Detailed feedback regarding candidate competencies, technical proficiencies, and readiness for employment..."
-                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">{{ $enrollment->trainer_feedback ?? '' }}</textarea>
+                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">{{ $enrollment->trainer_feedback ?? '' }}</textarea>
                 </div>
 
                 <!-- Actions -->
@@ -179,7 +179,7 @@
                     <a href="{{ route('trainer.enrollments.index') }}" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
                         Cancel
                     </a>
-                    <button type="submit" class="px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                    <button type="submit" class="px-8 py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-black shadow-lg shadow-green-600/30 transition-all hover:scale-105">
                         Submit Assessment & Record Grade &rarr;
                     </button>
                 </div>

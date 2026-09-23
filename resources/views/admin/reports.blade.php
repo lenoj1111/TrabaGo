@@ -7,10 +7,10 @@
     <div class="mx-auto max-w-7xl space-y-8">
 
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
+                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
                     DMDP Intelligence & Statistical Analytics
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Platform Reports & Analytics</h1>
@@ -25,7 +25,7 @@
                     <span>📊 Placement Reports Directory &rarr;</span>
                 </a>
                 <button onclick="window.print()" 
-                        class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-5 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                        class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 px-5 py-3 text-xs font-black text-white shadow-lg shadow-green-600/30 transition-all hover:scale-105">
                     <span>🖨️ Print / Export Report</span>
                 </button>
             </div>
@@ -39,7 +39,7 @@
                     <p class="text-3xl font-black text-slate-900">{{ $stats['total_jobs'] ?? 0 }}</p>
                     <span class="text-[11px] text-slate-500">All registered postings</span>
                 </div>
-                <div class="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-center text-xl font-black">
+                <div class="h-12 w-12 rounded-2xl bg-green-50 text-green-800 border border-green-200 flex items-center justify-center text-xl font-black">
                     💼
                 </div>
             </div>
@@ -47,10 +47,10 @@
             <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm flex items-center justify-between gap-4">
                 <div class="space-y-1">
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Corporate Employers</span>
-                    <p class="text-3xl font-black text-teal-700">{{ $stats['total_employers'] ?? 0 }}</p>
-                    <span class="text-[11px] text-teal-800">Partner companies</span>
+                    <p class="text-3xl font-black text-green-700">{{ $stats['total_employers'] ?? 0 }}</p>
+                    <span class="text-[11px] text-green-800">Partner companies</span>
                 </div>
-                <div class="h-12 w-12 rounded-2xl bg-teal-50 text-teal-800 border border-teal-200 flex items-center justify-center text-xl font-black">
+                <div class="h-12 w-12 rounded-2xl bg-green-50 text-green-800 border border-green-200 flex items-center justify-center text-xl font-black">
                     🏢
                 </div>
             </div>
@@ -100,11 +100,11 @@
                     <!-- Approved -->
                     <div class="space-y-1.5">
                         <div class="flex items-center justify-between text-xs font-bold">
-                            <span class="text-emerald-700">✓ Approved & Active</span>
+                            <span class="text-green-700">✓ Approved & Active</span>
                             <span class="text-slate-900">{{ $stats['approved'] ?? 0 }} ({{ $approvedPct }}%)</span>
                         </div>
                         <div class="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                            <div class="h-full bg-emerald-500 rounded-full" style="width: {{ $approvedPct }}%"></div>
+                            <div class="h-full bg-green-500 rounded-full" style="width: {{ $approvedPct }}%"></div>
                         </div>
                     </div>
 
@@ -166,7 +166,7 @@
 
                     <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="h-8 w-8 rounded-xl bg-teal-100 text-teal-800 font-bold text-xs flex items-center justify-center">
+                            <div class="h-8 w-8 rounded-xl bg-green-100 text-green-800 font-bold text-xs flex items-center justify-center">
                                 🏢
                             </div>
                             <div>
@@ -203,9 +203,9 @@
                         <span class="text-sm font-black text-slate-900">{{ $stats['admin_count'] ?? 0 }}</span>
                     </div>
 
-                    <div class="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-100 flex items-center justify-between">
+                    <div class="p-3.5 rounded-2xl bg-green-50/60 border border-green-100 flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="h-8 w-8 rounded-xl bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center">
+                            <div class="h-8 w-8 rounded-xl bg-green-100 text-green-800 font-bold text-xs flex items-center justify-center">
                                 📊
                             </div>
                             <div>
@@ -214,8 +214,8 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <span class="text-sm font-black text-emerald-800">{{ $stats['total_placement_reports'] ?? 0 }}</span>
-                            <a href="{{ route('admin.placement-reports.index') }}" class="text-[10px] text-emerald-700 hover:underline font-bold">View &rarr;</a>
+                            <span class="text-sm font-black text-green-800">{{ $stats['total_placement_reports'] ?? 0 }}</span>
+                            <a href="{{ route('admin.placement-reports.index') }}" class="text-[10px] text-green-700 hover:underline font-bold">View &rarr;</a>
                         </div>
                     </div>
                 </div>

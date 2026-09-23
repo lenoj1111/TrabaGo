@@ -15,15 +15,15 @@
 
     <style>
         body { font-family: 'Inter', sans-serif; }
-        ::selection { background-color: #059669; color: #ffffff; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f8fafc; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #10b981; }
+        ::selection { background-color: #16a34a; color: #ffffff; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #fafafa; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #22c55e; }
     </style>
     @stack('styles')
 </head>
-<body class="min-h-full flex flex-col bg-white text-slate-900 antialiased">
+<body class="min-h-full flex flex-col bg-white text-gray-900 antialiased">
     @include('partials.public-navbar')
     
     <main class="flex-1">

@@ -297,7 +297,7 @@ class UserManagementController extends Controller
     /**
      * Toggle user status (Activate/Deactivate)
      */
-    public function toggleStatus(int $id)
+    public function toggleStatus(Request $request, int $id)
     {
         try {
             $user = DB::table('users')->where('user_id', $id)->first();
@@ -319,10 +319,17 @@ class UserManagementController extends Controller
             $this->createNotification($id, "Account {$message}", 
                 "Your account has been {$message} by an administrator.");
 
+            if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+                return response()->json(['success' => "User has been {$message} successfully!", 'status' => $newStatus]);
+            }
+
             return redirect()->back()
                 ->with('success', "User has been {$message} successfully!");
 
         } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+                return response()->json(['error' => 'Operation failed: ' . $e->getMessage()], 500);
+            }
             return redirect()->back()->with('error', 'Operation failed: ' . $e->getMessage());
         }
     }
@@ -330,12 +337,15 @@ class UserManagementController extends Controller
     /**
      * Approve a user
      */
-    public function approve(int $id)
+    public function approve(Request $request, int $id)
     {
         try {
             $user = DB::table('users')->where('user_id', $id)->first();
             
             if (!$user) {
+                if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+                    return response()->json(['error' => 'User not found.'], 404);
+                }
                 return redirect()->back()->with('error', 'User not found.');
             }
 
@@ -350,10 +360,17 @@ class UserManagementController extends Controller
             $this->createNotification($id, 'Account Approved', 
                 "Your account has been approved. You can now access the system.");
 
+            if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+                return response()->json(['success' => 'User approved successfully!']);
+            }
+
             return redirect()->back()
                 ->with('success', 'User approved successfully!');
 
         } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+                return response()->json(['error' => 'Approval failed: ' . $e->getMessage()], 500);
+            }
             return redirect()->back()->with('error', 'Approval failed: ' . $e->getMessage());
         }
     }

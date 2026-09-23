@@ -4,157 +4,358 @@
 
 @section('content')
 <div class="bg-white">
-    <!-- Breadcrumb -->
-    <div class="bg-emerald-50/60 border-b border-emerald-100">
-        <div class="max-w-6xl mx-auto px-5 py-3">
-            <nav class="text-xs font-semibold">
-                <ol class="flex items-center gap-2 text-slate-600">
-                    <li><a href="{{ route('home') }}" class="hover:text-emerald-700 transition-colors">Home</a></li>
-                    <li><span class="text-slate-300">/</span></li>
-                    <li><a href="#" class="hover:text-emerald-700 transition-colors">Offices</a></li>
-                    <li><span class="text-slate-300">/</span></li>
-                    <li class="text-emerald-800 font-bold">Department of Manpower Development and Placement (DMDP)</li>
-                </ol>
-            </nav>
-        </div>
-    </div>
 
-    <!-- Hero Section with TrabaGo Green Palette -->
-    <div class="relative overflow-hidden" style="background: linear-gradient(135deg, #022c22 0%, #064e3b 50%, #047857 100%);">
-        <!-- Ambient light circles -->
-        <div class="absolute -right-20 -top-20 h-96 w-96 rounded-full bg-emerald-400/15 blur-3xl"></div>
-        <div class="absolute -bottom-20 left-40 h-96 w-96 rounded-full bg-teal-400/15 blur-3xl"></div>
-
-        <!-- TrabaGo Floating Badge - Top Right -->
-        <div class="absolute top-8 right-8 z-10 hidden md:block">
-            <div class="bg-white/10 backdrop-blur-md border border-emerald-400/30 rounded-2xl px-6 py-3 shadow-2xl">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                        <svg class="w-5 h-5 text-slate-950 font-black" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                        </svg>
+    <!-- Hero Section -->
+    <div class="bg-green-950 relative overflow-hidden">
+        <div class="max-w-5xl mx-auto px-5 py-20 md:py-24">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-12">
+                
+                <!-- Left: Title -->
+                <div class="flex-1 space-y-5">
+                    <div class="inline-flex items-center gap-2 rounded-full bg-green-900/60 border border-green-800/80 px-3.5 py-1.5 text-xs font-semibold text-green-300">
+                        <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
+                        Cebu City Government &bull; DMDP PESO Portal
                     </div>
-                    <div>
-                        <p class="text-emerald-300 text-[10px] font-bold tracking-widest uppercase">POWERED BY</p>
-                        <p class="text-white font-extrabold text-xl tracking-tight leading-none mt-0.5">Traba<span class="text-emerald-400">Go</span></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="relative max-w-6xl mx-auto px-5 py-16 md:py-24">
-            <!-- Official Seal Badge -->
-            <div class="inline-flex items-center gap-3 bg-white/10 backdrop-blur px-5 py-2.5 rounded-full mb-6 border border-emerald-400/30">
-                <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center shadow-md">
-                    <svg class="w-4 h-4 text-slate-950" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0h8v12H6V4z" clip-rule="evenodd"/>
-                        <path d="M8 6h4v2H8V6zm0 4h4v2H8v-2z"/>
-                    </svg>
-                </div>
-                <span class="text-white font-bold text-xs tracking-wider">OFFICIAL PORTAL</span>
-                <span class="w-px h-4 bg-white/20"></span>
-                <span class="text-emerald-300 text-xs font-bold">DMDP CEBU CITY</span>
-            </div>
-            
-            <!-- Main Title with TrabaGo Highlight -->
-            <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-10">
-                <!-- Left Side - Title -->
-                <div class="flex-1 space-y-4">
-                    <h1 class="text-4xl md:text-6xl font-black mb-4 leading-tight text-white tracking-tight">
+                    
+                    <h1 class="text-4xl md:text-5xl font-extrabold text-white leading-tight tracking-tight">
                         Department of Manpower
-                        <span class="block text-3xl md:text-5xl mt-2 text-emerald-300">Development & Placement</span>
-                        <span class="block text-2xl md:text-3xl mt-1 text-white/80">(DMDP Cebu City)</span>
+                        <span class="block text-green-400 mt-1">Development &amp; Placement</span>
                     </h1>
                     
-                    <!-- Tagline with decorative border -->
-                    <div class="relative inline-block mt-4 pl-4 border-l-4 border-emerald-400">
-                        <p class="text-xl md:text-2xl text-emerald-100 font-medium italic">
-                            "Dugang Makat-unan, alang sa Disenting Panginabuhian"
-                        </p>
+                    <p class="text-green-100/75 text-sm sm:text-base leading-relaxed max-w-lg">
+                        <em class="font-medium text-green-200">"Dugang Makat-unan, alang sa Disenting Panginabuhian"</em> — Bridging Cebuano jobseekers to sustainable careers through skill development and verified job placement.
+                    </p>
+
+                    <div class="flex flex-wrap items-center gap-3 pt-2">
+                        <span class="inline-flex items-center gap-1.5 text-xs font-medium text-green-300/90 bg-green-900/50 border border-green-800/50 px-3 py-1.5 rounded-full">
+                            <span class="h-1.5 w-1.5 rounded-full bg-green-400"></span>
+                            Verified Job Listings
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 text-xs font-medium text-green-300/90 bg-green-900/50 border border-green-800/50 px-3 py-1.5 rounded-full">
+                            <span class="h-1.5 w-1.5 rounded-full bg-green-400"></span>
+                            Free Vocational Training
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 text-xs font-medium text-green-300/90 bg-green-900/50 border border-green-800/50 px-3 py-1.5 rounded-full">
+                            <span class="h-1.5 w-1.5 rounded-full bg-green-400"></span>
+                            PWD-Inclusive Opportunities
+                        </span>
                     </div>
                 </div>
 
-                <!-- Right Side - TrabaGo Card with Register Buttons -->
-                <div class="shrink-0 w-full lg:w-[360px]">
-                    <div class="relative bg-white/10 backdrop-blur-xl border border-emerald-400/30 rounded-3xl p-6 md:p-8 shadow-2xl text-center space-y-5">
-                        <!-- Large TrabaGo Icon -->
-                        <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center mx-auto shadow-xl shadow-emerald-500/40">
-                            <svg class="w-10 h-10 text-slate-950 font-black" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                            </svg>
-                        </div>
-                        
-                        <div>
-                            <div class="text-emerald-300 text-xs font-extrabold tracking-widest uppercase">Empowering Cebuanos Through</div>
-                            <div class="text-3xl md:text-4xl font-black text-white mt-1">
-                                Traba<span class="text-emerald-400">Go</span>
+                <!-- Right: CTA Card -->
+                <div class="shrink-0 w-full lg:w-[340px]">
+                    <div class="bg-green-900/70 border border-green-800/80 rounded-2xl p-7 space-y-5 shadow-xl backdrop-blur-sm">
+                        <div class="text-center">
+                            <div class="w-14 h-14 bg-green-600 rounded-2xl flex items-center justify-center mx-auto text-white font-black text-2xl shadow-lg">
+                                T
                             </div>
-                            <p class="text-slate-300 text-xs mt-2 leading-relaxed">
-                                AI Cosine-Similarity Skill Matching, Vocational Training & Direct Employment
+                            <p class="text-xs font-semibold text-green-400 uppercase tracking-wider mt-3">Empowering Cebuanos</p>
+                            <p class="text-2xl font-extrabold text-white mt-1">
+                                Traba<span class="text-green-400">Go</span>
+                            </p>
+                            <p class="text-green-200/70 text-xs mt-1.5">
+                                AI Skill Matching &bull; Vocational Training &bull; Direct Placement
                             </p>
                         </div>
 
-                        <!-- Divider -->
-                        <div class="border-t border-white/10 my-4"></div>
-
-                        <!-- Register Buttons in Green Palette -->
-                        <div class="space-y-3">
-                            <a href="{{ route('jobseeker.register') }}" 
-                               class="flex items-center justify-center gap-2 w-full px-5 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-sm rounded-2xl transition-all shadow-lg shadow-emerald-600/30 hover:scale-[1.02]">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                </svg>
-                                Register as Jobseeker
+                        <div class="border-t border-green-800/60 pt-4 space-y-2.5">
+                            <a href="{{ route('register') }}" 
+                               class="flex items-center justify-center w-full px-5 py-3 bg-green-600 hover:bg-green-500 text-white font-semibold text-sm rounded-xl transition-colors shadow-md">
+                                Get Started Free &rarr;
                             </a>
                             
-                            <a href="{{ route('employer.register') }}" 
-                               class="flex items-center justify-center gap-2 w-full px-5 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-2xl transition-all border border-emerald-400/30">
-                                Register as Employer
-                            </a>
+                            <p class="text-xs text-green-300/70 text-center">
+                                Existing member?
+                                <a href="{{ route('login') }}" class="font-semibold text-green-400 hover:text-green-300">Sign In</a>
+                            </p>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Official Mandate Section: Vision, Mission & Core Values -->
+    <section class="py-16 md:py-24 bg-gray-50/70 border-b border-gray-200">
+        <div class="max-w-5xl mx-auto px-5">
             
-            <!-- Bottom Info Badges -->
-            <div class="flex flex-wrap items-center gap-3 text-xs mt-10">
-                <span class="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur px-3.5 py-1.5 rounded-full border border-emerald-400/20 text-emerald-200">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
-                    Verified Cebu City Job Listings
-                </span>
-                <span class="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur px-3.5 py-1.5 rounded-full border border-emerald-400/20 text-emerald-200">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
-                    Free Vocational Skill Assessment
-                </span>
-                <span class="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur px-3.5 py-1.5 rounded-full border border-emerald-400/20 text-emerald-200">
-                    <span class="h-2 w-2 rounded-full bg-teal-400"></span>
-                    ♿ PWD-Inclusive Career Matching
-                </span>
+            <!-- Section Header -->
+            <div class="text-center max-w-2xl mx-auto space-y-3 mb-14">
+                <div class="inline-flex items-center gap-2 rounded-md bg-green-50 border border-green-200 px-3 py-1 text-xs font-bold text-green-700 uppercase tracking-wider">
+                    Cebu City Government &bull; DMDP
+                </div>
+                <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight sm:text-4xl">
+                    Vision, Mission &amp; Core Values
+                </h2>
+                <p class="text-sm text-gray-600 leading-relaxed">
+                    The guiding framework of the Department of Manpower Development and Placement (DMDP) in fostering sustainable livelihood and vocational excellence.
+                </p>
+            </div>
+
+            <!-- 3 Columns Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+                
+                <!-- 1. Vision Card -->
+                <div class="rounded-2xl border border-gray-200 bg-white p-7 flex flex-col justify-between hover:border-green-300 hover:shadow-md transition-all">
+                    <div class="space-y-5">
+                        <!-- Hex / Icon Badge -->
+                        <div class="flex items-center justify-between">
+                            <div class="w-12 h-12 rounded-xl bg-green-600 text-white flex items-center justify-center shadow-sm">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                            </div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-md">
+                                Vision
+                            </span>
+                        </div>
+
+                        <div>
+                            <h3 class="text-xl font-extrabold text-gray-900 tracking-tight">
+                                DMDP PESO
+                            </h3>
+                            <p class="text-xs font-semibold text-green-700 mt-0.5">
+                                Public Employment Service Office
+                            </p>
+                        </div>
+
+                        <ul class="space-y-1.5 text-xs text-gray-700 font-medium">
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-5 h-5 rounded-md bg-green-100 text-green-800 font-bold flex items-center justify-center text-[11px] shrink-0">D</span>
+                                <span><strong class="text-gray-900">D</strong>eveloped</span>
+                            </li>
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-5 h-5 rounded-md bg-green-100 text-green-800 font-bold flex items-center justify-center text-[11px] shrink-0">M</span>
+                                <span><strong class="text-gray-900">M</strong>eaningful</span>
+                            </li>
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-5 h-5 rounded-md bg-green-100 text-green-800 font-bold flex items-center justify-center text-[11px] shrink-0">D</span>
+                                <span><strong class="text-gray-900">D</strong>ynamic</span>
+                            </li>
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-5 h-5 rounded-md bg-green-100 text-green-800 font-bold flex items-center justify-center text-[11px] shrink-0">P</span>
+                                <span><strong class="text-gray-900">P</strong>rograms for</span>
+                            </li>
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-5 h-5 rounded-md bg-green-100 text-green-800 font-bold flex items-center justify-center text-[11px] shrink-0">P</span>
+                                <span><strong class="text-gray-900">P</strong>eople's</span>
+                            </li>
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-5 h-5 rounded-md bg-green-100 text-green-800 font-bold flex items-center justify-center text-[11px] shrink-0">E</span>
+                                <span><strong class="text-gray-900">E</strong>mployability</span>
+                            </li>
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-5 h-5 rounded-md bg-green-100 text-green-800 font-bold flex items-center justify-center text-[11px] shrink-0">S</span>
+                                <span><strong class="text-gray-900">S</strong>kills and</span>
+                            </li>
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-5 h-5 rounded-md bg-green-100 text-green-800 font-bold flex items-center justify-center text-[11px] shrink-0">O</span>
+                                <span><strong class="text-gray-900">O</strong>pportunities</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="pt-6 border-t border-gray-100 mt-6">
+                        <div class="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                            <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                            Continuous community program development
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Mission Card -->
+                <div class="rounded-2xl border border-gray-200 bg-white p-7 flex flex-col justify-between hover:border-blue-300 hover:shadow-md transition-all">
+                    <div class="space-y-5">
+                        <!-- Hex / Icon Badge -->
+                        <div class="flex items-center justify-between">
+                            <div class="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="9" stroke-width="2"/>
+                                    <circle cx="12" cy="12" r="5" stroke-width="2"/>
+                                    <circle cx="12" cy="12" r="1" stroke-width="2" fill="currentColor"/>
+                                </svg>
+                            </div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-md">
+                                Mission
+                            </span>
+                        </div>
+
+                        <div>
+                            <h3 class="text-xl font-extrabold text-gray-900 tracking-tight">
+                                Advancing AcCESS
+                            </h3>
+                            <p class="text-xs font-semibold text-blue-700 mt-0.5">
+                                Strategic Milestone by 2025 &amp; Beyond
+                            </p>
+                        </div>
+
+                        <ul class="space-y-1.5 text-xs text-gray-700 font-medium">
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-6 h-5 rounded-md bg-blue-100 text-blue-800 font-bold flex items-center justify-center text-[10px] shrink-0">Ac</span>
+                                <span><strong class="text-gray-900">Ac</strong>celerating</span>
+                            </li>
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-6 h-5 rounded-md bg-blue-100 text-blue-800 font-bold flex items-center justify-center text-[10px] shrink-0">C</span>
+                                <span><strong class="text-gray-900">C</strong>areer</span>
+                            </li>
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-6 h-5 rounded-md bg-blue-100 text-blue-800 font-bold flex items-center justify-center text-[10px] shrink-0">E</span>
+                                <span><strong class="text-gray-900">E</strong>ntrepreneurial and</span>
+                            </li>
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-6 h-5 rounded-md bg-blue-100 text-blue-800 font-bold flex items-center justify-center text-[10px] shrink-0">S</span>
+                                <span><strong class="text-gray-900">S</strong>kills development for</span>
+                            </li>
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-6 h-5 rounded-md bg-blue-100 text-blue-800 font-bold flex items-center justify-center text-[10px] shrink-0">S</span>
+                                <span><strong class="text-gray-900">S</strong>uccess</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="pt-6 border-t border-gray-100 mt-6">
+                        <div class="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                            <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                            Expanding livelihood &amp; enterprise pathways
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Core Values Card -->
+                <div class="rounded-2xl border border-gray-200 bg-white p-7 flex flex-col justify-between hover:border-green-300 hover:shadow-md transition-all">
+                    <div class="space-y-5">
+                        <!-- Hex / Icon Badge -->
+                        <div class="flex items-center justify-between">
+                            <div class="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-sm">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                                </svg>
+                            </div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md">
+                                Core Values
+                            </span>
+                        </div>
+
+                        <div>
+                            <h3 class="text-xl font-extrabold text-gray-900 tracking-tight">
+                                We EMPLOY
+                            </h3>
+                            <p class="text-xs font-semibold text-amber-700 mt-0.5">
+                                Principles Guiding Public Service
+                            </p>
+                        </div>
+
+                        <ul class="space-y-1.5 text-xs text-gray-700 font-medium">
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-5 h-5 rounded-md bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-[11px] shrink-0">E</span>
+                                <span><strong class="text-gray-900">E</strong>xcellence</span>
+                            </li>
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-5 h-5 rounded-md bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-[11px] shrink-0">M</span>
+                                <span><strong class="text-gray-900">M</strong>ission-driven</span>
+                            </li>
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-5 h-5 rounded-md bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-[11px] shrink-0">P</span>
+                                <span><strong class="text-gray-900">P</strong>eoples-oriented</span>
+                            </li>
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-5 h-5 rounded-md bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-[11px] shrink-0">L</span>
+                                <span><strong class="text-gray-900">L</strong>imitless</span>
+                            </li>
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-5 h-5 rounded-md bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-[11px] shrink-0">O</span>
+                                <span><strong class="text-gray-900">O</strong>pen-minded</span>
+                            </li>
+                            <li class="flex items-center gap-2 py-0.5">
+                                <span class="w-5 h-5 rounded-md bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-[11px] shrink-0">Y</span>
+                                <span><strong class="text-gray-900">Y</strong>ielding results</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="pt-6 border-t border-gray-100 mt-6">
+                        <div class="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                            <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                            Dedicated to public accountability &amp; impact
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Core Services Overview -->
+    <section class="py-16 bg-white">
+        <div class="max-w-5xl mx-auto px-5">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <div class="p-6 rounded-2xl border border-gray-100 bg-gray-50/50 space-y-3">
+                    <div class="w-10 h-10 rounded-lg bg-green-100 text-green-700 flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-base font-bold text-gray-900">Direct Job Matching</h3>
+                    <p class="text-xs text-gray-500 leading-relaxed">
+                        Access accredited local and international job postings evaluated by the Public Employment Service Office.
+                    </p>
+                    <a href="{{ route('jobs.index') }}" class="text-xs font-semibold text-green-700 hover:text-green-800 inline-flex items-center gap-1">
+                        Browse Vacancies &rarr;
+                    </a>
+                </div>
+
+                <div class="p-6 rounded-2xl border border-gray-100 bg-gray-50/50 space-y-3">
+                    <div class="w-10 h-10 rounded-lg bg-green-100 text-green-700 flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-base font-bold text-gray-900">Vocational Skills Training</h3>
+                    <p class="text-xs text-gray-500 leading-relaxed">
+                        Free competency certifications and hands-on lab modules to elevate your market readiness.
+                    </p>
+                    <a href="{{ route('register') }}" class="text-xs font-semibold text-green-700 hover:text-green-800 inline-flex items-center gap-1">
+                        Join Courses &rarr;
+                    </a>
+                </div>
+
+                <div class="p-6 rounded-2xl border border-gray-100 bg-gray-50/50 space-y-3">
+                    <div class="w-10 h-10 rounded-lg bg-green-100 text-green-700 flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-base font-bold text-gray-900">Employer Accreditation</h3>
+                    <p class="text-xs text-gray-500 leading-relaxed">
+                        Verified business entities compliant with DOLE and local labor standards for fair, safe recruitment.
+                    </p>
+                    <a href="{{ route('register') }}" class="text-xs font-semibold text-green-700 hover:text-green-800 inline-flex items-center gap-1">
+                        Accredit Company &rarr;
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom CTA -->
+    <div class="bg-green-900 py-14 px-5 text-center">
+        <div class="max-w-2xl mx-auto space-y-4">
+            <h3 class="text-2xl sm:text-3xl font-extrabold text-white">Be Part of the Cebu City Workforce</h3>
+            <p class="text-sm text-green-100/75 leading-relaxed">
+                Connect directly with accredited employers and boost your employability through free skills certifications.
+            </p>
+            <div class="pt-2">
+                <a href="{{ route('jobs.index') }}" 
+                   class="inline-flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-semibold text-sm rounded-xl transition-colors shadow-lg">
+                    Explore Job Vacancies &rarr;
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Bottom CTA Banner in Emerald Theme -->
-    <div class="relative overflow-hidden py-16 px-5 text-center" style="background: linear-gradient(135deg, #022c22 0%, #064e3b 100%);">
-        <div class="max-w-4xl mx-auto space-y-6">
-            <div class="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-400/30 px-4 py-1.5 rounded-full text-xs font-bold text-emerald-300">
-                Powered by TrabaGo Engine
-            </div>
-            <h3 class="text-3xl sm:text-4xl font-black text-white">Be Part of the Cebu City Workforce</h3>
-            <p class="text-sm text-emerald-100/80 max-w-xl mx-auto leading-relaxed">
-                Connect directly with accredited Cebu employers and boost your employability through free skills certifications.
-            </p>
-            <div class="flex flex-wrap justify-center gap-4 pt-2">
-                <a href="{{ route('jobseeker.register') }}" 
-                   class="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-sm rounded-2xl shadow-xl shadow-emerald-600/30 transition-all hover:scale-105">
-                    Start Matching Jobs &rarr;
-                </a>
-                <a href="{{ route('login') }}" 
-                   class="inline-flex items-center gap-2 px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold text-sm rounded-2xl border border-white/20">
-                    Existing User Login
-                </a>
-            </div>
-        </div>
-    </div>
 </div>
 @endsection

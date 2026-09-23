@@ -9,7 +9,7 @@
         <!-- Header -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="space-y-1">
-                <a href="{{ route('admin.job-postings') }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-900 inline-flex items-center gap-1">
+                <a href="{{ route('admin.job-postings') }}" class="text-xs font-bold text-green-700 hover:text-green-900 inline-flex items-center gap-1">
                     &larr; Back to Job Postings Registry
                 </a>
                 <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{{ $jobPosting->title }}</h1>
@@ -37,7 +37,7 @@
                             $isExpired = $jobPosting->status === 'approved' && $jobPosting->valid_until < now()->toDateString();
                             $statusBadge = match($jobPosting->status) {
                                 'pending' => 'bg-amber-50 text-amber-800 border-amber-200',
-                                'approved' => $isExpired ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                                'approved' => $isExpired ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-green-50 text-green-800 border-green-200',
                                 'rejected' => 'bg-rose-50 text-rose-800 border-rose-200',
                                 'closed' => 'bg-slate-100 text-slate-700 border-slate-200',
                                 default => 'bg-slate-100 text-slate-700 border-slate-200',
@@ -57,7 +57,7 @@
 
                         <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                             <span class="text-[10px] font-bold uppercase text-slate-400">Open Vacancies</span>
-                            <p class="font-black text-emerald-700 text-sm">{{ $jobPosting->vacancy_count }} positions</p>
+                            <p class="font-black text-green-700 text-sm">{{ $jobPosting->vacancy_count }} positions</p>
                             <p class="text-[11px] text-slate-500">Available quota</p>
                         </div>
 
@@ -67,14 +67,14 @@
                             @if($isExpired)
                                 <span class="text-[10px] font-bold text-rose-600">Past Deadline</span>
                             @else
-                                <span class="text-[10px] font-bold text-emerald-700">Currently Active</span>
+                                <span class="text-[10px] font-bold text-green-700">Currently Active</span>
                             @endif
                         </div>
 
                         <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                             <span class="text-[10px] font-bold uppercase text-slate-400">PWD Inclusivity</span>
                             @if($jobPosting->accepts_disability)
-                                <p class="font-bold text-emerald-800 text-xs">♿ {{ $jobPosting->disability_type ?: 'All PWD Applicants' }}</p>
+                                <p class="font-bold text-green-800 text-xs">♿ {{ $jobPosting->disability_type ?: 'All PWD Applicants' }}</p>
                             @else
                                 <p class="text-slate-500 font-medium">Standard Listing</p>
                             @endif
@@ -127,7 +127,7 @@
                                         $appBadge = match($app->status) {
                                             'pending' => 'bg-amber-50 text-amber-800 border-amber-200',
                                             'interview' => 'bg-blue-50 text-blue-800 border-blue-200',
-                                            'hired' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                                            'hired' => 'bg-green-50 text-green-800 border-green-200',
                                             'rejected' => 'bg-rose-50 text-rose-800 border-rose-200',
                                             default => 'bg-slate-100 text-slate-700 border-slate-200',
                                         };
@@ -148,7 +148,7 @@
                                         </td>
                                         <td class="py-4 px-6">
                                             @if(isset($app->recommendation) && $app->recommendation)
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-green-50 text-green-800 text-[10px] font-bold border border-green-200">
                                                     ✓ {{ ucfirst($app->recommendation) }}
                                                 </span>
                                             @else
@@ -187,7 +187,7 @@
                     <div class="space-y-2">
                         @if($jobPosting->status === 'pending')
                             <button onclick="approveJob({{ $jobPosting->job_id }})" 
-                                    class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-sm">
+                                    class="w-full py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-xs font-bold transition-colors shadow-sm">
                                 ✓ Approve & Publish Listing
                             </button>
                             <button onclick="rejectJob({{ $jobPosting->job_id }})" 
@@ -204,7 +204,7 @@
                         @endif
 
                         <a href="{{ route('admin.job-postings.edit', $jobPosting->job_id) }}" 
-                           class="w-full block text-center py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-xs font-bold transition-colors">
+                           class="w-full block text-center py-2.5 rounded-xl bg-slate-900 hover:bg-green-600 text-white text-xs font-bold transition-colors">
                             ✏️ Edit Listing Details
                         </a>
                     </div>
@@ -232,9 +232,9 @@
                             <span class="font-black text-blue-800">{{ $applications->where('status', 'interview')->count() }}</span>
                         </div>
 
-                        <div class="flex items-center justify-between p-3 rounded-2xl bg-emerald-50/60 border border-emerald-200/60 text-xs">
-                            <span class="text-emerald-800 font-bold">Hired Placements</span>
-                            <span class="font-black text-emerald-800">{{ $applications->where('status', 'hired')->count() }}</span>
+                        <div class="flex items-center justify-between p-3 rounded-2xl bg-green-50/60 border border-green-200/60 text-xs">
+                            <span class="text-green-800 font-bold">Hired Placements</span>
+                            <span class="font-black text-green-800">{{ $applications->where('status', 'hired')->count() }}</span>
                         </div>
 
                         <div class="flex items-center justify-between p-3 rounded-2xl bg-rose-50/60 border border-rose-200/60 text-xs">

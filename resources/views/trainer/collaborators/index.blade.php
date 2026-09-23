@@ -7,10 +7,10 @@
     <div class="mx-auto max-w-7xl space-y-8">
         
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
+                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
                     DMDP Training Network
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Collaborator Trainers</h1>
@@ -19,7 +19,7 @@
                 </p>
             </div>
 
-            <button @click="addModal = true" type="button" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition-all shadow-lg shadow-emerald-500/20 hover:scale-105 shrink-0">
+            <button @click="addModal = true" type="button" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-green-500 hover:bg-green-400 text-slate-950 text-xs font-extrabold transition-all shadow-lg shadow-green-500/20 hover:scale-105 shrink-0">
                 <span>➕</span> Register Collaborator
             </button>
         </div>
@@ -44,7 +44,7 @@
                     <h2 class="text-lg font-black text-slate-900">Training Faculty & Collaborators</h2>
                     <p class="text-xs text-slate-500">Directory of trainer accounts and administrative verification statuses.</p>
                 </div>
-                <span class="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                <span class="text-xs font-bold text-green-800 bg-green-50 px-3 py-1 rounded-full border border-green-200">
                     {{ $collaborators->total() }} Total Accounts
                 </span>
             </div>
@@ -89,8 +89,8 @@
                                 </td>
                                 <td class="py-3.5 px-3">
                                     @if($collab->is_approved && $collab->status === 'active')
-                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 text-emerald-800 px-2.5 py-0.5 text-[11px] font-extrabold">
-                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-600"></span>
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-green-100 text-green-800 px-2.5 py-0.5 text-[11px] font-extrabold">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-green-600"></span>
                                             Approved & Active
                                         </span>
                                     @else
@@ -128,15 +128,15 @@
             <div x-show="addModal" x-transition.opacity class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="addModal = false"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
-            <div x-show="addModal" x-transition class="relative inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full border border-emerald-100">
+            <div x-show="addModal" x-transition class="relative inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full border border-green-100">
                 <form action="{{ route('trainer.collaborators.store') }}" method="POST">
                     @csrf
-                    <div class="bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 px-6 py-5 text-white flex items-center justify-between border-b border-emerald-500/20">
+                    <div class="bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 px-6 py-5 text-white flex items-center justify-between border-b border-green-500/20">
                         <div class="flex items-center gap-3">
                             <span class="text-xl">👥</span>
                             <div>
                                 <h3 class="text-base font-bold text-white">Register Collaborator Trainer</h3>
-                                <p class="text-xs text-emerald-300/80">Account will be submitted for Admin approval.</p>
+                                <p class="text-xs text-green-300/80">Account will be submitted for Admin approval.</p>
                             </div>
                         </div>
                         <button @click="addModal = false" type="button" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
@@ -149,47 +149,47 @@
 
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Full Name <span class="text-rose-500">*</span></label>
-                            <input type="text" name="full_name" required placeholder="e.g. Engr. Maria Santos" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
+                            <input type="text" name="full_name" required placeholder="e.g. Engr. Maria Santos" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-green-500 outline-none">
                         </div>
 
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Email Address <span class="text-rose-500">*</span></label>
-                            <input type="email" name="email" required placeholder="collaborator@dmdp-partner.gov.ph" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
+                            <input type="email" name="email" required placeholder="collaborator@dmdp-partner.gov.ph" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-green-500 outline-none">
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Password <span class="text-rose-500">*</span></label>
-                                <input type="password" name="password" required minlength="8" placeholder="Min. 8 characters" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
+                                <input type="password" name="password" required minlength="8" placeholder="Min. 8 characters" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-green-500 outline-none">
                             </div>
 
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Confirm Password <span class="text-rose-500">*</span></label>
-                                <input type="password" name="password_confirmation" required minlength="8" placeholder="Repeat password" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
+                                <input type="password" name="password_confirmation" required minlength="8" placeholder="Repeat password" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-green-500 outline-none">
                             </div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Contact Number</label>
-                                <input type="text" name="phone" placeholder="0917-xxx-xxxx" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
+                                <input type="text" name="phone" placeholder="0917-xxx-xxxx" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-green-500 outline-none">
                             </div>
 
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Specialization</label>
-                                <input type="text" name="specialization" placeholder="e.g. Electronics & Mechatronics" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
+                                <input type="text" name="specialization" placeholder="e.g. Electronics & Mechatronics" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-green-500 outline-none">
                             </div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Office / Department</label>
-                                <input type="text" name="office" placeholder="DMDP Training Partner Unit" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
+                                <input type="text" name="office" placeholder="DMDP Training Partner Unit" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-green-500 outline-none">
                             </div>
 
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Partner Training Institution</label>
-                                <input type="text" name="partner_institution" placeholder="e.g. Cebu Technical Institute" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
+                                <input type="text" name="partner_institution" placeholder="e.g. Cebu Technical Institute" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-green-500 outline-none">
                             </div>
                         </div>
                     </div>
@@ -198,7 +198,7 @@
                         <button @click="addModal = false" type="button" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors">
                             Cancel
                         </button>
-                        <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 transition-all">
+                        <button type="submit" class="px-5 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-extrabold shadow-md shadow-green-600/20 transition-all">
                             Submit for Admin Approval
                         </button>
                     </div>

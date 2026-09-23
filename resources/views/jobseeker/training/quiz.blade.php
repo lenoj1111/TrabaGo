@@ -76,27 +76,27 @@
         
         <!-- Header -->
         <div class="flex items-center justify-between">
-            <a href="{{ route('jobseeker.training.show', $training->training_id) }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-emerald-700 transition-colors">
+            <a href="{{ route('jobseeker.training.show', $training->training_id) }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-green-700 transition-colors">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 Exit Assessment
             </a>
             <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-1 rounded-full uppercase tracking-wider">
+                <span class="text-xs font-bold text-green-800 bg-green-50 border border-green-200 px-3.5 py-1 rounded-full uppercase tracking-wider">
                     Passing Threshold: 80%
                 </span>
                 <span class="text-xs font-bold text-slate-500 bg-white border border-slate-200 px-3 py-1 rounded-full" x-text="totalQuestions + ' Total Questions'"></span>
             </div>
         </div>
 
-        <!-- Quiz Container Card in Emerald Theme -->
+        <!-- Quiz Container Card in green Theme -->
         <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-10 shadow-sm space-y-8">
             
             <!-- Quiz Title & Progress Bar -->
             <div class="space-y-4 pb-6 border-b border-slate-100">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
-                            <span class="h-2 w-2 rounded-full bg-emerald-600 animate-pulse"></span>
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-800 border border-green-200">
+                            <span class="h-2 w-2 rounded-full bg-green-600 animate-pulse"></span>
                             Official Skill Certification Assessment
                         </span>
                         <h1 class="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{{ $training->title }}</h1>
@@ -104,13 +104,13 @@
 
                     <div class="text-left sm:text-right" x-show="!submitted">
                         <span class="text-xs font-bold text-slate-400 block uppercase tracking-wider">Progress</span>
-                        <span class="text-sm font-black text-emerald-800" x-text="'Question ' + (currentQuestion + 1) + ' of ' + totalQuestions"></span>
+                        <span class="text-sm font-black text-green-800" x-text="'Question ' + (currentQuestion + 1) + ' of ' + totalQuestions"></span>
                     </div>
                 </div>
                 
                 <!-- Linear Progress Bar -->
                 <div class="h-2.5 w-full overflow-hidden rounded-full bg-slate-100" x-show="!submitted">
-                    <div class="h-full rounded-full bg-gradient-to-r from-emerald-600 to-teal-400 transition-all duration-300 shadow-sm"
+                    <div class="h-full rounded-full bg-gradient-to-r from-green-600 to-green-400 transition-all duration-300 shadow-sm"
                          :style="'width: ' + ((answeredCount / totalQuestions) * 100) + '%'"></div>
                 </div>
 
@@ -122,14 +122,14 @@
                                 @click="goToQuestion(idx)"
                                 class="h-9 w-9 rounded-xl text-xs font-bold transition-all flex items-center justify-center relative"
                                 :class="{
-                                    'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-500/40': currentQuestion === idx,
-                                    'bg-emerald-100 text-emerald-900 border border-emerald-300': currentQuestion !== idx && isQuestionAnswered(idx),
+                                    'bg-green-600 text-white shadow-md ring-2 ring-green-500/40': currentQuestion === idx,
+                                    'bg-green-100 text-green-900 border border-green-300': currentQuestion !== idx && isQuestionAnswered(idx),
                                     'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200': currentQuestion !== idx && !isQuestionAnswered(idx)
                                 }">
                             <span x-text="idx + 1"></span>
                             <!-- Answered Dot Indicator -->
                             <span x-show="isQuestionAnswered(idx) && currentQuestion !== idx" 
-                                  class="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white"></span>
+                                  class="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-white"></span>
                         </button>
                     </template>
                 </div>
@@ -141,7 +141,7 @@
                     <div x-show="currentQuestion === qIdx" class="space-y-5">
                         
                         <div class="flex items-start gap-3">
-                            <span class="h-8 w-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm font-black shrink-0" x-text="qIdx + 1"></span>
+                            <span class="h-8 w-8 rounded-xl bg-green-100 text-green-800 flex items-center justify-center text-sm font-black shrink-0" x-text="qIdx + 1"></span>
                             <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-snug pt-0.5" x-text="q.question"></h3>
                         </div>
 
@@ -151,15 +151,15 @@
                                 <button type="button" 
                                         @click="selectAnswer(qIdx, cIdx)"
                                         class="w-full p-4 rounded-2xl border text-left text-xs sm:text-sm font-semibold transition-all flex items-center justify-between group"
-                                        :class="answers[qIdx] === cIdx ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400/30 text-emerald-950 font-bold shadow-sm' : 'border-slate-200 hover:border-emerald-300 hover:bg-slate-50/80 text-slate-700'">
+                                        :class="answers[qIdx] === cIdx ? 'bg-green-50 border-green-500 ring-2 ring-green-400/30 text-green-950 font-bold shadow-sm' : 'border-slate-200 hover:border-green-300 hover:bg-slate-50/80 text-slate-700'">
                                     <span class="flex items-center gap-3.5">
                                         <span class="h-7 w-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 transition-colors"
-                                              :class="answers[qIdx] === cIdx ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 group-hover:bg-emerald-100 group-hover:text-emerald-800'"
+                                              :class="answers[qIdx] === cIdx ? 'bg-green-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 group-hover:bg-green-100 group-hover:text-green-800'"
                                               x-text="['A', 'B', 'C', 'D', 'E'][cIdx] || (cIdx + 1)"></span>
                                         <span x-text="choice" class="leading-relaxed"></span>
                                     </span>
                                     <div class="h-5 w-5 rounded-full border flex items-center justify-center shrink-0 ml-2"
-                                         :class="answers[qIdx] === cIdx ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-300'">
+                                         :class="answers[qIdx] === cIdx ? 'border-green-600 bg-green-600 text-white' : 'border-slate-300'">
                                         <svg x-show="answers[qIdx] === cIdx" class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
                                     </div>
                                 </button>
@@ -193,7 +193,7 @@
                                 @click="calculateScore()" 
                                 :disabled="!isAllAnswered"
                                 class="w-full sm:w-auto px-8 py-3 rounded-xl font-black text-xs transition-all shadow-md"
-                                :class="isAllAnswered ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 hover:scale-105 cursor-pointer' : 'bg-slate-200 text-slate-400 cursor-not-allowed'">
+                                :class="isAllAnswered ? 'bg-green-600 hover:bg-green-500 text-white shadow-green-600/30 hover:scale-105 cursor-pointer' : 'bg-slate-200 text-slate-400 cursor-not-allowed'">
                             Submit Assessment ({{ count($questions) }} Questions)
                         </button>
                     </div>
@@ -209,7 +209,7 @@
                 
                 <!-- Status Badge Icon -->
                 <div class="mx-auto h-24 w-24 rounded-3xl flex items-center justify-center text-4xl shadow-xl transition-all"
-                     :class="passed ? 'bg-emerald-100 text-emerald-800 border-2 border-emerald-400 ring-4 ring-emerald-500/20' : 'bg-amber-100 text-amber-800 border-2 border-amber-400 ring-4 ring-amber-500/20'">
+                     :class="passed ? 'bg-green-100 text-green-800 border-2 border-green-400 ring-4 ring-green-500/20' : 'bg-amber-100 text-amber-800 border-2 border-amber-400 ring-4 ring-amber-500/20'">
                     <span x-text="passed ? '🏆' : '📖'"></span>
                 </div>
 
@@ -220,11 +220,11 @@
                 </div>
 
                 <!-- Final Score Metric Card -->
-                <div class="inline-flex flex-col items-center p-6 rounded-3xl bg-emerald-50/60 border border-emerald-200 shadow-sm min-w-[260px]">
+                <div class="inline-flex flex-col items-center p-6 rounded-3xl bg-green-50/60 border border-green-200 shadow-sm min-w-[260px]">
                     <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Final Assessment Score</span>
-                    <span class="text-5xl font-black text-emerald-800 mt-1.5" x-text="score + '%'"></span>
+                    <span class="text-5xl font-black text-green-800 mt-1.5" x-text="score + '%'"></span>
                     <span class="mt-3 text-xs font-black px-4 py-1.5 rounded-full"
-                          :class="passed ? 'bg-emerald-600 text-white shadow-xs' : 'bg-rose-100 text-rose-800 border border-rose-200'"
+                          :class="passed ? 'bg-green-600 text-white shadow-xs' : 'bg-rose-100 text-rose-800 border border-rose-200'"
                           x-text="passed ? 'PASSED (>= 80%)' : 'NEEDS IMPROVEMENT (< 80%)'"></span>
                 </div>
 
@@ -249,7 +249,7 @@
                         <input type="hidden" name="score" :value="score">
                         <input type="hidden" name="passed" :value="passed ? 1 : 0">
                         
-                        <button type="submit" class="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-xl shadow-emerald-600/30 transition-all hover:scale-105">
+                        <button type="submit" class="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-green-600 hover:bg-green-500 text-white font-black text-xs shadow-xl shadow-green-600/30 transition-all hover:scale-105">
                             <span x-text="passed ? 'Save Certification & Return to Course &rarr;' : 'Save Score & Return to Course &rarr;'"></span>
                         </button>
                     </form>
@@ -265,12 +265,12 @@
                                 // Alpine handles review dynamic rendering
                             @endphp
                             <div class="p-5 rounded-2xl border transition-all"
-                                 :class="answers[idx] === q.answer ? 'bg-emerald-50/50 border-emerald-200' : 'bg-rose-50/40 border-rose-200'">
+                                 :class="answers[idx] === q.answer ? 'bg-green-50/50 border-green-200' : 'bg-rose-50/40 border-rose-200'">
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="space-y-2">
                                         <div class="flex items-center gap-2">
                                             <span class="text-xs font-black px-2.5 py-0.5 rounded-md"
-                                                  :class="answers[idx] === q.answer ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'"
+                                                  :class="answers[idx] === q.answer ? 'bg-green-600 text-white' : 'bg-rose-600 text-white'"
                                                   x-text="answers[idx] === q.answer ? 'Correct' : 'Incorrect'"></span>
                                             <span class="text-xs font-bold text-slate-500" x-text="'Question ' + (idx + 1)"></span>
                                         </div>
@@ -281,12 +281,12 @@
                                 <div class="mt-3 pt-3 border-t border-slate-200/60 space-y-1.5 text-xs">
                                     <p class="text-slate-600">
                                         <span class="font-bold text-slate-700">Your Selection:</span> 
-                                        <span :class="answers[idx] === q.answer ? 'text-emerald-800 font-bold' : 'text-rose-700 font-bold'"
+                                        <span :class="answers[idx] === q.answer ? 'text-green-800 font-bold' : 'text-rose-700 font-bold'"
                                               x-text="q.choices[answers[idx]] || 'Not answered'"></span>
                                     </p>
                                     <p class="text-slate-600" x-show="answers[idx] !== q.answer">
-                                        <span class="font-bold text-emerald-800">Correct Answer:</span> 
-                                        <span class="text-emerald-800 font-semibold" x-text="q.choices[q.answer] || q.answer"></span>
+                                        <span class="font-bold text-green-800">Correct Answer:</span> 
+                                        <span class="text-green-800 font-semibold" x-text="q.choices[q.answer] || q.answer"></span>
                                     </p>
                                     <p class="text-[11px] text-slate-500 italic pt-1" x-show="q.explanation" x-text="'Note: ' + q.explanation"></p>
                                 </div>

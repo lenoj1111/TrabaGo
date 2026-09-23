@@ -57,6 +57,55 @@ class TrainerPortalController extends Controller
         $certificatesIssued = DB::table('training_enrollments')->where('certificate_issued', 1)->count();
         $coursesCount = DB::table('training_programs')->count();
 
+        $completionRate = $totalEnrollments > 0 
+            ? round(($completedEnrollments / $totalEnrollments) * 100, 1) 
+            : 0;
+
+        // Top Courses by Enrollment
+        $topCourses = DB::table('training_programs')
+            ->leftJoin('training_enrollments', 'training_programs.training_id', '=', 'training_enrollments.training_id')
+            ->select('training_programs.training_id', 'training_programs.title', 'training_programs.training_type', DB::raw('COUNT(training_enrollments.enrollment_id) as enrollments_count'))
+            ->groupBy('training_programs.training_id', 'training_programs.title', 'training_programs.training_type')
+            ->orderByDesc('enrollments_count')
+            ->limit(5)
+            ->get();
+
+        // Monthly enrollment trends (last 6 months)
+        $monthlyTrainingTrends = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $monthStart = now()->subMonths($i)->startOfMonth();
+            $monthEnd = now()->subMonths($i)->endOfMonth();
+            $monthLabel = $monthStart->format('M Y');
+            
+            $enrolledCount = DB::table('training_enrollments')
+                ->where(function ($q) use ($monthStart, $monthEnd, $i) {
+                    $q->whereBetween('start_date', [$monthStart->toDateString(), $monthEnd->toDateString()]);
+                    if ($i === 0) {
+                        $q->orWhereNull('start_date');
+                    }
+                })
+                ->count();
+
+            $completedCount = DB::table('training_enrollments')
+                ->where('status', 'completed')
+                ->where(function ($q) use ($monthStart, $monthEnd, $i) {
+                    $q->whereBetween('end_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
+                      ->orWhereBetween('certificate_issued_at', [$monthStart, $monthEnd]);
+                    if ($i === 0) {
+                        $q->orWhere(function ($sub) {
+                            $sub->whereNull('end_date')->whereNull('certificate_issued_at');
+                        });
+                    }
+                })
+                ->count();
+
+            $monthlyTrainingTrends[] = [
+                'month' => $monthLabel,
+                'enrolled' => $enrolledCount,
+                'completed' => $completedCount,
+            ];
+        }
+
         // Recent enrollments requiring trainer attention
         $recentEnrollments = DB::table('training_enrollments')
             ->join('jobseekers', 'training_enrollments.jobseeker_id', '=', 'jobseekers.jobseeker_id')
@@ -78,7 +127,10 @@ class TrainerPortalController extends Controller
             'inProgressEnrollments',
             'completedEnrollments',
             'certificatesIssued',
+            'completionRate',
             'coursesCount',
+            'topCourses',
+            'monthlyTrainingTrends',
             'recentEnrollments'
         ));
     }

@@ -7,10 +7,10 @@
     <div class="mx-auto max-w-4xl space-y-8">
         
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-1">
-                <div class="inline-flex items-center gap-2 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <div class="inline-flex items-center gap-2 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
+                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
                     Alerts & Activity Feed
                 </div>
                 <h1 class="text-2xl sm:text-3xl font-black tracking-tight">Employer Notifications</h1>
@@ -27,7 +27,7 @@
                         </button>
                     </form>
                 @endif
-                <div class="h-12 w-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-emerald-600/30">
+                <div class="h-12 w-12 rounded-2xl bg-gradient-to-tr from-green-600 to-green-400 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-green-600/30">
                     🔔
                 </div>
             </div>
@@ -39,7 +39,7 @@
                 <div class="flex items-center gap-2">
                     <h2 class="text-sm font-black text-slate-900">Recent Alerts</h2>
                     @if(isset($unreadCount) && $unreadCount > 0)
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-green-100 text-green-800">
                             {{ $unreadCount }} Unread
                         </span>
                     @endif
@@ -49,11 +49,11 @@
 
             <div class="divide-y divide-slate-100">
                 @forelse($notifications as $notif)
-                    <div class="py-4 flex items-start justify-between gap-4 {{ $notif->is_read ? 'opacity-75' : 'bg-emerald-50/30 rounded-2xl p-4 my-1 border border-emerald-100/60' }}">
+                    <div class="py-4 flex items-start justify-between gap-4 {{ $notif->is_read ? 'opacity-75' : 'bg-green-50/30 rounded-2xl p-4 my-1 border border-green-100/60' }}">
                         <div class="space-y-1">
                             <div class="flex items-center gap-2">
                                 @if(!$notif->is_read)
-                                    <span class="h-2 w-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                    <span class="h-2 w-2 rounded-full bg-green-500 shrink-0"></span>
                                 @endif
                                 <h4 class="text-sm font-bold text-slate-900">{{ $notif->title }}</h4>
                             </div>
@@ -64,7 +64,7 @@
                         @if(!$notif->is_read)
                             <form action="{{ route('employer.notifications.read', $notif->notification_id) }}" method="POST" class="shrink-0">
                                 @csrf
-                                <button type="submit" class="px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-bold hover:bg-emerald-200 transition-colors shadow-sm">
+                                <button type="submit" class="px-3 py-1.5 rounded-xl bg-green-100 text-green-800 text-xs font-bold hover:bg-green-200 transition-colors shadow-sm">
                                     Mark Read
                                 </button>
                             </form>

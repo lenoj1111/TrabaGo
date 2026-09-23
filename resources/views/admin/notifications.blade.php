@@ -7,10 +7,10 @@
     <div class="mx-auto max-w-4xl space-y-8">
         
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-1">
-                <div class="inline-flex items-center gap-2 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <div class="inline-flex items-center gap-2 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
+                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
                     Central Activity & Authorization Alerts
                 </div>
                 <h1 class="text-2xl sm:text-3xl font-black tracking-tight">Admin Notifications</h1>
@@ -27,7 +27,7 @@
                         </button>
                     </form>
                 @endif
-                <div class="h-12 w-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-emerald-600/30">
+                <div class="h-12 w-12 rounded-2xl bg-gradient-to-tr from-green-600 to-green-400 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-green-600/30">
                     🔔
                 </div>
             </div>
@@ -43,7 +43,7 @@
                             {{ $unreadCount }} Unread
                         </span>
                     @else
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700">
                             All Caught Up
                         </span>
                     @endif
@@ -74,7 +74,7 @@
                             $actionUrl = route('admin.approvals.index');
                             $actionText = 'Review Accreditation';
                         } elseif ($notif->type === 'placement_report') {
-                            $badgeBg = 'bg-teal-50 text-teal-800 border-teal-200';
+                            $badgeBg = 'bg-green-50 text-green-800 border-green-200';
                             $badgeIcon = '📊';
                             $badgeLabel = 'Placement Report';
                             $actionUrl = route('admin.approvals.index');
@@ -88,7 +88,7 @@
                         }
                     @endphp
 
-                    <div class="py-4.5 flex flex-col sm:flex-row sm:items-start justify-between gap-4 transition-colors {{ $notif->is_read ? 'opacity-60 bg-slate-50/50 rounded-2xl px-4 my-1.5' : 'bg-emerald-50/20 rounded-2xl px-4 my-1.5 border border-emerald-100/60' }}">
+                    <div class="py-4.5 flex flex-col sm:flex-row sm:items-start justify-between gap-4 transition-colors {{ $notif->is_read ? 'opacity-60 bg-slate-50/50 rounded-2xl px-4 my-1.5' : 'bg-green-50/20 rounded-2xl px-4 my-1.5 border border-green-100/60' }}">
                         <div class="space-y-1.5 flex-1">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-extrabold border {{ $badgeBg }}">
@@ -96,7 +96,7 @@
                                     {{ $badgeLabel }}
                                 </span>
                                 @if(!$notif->is_read)
-                                    <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    <span class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
                                 @endif
                                 <span class="text-[11px] text-slate-400">
                                     {{ date('M d, Y • h:i A', strtotime($notif->created_at)) }}
@@ -114,7 +114,7 @@
                         <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
                             @if($actionUrl)
                                 <a href="{{ $actionUrl }}" 
-                                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-xs font-bold transition-all shadow-sm">
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-green-600 text-white text-xs font-bold transition-all shadow-sm">
                                     {{ $actionText }} &rarr;
                                 </a>
                             @endif
@@ -123,7 +123,7 @@
                                 <form action="{{ route('admin.notifications.read', $notif->notification_id) }}" method="POST">
                                     @csrf
                                     <button type="submit" 
-                                            class="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 transition-colors"
+                                            class="inline-flex items-center px-3 py-1.5 rounded-xl bg-green-50 hover:bg-green-100 text-green-800 text-xs font-bold border border-green-200 transition-colors"
                                             title="Mark as read">
                                         ✓ Mark Read
                                     </button>
@@ -133,7 +133,7 @@
                     </div>
                 @empty
                     <div class="py-16 text-center space-y-3">
-                        <div class="mx-auto h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold">
+                        <div class="mx-auto h-12 w-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center text-xl font-bold">
                             ✨
                         </div>
                         <h4 class="text-sm font-bold text-slate-800">No Notifications Available</h4>

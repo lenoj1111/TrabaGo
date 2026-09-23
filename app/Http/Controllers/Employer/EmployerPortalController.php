@@ -62,7 +62,39 @@ class EmployerPortalController extends Controller
         $jobIds = JobPosting::where('employer_id', $employer->employer_id)->pluck('job_id');
         $totalApplicants = JobApplication::whereIn('job_id', $jobIds)->count();
         $referredCount = JobApplication::whereIn('job_id', $jobIds)->where('referred_by_jpo', 1)->count();
+        $interviewCount = JobApplication::whereIn('job_id', $jobIds)->where('status', 'interview')->count();
         $hiredCount = JobApplication::whereIn('job_id', $jobIds)->where('status', 'hired')->count();
+        $pendingScreeningCount = JobApplication::whereIn('job_id', $jobIds)->whereIn('status', ['pending', 'reviewed'])->count();
+
+        // Top Job Postings with application distribution
+        $topJobs = JobPosting::where('employer_id', $employer->employer_id)
+            ->withCount('applications')
+            ->orderByDesc('applications_count')
+            ->take(5)
+            ->get();
+
+        // Monthly applicant volume trends (last 6 months)
+        $monthlyApplicantTrends = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $monthStart = now()->subMonths($i)->startOfMonth();
+            $monthEnd = now()->subMonths($i)->endOfMonth();
+            $monthLabel = $monthStart->format('M Y');
+            
+            $appsCount = JobApplication::whereIn('job_id', $jobIds)
+                ->whereBetween('created_at', [$monthStart, $monthEnd])
+                ->count();
+
+            $hCount = JobApplication::whereIn('job_id', $jobIds)
+                ->where('status', 'hired')
+                ->whereBetween('created_at', [$monthStart, $monthEnd])
+                ->count();
+
+            $monthlyApplicantTrends[] = [
+                'month' => $monthLabel,
+                'applications' => $appsCount,
+                'hires' => $hCount,
+            ];
+        }
 
         // Accreditation status
         $accreditation = DB::table('employer_accreditation')->where('employer_id', $employer->employer_id)->first();
@@ -70,18 +102,18 @@ class EmployerPortalController extends Controller
         // Placement reports
         $placementReports = DB::table('placement_reports')->where('employer_id', $employer->employer_id)->get();
 
-        // Recent referred jobseekers
-        $recentReferred = JobApplication::with(['jobseeker', 'jobPosting'])
+        // Recent applicants
+        $recentApplicants = JobApplication::with(['jobseeker', 'jobPosting'])
             ->whereIn('job_id', $jobIds)
-            ->where('referred_by_jpo', 1)
             ->latest()
             ->take(5)
             ->get();
 
         return view('employer.homepage', compact(
             'employer', 'user', 'totalJobs', 'approvedJobs', 'pendingJobs', 
-            'totalApplicants', 'referredCount', 'hiredCount', 'accreditation', 
-            'placementReports', 'recentReferred'
+            'totalApplicants', 'referredCount', 'interviewCount', 'hiredCount', 'pendingScreeningCount',
+            'topJobs', 'monthlyApplicantTrends', 'accreditation', 
+            'placementReports', 'recentApplicants'
         ));
     }
 
