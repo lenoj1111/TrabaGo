@@ -3,8 +3,24 @@
 @section('title', $job->title . ' - TrabaGo AI Match')
 
 @section('content')
-<div x-data="{ applyModalOpen: false, accredModalOpen: false }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
+@php
+    $currentUser = Auth::user();
+    $isApproved = (bool) ($currentUser->is_approved ?? false);
+@endphp
+<div x-data="{ applyModalOpen: false, approvalWarningOpen: false, accredModalOpen: false }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-4xl space-y-8">
+
+        @if(!$isApproved)
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5 shadow-sm">
+                <div class="flex items-start gap-3">
+                    <div class="h-10 w-10 rounded-xl bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center text-lg shrink-0">⚠️</div>
+                    <div>
+                        <h2 class="text-sm font-black text-amber-900">Approval Required Before Applying</h2>
+                        <p class="text-xs text-amber-800 mt-0.5">Your jobseeker account is pending admin approval. You may browse the job listing, but you must be approved before you can apply for this job posting.</p>
+                    </div>
+                </div>
+            </div>
+        @endif
         
         <!-- Back Navigation -->
         <div class="flex items-center justify-between">
@@ -47,14 +63,18 @@
                     <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">{{ $job->title }}</h1>
                     
                     <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500 pt-1">
-                        <span class="flex items-center gap-1">
+                        @if($job->location)
+                            <span class="flex items-center gap-1">
                             <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
-                            Cebu City, Philippines
-                        </span>
-                        <span>&bull;</span>
-                        <span class="font-bold text-slate-900">₱18,000 - ₱35,000 / month</span>
-                        <span>&bull;</span>
-                        <span>Full-time Position</span>
+                            {{ $job->location }}
+                            </span>
+                        @endif
+                        @if($job->salary_compensation)
+                            <span class="font-bold text-slate-900">{{ $job->salary_compensation }}</span>
+                        @endif
+                        @if($job->job_type)
+                            <span>{{ $job->job_type }}</span>
+                        @endif
                         @if ($job->valid_until)
                             <span>&bull;</span>
                             <span class="inline-flex items-center gap-1 font-bold {{ $job->valid_until->isPast() ? 'text-rose-600' : 'text-emerald-700' }}">
@@ -131,9 +151,29 @@
             @if ($job->qualifications)
                 <div class="space-y-3">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Qualifications & Requirements</h3>
-                    <div class="rounded-2xl bg-slate-50 p-5 text-xs text-slate-800 leading-relaxed font-mono whitespace-pre-line border border-slate-200">
-                        {{ $job->qualifications }}
-                    </div>
+                    <ul class="rounded-2xl bg-slate-50 p-5 pl-10 text-xs text-slate-800 leading-relaxed list-disc border border-slate-200 space-y-1">
+                        @foreach(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $job->qualifications))) as $qualification)
+                            <li>{{ $qualification }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            @if($job->benefits_perks)
+                <div class="space-y-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Benefits & Perks</h3>
+                    <ul class="rounded-2xl bg-emerald-50/50 p-5 pl-10 text-xs text-slate-800 leading-relaxed list-disc border border-emerald-100 space-y-1">
+                        @foreach(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $job->benefits_perks))) as $benefit)
+                            <li>{{ $benefit }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            @if($job->other_instructions)
+                <div class="space-y-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Other Instructions</h3>
+                    <p class="rounded-2xl bg-slate-50 p-5 text-xs text-slate-800 leading-relaxed whitespace-pre-line border border-slate-200">{{ $job->other_instructions }}</p>
                 </div>
             @endif
 
@@ -174,6 +214,11 @@
                         <svg class="h-5 w-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         Job Posting Expired
                     </div>
+                @elseif(!$isApproved)
+                    <button type="button" @click="approvalWarningOpen = true" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-amber-100 border border-amber-300 hover:bg-amber-200 px-10 py-3.5 text-sm font-black text-amber-900 shadow-sm transition-all">
+                        <span>⚠️</span>
+                        Approval Required to Apply
+                    </button>
                 @elseif($jobseeker->isEmployed())
                     <div class="space-y-1.5 text-right">
                         <div class="inline-flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-300 px-6 py-3.5 text-xs font-bold text-amber-900 shadow-xs">
@@ -195,6 +240,28 @@
 
         </div>
 
+    </div>
+
+    <div x-show="approvalWarningOpen" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+        <div @click.away="approvalWarningOpen = false" class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-amber-200 space-y-5">
+            <div class="flex items-start gap-3">
+                <div class="h-12 w-12 rounded-2xl bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center text-2xl shrink-0">⚠️</div>
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">Action required</p>
+                    <h3 class="text-xl font-black text-slate-900 mt-1">Approval Needed Before You Can Apply</h3>
+                </div>
+            </div>
+
+            <p class="text-sm text-slate-600 leading-relaxed">
+                Your jobseeker account is still pending admin approval. You need approval before you can apply for a job posting.
+            </p>
+
+            <div class="flex justify-end">
+                <button type="button" @click="approvalWarningOpen = false" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-black">
+                    OK
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Application Modal -->

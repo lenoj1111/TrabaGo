@@ -10,26 +10,30 @@
         activeDocList: [],
         selectedDocKey: '',
         currentDoc: {},
-        openDocInspection(company, docs) {
+        openDocInspection(company, docs, accreditationId) {
             this.activeDocCompany = company;
             this.activeDocList = [];
+            const documentRouteTemplate = '{{ route('accreditation.documents', ['accreditationId' => '__ACCREDITATION_ID__', 'documentKey' => '__DOCUMENT_KEY__', 'action' => '__ACTION__']) }}';
             
             for (let [key, val] of Object.entries(docs || {})) {
                 let label = 'Attached Document';
                 let icon = '📄';
                 let issuer = 'Regulatory Authority';
                 let filename = '';
-                let url = '';
 
                 if (typeof val === 'object' && val !== null) {
                     filename = val.original_name || val.path || '';
-                    url = val.path ? ('/storage/' + val.path) : '';
                 } else if (typeof val === 'string') {
                     filename = val.split('/').pop() || val;
-                    url = (val.startsWith('http') || val.startsWith('/')) ? val : ('/storage/' + val);
                 }
 
                 let validity = 'Current / Valid';
+                const extensionSource = typeof val === 'object' && val !== null ? (val.path || filename) : val;
+                const extension = String(extensionSource || '').split('.').pop().toLowerCase();
+                const isImage = ['jpg', 'jpeg', 'png'].includes(extension);
+                const fileRoute = documentRouteTemplate
+                    .replace('__ACCREDITATION_ID__', encodeURIComponent(accreditationId))
+                    .replace('__DOCUMENT_KEY__', encodeURIComponent(key));
 
                 if (key.includes('bir') || key.includes('2303') || key.includes('tin')) {
                     label = 'BIR Certificate of Registration (Form 2303)';
@@ -95,7 +99,9 @@
                     issuer: issuer,
                     validity: validity,
                     filename: filename,
-                    url: url,
+                    isImage: isImage,
+                    previewUrl: isImage ? fileRoute.replace('__ACTION__', 'preview') : '',
+                    downloadUrl: fileRoute.replace('__ACTION__', 'download'),
                     status: 'Verified Valid'
                 });
             }
@@ -146,6 +152,16 @@
                         <span class="inline-flex items-center gap-1 rounded-full bg-slate-500/60 text-white px-3 py-1 text-xs font-bold">
                             Not Submitted
                         </span>
+                    @endif
+
+                    @php
+                        $jpoReason = trim((string) ($accreditation->document_incomplete_reason ?? $accreditation->jpo_remarks ?? ''));
+                    @endphp
+                    @if($jpoReason !== '')
+                        <div class="mt-3 rounded-2xl border border-amber-200 bg-amber-50/90 px-3 py-2 text-left text-slate-800 shadow-sm">
+                            <p class="text-[9px] font-black uppercase tracking-[0.2em] text-amber-700">JPO Reason</p>
+                            <p class="mt-1 text-[11px] leading-relaxed text-amber-900">{{ $jpoReason }}</p>
+                        </div>
                     @endif
                 </div>
             </div>
@@ -240,7 +256,7 @@
                             <span class="text-[9px] text-emerald-600">↗</span>
                         </a>
                         <button type="button" 
-                                @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($uploadedDocs))'
+                                @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($uploadedDocs), {{ $accreditation->accreditation_id }})'
                                 class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 self-start sm:self-auto">
                             <span>👁️</span> Inspect Document Hub ({{ count($uploadedDocs) }} Files)
                         </button>
@@ -278,7 +294,7 @@
                                 </div>
                             </div>
                             <button type="button" 
-                                    @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($uploadedDocs))'
+                                    @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($uploadedDocs), {{ $accreditation->accreditation_id }})'
                                     class="w-full py-2 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-900 text-slate-700 text-[11px] font-bold border border-slate-200 transition-colors text-center">
                                 Preview / Inspect &rarr;
                             </button>

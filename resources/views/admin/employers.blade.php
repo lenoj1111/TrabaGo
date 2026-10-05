@@ -6,27 +6,31 @@
 <div class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8"
      x-data="{
         docModalOpen: false,
+        employerDetailsOpen: false,
+        selectedEmployerDetails: {},
+        openEmployerDetails(employer) {
+            this.selectedEmployerDetails = employer;
+            this.employerDetailsOpen = true;
+        },
         activeDocCompany: '',
         activeDocList: [],
         selectedDocKey: '',
         currentDoc: {},
-        openDocInspection(company, docs) {
+        openDocInspection(company, docs, accreditationId) {
             this.activeDocCompany = company;
             this.activeDocList = [];
+            const documentRouteTemplate = '{{ route('accreditation.documents', ['accreditationId' => '__ACCREDITATION_ID__', 'documentKey' => '__DOCUMENT_KEY__', 'action' => '__ACTION__']) }}';
             
             for (let [key, val] of Object.entries(docs || {})) {
                 let label = 'Attached Document';
                 let icon = '📄';
                 let issuer = 'Regulatory Authority';
                 let filename = '';
-                let url = '';
 
                 if (typeof val === 'object' && val !== null) {
                     filename = val.original_name || val.path || '';
-                    url = val.path ? ('/storage/' + val.path) : '';
                 } else if (typeof val === 'string') {
                     filename = val.split('/').pop() || val;
-                    url = (val.startsWith('http') || val.startsWith('/')) ? val : ('/storage/' + val);
                 }
 
                 let validity = 'Current / Valid';
@@ -86,13 +90,22 @@
                     validity = 'Supporting Verification Document';
                 }
 
+                const extensionSource = typeof val === 'object' && val !== null ? (val.path || filename) : val;
+                const extension = String(extensionSource || '').split('.').pop().toLowerCase();
+                const isImage = ['jpg', 'jpeg', 'png'].includes(extension);
+                const fileRoute = documentRouteTemplate
+                    .replace('__ACCREDITATION_ID__', encodeURIComponent(accreditationId))
+                    .replace('__DOCUMENT_KEY__', encodeURIComponent(key));
+
                 this.activeDocList.push({
                     key: key,
                     label: label,
                     icon: icon,
                     issuer: issuer,
                     filename: filename,
-                    url: url,
+                    isImage: isImage,
+                    previewUrl: isImage ? fileRoute.replace('__ACTION__', 'preview') : '',
+                    downloadUrl: fileRoute.replace('__ACTION__', 'download'),
                     status: 'Verified Valid',
                     validity: validity
                 });
@@ -108,7 +121,7 @@
             this.currentDoc = doc;
         }
      }">
-    <div class="mx-auto max-w-7xl space-y-8">
+    <div class="w-full space-y-8">
 
         <!-- Header -->
         <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20">
@@ -253,7 +266,10 @@
                                             <div class="flex flex-wrap gap-1">
                                                 @foreach($docs as $k => $d)
                                                     <button type="button" 
-                                                            @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($docs))'
+                                                            data-company="{{ $employer->company_name }}"
+                                                            data-documents="{{ json_encode($docs) }}"
+                                                            data-accreditation-id="{{ $employer->accreditation_id }}"
+                                                            @click="openDocInspection($el.dataset.company, JSON.parse($el.dataset.documents), $el.dataset.accreditationId)"
                                                             class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-emerald-100 hover:text-emerald-900 text-slate-700 text-[10px] font-bold border border-slate-200 transition-colors cursor-pointer"
                                                             title="Click to inspect this document">
                                                         <span>📄 {{ ucfirst(str_replace('_', ' ', $k)) }}</span>
@@ -292,9 +308,33 @@
                                 </td>
                                 <td class="py-4 px-6 text-right">
                                     <div class="inline-flex items-center gap-1.5">
+                                        <button type="button"
+                                            data-details="{{ json_encode([
+                                                    "id" => $employer->employer_id,
+                                                    "company" => $employer->company_name,
+                                                    "email" => $employer->email,
+                                                    "account_status" => $employer->user_status,
+                                                    "account_approved" => (bool) $employer->user_approved,
+                                                    "accredited" => (bool) $employer->is_accredited,
+                                                    "accreditation_status" => $employer->accreditation_status,
+                                                    "document_status" => $employer->document_status,
+                                                    "document_reason" => $employer->document_incomplete_reason,
+                                                    "jpo_remarks" => $employer->jpo_remarks,
+                                                    "jpo_reviewed" => (bool) $employer->jpo_reviewed,
+                                                    "jobs" => $employer->jobs_count ?? 0,
+                                                    "documents" => is_array($docs) ? count($docs) : 0,
+                                                    "created" => $employer->user_created_at ? date("M d, Y", strtotime($employer->user_created_at)) : "N/A"
+                                                ]) }}"
+                                                @click="openEmployerDetails(JSON.parse($el.dataset.details))"
+                                                class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200 transition-colors">
+                                            View Details
+                                        </button>
                                         @if(is_array($docs) && count($docs) > 0)
                                             <button type="button" 
-                                                    @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($docs))'
+                                                    data-company="{{ $employer->company_name }}"
+                                                    data-documents="{{ json_encode($docs) }}"
+                                                    data-accreditation-id="{{ $employer->accreditation_id }}"
+                                                    @click="openDocInspection($el.dataset.company, JSON.parse($el.dataset.documents), $el.dataset.accreditationId)"
                                                     class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors"
                                                     title="View Legal Documents">
                                                 👁️ Docs
@@ -315,8 +355,10 @@
 
                                         {{-- 2. Employer Accreditation (Gated by JPO Recommending Approval) --}}
                                         @if(!$employer->is_accredited)
-                                            <button onclick="accreditEmployer({{ $employer->employer_id }}, {{ $isJpoRecommended ? 'true' : 'false' }})" 
-                                                    class="px-3 py-1.5 rounded-lg {{ $isJpoRecommended ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm' : 'bg-slate-100 text-slate-400 border border-slate-200 hover:bg-slate-200' }} font-bold text-xs transition-colors" 
+                                            <button type="button"
+                                                    class="js-accredit-btn px-3 py-1.5 rounded-lg {{ $isJpoRecommended ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm' : 'bg-slate-100 text-slate-400 border border-slate-200 hover:bg-slate-200' }} font-bold text-xs transition-colors"
+                                                    data-employer-id="{{ $employer->employer_id }}"
+                                                    data-jpo-recommended="{{ $isJpoRecommended ? '1' : '0' }}"
                                                     title="{{ $isJpoRecommended ? 'Accredit Company' : 'JPO Recommending Approval is required first' }}">
                                                 🛡️ Accredit
                                             </button>
@@ -348,11 +390,40 @@
 
     </div>
 
+    <div x-show="employerDetailsOpen" x-cloak class="fixed inset-0 z-[70] overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4" @keydown.escape.window="employerDetailsOpen = false">
+        <div @click.away="employerDetailsOpen = false" class="max-h-[90vh] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-2xl space-y-5">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Employer Profile</span>
+                    <h2 class="mt-1 text-xl font-black text-slate-900" x-text="selectedEmployerDetails.company"></h2>
+                    <p class="text-xs text-slate-500">Employer #<span x-text="selectedEmployerDetails.id"></span></p>
+                </div>
+                <button type="button" @click="employerDetailsOpen = false" class="text-2xl font-bold text-slate-400 hover:text-slate-800" aria-label="Close details">&times;</button>
+            </div>
+            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Account Email</dt><dd class="mt-1 break-words font-semibold text-slate-900" x-text="selectedEmployerDetails.email || 'N/A'"></dd></div>
+                <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Account Status</dt><dd class="mt-1 font-semibold text-slate-900" x-text="(selectedEmployerDetails.account_status || 'Unknown') + ' · ' + (selectedEmployerDetails.account_approved ? 'Approved' : 'Pending approval')"></dd></div>
+                <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Accreditation</dt><dd class="mt-1 font-semibold text-slate-900" x-text="selectedEmployerDetails.accredited ? 'Accredited' : (selectedEmployerDetails.accreditation_status || 'Not submitted')"></dd></div>
+                <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Document Review</dt><dd class="mt-1 font-semibold text-slate-900" x-text="selectedEmployerDetails.document_status || 'Not reviewed'"></dd></div>
+                <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Job Postings</dt><dd class="mt-1 font-semibold text-slate-900" x-text="selectedEmployerDetails.jobs"></dd></div>
+                <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Documents Submitted</dt><dd class="mt-1 font-semibold text-slate-900" x-text="selectedEmployerDetails.documents"></dd></div>
+                <div class="rounded-xl bg-slate-50 p-3 sm:col-span-2"><dt class="text-[10px] font-bold uppercase text-slate-400">Account Created</dt><dd class="mt-1 font-semibold text-slate-900" x-text="selectedEmployerDetails.created"></dd></div>
+            </dl>
+            <template x-if="selectedEmployerDetails.document_reason || selectedEmployerDetails.jpo_remarks">
+                <section class="space-y-3">
+                    <template x-if="selectedEmployerDetails.document_reason"><div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs"><h3 class="font-black text-amber-800">Document Incomplete Reason</h3><p class="mt-1 whitespace-pre-line text-amber-900" x-text="selectedEmployerDetails.document_reason"></p></div></template>
+                    <template x-if="selectedEmployerDetails.jpo_remarks"><div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-xs"><h3 class="font-black text-blue-800">JPO Remarks</h3><p class="mt-1 whitespace-pre-line text-blue-900" x-text="selectedEmployerDetails.jpo_remarks"></p></div></template>
+                </section>
+            </template>
+        </div>
+    </div>
+
     <!-- Reusable Employer Document Viewer Modal -->
     @include('partials.employer-document-viewer-modal')
 
 </div>
 
+@push('scripts')
 <script>
 function accreditEmployer(id, isJpoRecommended) {
     if (!isJpoRecommended) {
@@ -394,5 +465,16 @@ function accreditEmployer(id, isJpoRecommended) {
         }
     });
 }
+
+// Wire up the data-attribute buttons to the function above
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.js-accredit-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const employerId = btn.dataset.employerId;
+            const isRecommended = btn.dataset.jpoRecommended === '1';
+            accreditEmployer(employerId, isRecommended);
+        });
+    });
+});
 </script>
-@endsection
+@endpush

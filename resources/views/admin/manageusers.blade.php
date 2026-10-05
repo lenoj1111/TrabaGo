@@ -3,7 +3,7 @@
 @section('title', 'Employee Accounts & User Management')
 
 @section('content')
-<div class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
+<div x-data="{ userDetailsOpen: false, selectedUserDetails: {}, openUserDetails(user) { this.selectedUserDetails = user; this.userDetailsOpen = true; } }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-7xl space-y-8">
 
         <!-- Header -->
@@ -193,6 +193,23 @@
                                 </td>
                                 <td class="py-4 px-6 text-right">
                                     <div class="inline-flex items-center gap-1.5">
+                                        <button type="button"
+                                            data-details="{{ json_encode([
+                                                    "id" => $user->user_id,
+                                                    "name" => $displayName,
+                                                    "email" => $user->email,
+                                                    "role" => ucfirst(str_replace("_", " ", $user->role)),
+                                                    "status" => ucfirst($user->status ?? "Unknown"),
+                                                    "approved" => (bool) $user->is_approved,
+                                                    "created" => $user->created_at ? date("M d, Y", strtotime($user->created_at)) : "N/A",
+                                                    "company" => $user->company_name,
+                                                    "position" => $user->position,
+                                                    "department" => $user->department
+                                                ]) }}"
+                                                @click="openUserDetails(JSON.parse($el.dataset.details))"
+                                                class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200 transition-colors">
+                                            View Details
+                                        </button>
                                         <a href="{{ route('admin.users.edit', $user->user_id) }}" 
                                            class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors" title="Edit User">
                                             ✏️ Edit
@@ -246,6 +263,28 @@
             @endif
         </div>
 
+        <div x-show="userDetailsOpen" x-cloak class="fixed inset-0 z-[70] overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4" @keydown.escape.window="userDetailsOpen = false">
+            <div @click.away="userDetailsOpen = false" class="max-h-[90vh] w-full max-w-xl overflow-y-auto overscroll-contain rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-2xl space-y-5">
+                <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Account Details</span>
+                        <h2 class="mt-1 text-xl font-black text-slate-900" x-text="selectedUserDetails.name"></h2>
+                        <p class="text-xs text-slate-500">User #<span x-text="selectedUserDetails.id"></span></p>
+                    </div>
+                    <button type="button" @click="userDetailsOpen = false" class="text-2xl font-bold text-slate-400 hover:text-slate-800" aria-label="Close details">&times;</button>
+                </div>
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Email</dt><dd class="mt-1 break-words font-semibold text-slate-900" x-text="selectedUserDetails.email || 'Not provided'"></dd></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Role</dt><dd class="mt-1 font-semibold text-slate-900" x-text="selectedUserDetails.role"></dd></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Account Status</dt><dd class="mt-1 font-semibold text-slate-900" x-text="selectedUserDetails.status"></dd></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Approval</dt><dd class="mt-1 font-semibold" :class="selectedUserDetails.approved ? 'text-emerald-700' : 'text-amber-700'" x-text="selectedUserDetails.approved ? 'Approved' : 'Pending approval'"></dd></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Company</dt><dd class="mt-1 font-semibold text-slate-900" x-text="selectedUserDetails.company || 'N/A'"></dd></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Position / Department</dt><dd class="mt-1 font-semibold text-slate-900" x-text="[selectedUserDetails.position, selectedUserDetails.department].filter(Boolean).join(' · ') || 'N/A'"></dd></div>
+                    <div class="rounded-xl bg-slate-50 p-3 sm:col-span-2"><dt class="text-[10px] font-bold uppercase text-slate-400">Account Created</dt><dd class="mt-1 font-semibold text-slate-900" x-text="selectedUserDetails.created"></dd></div>
+                </dl>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -275,11 +314,8 @@
                         .then(data => {
                             if (data.success) {
                                 Swal.fire('Success!', data.success, 'success').then(() => location.reload());
-                            } else {
-                                Swal.fire('Error', data.error || 'Something went wrong.', 'error');
-                            }
+                            } 
                         })
-                        .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));
                     }
                 });
             });
@@ -311,7 +347,6 @@
                                 Swal.fire('Approved!', data.success, 'success').then(() => location.reload());
                             }
                         })
-                        .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));
                     }
                 });
             });

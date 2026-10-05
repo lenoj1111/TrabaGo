@@ -3,8 +3,26 @@
 @section('title', 'Dashboard & AI Match - TrabaGo')
 
 @section('content')
+@php
+    $currentUser = Auth::user();
+    $isApproved = (bool) ($currentUser->is_approved ?? false);
+@endphp
 <div class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-7xl space-y-8">
+
+        @if(!$isApproved)
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5 shadow-sm">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div class="flex items-start gap-3">
+                        <div class="h-10 w-10 rounded-xl bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center text-lg shrink-0">⚠️</div>
+                        <div>
+                            <h2 class="text-sm font-black text-amber-900">Account Pending Approval</h2>
+                            <p class="text-xs text-amber-800 mt-0.5">Your account is still waiting for admin approval. You can browse the dashboard and training modules, but you cannot apply for job postings until approval is completed.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
         
         @if($jobseeker->isEmployed())
             <!-- Employment Placement Success Banner -->
@@ -263,8 +281,11 @@
                         <span class="text-xs font-extrabold text-emerald-700">{{ $profileStrength }}%</span>
                     </div>
 
-                    <div class="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
-                        <div class="h-full rounded-full bg-gradient-to-r from-emerald-600 to-teal-400 transition-all duration-500" style="width: {{ $profileStrength }}%"></div>
+                    <div class="h-2.5 w-full overflow-hidden rounded-full bg-slate-100"
+                        style="--progress-width: {{ $profileStrength }}%">
+                        <div class="h-full rounded-full bg-gradient-to-r from-emerald-600 to-teal-400 transition-all duration-500"
+                            style="width: var(--progress-width)">
+                        </div>
                     </div>
 
                     <p class="text-xs text-slate-500 leading-relaxed">

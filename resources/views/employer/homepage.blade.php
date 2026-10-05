@@ -91,6 +91,9 @@
                 </div>
             </div>
             <div class="mt-4">
+                @php
+                    $jpoReason = trim((string) ($accreditation->document_incomplete_reason ?? $accreditation->jpo_remarks ?? ''));
+                @endphp
                 @if($employer->is_accredited || ($accreditation && $accreditation->status === 'admin_approved'))
                     <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-extrabold">
                         ✓ Accredited
@@ -116,6 +119,13 @@
                         Not Submitted
                     </span>
                     <span class="text-[11px] font-medium text-slate-500 mt-1.5 block">Documents pending upload</span>
+                @endif
+
+                @if($jpoReason !== '')
+                    <div class="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-2.5 text-left">
+                        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">JPO Reason</p>
+                        <p class="mt-1 text-[11px] leading-relaxed text-amber-900">{{ $jpoReason }}</p>
+                    </div>
                 @endif
             </div>
         </div>

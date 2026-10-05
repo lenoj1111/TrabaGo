@@ -91,7 +91,7 @@ class JpoPortalController extends Controller
         return view('jpo.evaluations.jobseekers', compact('applications'));
     }
 
-    public function referJobseeker(Request $request, $id)
+    public function referJobseeker(Request $request, int $id)
     {
         $application = JobApplication::with(['jobseeker', 'jobPosting.employer.user'])->findOrFail($id);
 
@@ -188,7 +188,7 @@ class JpoPortalController extends Controller
         }
     }
 
-    public function showNsrpForm($id)
+    public function showNsrpForm(int $id)
     {
         $application = JobApplication::with([
             'jobseeker.skills',
@@ -236,7 +236,7 @@ class JpoPortalController extends Controller
         return view('jpo.evaluations.accreditations', compact('accreditations'));
     }
 
-    public function updateDocumentStatus(Request $request, $id)
+    public function updateDocumentStatus(Request $request, int $id)
     {
         $accreditation = DB::table('employer_accreditation')->where('accreditation_id', $id)->first();
         if (!$accreditation) {
@@ -296,7 +296,7 @@ class JpoPortalController extends Controller
         return redirect()->back()->with('success', $message);
     }
 
-    public function recommendAccreditation(Request $request, $id)
+    public function recommendAccreditation(Request $request, int $id)
     {
         $accreditation = DB::table('employer_accreditation')->where('accreditation_id', $id)->first();
         if (!$accreditation) {
@@ -360,7 +360,7 @@ class JpoPortalController extends Controller
         }
     }
 
-    public function printAccreditation($id)
+    public function printAccreditation(int $id)
     {
         $accreditation = EmployerAccreditation::with(['employer.user', 'employer.jobPostings'])->findOrFail($id);
         $employer = $accreditation->employer;
@@ -398,7 +398,7 @@ class JpoPortalController extends Controller
         return view('jpo.evaluations.placement-reports', compact('reports'));
     }
 
-    public function forwardPlacementReport(Request $request, $id)
+    public function forwardPlacementReport(Request $request, int $id)
     {
         $report = DB::table('placement_reports')->where('report_id', $id)->first();
         if (!$report) {
@@ -430,7 +430,7 @@ class JpoPortalController extends Controller
         return redirect()->back()->with('success', 'Placement report verified and forwarded to Admin for final authorization.');
     }
 
-    public function showPlacementReport($id)
+    public function showPlacementReport(int $id)
     {
         $report = DB::table('placement_reports')
             ->join('employers', 'placement_reports.employer_id', '=', 'employers.employer_id')
@@ -542,7 +542,7 @@ class JpoPortalController extends Controller
         return view('jpo.notifications', compact('notifications', 'user', 'unreadCount'));
     }
 
-    public function markNotificationRead($id)
+    public function markNotificationRead(int $id)
     {
         Notification::where('notification_id', $id)
             ->where('user_id', Auth::id())

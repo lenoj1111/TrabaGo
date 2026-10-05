@@ -68,6 +68,13 @@
             </div>
 
             <!-- Official Document Inspection Certificate View -->
+            <template x-if="currentDoc.isImage && currentDoc.previewUrl">
+                <div class="rounded-2xl border border-slate-200 bg-slate-100 p-3 flex items-center justify-center">
+                    <img :src="currentDoc.previewUrl" :alt="currentDoc.filename || currentDoc.label"
+                         class="max-h-[65vh] max-w-full rounded-lg object-contain shadow-sm">
+                </div>
+            </template>
+
             <div class="rounded-3xl border-2 border-emerald-100 bg-gradient-to-b from-emerald-50/30 to-white p-6 sm:p-8 space-y-6 shadow-sm relative overflow-hidden">
                 <!-- Background Seal Watermark -->
                 <div class="absolute -right-8 -bottom-8 opacity-5 text-slate-900 pointer-events-none text-9xl font-black select-none">
@@ -139,15 +146,15 @@
                     </div>
 
                     <div class="flex items-center gap-2 shrink-0">
-                        <template x-if="currentDoc.url">
-                            <a :href="currentDoc.url" 
-                               target="_blank" 
+                        <template x-if="currentDoc.downloadUrl">
+                            <a :href="currentDoc.downloadUrl"
+                               :download="currentDoc.filename"
                                class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all shrink-0">
-                                <span>Open / Download File</span>
-                                <span class="text-[10px]">↗</span>
+                                <span>Download Document</span>
+                                <span class="text-[10px]">↓</span>
                             </a>
                         </template>
-                        <template x-if="!currentDoc.url">
+                        <template x-if="!currentDoc.downloadUrl">
                             <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200 shrink-0">
                                 <span>✓</span> Verified Digital Copy
                             </span>

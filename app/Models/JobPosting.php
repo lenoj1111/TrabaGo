@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+
 
 class JobPosting extends Model
 {
@@ -38,6 +40,11 @@ class JobPosting extends Model
         'title',
         'description',
         'qualifications',
+        'job_type',
+        'location',
+        'salary_compensation',
+        'benefits_perks',
+        'other_instructions',
         'vacancy_count',
         'valid_until',
         'accepts_disability',
@@ -95,7 +102,7 @@ class JobPosting extends Model
     /**
      * Scope a query to only include active and unexpired job postings for jobseekers.
      */
-    public function scopeAvailableForJobseekers($query)
+    public function scopeAvailableForJobseekers(Builder $query)
     {
         return $query->where('status', 'approved')
             ->where(function ($q) {

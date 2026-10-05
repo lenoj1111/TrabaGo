@@ -29,20 +29,9 @@ class LoginController extends Controller
 
             $user = Auth::user();
 
-            // Check if user is pending approval
-            if ($user->status === 'pending' || !$user->is_approved) {
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-                return back()->withErrors([
-                    'email' => ($user->role === 'trainer')
-                        ? 'Your trainer account is pending Administrator approval. Please contact the DMDP administrator.'
-                        : 'Your account is pending approval.',
-                ]);
-            }
-
-            // Check if user is active
-            if ($user->status !== 'active') {
+            // Only block truly inactive accounts. Pending approval users may still log in
+            // and browse the system, but restricted actions are gated in the relevant controllers.
+            if ($user->status !== 'active' && $user->status !== 'pending') {
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();

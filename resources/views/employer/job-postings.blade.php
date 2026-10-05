@@ -8,6 +8,10 @@
     if (request('edit_id')) {
         $editJob = $jobs->firstWhere('job_id', request('edit_id')) ?? \App\Models\JobPosting::where('employer_id', $employer->employer_id)->find(request('edit_id'));
     }
+    $oldQualifications = old('qualifications');
+    $newQualificationItems = is_string($oldQualifications) && trim($oldQualifications) !== ''
+        ? preg_split('/\r\n|\r|\n/', $oldQualifications)
+        : [''];
 @endphp
 <div x-data="{ 
     createModal: {{ request()->has('create') ? 'true' : 'false' }},
@@ -15,11 +19,18 @@
     viewModal: false,
     deleteModal: false,
     closeModal: false,
+    newQualificationItems: @js($newQualificationItems),
+    qualificationItems: [''],
     selectedJob: {!! $editJob ? json_encode([
         'id' => $editJob->job_id,
         'title' => $editJob->title,
         'description' => $editJob->description,
         'qualifications' => $editJob->qualifications ?? '',
+        'job_type' => $editJob->job_type ?? '',
+        'location' => $editJob->location ?? '',
+        'salary_compensation' => $editJob->salary_compensation ?? '',
+        'benefits_perks' => $editJob->benefits_perks ?? '',
+        'other_instructions' => $editJob->other_instructions ?? '',
         'vacancy_count' => $editJob->vacancy_count,
         'valid_until' => $editJob->valid_until ? date('Y-m-d', strtotime($editJob->valid_until)) : '',
         'valid_until_formatted' => $editJob->valid_until ? date('M d, Y', strtotime($editJob->valid_until)) : 'Continuous',
@@ -33,6 +44,11 @@
         title: \'\',
         description: \'\',
         qualifications: \'\',
+        job_type: \'\',
+        location: \'\',
+        salary_compensation: \'\',
+        benefits_perks: \'\',
+        other_instructions: \'\',
         vacancy_count: 1,
         valid_until: \'\',
         valid_until_formatted: \'\',
@@ -42,12 +58,24 @@
         applications_count: 0,
         created_at: \'\'
     }' !!},
+    init() {
+        this.syncQualificationItems();
+    },
+    syncQualificationItems() {
+        this.qualificationItems = (this.selectedJob.qualifications || '').split(/\r?\n/).map(item => item.trim()).filter(Boolean);
+        if (this.qualificationItems.length === 0) this.qualificationItems = [''];
+    },
+    openCreate() {
+        this.newQualificationItems = [''];
+        this.createModal = true;
+    },
     openView(job) {
         this.selectedJob = { ...job };
         this.viewModal = true;
     },
     openEdit(job) {
         this.selectedJob = { ...job };
+        this.syncQualificationItems();
         this.editModal = true;
     },
     openDelete(job) {
@@ -73,10 +101,10 @@
             </div>
 
             @if($employer->is_accredited || ($accreditation && $accreditation->status === 'admin_approved'))
-                <button @click="createModal = true" 
+                <button @click="openCreate()" 
                         class="shrink-0 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-6 py-3.5 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                    + Create New Job Opening
+                    + Create New Job Posting
                 </button>
             @else
                 <a href="{{ route('employer.accreditation') }}" 
@@ -207,6 +235,11 @@
                                     'title' => $job->title,
                                     'description' => $job->description,
                                     'qualifications' => $job->qualifications ?? '',
+                                    'job_type' => $job->job_type ?? '',
+                                    'location' => $job->location ?? '',
+                                    'salary_compensation' => $job->salary_compensation ?? '',
+                                    'benefits_perks' => $job->benefits_perks ?? '',
+                                    'other_instructions' => $job->other_instructions ?? '',
                                     'vacancy_count' => $job->vacancy_count,
                                     'valid_until' => $job->valid_until ? date('Y-m-d', strtotime($job->valid_until)) : '',
                                     'valid_until_formatted' => $job->valid_until ? date('M d, Y', strtotime($job->valid_until)) : 'Continuous',
@@ -331,7 +364,7 @@
 
     <!-- 1. Create Job Posting Modal (Past Date Strictly Prevented) -->
     <div x-show="createModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div @click.away="createModal = false" class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
+        <div @click.away="createModal = false" class="bg-white rounded-3xl max-h-[90vh] overflow-y-auto overscroll-contain max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
             
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
@@ -365,6 +398,23 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="space-y-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Job Type <span class="text-rose-500">*</span></label>
+                        <select name="job_type" required class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            <option value="">Select job type</option>
+                            @foreach(['Full-time', 'Part-time', 'Contract', 'Temporary', 'Internship', 'Project-based', 'Other'] as $jobType)
+                                <option value="{{ $jobType }}" {{ old('job_type') === $jobType ? 'selected' : '' }}>{{ $jobType }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Location <span class="text-rose-500">*</span></label>
+                        <input type="text" name="location" required value="{{ old('location') }}" placeholder="City, province, or remote"
+                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1">
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Number of Vacancies <span class="text-rose-500">*</span></label>
                         <input type="number" name="vacancy_count" min="1" value="{{ old('vacancy_count', 1) }}" required
                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
@@ -383,15 +433,46 @@
                 </div>
 
                 <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Salary & Compensation <span class="text-rose-500">*</span></label>
+                    <textarea name="salary_compensation" rows="2" required placeholder="e.g. ₱25,000–₱30,000 per month, plus commissions"
+                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">{{ old('salary_compensation') }}</textarea>
+                </div>
+
+                <div class="space-y-1">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Job Description & Responsibilities <span class="text-rose-500">*</span></label>
                     <textarea name="description" rows="3" required placeholder="Detail the core duties, daily tasks, and team environment..."
                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">{{ old('description') }}</textarea>
                 </div>
 
-                <div class="space-y-1">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Required Skills & Qualifications</label>
-                    <textarea name="qualifications" rows="2" placeholder="e.g. Bachelor's or Vocational Graduate, PHP, SQL, Problem-Solving..."
-                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">{{ old('qualifications') }}</textarea>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between gap-3">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Required Skills & Qualifications</label>
+                        <button type="button" @click="newQualificationItems.push('')" class="text-xs font-bold text-emerald-700 hover:text-emerald-900">+ Add item</button>
+                    </div>
+                    <input type="hidden" name="qualifications" :value="newQualificationItems.map(item => item.trim()).filter(Boolean).join('\n')">
+                    <div class="space-y-2">
+                        <template x-for="(item, index) in newQualificationItems" :key="index">
+                            <div class="flex items-center gap-2">
+                                <span class="text-emerald-700 font-black" aria-hidden="true">&bull;</span>
+                                <input type="text" x-model="newQualificationItems[index]" :aria-label="'Qualification ' + (index + 1)" placeholder="Add a skill or qualification"
+                                       class="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                                <button type="button" @click="newQualificationItems.splice(index, 1)" :aria-label="'Remove qualification ' + (index + 1)" title="Remove item" class="px-2 py-2 text-slate-400 hover:text-rose-700">&times;</button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Benefits & Perks</label>
+                        <textarea name="benefits_perks" rows="3" placeholder="List benefits, one per line"
+                                  class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">{{ old('benefits_perks') }}</textarea>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Other Instructions</label>
+                        <textarea name="other_instructions" rows="3" placeholder="Additional application or work instructions"
+                                  class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">{{ old('other_instructions') }}</textarea>
+                    </div>
                 </div>
 
                 <!-- PWD Inclusivity Tag -->
@@ -422,7 +503,7 @@
 
     <!-- 2. Edit Job Posting Modal (Past Date Strictly Prevented) -->
     <div x-show="editModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div @click.away="editModal = false" class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
+        <div @click.away="editModal = false" class="bg-white rounded-3xl max-h-[90vh] overflow-y-auto overscroll-contain max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
             
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
@@ -457,6 +538,23 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="space-y-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Job Type <span class="text-rose-500">*</span></label>
+                        <select name="job_type" x-model="selectedJob.job_type" required class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            <option value="">Select job type</option>
+                            @foreach(['Full-time', 'Part-time', 'Contract', 'Temporary', 'Internship', 'Project-based', 'Other'] as $jobType)
+                                <option value="{{ $jobType }}">{{ $jobType }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Location <span class="text-rose-500">*</span></label>
+                        <input type="text" name="location" x-model="selectedJob.location" required placeholder="City, province, or remote"
+                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1">
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Number of Vacancies <span class="text-rose-500">*</span></label>
                         <input type="number" name="vacancy_count" min="1" x-model="selectedJob.vacancy_count" required
                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
@@ -475,15 +573,46 @@
                 </div>
 
                 <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Salary & Compensation <span class="text-rose-500">*</span></label>
+                    <textarea name="salary_compensation" rows="2" x-model="selectedJob.salary_compensation" required placeholder="Salary range, pay period, and compensation details"
+                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
+                </div>
+
+                <div class="space-y-1">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Job Description & Responsibilities <span class="text-rose-500">*</span></label>
                     <textarea name="description" rows="3" x-model="selectedJob.description" required
                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
                 </div>
 
-                <div class="space-y-1">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Required Skills & Qualifications</label>
-                    <textarea name="qualifications" rows="2" x-model="selectedJob.qualifications"
-                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between gap-3">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Required Skills & Qualifications</label>
+                        <button type="button" @click="qualificationItems.push('')" class="text-xs font-bold text-emerald-700 hover:text-emerald-900">+ Add item</button>
+                    </div>
+                    <input type="hidden" name="qualifications" :value="qualificationItems.map(item => item.trim()).filter(Boolean).join('\n')">
+                    <div class="space-y-2">
+                        <template x-for="(item, index) in qualificationItems" :key="index">
+                            <div class="flex items-center gap-2">
+                                <span class="text-emerald-700 font-black" aria-hidden="true">&bull;</span>
+                                <input type="text" x-model="qualificationItems[index]" :aria-label="'Qualification ' + (index + 1)" placeholder="Add a skill or qualification"
+                                       class="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                                <button type="button" @click="qualificationItems.splice(index, 1)" :aria-label="'Remove qualification ' + (index + 1)" title="Remove item" class="px-2 py-2 text-slate-400 hover:text-rose-700">&times;</button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Benefits & Perks</label>
+                        <textarea name="benefits_perks" rows="3" x-model="selectedJob.benefits_perks" placeholder="List benefits, one per line"
+                                  class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Other Instructions</label>
+                        <textarea name="other_instructions" rows="3" x-model="selectedJob.other_instructions" placeholder="Additional application or work instructions"
+                                  class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
+                    </div>
                 </div>
 
                 <!-- PWD Inclusivity Tag -->
@@ -521,7 +650,7 @@
 
     <!-- 3. View Job Posting Details Modal -->
     <div x-show="viewModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div @click.away="viewModal = false" class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
+        <div @click.away="viewModal = false" class="bg-white rounded-3xl max-h-[90vh] overflow-y-auto overscroll-contain max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
             
             <div class="flex items-start justify-between border-b border-slate-100 pb-4">
                 <div class="space-y-1">
@@ -552,6 +681,21 @@
                 </div>
             </div>
 
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div class="rounded-xl border border-slate-200 bg-white p-3">
+                    <span class="block text-[10px] font-bold uppercase text-slate-400">Job Type</span>
+                    <span class="font-bold text-slate-900" x-text="selectedJob.job_type || 'Not specified'"></span>
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-white p-3">
+                    <span class="block text-[10px] font-bold uppercase text-slate-400">Location</span>
+                    <span class="font-bold text-slate-900" x-text="selectedJob.location || 'Not specified'"></span>
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-white p-3">
+                    <span class="block text-[10px] font-bold uppercase text-slate-400">Salary & Compensation</span>
+                    <span class="font-bold text-slate-900 whitespace-pre-line" x-text="selectedJob.salary_compensation || 'Not specified'"></span>
+                </div>
+            </div>
+
             <!-- Description -->
             <div class="space-y-2 text-xs">
                 <h4 class="font-black uppercase tracking-wider text-slate-800">Job Description & Responsibilities</h4>
@@ -561,7 +705,17 @@
             <!-- Qualifications -->
             <div class="space-y-2 text-xs" x-show="selectedJob.qualifications">
                 <h4 class="font-black uppercase tracking-wider text-slate-800">Skills & Qualifications</h4>
-                <div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 text-slate-700 leading-relaxed whitespace-pre-line" x-text="selectedJob.qualifications"></div>
+                <div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 text-slate-700 leading-relaxed whitespace-pre-line" x-text="'• ' + selectedJob.qualifications.split(/\r?\n/).filter(item => item.trim()).join('\n• ')"></div>
+            </div>
+
+            <div class="space-y-2 text-xs" x-show="selectedJob.benefits_perks">
+                <h4 class="font-black uppercase tracking-wider text-slate-800">Benefits & Perks</h4>
+                <div class="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 text-slate-700 leading-relaxed whitespace-pre-line" x-text="'• ' + selectedJob.benefits_perks.split(/\r?\n/).filter(item => item.trim()).join('\n• ')"></div>
+            </div>
+
+            <div class="space-y-2 text-xs" x-show="selectedJob.other_instructions">
+                <h4 class="font-black uppercase tracking-wider text-slate-800">Other Instructions</h4>
+                <div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 text-slate-700 leading-relaxed whitespace-pre-line" x-text="selectedJob.other_instructions"></div>
             </div>
 
             <!-- PWD Accommodation -->

@@ -39,6 +39,7 @@ class JobseekerPortalController extends Controller
      */
     private function getOrCreateJobseeker(): Jobseeker
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $jobseeker = $user->jobseeker()->first();
 
@@ -201,7 +202,7 @@ class JobseekerPortalController extends Controller
         ));
     }
 
-    public function jobShow($id)
+    public function jobShow(int $id)
     {
         $job = JobPosting::with('employer')->findOrFail($id);
 
@@ -246,10 +247,16 @@ class JobseekerPortalController extends Controller
     // 3. APPLICATION LIFECYCLE MANAGEMENT
     // =========================================================================
 
-    public function apply(Request $request, $jobId)
+    public function apply(Request $request, int $jobId)
     {
         $jobseeker = $this->getOrCreateJobseeker();
         $job = JobPosting::findOrFail($jobId);
+
+        $user = Auth::user();
+        if (!$user || !$user->is_approved) {
+            return redirect()->route('jobseeker.jobs')
+                ->with('error', 'Your account is pending approval. You must be approved before you can apply for a job.');
+        }
 
         // Expired or unapproved jobs cannot be applied to
         if ($job->status !== 'approved' || $job->isExpired()) {
@@ -362,7 +369,7 @@ class JobseekerPortalController extends Controller
         return view('jobseeker.applications.index', compact('applications', 'counts', 'filter', 'jobseeker'));
     }
 
-    public function acceptOffer($id)
+    public function acceptOffer(int $id)
     {
         $jobseeker = $this->getOrCreateJobseeker();
         $application = JobApplication::with(['jobPosting.employer.user', 'jobseeker'])
@@ -446,7 +453,7 @@ class JobseekerPortalController extends Controller
         return redirect()->route('jobseeker.applications')->with('success', $msg);
     }
 
-    public function declineOffer(Request $request, $id)
+    public function declineOffer(Request $request, int $id)
     {
         $jobseeker = $this->getOrCreateJobseeker();
         $application = JobApplication::with(['jobPosting.employer.user', 'jobseeker'])
@@ -486,7 +493,7 @@ class JobseekerPortalController extends Controller
         return redirect()->route('jobseeker.applications')->with('info', "You have declined the job offer for '{$jobTitle}'. Your other applications remain active.");
     }
 
-    public function withdrawApplication($id)
+    public function withdrawApplication(int $id)
     {
         $jobseeker = $this->getOrCreateJobseeker();
         $app = JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->findOrFail($id);
@@ -674,7 +681,7 @@ class JobseekerPortalController extends Controller
         return view('jobseeker.training.enrollments', compact('enrollments', 'jobseeker', 'userSkills', 'stats'));
     }
 
-    public function enrollTraining($id)
+    public function enrollTraining(int $id)
     {
         $jobseeker = $this->getOrCreateJobseeker();
         $training = TrainingProgram::findOrFail($id);
@@ -709,7 +716,7 @@ class JobseekerPortalController extends Controller
             ->with('success', "Successfully enrolled in '{$training->title}'! You can now start the learning modules and assessment quiz.");
     }
 
-    public function trainingShow($id)
+    public function trainingShow(int $id)
     {
         $jobseeker = $this->getOrCreateJobseeker();
         $training = TrainingProgram::with('topics')->findOrFail($id);
@@ -720,7 +727,7 @@ class JobseekerPortalController extends Controller
         return view('jobseeker.training.show', compact('training', 'enrollment', 'jobseeker'));
     }
 
-    public function trainingQuiz($id)
+    public function trainingQuiz(int $id)
     {
         $jobseeker = $this->getOrCreateJobseeker();
         $training = TrainingProgram::with('topics')->findOrFail($id);
@@ -729,7 +736,7 @@ class JobseekerPortalController extends Controller
         return view('jobseeker.training.quiz', compact('training', 'jobseeker', 'questions'));
     }
 
-    public function submitQuiz(Request $request, $id)
+    public function submitQuiz(Request $request, int $id)
     {
         $jobseeker = $this->getOrCreateJobseeker();
         $training = TrainingProgram::with('trainer')->findOrFail($id);
@@ -894,7 +901,7 @@ class JobseekerPortalController extends Controller
     /**
      * Preview and print/download Certificate of Completion for Jobseeker.
      */
-    public function previewCertificate($id)
+    public function previewCertificate(int $id)
     {
         $jobseeker = $this->getOrCreateJobseeker();
         $enrollment = DB::table('training_enrollments')
@@ -1028,7 +1035,7 @@ class JobseekerPortalController extends Controller
             ->with('success', ucfirst(str_replace('_', ' ', $canonicalCategory)) . ' uploaded successfully to your vault.');
     }
 
-    public function deleteDocument(Request $request, $category)
+    public function deleteDocument(Request $request, string $category)
     {
         $jobseeker = $this->getOrCreateJobseeker();
         $details = $jobseeker->details;
@@ -1088,7 +1095,7 @@ class JobseekerPortalController extends Controller
         return view('jobseeker.notifications.index', compact('notifications', 'unreadCount', 'filter'));
     }
 
-    public function markNotificationRead($id)
+    public function markNotificationRead(int $id)
     {
         $user = Auth::user();
         Notification::where('user_id', $user->user_id)
@@ -1294,7 +1301,7 @@ class JobseekerPortalController extends Controller
         return redirect()->route('jobseeker.profile')->with('success', "Added skill: {$skillName}");
     }
 
-    public function removeSkill($id)
+    public function removeSkill(int $id)
     {
         $jobseeker = $this->getOrCreateJobseeker();
         JobseekerSkill::where('jobseeker_id', $jobseeker->jobseeker_id)
@@ -1332,6 +1339,7 @@ class JobseekerPortalController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         if (!Hash::check($request->current_password, $user->password)) {
@@ -1340,6 +1348,7 @@ class JobseekerPortalController extends Controller
                 ->withInput();
         }
 
+        /** @var \App\Models\User $user */
         $user->forceFill([
             'password' => Hash::make($request->password),
         ])->save();

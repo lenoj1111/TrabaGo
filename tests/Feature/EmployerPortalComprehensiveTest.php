@@ -106,6 +106,47 @@ class EmployerPortalComprehensiveTest extends TestCase
         ]);
     }
 
+    public function test_pending_employer_can_login_but_cannot_create_job_posting_until_approved(): void
+    {
+        $pendingEmployerUser = User::create([
+            'email' => 'pending.employer@cebutech.com',
+            'password' => Hash::make('secret123'),
+            'role' => 'employer',
+            'status' => 'active',
+            'is_approved' => 0,
+        ]);
+
+        $pendingEmployer = Employer::create([
+            'user_id' => $pendingEmployerUser->user_id,
+            'company_name' => 'Pending Approval Employer',
+            'is_accredited' => 1,
+            'accredited_at' => now()->toDateString(),
+        ]);
+
+        $loginResponse = $this->post('/login', [
+            'email' => 'pending.employer@cebutech.com',
+            'password' => 'secret123',
+        ]);
+
+        $loginResponse->assertRedirect('/employer/home');
+
+        $response = $this->actingAs($pendingEmployerUser)->post(route('employer.job-postings.store'), [
+            'title' => 'Pending Approved Job Posting',
+            'description' => 'This job should not be created while the employer is pending approval.',
+            'qualifications' => 'Diploma in any field',
+            'vacancy_count' => 1,
+            'valid_until' => now()->addMonth()->toDateString(),
+        ]);
+
+        $response->assertRedirect(route('employer.job-postings'));
+        $response->assertSessionHas('error', 'Your employer account is pending approval. You must be approved before creating a job posting.');
+
+        $this->assertDatabaseMissing('job_postings', [
+            'title' => 'Pending Approved Job Posting',
+            'employer_id' => $pendingEmployer->employer_id,
+        ]);
+    }
+
     /**
      * Test creating a job posting rejects a past date.
      */

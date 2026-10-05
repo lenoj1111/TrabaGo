@@ -17,7 +17,11 @@ class ApprovalsController extends Controller
     public function index()
     {
         // 1. Pending Job Postings with employer & accreditation details
-        $pendingJobs = JobPosting::with(['employer.accreditation'])->where('status', 'pending')->latest()->get();
+        $pendingJobs = JobPosting::with(['employer.user', 'employer.accreditation'])
+            ->withCount('applications')
+            ->where('status', 'pending')
+            ->latest()
+            ->get();
 
         foreach ($pendingJobs as $job) {
             if (!$job->employer) {
@@ -77,7 +81,7 @@ class ApprovalsController extends Controller
     // PILLAR 1: JOB POSTING APPROVAL
     // =========================================================================
 
-    public function approveJobPosting($id)
+    public function approveJobPosting(int $id)
     {
         $job = JobPosting::with('employer.user')->findOrFail($id);
         $job->update([
@@ -100,7 +104,7 @@ class ApprovalsController extends Controller
         return redirect()->back()->with('success', "Job posting '{$job->title}' approved successfully.");
     }
 
-    public function rejectJobPosting(Request $request, $id)
+    public function rejectJobPosting(Request $request, int $id)
     {
         $job = JobPosting::with('employer.user')->findOrFail($id);
         $job->update(['status' => 'rejected']);
@@ -123,7 +127,7 @@ class ApprovalsController extends Controller
     // PILLAR 2: EMPLOYER ACCREDITATION FINAL APPROVAL
     // =========================================================================
 
-    public function approveAccreditation(Request $request, $id)
+    public function approveAccreditation(Request $request, int $id)
     {
         $accreditation = DB::table('employer_accreditation')->where('accreditation_id', $id)->first();
         if (!$accreditation) {
@@ -183,7 +187,7 @@ class ApprovalsController extends Controller
         return redirect()->back()->with('success', "Employer '{$employer->company_name}' successfully accredited.");
     }
 
-    public function rejectAccreditation(Request $request, $id)
+    public function rejectAccreditation(Request $request, int $id)
     {
         $accreditation = DB::table('employer_accreditation')->where('accreditation_id', $id)->first();
         if (!$accreditation) {
@@ -214,7 +218,7 @@ class ApprovalsController extends Controller
     // PILLAR 3: PLACEMENT REPORT APPROVAL
     // =========================================================================
 
-    public function approvePlacementReport(Request $request, $id)
+    public function approvePlacementReport(Request $request, int $id)
     {
         $report = DB::table('placement_reports')->where('report_id', $id)->first();
         if (!$report) {
@@ -246,7 +250,7 @@ class ApprovalsController extends Controller
         return redirect()->back()->with('success', "Placement report approved and archived successfully.");
     }
 
-    public function rejectPlacementReport(Request $request, $id)
+    public function rejectPlacementReport(Request $request, int $id)
     {
         DB::table('placement_reports')->where('report_id', $id)->update([
             'status' => 'rejected',
@@ -289,7 +293,7 @@ class ApprovalsController extends Controller
         return view('admin.placement-reports.index', compact('reports', 'stats', 'statusFilter', 'searchQuery'));
     }
 
-    public function showPlacementReport($id)
+    public function showPlacementReport(int $id)
     {
         $report = DB::table('placement_reports')
             ->join('employers', 'placement_reports.employer_id', '=', 'employers.employer_id')
@@ -304,7 +308,7 @@ class ApprovalsController extends Controller
         return view('reports.placement-printable', compact('report'));
     }
 
-    public function printAccreditation($id)
+    public function printAccreditation(int $id)
     {
         $accreditation = EmployerAccreditation::with(['employer.user', 'employer.jobPostings'])->findOrFail($id);
         $employer = $accreditation->employer;
@@ -326,6 +330,7 @@ class ApprovalsController extends Controller
                 'jobseekers.*', 
                 'users.email as user_email', 
                 'users.status as account_status',
+                'users.is_approved as account_approved',
                 'social_status.is_pwd',
                 'social_status.pwd_type',
                 'social_status.is_4ps'
@@ -391,7 +396,7 @@ class ApprovalsController extends Controller
     // PILLAR 4: COLLABORATOR TRAINER ACCOUNT APPROVAL
     // =========================================================================
 
-    public function approveTrainer(Request $request, $id)
+    public function approveTrainer(Request $request, int $id)
     {
         $user = User::findOrFail($id);
         $user->update([
@@ -417,7 +422,7 @@ class ApprovalsController extends Controller
         return redirect()->back()->with('success', "Collaborator trainer '{$user->email}' approved successfully.");
     }
 
-    public function rejectTrainer(Request $request, $id)
+    public function rejectTrainer(Request $request, int$id)
     {
         $user = User::findOrFail($id);
         $user->update([

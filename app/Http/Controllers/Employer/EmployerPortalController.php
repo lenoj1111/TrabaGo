@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
+
 class EmployerPortalController extends Controller
 {
     private function getOrCreateEmployer(): Employer
@@ -126,6 +127,11 @@ class EmployerPortalController extends Controller
     {
         $employer = $this->getOrCreateEmployer();
 
+        if (Auth::user() && !Auth::user()->is_approved) {
+            return redirect()->route('employer.job-postings')
+                ->with('error', 'Your employer account is pending approval. You must be approved before creating a job posting.');
+        }
+
         if (!$this->employerIsAccredited($employer)) {
             return redirect()->route('employer.accreditation')->with('error', 'You must be accredited before creating a job posting.');
         }
@@ -137,6 +143,11 @@ class EmployerPortalController extends Controller
     {
         $employer = $this->getOrCreateEmployer();
 
+        if (Auth::user() && !Auth::user()->is_approved) {
+            return redirect()->route('employer.job-postings')
+                ->with('error', 'Your employer account is pending approval. You must be approved before creating a job posting.');
+        }
+
         if (!$this->employerIsAccredited($employer)) {
             return redirect()->route('employer.accreditation')->with('error', 'You must be accredited before creating a job posting.');
         }
@@ -145,6 +156,11 @@ class EmployerPortalController extends Controller
             'title' => 'required|string|max:150',
             'description' => 'required|string',
             'qualifications' => 'nullable|string',
+            'job_type' => 'required|string|max:100',
+            'location' => 'required|string|max:255',
+            'salary_compensation' => 'required|string|max:5000',
+            'benefits_perks' => 'nullable|string|max:10000',
+            'other_instructions' => 'nullable|string|max:10000',
             'vacancy_count' => 'required|integer|min:1',
             'valid_until' => ['nullable', 'date', 'after_or_equal:today'],
             'accepts_disability' => 'nullable|boolean',
@@ -158,6 +174,11 @@ class EmployerPortalController extends Controller
             'title' => $request->input('title'),
             'description' => $request->input('description'),
             'qualifications' => $request->input('qualifications'),
+            'job_type' => $request->input('job_type'),
+            'location' => $request->input('location'),
+            'salary_compensation' => $request->input('salary_compensation'),
+            'benefits_perks' => $request->input('benefits_perks'),
+            'other_instructions' => $request->input('other_instructions'),
             'vacancy_count' => $request->input('vacancy_count', 1),
             'valid_until' => $request->input('valid_until', now()->addMonths(2)->toDateString()),
             'accepts_disability' => $request->boolean('accepts_disability'),
@@ -183,7 +204,7 @@ class EmployerPortalController extends Controller
         return redirect()->route('employer.job-postings')->with('success', 'Job posting created successfully and forwarded to the Admin for approval.');
     }
 
-    public function showJobPosting($id)
+    public function showJobPosting(int $id)
     {
         $employer = $this->getOrCreateEmployer();
         $job = JobPosting::with(['applications.jobseeker', 'applications.jobseeker.skills'])
@@ -197,7 +218,7 @@ class EmployerPortalController extends Controller
         return view('employer.job-postings-show', compact('employer', 'job'));
     }
 
-    public function editJobPosting($id)
+    public function editJobPosting(int $id)
     {
         $employer = $this->getOrCreateEmployer();
         $job = JobPosting::where('employer_id', $employer->employer_id)->findOrFail($id);
@@ -209,7 +230,7 @@ class EmployerPortalController extends Controller
         return redirect()->route('employer.job-postings', ['edit_id' => $id]);
     }
 
-    public function updateJobPosting(Request $request, $id)
+    public function updateJobPosting(Request $request, int $id)
     {
         $employer = $this->getOrCreateEmployer();
         $job = JobPosting::where('employer_id', $employer->employer_id)->findOrFail($id);
@@ -218,6 +239,11 @@ class EmployerPortalController extends Controller
             'title' => 'required|string|max:150',
             'description' => 'required|string',
             'qualifications' => 'nullable|string',
+            'job_type' => 'required|string|max:100',
+            'location' => 'required|string|max:255',
+            'salary_compensation' => 'required|string|max:5000',
+            'benefits_perks' => 'nullable|string|max:10000',
+            'other_instructions' => 'nullable|string|max:10000',
             'vacancy_count' => 'required|integer|min:1',
             'valid_until' => ['nullable', 'date', 'after_or_equal:today'],
             'accepts_disability' => 'nullable|boolean',
@@ -236,6 +262,11 @@ class EmployerPortalController extends Controller
             'title' => $request->input('title'),
             'description' => $request->input('description'),
             'qualifications' => $request->input('qualifications'),
+            'job_type' => $request->input('job_type'),
+            'location' => $request->input('location'),
+            'salary_compensation' => $request->input('salary_compensation'),
+            'benefits_perks' => $request->input('benefits_perks'),
+            'other_instructions' => $request->input('other_instructions'),
             'vacancy_count' => $request->input('vacancy_count'),
             'valid_until' => $request->input('valid_until'),
             'accepts_disability' => $request->boolean('accepts_disability'),
@@ -246,7 +277,7 @@ class EmployerPortalController extends Controller
         return redirect()->route('employer.job-postings')->with('success', 'Job posting updated successfully.');
     }
 
-    public function destroyJobPosting($id)
+    public function destroyJobPosting(int $id)
     {
         $employer = $this->getOrCreateEmployer();
         $job = JobPosting::where('employer_id', $employer->employer_id)->findOrFail($id);
@@ -264,7 +295,7 @@ class EmployerPortalController extends Controller
         return redirect()->route('employer.job-postings')->with('success', "Job posting '{$jobTitle}' deleted successfully.");
     }
 
-    public function closeJobPosting($id)
+    public function closeJobPosting(int $id)
     {
         $employer = $this->getOrCreateEmployer();
         $job = JobPosting::where('employer_id', $employer->employer_id)->findOrFail($id);
@@ -370,6 +401,55 @@ class EmployerPortalController extends Controller
         return redirect()->route('employer.accreditation')->with('success', 'Accreditation papers submitted successfully to the Job Placement Officer (JPO) for evaluation.');
     }
 
+    public function accreditationDocument(Request $request, int $accreditationId, string $documentKey, string $action)
+    {
+        $accreditation = EmployerAccreditation::with('employer')->findOrFail($accreditationId);
+        $user = $request->user();
+
+        if ($user->role === 'employer') {
+            abort_unless((int) $accreditation->employer?->user_id === (int) $user->user_id, 403);
+        } elseif (!in_array($user->role, ['admin', 'jpo'], true)) {
+            abort(403);
+        }
+
+        $document = $accreditation->documents[$documentKey] ?? null;
+        $path = is_array($document) ? ($document['path'] ?? null) : $document;
+
+        if (!is_string($path) || !str_starts_with($path, 'accreditation_docs/') || str_contains($path, '..')) {
+            abort(404);
+        }
+
+        $disk = Storage::disk('public');
+        if (!$disk->exists($path)) {
+            abort(404);
+        }
+
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $allowedExtensions = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
+        abort_unless(in_array($extension, $allowedExtensions, true), 404);
+
+        $originalName = is_array($document) ? ($document['original_name'] ?? basename($path)) : basename($path);
+        $downloadName = basename(str_replace('\\', '/', $originalName));
+
+        if ($action === 'preview' && in_array($extension, ['jpg', 'jpeg', 'png'], true)) {
+            $mimeType = match ($extension) {
+                'jpg', 'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+            };
+
+            return response()->file($disk->path($path), [
+                'Content-Type' => $mimeType,
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
+        }
+
+        abort_unless($action === 'download', 404);
+
+        return response()->download($disk->path($path), $downloadName, [
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
     // =========================================================================
     // 3. REVIEW REFERRED JOBSEEKERS (FROM JPO)
     // =========================================================================
@@ -430,7 +510,7 @@ class EmployerPortalController extends Controller
         return view('employer.referred-jobseekers', compact('employer', 'referredApplicants', 'stats', 'employerJobs'));
     }
 
-    public function updateApplicantStatus(Request $request, $id)
+    public function updateApplicantStatus(Request $request, int $id)
     {
         $employer = $this->getOrCreateEmployer();
         $jobIds = JobPosting::where('employer_id', $employer->employer_id)->pluck('job_id');
@@ -551,7 +631,7 @@ class EmployerPortalController extends Controller
         return redirect()->back();
     }
 
-    public function respondResignation(Request $request, $id)
+    public function respondResignation(Request $request, int $id)
     {
         $employer = $this->getOrCreateEmployer();
         $jobIds = JobPosting::where('employer_id', $employer->employer_id)->pluck('job_id');
@@ -717,7 +797,7 @@ class EmployerPortalController extends Controller
         return redirect()->route('employer.placement-reports')->with('success', 'Monthly placement report generated and sent to the Job Placement Officer (JPO) for evaluation.');
     }
 
-    public function showPlacementReport($id)
+    public function showPlacementReport(int $id)
     {
         $employer = $this->getOrCreateEmployer();
         $report = DB::table('placement_reports')
@@ -838,7 +918,7 @@ class EmployerPortalController extends Controller
         return view('employer.notifications', compact('notifications', 'user', 'unreadCount'));
     }
 
-    public function markNotificationRead($id)
+    public function markNotificationRead(int $id)
     {
         Notification::where('notification_id', $id)
             ->where('user_id', Auth::id())

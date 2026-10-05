@@ -3,13 +3,30 @@
 @section('title', 'Explore Jobs & AI Matching - TrabaGo')
 
 @section('content')
+@php
+    $currentUser = Auth::user();
+    $isApproved = (bool) ($currentUser->is_approved ?? false);
+@endphp
 <div x-data="{ 
     selectedJobId: '{{ $selectedItem ? $selectedItem['job_id'] : '' }}',
     applyModalOpen: false,
+    approvalWarningOpen: false,
     selectedJobTitle: '{{ $selectedItem ? addslashes($selectedItem['job']->title) : '' }}',
     selectedJobCompany: '{{ $selectedItem ? addslashes($selectedItem['job']->employer->company_name ?? 'Partner Employer') : '' }}'
 }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-7xl space-y-6">
+
+        @if(!$isApproved)
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5 shadow-sm">
+                <div class="flex items-start gap-3">
+                    <div class="h-10 w-10 rounded-xl bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center text-lg shrink-0">⚠️</div>
+                    <div>
+                        <h2 class="text-sm font-black text-amber-900">Approval Required Before Applying</h2>
+                        <p class="text-xs text-amber-800 mt-0.5">Your jobseeker account is still pending admin approval. You can continue browsing open positions, but you must be approved before you can apply for a job posting.</p>
+                    </div>
+                </div>
+            </div>
+        @endif
         
         <!-- Header & Search Controls -->
         <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-8 text-white shadow-xl border border-emerald-500/20">
@@ -206,7 +223,15 @@
                                     </div>
                                     <h2 class="text-2xl font-black text-slate-900 mt-1">{{ $job->title }}</h2>
                                     <p class="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
-                                        <span>Cebu City, Philippines &bull; Full-time Position &bull; ₱18,000 - ₱35,000 / month</span>
+                                        @if($job->location)
+                                            <span>{{ $job->location }}</span>
+                                        @endif
+                                        @if($job->job_type)
+                                            <span>{{ $job->job_type }}</span>
+                                        @endif
+                                        @if($job->salary_compensation)
+                                            <span class="font-bold text-slate-900">{{ $job->salary_compensation }}</span>
+                                        @endif
                                         @if ($job->valid_until)
                                             <span>&bull;</span>
                                             <span class="inline-flex items-center gap-1 font-bold {{ $job->valid_until->isPast() ? 'text-rose-600' : 'text-emerald-700' }}">
@@ -290,10 +315,30 @@
                             @if($job->qualifications)
                                 <div class="space-y-3">
                                     <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Required Qualifications</h4>
-                                    <div class="rounded-2xl bg-slate-50 p-4 text-xs text-slate-700 leading-relaxed font-mono whitespace-pre-line border border-slate-100">
-                                        {{ $job->qualifications }}
-                                    </div>
+                                    <ul class="list-disc pl-5 rounded-2xl bg-slate-50 p-4 text-xs text-slate-700 leading-relaxed border border-slate-100 space-y-1">
+                                        @foreach(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $job->qualifications))) as $qualification)
+                                            <li>{{ $qualification }}</li>
+                                        @endforeach
+                                    </ul>
                                 </div>
+                            @endif
+
+                            @if($job->benefits_perks)
+                                <div class="space-y-3">
+                                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Benefits & Perks</h4>
+                                    <ul class="list-disc pl-5 rounded-2xl bg-emerald-50/50 p-4 text-xs text-slate-700 leading-relaxed border border-emerald-100 space-y-1">
+                                        @foreach(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $job->benefits_perks))) as $benefit)
+                                            <li>{{ $benefit }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+
+                            @if($job->other_instructions)
+                                <div class="space-y-3">
+                                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Other Instructions</h4>
+                                    <p class="rounded-2xl bg-slate-50 p-4 text-xs text-slate-700 leading-relaxed whitespace-pre-line border border-slate-100">{{ $job->other_instructions }}</p>
+                                    </div>
                             @endif
 
                             <!-- Action Bar -->
@@ -311,6 +356,11 @@
                                     <button disabled class="inline-flex items-center gap-2 rounded-xl bg-slate-200 px-6 py-3 text-sm font-bold text-slate-600 cursor-not-allowed">
                                         <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         Position Expired
+                                    </button>
+                                @elseif(!$isApproved)
+                                    <button type="button" @click="approvalWarningOpen = true" class="inline-flex items-center gap-2 rounded-xl bg-amber-100 border border-amber-300 px-6 py-3 text-sm font-black text-amber-900 shadow-sm transition-all hover:bg-amber-200">
+                                        <span>⚠️</span>
+                                        Approval Required to Apply
                                     </button>
                                 @elseif($jobseeker->isEmployed())
                                     <div class="text-right space-y-1">
@@ -397,6 +447,32 @@
                 </div>
             </form>
 
+        </div>
+    </div>
+
+    <div x-show="approvalWarningOpen" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+        <div @click.away="approvalWarningOpen = false" class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-amber-200 space-y-5">
+            <div class="flex items-start gap-3">
+                <div class="h-12 w-12 rounded-2xl bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center text-2xl shrink-0">⚠️</div>
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">Action required</p>
+                    <h3 class="text-xl font-black text-slate-900 mt-1">Approval Needed Before You Can Apply</h3>
+                </div>
+            </div>
+
+            <p class="text-sm text-slate-600 leading-relaxed">
+                Your jobseeker account is still pending admin approval. Please wait for approval before you can submit any job application.
+            </p>
+
+            <div class="rounded-2xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 font-semibold">
+                You can still browse job listings and training modules while waiting for approval.
+            </div>
+
+            <div class="flex justify-end">
+                <button type="button" @click="approvalWarningOpen = false" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-black">
+                    OK
+                </button>
+            </div>
         </div>
     </div>
 

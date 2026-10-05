@@ -3,7 +3,7 @@
 @section('title', 'Jobseeker Status & Workflow Supervision - Admin')
 
 @section('content')
-<div class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
+<div x-data="{ detailsOpen: false, selectedJobseeker: {}, openDetails(jobseeker) { this.selectedJobseeker = jobseeker; this.detailsOpen = true; } }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-7xl space-y-8">
 
         <!-- Header -->
@@ -139,6 +139,7 @@
                             <th class="py-4 px-6 text-center">Applications</th>
                             <th class="py-4 px-6 text-center">JPO Referrals</th>
                             <th class="py-4 px-6 text-right">Placement Status</th>
+                            <th class="py-4 px-6 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
@@ -211,10 +212,39 @@
                                         </span>
                                     @endif
                                 </td>
+                                <td class="py-4 px-6 text-right">
+                                        <button type="button"
+                                            data-details="{{ json_encode([
+                                                "id" => $js->jobseeker_id,
+                                                "name" => trim(($js->first_name ?? "") . " " . ($js->middle_name ?? "") . " " . ($js->last_name ?? "")),
+                                                "email" => $js->user_email,
+                                                "mobile" => $js->mobile_number,
+                                                "approved" => (bool) $js->account_approved,
+                                                "account_status" => $js->account_status,
+                                                "birth_date" => $js->birth_date ? date("M d, Y", strtotime($js->birth_date)) : null,
+                                                "sex" => $js->sex,
+                                                "civil_status" => $js->civil_status,
+                                                "citizenship" => $js->citizenship,
+                                                "employment_status" => $js->employment_status,
+                                                "hired_company" => $js->hired_company,
+                                                "is_pwd" => (bool) $js->is_pwd,
+                                                "pwd_type" => $js->pwd_type,
+                                                "is_4ps" => (bool) $js->is_4ps,
+                                                "skills" => $js->skills_count ?? 0,
+                                                "trainings" => $js->trainings_count ?? 0,
+                                                "certifications" => $js->certs_count ?? 0,
+                                                "applications" => $js->applications_count ?? 0,
+                                                "referrals" => $js->jpo_referrals_count ?? 0
+                                            ]) }}"
+                                            @click="openDetails(JSON.parse($el.dataset.details))"
+                                            class="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200 transition-colors">
+                                        View Details
+                                    </button>
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="py-12 text-center text-slate-400">
+                                <td colspan="8" class="py-12 text-center text-slate-400">
                                     <div class="text-3xl mb-2">👥</div>
                                     <p class="font-bold text-slate-700">No jobseeker records found</p>
                                     <p class="text-xs mt-0.5">Try adjusting your search criteria or filters.</p>
@@ -233,6 +263,48 @@
             @endif
         </div>
 
+    </div>
+
+    <div x-show="detailsOpen" x-cloak class="fixed inset-0 z-[70] overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4" @keydown.escape.window="detailsOpen = false">
+        <div @click.away="detailsOpen = false" class="max-h-[90vh] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-2xl space-y-5">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Jobseeker Profile</span>
+                    <h2 class="mt-1 text-xl font-black text-slate-900" x-text="selectedJobseeker.name || 'Jobseeker'"></h2>
+                    <p class="text-xs text-slate-500">Candidate #<span x-text="selectedJobseeker.id"></span></p>
+                </div>
+                <button type="button" @click="detailsOpen = false" class="text-2xl font-bold text-slate-400 hover:text-slate-800" aria-label="Close details">&times;</button>
+            </div>
+
+            <section class="space-y-2"><h3 class="text-xs font-black uppercase tracking-wider text-slate-700">Personal & Contact</h3>
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Email</dt><dd class="mt-1 break-words font-semibold text-slate-900" x-text="selectedJobseeker.email || 'N/A'"></dd></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Mobile</dt><dd class="mt-1 font-semibold text-slate-900" x-text="selectedJobseeker.mobile || 'N/A'"></dd></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Birth Date</dt><dd class="mt-1 font-semibold text-slate-900" x-text="selectedJobseeker.birth_date || 'N/A'"></dd></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Sex / Civil Status</dt><dd class="mt-1 font-semibold text-slate-900" x-text="[selectedJobseeker.sex, selectedJobseeker.civil_status].filter(Boolean).join(' · ') || 'N/A'"></dd></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Citizenship</dt><dd class="mt-1 font-semibold text-slate-900" x-text="selectedJobseeker.citizenship || 'N/A'"></dd></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">PWD / 4Ps</dt><dd class="mt-1 font-semibold text-slate-900" x-text="(selectedJobseeker.is_pwd ? ('PWD' + (selectedJobseeker.pwd_type ? ' · ' + selectedJobseeker.pwd_type : '')) : 'Not PWD') + (selectedJobseeker.is_4ps ? ' · 4Ps' : '')"></dd></div>
+                </dl>
+            </section>
+
+            <section class="space-y-2"><h3 class="text-xs font-black uppercase tracking-wider text-slate-700">Account & Placement</h3>
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Account</dt><dd class="mt-1 font-semibold text-slate-900" x-text="(selectedJobseeker.account_status || 'Unknown') + ' · ' + (selectedJobseeker.approved ? 'Approved' : 'Pending approval')"></dd></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Employment Status</dt><dd class="mt-1 font-semibold text-slate-900" x-text="selectedJobseeker.employment_status || 'Seeking employment'"></dd></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[10px] font-bold uppercase text-slate-400">Current Employer</dt><dd class="mt-1 font-semibold text-slate-900" x-text="selectedJobseeker.hired_company || 'N/A'"></dd></div>
+                </dl>
+            </section>
+
+            <section class="space-y-2"><h3 class="text-xs font-black uppercase tracking-wider text-slate-700">Activity</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
+                    <div class="rounded-xl bg-slate-50 p-3"><strong class="block text-lg text-slate-900" x-text="selectedJobseeker.skills"></strong><span class="text-slate-500">Skills</span></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><strong class="block text-lg text-slate-900" x-text="selectedJobseeker.trainings"></strong><span class="text-slate-500">Trainings</span></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><strong class="block text-lg text-slate-900" x-text="selectedJobseeker.certifications"></strong><span class="text-slate-500">Certifications</span></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><strong class="block text-lg text-slate-900" x-text="selectedJobseeker.applications"></strong><span class="text-slate-500">Applications</span></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><strong class="block text-lg text-slate-900" x-text="selectedJobseeker.referrals"></strong><span class="text-slate-500">JPO Referrals</span></div>
+                </div>
+            </section>
+        </div>
     </div>
 </div>
 @endsection

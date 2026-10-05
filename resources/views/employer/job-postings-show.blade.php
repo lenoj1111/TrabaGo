@@ -53,6 +53,17 @@
             <p class="text-xs text-slate-300">
                 Posted by {{ $employer->company_name }} &bull; {{ $job->vacancy_count }} Available {{ Str::plural('Position', $job->vacancy_count) }} &bull; Valid until {{ $job->valid_until ? date('F d, Y', strtotime($job->valid_until)) : 'Continuous' }}
             </p>
+            <div class="flex flex-wrap gap-2 text-xs">
+                @if($job->job_type)
+                    <span class="rounded-lg bg-white/10 border border-white/15 px-3 py-1.5">{{ $job->job_type }}</span>
+                @endif
+                @if($job->location)
+                    <span class="rounded-lg bg-white/10 border border-white/15 px-3 py-1.5">{{ $job->location }}</span>
+                @endif
+                @if($job->salary_compensation)
+                    <span class="rounded-lg bg-white/10 border border-white/15 px-3 py-1.5">{{ $job->salary_compensation }}</span>
+                @endif
+            </div>
         </div>
 
         <!-- Specifications & Accommodation Details -->
@@ -68,10 +79,34 @@
 
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-4">
                     <h2 class="text-base font-black text-slate-900 uppercase tracking-wider">Skills & Requirements</h2>
-                    <div class="text-xs text-slate-700 leading-relaxed whitespace-pre-line">
-                        {{ $job->qualifications ?: 'Standard qualifications specified by employer.' }}
-                    </div>
+                    @if($job->qualifications)
+                        <ul class="list-disc pl-5 text-xs text-slate-700 leading-relaxed space-y-1">
+                            @foreach(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $job->qualifications))) as $qualification)
+                                <li>{{ $qualification }}</li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <p class="text-xs text-slate-500">No specific qualifications listed.</p>
+                    @endif
                 </div>
+
+                @if($job->benefits_perks)
+                    <div class="rounded-3xl border border-emerald-200 bg-emerald-50/50 p-6 sm:p-8 shadow-sm space-y-4">
+                        <h2 class="text-base font-black text-slate-900 uppercase tracking-wider">Benefits & Perks</h2>
+                        <ul class="list-disc pl-5 text-xs text-slate-700 leading-relaxed space-y-1">
+                            @foreach(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $job->benefits_perks))) as $benefit)
+                                <li>{{ $benefit }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                @if($job->other_instructions)
+                    <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-4">
+                        <h2 class="text-base font-black text-slate-900 uppercase tracking-wider">Other Instructions</h2>
+                        <p class="text-xs text-slate-700 leading-relaxed whitespace-pre-line">{{ $job->other_instructions }}</p>
+                    </div>
+                @endif
             </div>
 
             <!-- Right: Meta Cards -->

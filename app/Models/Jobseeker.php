@@ -52,6 +52,11 @@ class Jobseeker extends Model
      */
     public function isEmployed(): bool
     {
+        $user = $this->user()->first();
+        if (!$user || !$user->is_approved) {
+            return false;
+        }
+
         // Check for active hired application without approved resignation
         $hasActiveHired = $this->applications()
             ->where('status', 'hired')

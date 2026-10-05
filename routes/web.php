@@ -41,6 +41,10 @@ Route::post('/contact', [ContactController::class, 'submit'])->name('contact.sub
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+Route::get('/accreditation-documents/{accreditationId}/{documentKey}/{action}', [EmployerPortalController::class, 'accreditationDocument'])
+    ->where('action', 'preview|download')
+    ->middleware('auth')
+    ->name('accreditation.documents');
 
 /*
 |--------------------------------------------------------------------------
@@ -362,9 +366,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
                 'users.email',
                 'users.status as user_status',
                 'users.is_approved as user_approved',
+                'users.created_at as user_created_at',
                 'employer_accreditation.accreditation_id',
                 'employer_accreditation.documents',
                 'employer_accreditation.status as accreditation_status',
+                'employer_accreditation.document_status',
+                'employer_accreditation.document_incomplete_reason',
                 'employer_accreditation.jpo_reviewed',
                 'employer_accreditation.jpo_remarks'
             )
