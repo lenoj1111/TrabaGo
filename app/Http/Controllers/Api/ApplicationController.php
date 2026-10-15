@@ -8,11 +8,14 @@ use App\Models\JobPosting;
 use App\Models\Jobseeker;
 use App\Models\Notification;
 use App\Services\SkillMatchingService;
+use App\Traits\ResolvesJobseeker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ApplicationController extends Controller
 {
+    use ResolvesJobseeker;
+
     protected SkillMatchingService $matchingService;
 
     public function __construct(SkillMatchingService $matchingService)
@@ -70,8 +73,7 @@ class ApplicationController extends Controller
      */
     public function getAll(Request $request)
     {
-        $user = $request->user();
-        $jobseeker = $user ? $user->jobseeker : Jobseeker::first();
+        $jobseeker = $this->resolveJobseeker($request, false);
 
         if (!$jobseeker) {
             return response()->json([
@@ -122,7 +124,7 @@ class ApplicationController extends Controller
      */
     public function submit(Request $request)
     {
-        $user = $request->user();
+        $user = $this->resolveUser($request);
         if (!$user) {
             return response()->json([
                 'success' => false,
@@ -146,16 +148,14 @@ class ApplicationController extends Controller
             ], 404);
         }
 
-        $jobseeker = $user->jobseeker;
-        if (!$jobseeker) {
-            $nameParts = explode(' ', $user->full_name ?? '', 2);
-            $jobseeker = Jobseeker::create([
-                'user_id' => $user->user_id,
-                'first_name' => $nameParts[0] ?? explode('@', $user->email)[0] ?? 'Jobseeker',
-                'last_name' => $nameParts[1] ?? '',
-                'email' => $user->email,
-            ]);
+        if (!$user->is_approved) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your jobseeker account is pending approval by DMDP. You cannot apply for a job posting until your account is approved.',
+            ], 403);
         }
+
+        $jobseeker = $this->resolveJobseeker($request, true);
 
         // Employed check: cannot apply for another job while currently hired/employed (identical to web)
         if ($jobseeker->isEmployed()) {
@@ -164,6 +164,17 @@ class ApplicationController extends Controller
                 'success' => false,
                 'message' => "You cannot apply for another job while currently employed at {$company}. You must request a resignation and have it approved before applying for other positions.",
             ], 403);
+        }
+
+        // Profile and Documents Completeness Check (Enforced on Mobile & Web)
+        $missingRequirements = $jobseeker->getMissingRequirements();
+        if (!empty($missingRequirements)) {
+            $missingList = implode(', ', $missingRequirements);
+            return response()->json([
+                'success' => false,
+                'message' => "Application blocked: You cannot apply for a job posting until your profile details and required documents are completed. Missing: {$missingList}. Please complete your profile and upload required documents in the Document Vault.",
+                'missing_requirements' => array_values($missingRequirements),
+            ], 422);
         }
 
         // Check if already applied
@@ -213,9 +224,9 @@ class ApplicationController extends Controller
      */
     public function acceptOffer(Request $request, $id)
     {
-        $user = $request->user();
-        $jobseeker = $user ? $user->jobseeker : null;
-        if (!$jobseeker) {
+        $user = $this->resolveUser($request);
+        $jobseeker = $this->resolveJobseeker($request, false);
+        if (!$jobseeker || !$user) {
             return response()->json(['success' => false, 'message' => 'Jobseeker not found'], 404);
         }
 
@@ -288,8 +299,7 @@ class ApplicationController extends Controller
      */
     public function declineOffer(Request $request, $id)
     {
-        $user = $request->user();
-        $jobseeker = $user ? $user->jobseeker : null;
+        $jobseeker = $this->resolveJobseeker($request, false);
         if (!$jobseeker) {
             return response()->json(['success' => false, 'message' => 'Jobseeker not found'], 404);
         }
@@ -334,8 +344,7 @@ class ApplicationController extends Controller
      */
     public function requestResignation(Request $request)
     {
-        $user = $request->user();
-        $jobseeker = $user ? $user->jobseeker : null;
+        $jobseeker = $this->resolveJobseeker($request, false);
         if (!$jobseeker) {
             return response()->json(['success' => false, 'message' => 'Jobseeker not found'], 404);
         }
@@ -383,8 +392,7 @@ class ApplicationController extends Controller
      */
     public function withdraw(Request $request, $id)
     {
-        $user = $request->user();
-        $jobseeker = $user ? $user->jobseeker : null;
+        $jobseeker = $this->resolveJobseeker($request, false);
 
         $query = JobApplication::where('application_id', $id);
         if ($jobseeker) {

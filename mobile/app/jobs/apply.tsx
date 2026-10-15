@@ -92,7 +92,24 @@ export default function ApplyJobModal() {
           ]
         );
       } else {
-        Alert.alert('Submission Failed', res.message || 'Could not submit application.');
+        const isRequirementsError = res.message?.toLowerCase().includes('missing') ||
+          res.message?.toLowerCase().includes('profile details') ||
+          res.message?.toLowerCase().includes('document') ||
+          res.message?.toLowerCase().includes('completed');
+
+        if (isRequirementsError) {
+          Alert.alert(
+            'Application Locked',
+            res.message || 'Please complete your profile details and upload required documents before applying.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Complete Profile', onPress: () => router.push('/profile/edit') },
+              { text: 'Document Vault', onPress: () => router.push('/profile/vault') },
+            ]
+          );
+        } else {
+          Alert.alert('Submission Failed', res.message || 'Could not submit application.');
+        }
       }
     } catch (err: any) {
       Alert.alert('Error', err.message || 'An unexpected error occurred.');
@@ -102,10 +119,12 @@ export default function ApplyJobModal() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       {/* Position Header */}
       <View style={styles.headerBox}>
-        <Text style={styles.headerLabel}>Applying for</Text>
+        <View style={styles.badgePill}>
+          <Text style={styles.badgePillText}>APPLYING FOR POSITION</Text>
+        </View>
         <Text style={styles.headerTitle}>{params.jobTitle || 'Job Position'}</Text>
         <Text style={styles.headerCompany}>{params.company || 'DMDP Employer'}</Text>
       </View>
@@ -116,15 +135,21 @@ export default function ApplyJobModal() {
         <Text style={styles.cardSubtitle}>Your registered DMDP credentials will be submitted</Text>
 
         <View style={styles.profileRow}>
-          <Ionicons name="person-outline" size={16} color={COLORS.primary} />
+          <View style={styles.profileIconBox}>
+            <Ionicons name="person-outline" size={16} color={COLORS.primary} />
+          </View>
           <Text style={styles.profileText}>{user?.fullName || 'Registered Jobseeker'}</Text>
         </View>
         <View style={styles.profileRow}>
-          <Ionicons name="mail-outline" size={16} color={COLORS.primary} />
+          <View style={styles.profileIconBox}>
+            <Ionicons name="mail-outline" size={16} color={COLORS.primary} />
+          </View>
           <Text style={styles.profileText}>{user?.email}</Text>
         </View>
         <View style={styles.profileRow}>
-          <Ionicons name="call-outline" size={16} color={COLORS.primary} />
+          <View style={styles.profileIconBox}>
+            <Ionicons name="call-outline" size={16} color={COLORS.primary} />
+          </View>
           <Text style={styles.profileText}>{user?.phone || user?.mobile_number || 'No contact number'}</Text>
         </View>
       </View>
@@ -138,7 +163,7 @@ export default function ApplyJobModal() {
         <TextInput
           style={styles.textArea}
           placeholder="Briefly describe your background, availability, and why you are a great fit for this role..."
-          placeholderTextColor={COLORS.textMuted}
+          placeholderTextColor={COLORS.slate400}
           multiline
           numberOfLines={4}
           value={coverNote}
@@ -154,7 +179,9 @@ export default function ApplyJobModal() {
 
         {selectedFile ? (
           <View style={styles.fileBox}>
-            <Ionicons name="document-text" size={28} color={COLORS.primary} />
+            <View style={styles.fileIconBox}>
+              <Ionicons name="document-text" size={24} color={COLORS.primary} />
+            </View>
             <View style={{ flex: 1, marginLeft: 10 }}>
               <Text style={styles.fileName} numberOfLines={1}>
                 {selectedFile.name}
@@ -165,14 +192,17 @@ export default function ApplyJobModal() {
                 </Text>
               )}
             </View>
-            <TouchableOpacity onPress={() => setSelectedFile(null)}>
-              <Ionicons name="close-circle" size={20} color={COLORS.danger} />
+            <TouchableOpacity onPress={() => setSelectedFile(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close-circle" size={22} color={COLORS.danger} />
             </TouchableOpacity>
           </View>
         ) : (
-          <TouchableOpacity style={styles.uploadBtn} onPress={handlePickDocument}>
-            <Ionicons name="cloud-upload-outline" size={24} color={COLORS.primary} />
+          <TouchableOpacity style={styles.uploadBtn} activeOpacity={0.85} onPress={handlePickDocument}>
+            <View style={styles.uploadIconCircle}>
+              <Ionicons name="cloud-upload-outline" size={22} color={COLORS.primary} />
+            </View>
             <Text style={styles.uploadBtnText}>Choose File from Device</Text>
+            <Text style={styles.uploadBtnSub}>Supported formats: PDF, DOC, DOCX</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -180,6 +210,7 @@ export default function ApplyJobModal() {
       {/* Submit Button */}
       <TouchableOpacity
         style={styles.submitBtn}
+        activeOpacity={0.88}
         onPress={handleSubmit}
         disabled={loading}>
         {loading ? (
@@ -212,89 +243,131 @@ const styles = StyleSheet.create({
   },
   headerBox: {
     backgroundColor: COLORS.navy,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.xl,
+    ...SHADOWS.md,
   },
-  headerLabel: {
-    fontSize: 11,
+  badgePill: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(5, 150, 105, 0.25)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BORDER_RADIUS.full,
+    marginBottom: 6,
+  },
+  badgePillText: {
+    fontSize: 10,
     color: COLORS.primaryLight,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 19,
+    fontWeight: '700',
     color: COLORS.white,
-    marginTop: 2,
+    letterSpacing: -0.2,
   },
   headerCompany: {
     fontSize: 13,
-    color: COLORS.textMuted,
+    color: COLORS.slate300,
     marginTop: 2,
   },
   card: {
     backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.xl,
     borderWidth: 1,
     borderColor: COLORS.border,
     ...SHADOWS.sm,
   },
   cardTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '700',
     color: COLORS.navy,
   },
   cardSubtitle: {
     fontSize: 12,
-    color: COLORS.textMuted,
+    color: COLORS.slate400,
     marginTop: 2,
     marginBottom: SPACING.md,
   },
   profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 4,
+    paddingVertical: 6,
+  },
+  profileIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.primaryUltraLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.sm,
   },
   profileText: {
     fontSize: 13,
     color: COLORS.text,
+    fontWeight: '500',
   },
   textArea: {
     backgroundColor: COLORS.surfaceSubtle,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
     padding: SPACING.md,
     fontSize: 13,
     color: COLORS.text,
-    minHeight: 100,
+    minHeight: 110,
+    lineHeight: 19,
   },
   uploadBtn: {
     borderWidth: 1.5,
     borderStyle: 'dashed',
     borderColor: COLORS.primaryLight,
-    borderRadius: BORDER_RADIUS.md,
-    backgroundColor: COLORS.primaryUltraLight,
-    paddingVertical: 18,
+    borderRadius: BORDER_RADIUS.xl,
+    backgroundColor: COLORS.emerald50,
+    paddingVertical: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 4,
+  },
+  uploadIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: COLORS.successBorder,
   },
   uploadBtnText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.primaryDark,
+  },
+  uploadBtnSub: {
+    fontSize: 11,
+    color: COLORS.slate500,
   },
   fileBox: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surfaceSubtle,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.border,
+  },
+  fileIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.primaryUltraLight,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   fileName: {
     fontSize: 13,
@@ -303,7 +376,7 @@ const styles = StyleSheet.create({
   },
   fileSize: {
     fontSize: 11,
-    color: COLORS.textMuted,
+    color: COLORS.slate400,
     marginTop: 2,
   },
   submitBtn: {
@@ -312,21 +385,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 14,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.xl,
     gap: 8,
     marginTop: SPACING.sm,
+    ...SHADOWS.sm,
   },
   submitBtnText: {
     color: COLORS.white,
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   cancelBtn: {
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   cancelBtnText: {
-    color: COLORS.textMuted,
+    color: COLORS.slate400,
     fontSize: 13,
+    fontWeight: '600',
   },
 });

@@ -29,26 +29,28 @@ class LoginController extends Controller
 
             $user = Auth::user();
 
-            // Check if user is pending approval
-            if ($user->status === 'pending' || !$user->is_approved) {
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-                return back()->withErrors([
-                    'email' => ($user->role === 'trainer')
-                        ? 'Your trainer account is pending Administrator approval. Please contact the DMDP administrator.'
-                        : 'Your account is pending approval.',
-                ]);
-            }
-
-            // Check if user is active
-            if ($user->status !== 'active') {
+            // Check if user is active (inactive accounts are deactivated/banned)
+            if ($user->status === 'inactive') {
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
                 return back()->withErrors([
                     'email' => 'Your account is inactive. Please contact support.',
                 ]);
+            }
+
+            // Check if user is pending approval (jobseekers and employers are permitted to log in while unapproved)
+            if (!in_array($user->role, ['jobseeker', 'employer'])) {
+                if ($user->status === 'pending' || !$user->is_approved) {
+                    Auth::logout();
+                    $request->session()->invalidate();
+                    $request->session()->regenerateToken();
+                    return back()->withErrors([
+                        'email' => ($user->role === 'trainer')
+                            ? 'Your trainer account is pending Administrator approval. Please contact the DMDP administrator.'
+                            : 'Your account is pending approval.',
+                    ]);
+                }
             }
 
             // Route each role to its own dedicated dashboard

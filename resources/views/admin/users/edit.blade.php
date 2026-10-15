@@ -9,7 +9,7 @@
         <!-- Header -->
         <div class="flex items-center justify-between">
             <div class="space-y-1">
-                <a href="{{ route('admin.users.index') }}" class="text-xs font-bold text-green-700 hover:text-green-900 inline-flex items-center gap-1">
+                <a href="{{ route('admin.users.index') }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-900 inline-flex items-center gap-1">
                     &larr; Back to Users Directory
                 </a>
                 <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Edit User #{{ $user->user_id }}</h1>
@@ -17,7 +17,7 @@
             </div>
 
             <div class="flex items-center gap-2">
-                <span class="inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold border {{ $user->status === 'active' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-rose-50 text-rose-800 border-rose-200' }}">
+                <span class="inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold border {{ $user->status === 'active' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200' }}">
                     Status: {{ ucfirst($user->status) }}
                 </span>
             </div>
@@ -32,7 +32,8 @@
                 <!-- Account Credentials & Roles -->
                 <div>
                     <h3 class="text-sm font-black text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
-                        <span>🔐</span> Account Privileges & Access
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        <span>Account Privileges & Access</span>
                     </h3>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -46,7 +47,7 @@
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-700">Assigned Role <span class="text-rose-500">*</span></label>
                             <select name="role" required
-                                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none @error('role') border-rose-400 @enderror">
+                                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none @error('role') border-rose-400 @enderror">
                                 @foreach($roles ?? ['admin', 'supervisor', 'pesd_supervisor', 'jpo', 'trainer', 'lmo', 'employer', 'jobseeker'] as $role)
                                     <option value="{{ $role }}" {{ old('role', $user->role) == $role ? 'selected' : '' }}>
                                         {{ strtoupper(str_replace('_', ' ', $role)) }}
@@ -61,7 +62,7 @@
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-700">Account Status <span class="text-rose-500">*</span></label>
                             <select name="status" required
-                                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none @error('status') border-rose-400 @enderror">
+                                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none @error('status') border-rose-400 @enderror">
                                 @foreach($statuses ?? ['active', 'inactive'] as $status)
                                     <option value="{{ $status }}" {{ old('status', $user->status) == $status ? 'selected' : '' }}>
                                         {{ ucfirst($status) }}
@@ -76,7 +77,7 @@
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-700">Approval State</label>
                             <select name="is_approved" 
-                                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
+                                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
                                 <option value="1" {{ old('is_approved', $user->is_approved) == 1 ? 'selected' : '' }}>Approved & Verified</option>
                                 <option value="0" {{ old('is_approved', $user->is_approved) == 0 ? 'selected' : '' }}>Pending / Unapproved</option>
                             </select>
@@ -87,7 +88,8 @@
                 <!-- Profile Information Section -->
                 <div>
                     <h3 class="text-sm font-black text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
-                        <span>👤</span> Profile Information
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        <span>Profile Information</span>
                     </h3>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -95,35 +97,35 @@
                             <label class="text-xs font-bold text-slate-700">Full Name</label>
                             <input type="text" name="full_name" value="{{ old('full_name', $user->full_name) }}" 
                                    placeholder="Full Name"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-700">Position</label>
                             <input type="text" name="position" value="{{ old('position', $user->position) }}" 
                                    placeholder="Official Position"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-700">Department</label>
                             <input type="text" name="department" value="{{ old('department', $user->department) }}" 
                                    placeholder="Department / Division"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-700">Office</label>
                             <input type="text" name="office" value="{{ old('office', $user->office) }}" 
                                    placeholder="Office Location"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-700">Phone Number</label>
                             <input type="text" name="phone" value="{{ old('phone', $user->phone) }}" 
                                    placeholder="Contact Number"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
+                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
                         </div>
                     </div>
                 </div>
@@ -135,8 +137,9 @@
                         Cancel
                     </a>
                     <button type="submit" 
-                            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-black text-xs shadow-lg shadow-green-600/30 transition-all hover:scale-105">
-                        ✓ Save Changes
+                            class="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                        <span>Save Changes</span>
                     </button>
                 </div>
 

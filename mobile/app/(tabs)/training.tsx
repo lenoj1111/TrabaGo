@@ -21,10 +21,10 @@ import { useAuth } from '../../src/context/AuthContext';
 
 export default function TrainingScreen() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const userId = user?.id || user?.user_id;
 
   const [trainings, setTrainings] = useState<TrainingProgramItem[]>([]);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [enrollingId, setEnrollingId] = useState<number | null>(null);
@@ -41,14 +41,11 @@ export default function TrainingScreen() {
 
   const loadData = useCallback(async () => {
     try {
-      const [programs, userProfile] = await Promise.all([
-        trainingService.getTrainings(),
-        authService.getStoredUser(),
-      ]);
+      const programs = await trainingService.getTrainings();
       setTrainings(programs);
-      setProfile(userProfile);
     } catch (err) {
       console.warn('Error fetching combined training & skills data:', err);
+      setTrainings([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -56,8 +53,9 @@ export default function TrainingScreen() {
   }, []);
 
   useEffect(() => {
+    setLoading(true);
     loadData();
-  }, [loadData]);
+  }, [userId, isAuthenticated, loadData]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -70,7 +68,7 @@ export default function TrainingScreen() {
 
     if (!isAuthenticated) {
       Alert.alert(
-        'Sign In Required 🔐',
+        'Sign In Required',
         'Please sign in with your Jobseeker account to enroll in courses, study modules, and receive official DMDP certificates.',
         [
           { text: 'Sign In', onPress: () => router.push('/auth/login') },
@@ -85,7 +83,7 @@ export default function TrainingScreen() {
       const res = await trainingService.enroll(courseId);
       if (res.success) {
         Alert.alert(
-          'Enrolled Successfully! 🎓',
+          'Enrolled Successfully',
           `You are now enrolled in "${item.title}". You can study the course topics and take the competency quiz to unlock certified skills.`,
           [
             { text: 'Start Now', onPress: () => router.push({ pathname: '/training/[id]', params: { id: courseId } }) },
@@ -104,7 +102,7 @@ export default function TrainingScreen() {
   };
 
   // User's verified skills list
-  const userSkills: string[] = (profile?.skills || []).map((s: string) => s.toLowerCase());
+  const userSkills: string[] = ((user?.skills as string[]) || []).map((s: string) => typeof s === 'string' ? s.toLowerCase() : '');
 
   // Filter trainings based on activeTab
   const filteredTrainings = trainings.filter((t) => {
@@ -134,7 +132,10 @@ export default function TrainingScreen() {
       : [item.title.replace(/Program|Course|Training/gi, '').trim()];
 
     return (
-      <View style={styles.card}>
+      <TouchableOpacity
+        style={styles.card}
+        activeOpacity={0.92}
+        onPress={() => router.push({ pathname: '/training/[id]', params: { id: courseId } })}>
         {/* Top Status & Course Type Bar */}
         <View style={styles.cardTopBar}>
           <View style={[styles.typeBadge, type.toLowerCase().includes('online') ? styles.typeOnline : styles.typeOnsite]}>
@@ -242,29 +243,21 @@ export default function TrainingScreen() {
         {/* Card Action Footer */}
         <View style={styles.cardFooter}>
           {isCompleted ? (
-            <View style={styles.certRow}>
-              <TouchableOpacity
-                style={styles.certBtn}
-                onPress={() =>
-                  setSelectedCert({
-                    courseTitle: item.title,
-                    certificateNo: certNo || `DMDP-${courseId}-VALID`,
-                    score: score || 100,
-                    duration: `${duration} ${duration === 1 ? 'Month' : 'Months'}`,
-                    type,
-                  })
-                }>
-                <Ionicons name="ribbon" size={15} color={COLORS.purple} />
-                <Text style={styles.certBtnText}>View Certificate</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.reviewQuizBtn}
-                onPress={() => router.push({ pathname: '/training/[id]', params: { id: courseId } })}>
-                <Text style={styles.reviewQuizBtnText}>Review Quiz</Text>
-                <Ionicons name="chevron-forward" size={14} color={COLORS.textSecondary} />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.certBtn}
+              activeOpacity={0.88}
+              onPress={() =>
+                setSelectedCert({
+                  courseTitle: item.title,
+                  certificateNo: certNo || `DMDP-${courseId}-VALID`,
+                  score: score || 100,
+                  duration: `${duration} ${duration === 1 ? 'Month' : 'Months'}`,
+                  type,
+                })
+              }>
+              <Ionicons name="ribbon" size={15} color={COLORS.purple} />
+              <Text style={styles.certBtnText}>View Official Certificate</Text>
+            </TouchableOpacity>
           ) : isEnrolled ? (
             <TouchableOpacity
               style={styles.continueBtn}
@@ -288,7 +281,7 @@ export default function TrainingScreen() {
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -403,7 +396,7 @@ export default function TrainingScreen() {
 
             <Text style={styles.certBodyText}>This certifies that</Text>
             <Text style={styles.certName}>
-              {profile?.fullName || `${profile?.firstName || 'Juan'} ${profile?.lastName || 'Dela Cruz'}`}
+              {user?.fullName || `${user?.firstName || 'Juan'} ${user?.lastName || 'Dela Cruz'}`}
             </Text>
             <Text style={styles.certBodyText}>has successfully completed the vocational competency program:</Text>
             <Text style={styles.certCourseTitle}>{selectedCert?.courseTitle}</Text>
@@ -416,7 +409,12 @@ export default function TrainingScreen() {
 
             <View style={styles.certSealRow}>
               <Text style={styles.certSignatory}>Serial: {selectedCert?.certificateNo}</Text>
-              <Text style={styles.certSignatory}>✓ Verified in TrabaGo Document Hub</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                <Ionicons name="checkmark-circle" size={14} color={COLORS.emerald600} />
+                <Text style={[styles.certSignatory, { color: COLORS.emerald700, fontWeight: '700' }]}>
+                  Verified in TrabaGo Document Hub
+                </Text>
+              </View>
             </View>
 
             <TouchableOpacity style={styles.certCloseBtn} onPress={() => setSelectedCert(null)}>

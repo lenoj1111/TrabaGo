@@ -13,7 +13,7 @@ export interface JobsFilterParams {
 export const jobService = {
   async getDashboard(): Promise<DashboardData | null> {
     try {
-      const response = await apiClient.get('/dashboard');
+      const response = await apiClient.get('/jobseeker/dashboard').catch(() => apiClient.get('/dashboard'));
       return response.data;
     } catch (err: any) {
       console.warn('Error fetching dashboard:', err.message);

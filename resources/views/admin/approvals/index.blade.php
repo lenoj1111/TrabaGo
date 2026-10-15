@@ -16,13 +16,23 @@
     activeDocList: [],
     selectedDocKey: '',
     currentDoc: {},
+    jsDocModalOpen: false,
+    selectedJobseekerName: '',
+    selectedJobseekerDocUrl: '',
+    selectedJobseekerDocName: '',
+    openJsDocInspection(name, url, docName) {
+        this.selectedJobseekerName = name;
+        this.selectedJobseekerDocUrl = url;
+        this.selectedJobseekerDocName = docName || 'Government-Issued Valid ID';
+        this.jsDocModalOpen = true;
+    },
     openDocInspection(company, docs) {
         this.activeDocCompany = company;
         this.activeDocList = [];
         
         for (let [key, val] of Object.entries(docs || {})) {
             let label = 'Attached Document';
-            let icon = '📄';
+            let icon = 'document';
             let issuer = 'Regulatory Authority';
             let filename = '';
             let url = '';
@@ -39,52 +49,52 @@
 
             if (key.includes('bir') || key.includes('2303') || key.includes('tin')) {
                 label = 'BIR Certificate of Registration (Form 2303)';
-                icon = '📑';
+                icon = 'form';
                 issuer = 'Bureau of Internal Revenue (BIR District 080)';
                 validity = 'Current / Valid';
             } else if (key.includes('sec') || key.includes('dti')) {
                 label = 'SEC Registration or DTI Registration';
-                icon = '📜';
+                icon = 'scroll';
                 issuer = 'Securities and Exchange Commission (SEC) / DTI';
                 validity = 'Perpetual / Registered';
             } else if (key.includes('mayor') || key.includes('permit') || key.includes('business')) {
                 label = 'Mayor’s Business Permit (current year)';
-                icon = '🏢';
+                icon = 'permit';
                 issuer = 'City Government of Cebu - BPLO';
                 validity = 'Calendar Year ' + new Date().getFullYear();
             } else if (key.includes('philjobnet')) {
                 label = 'PhilJobNet Proof of Registration';
-                icon = '🌐';
-                issuer = 'PhilJobNet / DOLE Bureau of Local Employment';
+                icon = 'network';
+                issuer = 'PhilJobNet / DOLE Bureau of Local BLE';
                 validity = 'Active Registration Certificate';
             } else if (key.includes('vacanc') || key.includes('job_vacanc')) {
                 label = 'Updated Job Vacancies (prescribed form)';
-                icon = '💼';
+                icon = 'briefcase';
                 issuer = 'Cebu City DMDP Prescribed Template';
                 validity = 'Active Hiring Needs';
             } else if (key.includes('dole')) {
                 label = 'DOLE License / DO 174';
-                icon = '🛡️';
+                icon = 'shield';
                 issuer = 'Department of Labor and Employment (DOLE RO-7)';
                 validity = 'Valid License (PRPA / Subcontractor)';
             } else if (key.includes('dmw_license') || (key.includes('dmw') && !key.includes('order'))) {
                 label = 'DMW License (Overseas Agency)';
-                icon = '✈️';
+                icon = 'agency';
                 issuer = 'Department of Migrant Workers (DMW / POEA)';
                 validity = 'Valid DMW License';
             } else if (key.includes('order') || key.includes('job_order')) {
                 label = 'DMW Approved and Validated Job Orders';
-                icon = '📋';
+                icon = 'clipboard';
                 issuer = 'Department of Migrant Workers (DMW)';
                 validity = 'Verified Job Orders Period';
             } else if (key.includes('intent') || key.includes('letter')) {
                 label = 'Letter of Intent (Services & Assistance Details)';
-                icon = '✉️';
+                icon = 'letter';
                 issuer = 'Corporate Executive / Authorized Signatory';
                 validity = 'Official Signed Request';
             } else if (key.includes('profile')) {
                 label = 'Company Overview Profile / Org Chart';
-                icon = '📁';
+                icon = 'folder';
                 issuer = 'Corporate Executive Board';
                 validity = 'Corporate Registry Reference';
             } else {
@@ -114,13 +124,13 @@
         this.currentDoc = doc;
     }
 }">
-    <div class="mx-auto max-w-7xl space-y-8">
+    <div class="w-full max-w-[1680px] mx-auto space-y-8">
 
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20">
             <div class="space-y-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
-                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
+                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     DMDP 3-Pillar Authorization Queue
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Manage Approvals Center</h1>
@@ -133,42 +143,57 @@
         <!-- Pill Tab Switcher -->
         <div class="flex flex-wrap gap-2 sm:gap-3 p-1.5 rounded-2xl bg-white border border-slate-200 shadow-sm max-w-fit">
             <button @click="tab = 'jobs'" 
-                    :class="tab === 'jobs' ? 'bg-green-50 text-green-800 ring-1 ring-green-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
+                    :class="tab === 'jobs' ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
                     class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs transition-all">
-                <span>💼 Job Postings</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                <span>Job Postings</span>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-black" 
-                      :class="tab === 'jobs' ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-700'">
+                      :class="tab === 'jobs' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'">
                     {{ $pendingJobs->count() }}
                 </span>
             </button>
 
             <button @click="tab = 'accreditations'" 
-                    :class="tab === 'accreditations' ? 'bg-green-50 text-green-800 ring-1 ring-green-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
+                    :class="tab === 'accreditations' ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
                     class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs transition-all">
-                <span>🏛️ Accreditations</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                <span>Accreditations</span>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-black" 
-                      :class="tab === 'accreditations' ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-700'">
+                      :class="tab === 'accreditations' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'">
                     {{ $pendingAccreditations->count() }}
                 </span>
             </button>
 
             <button @click="tab = 'reports'" 
-                    :class="tab === 'reports' ? 'bg-green-50 text-green-800 ring-1 ring-green-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
+                    :class="tab === 'reports' ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
                     class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs transition-all">
-                <span>📊 Placement Reports</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                <span>Placement Reports</span>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-black" 
-                      :class="tab === 'reports' ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-700'">
+                      :class="tab === 'reports' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'">
                     {{ $pendingPlacementReports->count() }}
                 </span>
             </button>
 
             <button @click="tab = 'trainers'" 
-                    :class="tab === 'trainers' ? 'bg-green-50 text-green-800 ring-1 ring-green-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
+                    :class="tab === 'trainers' ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
                     class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs transition-all">
-                <span>👥 Collaborator Trainers</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                <span>Collaborator Trainers</span>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-black" 
-                      :class="tab === 'trainers' ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-700'">
+                      :class="tab === 'trainers' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'">
                     {{ $pendingTrainers->count() }}
+                </span>
+            </button>
+
+            <button @click="tab = 'jobseekers'" 
+                    :class="tab === 'jobseekers' ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
+                    class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                <span>Jobseeker Approvals</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-black" 
+                      :class="tab === 'jobseekers' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'">
+                    {{ $pendingJobseekers->count() }}
                 </span>
             </button>
         </div>
@@ -212,16 +237,19 @@
                                     </td>
                                     <td class="py-4 px-6 text-center">
                                         @if(($job->employer_accreditation_state ?? '') === 'accredited')
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-green-50 text-green-800 text-[10px] font-bold border border-green-200" title="Accredited with DMDP">
-                                                🛡️ Accredited
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200" title="Accredited with DMDP">
+                                                <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                                Accredited
                                             </span>
                                         @elseif(($job->employer_accreditation_state ?? '') === 'pending')
                                             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200" title="Accreditation application in progress">
-                                                ⏳ Pending
+                                                <svg class="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                Pending
                                             </span>
                                         @else
                                             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-600 text-[10px] font-bold border border-slate-200" title="Not accredited">
-                                                ✕ Not Accredited
+                                                <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                Not Accredited
                                             </span>
                                         @endif
                                     </td>
@@ -232,8 +260,9 @@
                                     </td>
                                     <td class="py-4 px-6">
                                         @if($job->accepts_disability)
-                                            <span class="inline-flex items-center gap-1 rounded-xl bg-green-50 text-green-800 px-2.5 py-1 font-bold border border-green-200">
-                                                ♿ {{ $job->disability_type ?: 'PWD Inclusive' }}
+                                            <span class="inline-flex items-center gap-1 rounded-xl bg-emerald-50 text-emerald-800 px-2.5 py-1 font-bold border border-emerald-200">
+                                                <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                                {{ $job->disability_type ?: 'PWD Inclusive' }}
                                             </span>
                                         @else
                                             <span class="text-slate-400 font-medium">Standard</span>
@@ -246,8 +275,9 @@
                                         <div class="inline-flex items-center gap-2">
                                             <form action="{{ route('admin.approvals.job-postings.approve', $job->job_id) }}" method="POST">
                                                 @csrf
-                                                <button type="submit" class="px-3.5 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs transition-colors shadow-sm">
-                                                    ✓ Approve
+                                                <button type="submit" class="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                                    Approve
                                                 </button>
                                             </form>
                                             <form action="{{ route('admin.approvals.job-postings.reject', $job->job_id) }}" method="POST">
@@ -262,7 +292,9 @@
                             @empty
                                 <tr>
                                     <td colspan="7" class="py-12 text-center text-slate-400">
-                                        <div class="text-3xl mb-2">🎉</div>
+                                        <div class="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        </div>
                                         <p class="font-bold text-slate-700">All employer job postings reviewed!</p>
                                         <p class="text-xs mt-0.5">No pending job postings waiting in the approval queue.</p>
                                     </td>
@@ -318,10 +350,11 @@
                                                     @foreach($docs as $k => $d)
                                                         <button type="button" 
                                                                 @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs))'
-                                                                class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-green-100 hover:text-green-900 text-slate-700 text-[10px] font-bold border border-slate-200 transition-colors cursor-pointer"
+                                                                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-emerald-100 hover:text-emerald-900 text-slate-700 text-[10px] font-bold border border-slate-200 transition-colors cursor-pointer"
                                                                 title="Click to inspect this document">
-                                                            <span>📄 {{ ucfirst(str_replace('_', ' ', $k)) }}</span>
-                                                            <span class="text-[9px] text-green-600">↗</span>
+                                                            <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                            <span>{{ ucfirst(str_replace('_', ' ', $k)) }}</span>
+                                                            <span class="text-[9px] text-emerald-600">&rarr;</span>
                                                         </button>
                                                     @endforeach
                                                 @else
@@ -332,13 +365,15 @@
                                     </td>
                                     <td class="py-4 px-6">
                                         @if($isDocsComplete)
-                                            <span class="inline-flex items-center gap-1 rounded-xl bg-green-50 text-green-800 px-2.5 py-1 text-[11px] font-extrabold border border-green-200">
-                                                ✓ Complete
+                                            <span class="inline-flex items-center gap-1 rounded-xl bg-emerald-50 text-emerald-800 px-2.5 py-1 text-[11px] font-extrabold border border-emerald-200">
+                                                <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                                Complete
                                             </span>
                                         @elseif($docStatus === 'incomplete')
                                             <div class="space-y-1">
                                                 <span class="inline-flex items-center gap-1 rounded-xl bg-rose-50 text-rose-800 px-2.5 py-1 text-[11px] font-extrabold border border-rose-200">
-                                                    ✕ Incomplete
+                                                    <svg class="w-3 h-3 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                    Incomplete
                                                 </span>
                                                 @if($acc->document_incomplete_reason)
                                                     <p class="text-[10px] text-rose-700 italic max-w-xs leading-tight">
@@ -348,22 +383,21 @@
                                             </div>
                                         @else
                                             <span class="inline-flex items-center gap-1 rounded-xl bg-amber-50 text-amber-800 px-2.5 py-1 text-[11px] font-extrabold border border-amber-200">
-                                                ⏳ Pending JPO Review
+                                                <svg class="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                Pending JPO Review
                                             </span>
                                         @endif
                                     </td>
                                     <td class="py-4 px-6">
-                                        @if($acc->status === 'supervisor_approved')
-                                            <span class="inline-flex items-center gap-1 rounded-xl bg-green-50 text-green-800 px-2.5 py-1 font-bold border border-green-200">
-                                                🏛️ PESD Endorsed
-                                            </span>
-                                        @elseif($acc->status === 'jpo_approved')
+                                        @if(in_array($acc->status, ['supervisor_approved', 'jpo_approved']))
                                             <span class="inline-flex items-center gap-1 rounded-xl bg-blue-50 text-blue-800 px-2.5 py-1 font-bold border border-blue-200">
-                                                📋 JPO Recommended
+                                                <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                JPO Recommended
                                             </span>
                                         @else
                                             <span class="inline-flex items-center gap-1 rounded-xl bg-amber-50 text-amber-800 px-2.5 py-1 font-bold border border-amber-200">
-                                                ⏳ In Review
+                                                <svg class="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                In Review
                                             </span>
                                         @endif
                                     </td>
@@ -375,30 +409,34 @@
                                             <a href="{{ route('admin.approvals.accreditations.print', $acc->accreditation_id) }}" target="_blank"
                                                class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors flex items-center gap-1"
                                                title="Inspect Official Cebu City DMDP Establishment Registration Form">
-                                                <span>📑 Form</span>
-                                                <span class="text-[9px] text-slate-400">↗</span>
+                                                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                <span>Form</span>
+                                                <span class="text-[9px] text-slate-400">&rarr;</span>
                                             </a>
 
                                             @if(is_array($docs) && count($docs) > 0)
                                                 <button type="button" 
                                                         @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs))'
-                                                        class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors">
-                                                    👁️ View Docs
+                                                        class="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors">
+                                                    <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                    View Docs
                                                 </button>
                                             @endif
 
                                             @if($isDocsComplete && in_array($acc->status, ['jpo_approved', 'supervisor_approved']))
                                                 <form action="{{ route('admin.approvals.accreditations.approve', $acc->accreditation_id) }}" method="POST">
                                                     @csrf
-                                                    <button type="submit" class="px-3.5 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs transition-colors shadow-sm cursor-pointer">
-                                                        🛡️ Officially Accredit
+                                                    <button type="submit" class="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm cursor-pointer">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                                        Officially Accredit
                                                     </button>
                                                 </form>
                                             @else
                                                 <button type="button" disabled 
-                                                        class="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs border border-dashed border-slate-300 cursor-not-allowed"
+                                                        class="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs border border-dashed border-slate-300 cursor-not-allowed"
                                                         title="{{ !$isDocsComplete ? 'Cannot accredit: Required employer documents are incomplete or unverified' : 'Cannot accredit: Awaiting JPO recommending approval first' }}">
-                                                    🛡️ {{ !$isDocsComplete ? 'Documents Incomplete' : 'Awaiting JPO' }}
+                                                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    {{ !$isDocsComplete ? 'Documents Incomplete' : 'Awaiting JPO' }}
                                                 </button>
                                             @endif
 
@@ -414,7 +452,9 @@
                             @empty
                                 <tr>
                                     <td colspan="5" class="py-12 text-center text-slate-400">
-                                        <div class="text-3xl mb-2">🏛️</div>
+                                        <div class="h-12 w-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                        </div>
                                         <p class="font-bold text-slate-700">No accreditations pending admin authorization</p>
                                         <p class="text-xs mt-0.5">All endorsed partner company files are up to date.</p>
                                     </td>
@@ -437,7 +477,7 @@
                         <p class="text-xs text-slate-500">Authorize official placement figures and archive into City PESO archives</p>
                     </div>
                     <div class="flex items-center gap-4">
-                        <a href="{{ route('admin.placement-reports.index') }}" class="text-xs font-bold text-green-700 hover:text-green-800 bg-green-50 border border-green-200 px-3.5 py-1.5 rounded-xl transition-colors">
+                        <a href="{{ route('admin.placement-reports.index') }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-xl transition-colors">
                             Browse All Placement Reports Directory &rarr;
                         </a>
                         <span class="text-xs font-bold text-slate-400">{{ $pendingPlacementReports->count() }} Pending</span>
@@ -488,7 +528,7 @@
                                         {{ date('F Y', strtotime($rep->report_month)) }}
                                     </td>
                                     <td class="py-4 px-6 text-center">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-xl bg-green-50 text-green-800 font-black border border-green-200">
+                                        <span class="inline-flex items-center px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 font-black border border-emerald-200">
                                             {{ $rData['total_hired'] ?? 0 }} hired
                                         </span>
                                     </td>
@@ -499,7 +539,7 @@
                                         <div class="inline-flex items-center gap-2">
                                             <button type="button" 
                                                     @click='viewReport({!! $repJson !!})'
-                                                    class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-green-50 text-slate-700 hover:text-green-800 font-bold text-xs border border-slate-200 transition-colors flex items-center gap-1">
+                                                    class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-bold text-xs border border-slate-200 transition-colors flex items-center gap-1">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                                 View
                                             </button>
@@ -508,13 +548,14 @@
                                                target="_blank"
                                                class="p-2 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors" 
                                                title="Print Official Report">
-                                                🖨️
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                                             </a>
 
                                             <form action="{{ route('admin.approvals.placement-reports.approve', $rep->report_id) }}" method="POST">
                                                 @csrf
-                                                <button type="submit" class="px-3.5 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs transition-colors shadow-sm">
-                                                    ✓ Authorize
+                                                <button type="submit" class="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                                    Authorize
                                                 </button>
                                             </form>
                                             <form action="{{ route('admin.approvals.placement-reports.reject', $rep->report_id) }}" method="POST">
@@ -529,7 +570,9 @@
                             @empty
                                 <tr>
                                     <td colspan="5" class="py-12 text-center text-slate-400">
-                                        <div class="text-3xl mb-2">📊</div>
+                                        <div class="h-12 w-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                        </div>
                                         <p class="font-bold text-slate-700">No monthly placement reports pending authorization</p>
                                         <p class="text-xs mt-0.5">All placement records have been archived.</p>
                                     </td>
@@ -547,7 +590,7 @@
                         <div class="space-y-6">
                             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                                 <div>
-                                    <span class="text-xs font-bold text-green-700 uppercase tracking-wider">Placement Report Inspector</span>
+                                    <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Placement Report Inspector</span>
                                     <h3 class="text-xl font-black text-slate-900 mt-0.5">
                                         <span x-text="selectedReport.company_name"></span> &bull; <span x-text="selectedReport.report_month"></span>
                                     </h3>
@@ -559,7 +602,7 @@
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs">
                                 <div>
                                     <span class="text-slate-400 font-bold uppercase text-[10px]">Total Placements</span>
-                                    <p class="text-lg font-black text-green-800"><span x-text="selectedReport.total_hired"></span> Candidates</p>
+                                    <p class="text-lg font-black text-emerald-800"><span x-text="selectedReport.total_hired"></span> Candidates</p>
                                 </div>
                                 <div>
                                     <span class="text-slate-400 font-bold uppercase text-[10px]">Status</span>
@@ -602,7 +645,7 @@
                                                     <td class="py-2.5 px-3 text-slate-600" x-text="item.hired_date"></td>
                                                     <td class="py-2.5 px-3 text-right">
                                                         <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold"
-                                                              :class="item.referred_by_jpo === 'Yes' || item.referred_by_jpo === true ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-700'"
+                                                              :class="item.referred_by_jpo === 'Yes' || item.referred_by_jpo === true ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'"
                                                               x-text="item.referred_by_jpo === 'Yes' || item.referred_by_jpo === true ? 'JPO Referred' : 'Direct'">
                                                         </span>
                                                     </td>
@@ -634,14 +677,16 @@
                             <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
                                 <a :href="selectedReport.print_url" target="_blank"
                                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors">
-                                    🖨️ View Official Printable Report &rarr;
+                                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                    <span>View Official Printable Report &rarr;</span>
                                 </a>
 
                                 <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
                                     <form :action="selectedReport.approve_url" method="POST">
                                         @csrf
-                                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-black text-xs shadow-md">
-                                            ✓ Authorize & Archive
+                                        <button type="submit" class="inline-flex items-center gap-1 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                            Authorize & Archive
                                         </button>
                                     </form>
                                     <form :action="selectedReport.reject_url" method="POST">
@@ -709,8 +754,9 @@
                                         <div class="flex items-center justify-end gap-2">
                                             <form action="{{ route('admin.approvals.trainers.approve', $trainer->user_id) }}" method="POST" class="inline">
                                                 @csrf
-                                                <button type="submit" class="px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-extrabold text-xs shadow-sm">
-                                                    ✓ Approve Trainer
+                                                <button type="submit" class="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-sm">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                                    Approve Trainer
                                                 </button>
                                             </form>
 
@@ -726,7 +772,9 @@
                             @empty
                                 <tr>
                                     <td colspan="6" class="py-12 text-center text-slate-400">
-                                        <div class="text-3xl mb-2">✅</div>
+                                        <div class="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        </div>
                                         <div class="font-bold text-slate-700">All collaborator trainer accounts have been audited!</div>
                                         <div class="text-xs text-slate-400 mt-1">No pending trainer registrations in the authorization queue.</div>
                                     </td>
@@ -734,6 +782,218 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- =================================================================== -->
+        <!-- PILLAR 5: JOBSEEKER IDENTITY & VERIFICATION APPROVALS -->
+        <!-- =================================================================== -->
+        <div x-show="tab === 'jobseekers'" class="space-y-4" style="display: none;">
+            <div class="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                <div class="p-6 sm:p-8 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="space-y-1">
+                        <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider">Candidate Verification Hub</span>
+                        <h2 class="text-xl font-black text-slate-900">Jobseeker Accounts & Government ID Approvals</h2>
+                        <p class="text-xs text-slate-500">
+                            Review candidate identities, inspect uploaded Government Valid IDs, and authorize jobseekers for active job application submissions.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <span class="px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-black">
+                            {{ $pendingJobseekers->count() }} Awaiting Verification
+                        </span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-100 bg-slate-50/70 text-[11px] font-black uppercase tracking-wider text-slate-500">
+                                <th class="py-4 px-6">Candidate Details</th>
+                                <th class="py-4 px-6">Account Status</th>
+                                <th class="py-4 px-6">Government ID Submission</th>
+                                <th class="py-4 px-6">Optional Vault Records</th>
+                                <th class="py-4 px-6 text-right">Verification Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-xs">
+                            @forelse($pendingJobseekers as $js)
+                                @php
+                                    $validIdDoc = $js->valid_id_doc;
+                                    $validIdUrl = $validIdDoc ? ($validIdDoc['file_url'] ?? ($validIdDoc['url'] ?? (isset($validIdDoc['path']) ? '/storage/' . $validIdDoc['path'] : ''))) : '';
+                                    $validIdName = $validIdDoc['name'] ?? ($validIdDoc['original_name'] ?? 'Government-Issued Valid ID');
+                                    $validIdDate = isset($validIdDoc['uploaded_at']) ? date('M d, Y', strtotime($validIdDoc['uploaded_at'])) : null;
+                                @endphp
+                                <tr class="hover:bg-slate-50/70 transition-colors">
+                                    <td class="py-4 px-6">
+                                        <div class="flex items-center gap-3">
+                                            <div class="h-10 w-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white font-black text-sm shrink-0 shadow-xs">
+                                                {{ strtoupper(substr($js->first_name ?? 'J', 0, 1)) }}
+                                            </div>
+                                            <div>
+                                                <div class="font-black text-slate-900 text-sm">
+                                                    {{ $js->first_name }} {{ $js->last_name }}
+                                                </div>
+                                                <div class="text-[11px] text-slate-500 font-medium">
+                                                    {{ $js->user_email ?: $js->email }} &bull; {{ $js->mobile_number ?: 'No phone provided' }}
+                                                </div>
+                                                <div class="text-[10px] text-slate-400 mt-0.5">
+                                                    Registered: {{ date('M d, Y', strtotime($js->registered_at ?: $js->created_at)) }}
+                                                    @if(!empty($js->is_pwd))
+                                                        &bull; <span class="text-indigo-600 font-bold">PWD: {{ $js->pwd_type ?: 'Registered' }}</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td class="py-4 px-6">
+                                        @if(($js->account_status ?? 'unverified') === 'pending_review')
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-extrabold bg-blue-50 text-blue-700 border border-blue-200">
+                                                <span class="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                                                Pending Review
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-extrabold bg-amber-50 text-amber-700 border border-amber-200">
+                                                <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                                                Unverified
+                                            </span>
+                                        @endif
+                                    </td>
+
+                                    <td class="py-4 px-6">
+                                        @if($js->has_valid_id && $validIdUrl)
+                                            <div class="space-y-1.5">
+                                                <div class="flex items-center gap-1.5">
+                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-200">
+                                                        <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                        ID Attached
+                                                    </span>
+                                                    <span class="text-[11px] font-bold text-slate-800 truncate max-w-[150px]" title="{{ $validIdName }}">
+                                                        {{ $validIdName }}
+                                                    </span>
+                                                </div>
+                                                @if($validIdDate)
+                                                    <p class="text-[10px] text-slate-400">Uploaded on {{ $validIdDate }}</p>
+                                                @endif
+                                                <div>
+                                                    <button type="button" 
+                                                            @click="openJsDocInspection('{{ addslashes($js->first_name . ' ' . $js->last_name) }}', '{{ $validIdUrl }}', '{{ addslashes($validIdName) }}')"
+                                                            class="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-700 hover:text-emerald-900 hover:underline">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                        <span>Inspect ID Document &rarr;</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <div class="flex items-center gap-1.5 text-slate-400">
+                                                <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                                <span class="text-[11px] font-semibold text-slate-500">No Government ID Uploaded</span>
+                                            </div>
+                                        @endif
+                                    </td>
+
+                                    <td class="py-4 px-6">
+                                        <div class="flex flex-wrap items-center gap-1.5">
+                                            @if($js->has_resume)
+                                                <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-semibold border border-slate-200">
+                                                    Resume Attached
+                                                </span>
+                                            @else
+                                                <span class="px-2 py-0.5 rounded-md bg-slate-50 text-slate-400 text-[10px]">
+                                                    No Resume
+                                                </span>
+                                            @endif
+
+                                            @if(!empty($js->parsed_docs['certificate']))
+                                                <span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-semibold border border-emerald-200">
+                                                    Certificates Attached
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </td>
+
+                                    <td class="py-4 px-6 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <form action="{{ route('admin.approvals.jobseekers.approve', $js->jobseeker_id) }}" method="POST" onsubmit="return confirm('Approve and verify {{ addslashes($js->first_name . ' ' . $js->last_name) }}? This will unlock job applications for this candidate.');" class="inline">
+                                                @csrf
+                                                <button type="submit" class="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-extrabold text-xs shadow-sm transition-all hover:scale-105">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                    <span>Approve Jobseeker</span>
+                                                </button>
+                                            </form>
+
+                                            <form action="{{ route('admin.approvals.jobseekers.reject', $js->jobseeker_id) }}" method="POST" onsubmit="const r = prompt('Specify rejection or revision reason for {{ addslashes($js->first_name . ' ' . $js->last_name) }}:', 'Please upload a clearer copy of your Government-Issued Valid ID.'); if(!r) return false; this.remarks.value = r; return true;" class="inline">
+                                                @csrf
+                                                <input type="hidden" name="remarks" value="">
+                                                <button type="submit" class="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-colors">
+                                                    Return
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="py-12 text-center text-slate-400">
+                                        <div class="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        </div>
+                                        <div class="font-bold text-slate-700">All registered jobseekers have been verified!</div>
+                                        <div class="text-xs text-slate-400 mt-1">No pending candidate identities or Government IDs awaiting authorization.</div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jobseeker Document Inspection Modal -->
+        <div x-show="jsDocModalOpen" 
+             x-cloak 
+             class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+             @keydown.escape.window="jsDocModalOpen = false">
+            <div @click.away="jsDocModalOpen = false" 
+                 class="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+                <div class="bg-slate-900 p-5 text-white flex items-center justify-between border-b border-slate-800">
+                    <div class="flex items-center gap-3">
+                        <div class="h-9 w-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15A2.25 2.25 0 002.25 6.75v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider block">Jobseeker Identity Verification</span>
+                            <h3 class="text-base font-bold text-white leading-tight" x-text="selectedJobseekerName"></h3>
+                        </div>
+                    </div>
+                    <button @click="jsDocModalOpen = false" type="button" class="text-slate-400 hover:text-white text-2xl font-bold leading-none">&times;</button>
+                </div>
+                <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
+                    <span class="font-bold text-slate-700" x-text="selectedJobseekerDocName || 'Government-Issued Valid ID'"></span>
+                    <a :href="selectedJobseekerDocUrl" target="_blank" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold inline-flex items-center gap-1.5 transition-colors">
+                        <span>Open in New Tab</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                </div>
+                <div class="p-6 overflow-y-auto flex-1 flex items-center justify-center bg-slate-100 min-h-[350px]">
+                    <template x-if="selectedJobseekerDocUrl && (selectedJobseekerDocUrl.endsWith('.jpg') || selectedJobseekerDocUrl.endsWith('.jpeg') || selectedJobseekerDocUrl.endsWith('.png') || selectedJobseekerDocUrl.includes('image'))">
+                        <img :src="selectedJobseekerDocUrl" alt="Government ID" class="max-h-[500px] max-w-full rounded-2xl object-contain shadow-md border border-slate-200">
+                    </template>
+                    <template x-if="selectedJobseekerDocUrl && selectedJobseekerDocUrl.endsWith('.pdf')">
+                        <iframe :src="selectedJobseekerDocUrl" class="w-full h-[500px] rounded-2xl border border-slate-200"></iframe>
+                    </template>
+                    <template x-if="!selectedJobseekerDocUrl || (!selectedJobseekerDocUrl.endsWith('.pdf') && !selectedJobseekerDocUrl.endsWith('.jpg') && !selectedJobseekerDocUrl.endsWith('.jpeg') && !selectedJobseekerDocUrl.endsWith('.png'))">
+                        <div class="text-center p-8 space-y-3">
+                            <svg class="w-12 h-12 text-slate-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <p class="text-sm font-bold text-slate-700" x-text="selectedJobseekerDocName"></p>
+                            <a :href="selectedJobseekerDocUrl" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700">
+                                Download / View Document
+                            </a>
+                        </div>
+                    </template>
                 </div>
             </div>
         </div>

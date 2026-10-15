@@ -25,9 +25,20 @@ class UserManagementController extends Controller
                 'user_profiles.full_name',
                 'user_profiles.position',
                 'user_profiles.department',
+                'user_profiles.phone as profile_phone',
+                'employers.employer_id',
                 'employers.company_name',
+                DB::raw("NULL as trade_name"),
+                DB::raw("NULL as contact_person"),
+                DB::raw("NULL as employer_contact"),
+                DB::raw("NULL as business_nature"),
+                'jobseekers.jobseeker_id',
                 'jobseekers.first_name',
-                'jobseekers.last_name'
+                'jobseekers.last_name',
+                'jobseekers.mobile_number as jobseeker_mobile',
+                DB::raw("NULL as current_city"),
+                DB::raw("NULL as current_barangay"),
+                'jobseekers.employment_status'
             );
 
         // Filter by role
@@ -353,12 +364,13 @@ class UserManagementController extends Controller
                 ->where('user_id', $id)
                 ->update([
                     'is_approved' => 1,
+                    'account_status' => 'verified',
                     'status' => 'active',
                     'updated_at' => Carbon::now(),
                 ]);
 
             $this->createNotification($id, 'Account Approved', 
-                "Your account has been approved. You can now access the system.");
+                "Your account has been approved and verified. You can now access all portal features.");
 
             if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
                 return response()->json(['success' => 'User approved successfully!']);

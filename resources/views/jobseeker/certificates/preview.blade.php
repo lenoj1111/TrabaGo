@@ -30,43 +30,45 @@
             &larr; Back to Document Hub
         </a>
         <div class="flex items-center gap-3">
-            <a href="{{ route('jobseeker.training') }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-green-700 bg-white px-4 py-2.5 rounded-xl shadow-sm border border-slate-200 transition-colors">
-                📚 My Courses
+            <a href="{{ route('jobseeker.training') }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-emerald-700 bg-white px-4 py-2.5 rounded-xl shadow-sm border border-slate-200 transition-colors">
+                <svg class="w-4 h-4 shrink-0 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"/></svg>
+                <span>My Courses</span>
             </a>
-            <button onclick="window.print()" class="inline-flex items-center gap-2 text-xs font-black text-white bg-green-600 hover:bg-green-500 px-6 py-2.5 rounded-xl shadow-lg shadow-green-600/30 transition-all hover:scale-105">
-                🖨️ Print / Download PDF
+            <button onclick="window.print()" class="inline-flex items-center gap-2 text-xs font-black text-white bg-emerald-600 hover:bg-emerald-500 px-6 py-2.5 rounded-xl shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.03-.42-2.106-.52-3.216m11.6 3.216c.24-1.03.42-2.106.52-3.216M6.72 13.829C4.545 14.25 3 15.688 3 17.4V19.5h18v-2.1c0-1.712-1.545-3.15-3.72-3.571M6.72 13.829A41.782 41.782 0 0 1 12 13.5c1.802 0 3.553.113 5.28.329M6 8.25V4.5h12v3.75m-10.5 9h9"/></svg>
+                <span>Print / Download PDF</span>
             </button>
         </div>
     </div>
 
     <!-- Official Printable Certificate -->
-    <div class="cert-container w-full max-w-4xl bg-white border-8 border-double border-green-800 rounded-3xl p-8 sm:p-14 shadow-2xl relative overflow-hidden text-center space-y-6">
+    <div class="cert-container w-full max-w-4xl bg-white border-8 border-double border-emerald-800 rounded-3xl p-8 sm:p-14 shadow-2xl relative overflow-hidden text-center space-y-6">
         
         <!-- Watermark / Background Accent -->
-        <div class="absolute -right-20 -bottom-20 w-96 h-96 rounded-full bg-green-50/50 pointer-events-none -z-0"></div>
-        <div class="absolute -left-20 -top-20 w-96 h-96 rounded-full bg-green-50/50 pointer-events-none -z-0"></div>
+        <div class="absolute -right-20 -bottom-20 w-96 h-96 rounded-full bg-emerald-50/50 pointer-events-none -z-0"></div>
+        <div class="absolute -left-20 -top-20 w-96 h-96 rounded-full bg-emerald-50/50 pointer-events-none -z-0"></div>
 
         <!-- Header Seals & Logo -->
         <div class="relative z-10 flex items-center justify-center gap-6">
-            <div class="h-16 w-16 rounded-full bg-gradient-to-tr from-green-800 to-green-600 flex items-center justify-center text-white text-2xl font-black shadow-md">
-                🏛️
+            <div class="h-16 w-16 rounded-full bg-gradient-to-tr from-emerald-800 to-emerald-600 flex items-center justify-center text-white shadow-md">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.5M4.5 21V10.5M3 21h18M3 10.5h18"/></svg>
             </div>
             <div>
-                <h3 class="text-xs font-extrabold uppercase tracking-widest text-green-800">Republic of the Philippines &bull; City of Cebu</h3>
+                <h3 class="text-xs font-extrabold uppercase tracking-widest text-emerald-800">Republic of the Philippines &bull; City of Cebu</h3>
                 <h2 class="text-sm font-bold text-slate-700">Department of Manpower Development and Placement (DMDP)</h2>
                 <span class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Skills Training & Certification Division</span>
             </div>
         </div>
 
         <div class="relative z-10 pt-4">
-            <h1 class="font-cinzel text-3xl sm:text-4xl font-black tracking-wider text-green-950 uppercase">
+            <h1 class="font-cinzel text-3xl sm:text-4xl font-black tracking-wider text-emerald-950 uppercase">
                 Certificate of Completion
             </h1>
             <p class="font-playfair text-slate-500 text-sm italic mt-1">This official credential is proudly awarded to</p>
         </div>
 
         <!-- Recipient Name -->
-        <div class="relative z-10 py-2 border-b-2 border-green-800 max-w-xl mx-auto">
+        <div class="relative z-10 py-2 border-b-2 border-emerald-800 max-w-xl mx-auto">
             <h2 class="font-cinzel text-2xl sm:text-3xl font-black text-slate-900 tracking-wide uppercase">
                 {{ $enrollment->first_name }} {{ $enrollment->last_name }}
             </h2>
@@ -77,7 +79,7 @@
             <p class="text-xs text-slate-600 leading-relaxed">
                 for successfully completing the standardized industry competency training program in
             </p>
-            <h3 class="font-cinzel text-lg sm:text-xl font-black text-green-800 uppercase">
+            <h3 class="font-cinzel text-lg sm:text-xl font-black text-emerald-800 uppercase">
                 {{ $enrollment->course_title }}
             </h3>
             <p class="text-xs text-slate-500">
@@ -91,14 +93,14 @@
             <!-- Left: Certificate ID -->
             <div class="text-center sm:text-left space-y-1">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Certificate ID</span>
-                <p class="text-xs font-black font-mono text-green-900">{{ $enrollment->certificate_no }}</p>
+                <p class="text-xs font-black font-mono text-emerald-900">{{ $enrollment->certificate_no }}</p>
                 <span class="text-[10px] text-slate-400">Issued: {{ date('F d, Y', strtotime($enrollment->certificate_issued_at ?? now())) }}</span>
             </div>
 
             <!-- Center: Gold Seal -->
             <div class="flex flex-col items-center justify-center">
-                <div class="h-20 w-20 rounded-full border-4 border-amber-400 bg-amber-50 flex items-center justify-center text-amber-600 text-3xl shadow-inner font-black">
-                    ⭐
+                <div class="h-20 w-20 rounded-full border-4 border-amber-400 bg-amber-50 flex items-center justify-center shadow-inner">
+                    <svg class="w-9 h-9 text-amber-500 fill-amber-400" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"/></svg>
                 </div>
                 <span class="text-[10px] font-bold uppercase tracking-widest text-amber-700 mt-1">Verified Competency</span>
             </div>

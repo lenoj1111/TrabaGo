@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,39 +7,65 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Modal,
+  Image,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
+import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 
 import { documentService } from '../../src/services/documentService';
 import { VaultDocument } from '../../src/types';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../src/constants/theme';
 import { useAuth } from '../../src/context/AuthContext';
+import { getDefaultApiUrl } from '../../src/config/api';
+
+type DocCategory = 'resume' | 'valid_id' | 'certificate' | 'pwd_id';
 
 export default function DocumentVaultScreen() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const userId = user?.id || user?.user_id;
+
   const [documents, setDocuments] = useState<VaultDocument[]>([]);
   const [categories, setCategories] = useState<Record<string, VaultDocument | null>>({});
   const [loading, setLoading] = useState<boolean>(true);
-  const [uploading, setUploading] = useState<boolean>(false);
+  const [uploadingCategory, setUploadingCategory] = useState<DocCategory | null>(null);
+  const [selectedPreviewDoc, setSelectedPreviewDoc] = useState<VaultDocument | null>(null);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'verified' | 'review' | 'rejected'>('all');
+
+  const resolveDocUrl = (rawUrl?: string): string => {
+    if (!rawUrl) return '';
+    if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) return rawUrl;
+    const base = getDefaultApiUrl().replace(/\/api\/?$/, '');
+    return `${base}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+  };
 
   const fetchVault = useCallback(async () => {
     try {
       const res = await documentService.getAll();
-      setDocuments(res.documents);
-      setCategories(res.categories);
+      setDocuments(res.documents || []);
+      setCategories(res.categories || {});
     } catch (err) {
       console.warn('Error fetching vault documents:', err);
+      setDocuments([]);
+      setCategories({});
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchVault();
-  }, [fetchVault]);
+    if (isAuthenticated && userId) {
+      setLoading(true);
+      fetchVault();
+    } else {
+      setDocuments([]);
+      setCategories({});
+      setLoading(false);
+    }
+  }, [isAuthenticated, userId, fetchVault]);
 
-  const handleUpload = async (category: 'resume' | 'valid_id' | 'certificate' | 'pwd_id') => {
+  const handleUpload = async (category: DocCategory) => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'image/*'],
@@ -48,7 +74,12 @@ export default function DocumentVaultScreen() {
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const file = result.assets[0];
-        setUploading(true);
+        if (file.size && file.size > 5 * 1024 * 1024) {
+          Alert.alert('File Too Large', 'The selected file exceeds the 5MB maximum limit. Please choose a smaller file.');
+          return;
+        }
+
+        setUploadingCategory(category);
 
         const res = await documentService.uploadDocument(
           file.uri,
@@ -58,22 +89,22 @@ export default function DocumentVaultScreen() {
         );
 
         if (res.success) {
-          Alert.alert('Success', res.message || 'Document uploaded successfully to vault.');
+          Alert.alert('Upload Successful', res.message || 'Your credential has been uploaded to the DMDP Vault.');
           fetchVault();
         } else {
-          Alert.alert('Upload Failed', res.message || 'Unable to upload document.');
+          Alert.alert('Upload Failed', res.message || 'Unable to upload document. Please check the file format.');
         }
       }
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Document selection error.');
+      Alert.alert('Error', err.message || 'Error occurred while picking document.');
     } finally {
-      setUploading(false);
+      setUploadingCategory(null);
     }
   };
 
   const handleDelete = (docId: string, name: string) => {
     Alert.alert(
-      'Remove Document',
+      'Remove Credential',
       `Are you sure you want to remove "${name}" from your Document Hub?`,
       [
         { text: 'Cancel', style: 'cancel' },
@@ -83,7 +114,10 @@ export default function DocumentVaultScreen() {
           onPress: async () => {
             const res = await documentService.deleteDocument(docId);
             if (res.success) {
-              Alert.alert('Removed', 'Document deleted.');
+              if (selectedPreviewDoc?.id === docId) {
+                setSelectedPreviewDoc(null);
+              }
+              Alert.alert('Removed', 'Document has been removed.');
               fetchVault();
             } else {
               Alert.alert('Error', res.message || 'Failed to remove document.');
@@ -97,42 +131,91 @@ export default function DocumentVaultScreen() {
   const getCategoryConfig = (cat: string) => {
     switch (cat) {
       case 'resume':
-        return { title: 'Curriculum Vitae / Resume', icon: 'document-text', color: COLORS.primary, bg: COLORS.primaryUltraLight };
+        return {
+          title: 'Curriculum Vitae / Resume',
+          shortTitle: 'Resume / CV',
+          icon: 'document-text',
+          color: COLORS.primary,
+          bg: COLORS.primaryUltraLight,
+          badge: 'Auto-attached to job applications',
+        };
       case 'valid_id':
-        return { title: 'Valid Government ID', icon: 'card', color: COLORS.warning, bg: COLORS.warningBg };
+        return {
+          title: 'Government Issued ID',
+          shortTitle: 'Valid Govt ID',
+          icon: 'card',
+          color: COLORS.warning,
+          bg: COLORS.warningBg,
+          badge: 'PESO / DMDP Identity Verification',
+        };
       case 'certificate':
-        return { title: 'DMDP & Professional Certifications', icon: 'ribbon', color: COLORS.purple, bg: COLORS.purpleBg };
+        return {
+          title: 'Certificates & Licensures',
+          shortTitle: 'Certificate',
+          icon: 'ribbon',
+          color: COLORS.purple,
+          bg: COLORS.purpleBg,
+          badge: 'Boosts AI Matching Score',
+        };
       case 'pwd_id':
-        return { title: 'PWD Identification Card', icon: 'accessibility', color: COLORS.info, bg: COLORS.infoBg };
+        return {
+          title: 'PWD Identification Card',
+          shortTitle: 'PWD ID',
+          icon: 'accessibility',
+          color: COLORS.info,
+          bg: COLORS.infoBg,
+          badge: 'Priority PWD Placement',
+        };
       default:
-        return { title: 'General Document', icon: 'folder', color: COLORS.textSecondary, bg: COLORS.surfaceSubtle };
+        return {
+          title: 'General Credential',
+          shortTitle: 'Document',
+          icon: 'folder',
+          color: COLORS.textSecondary,
+          bg: COLORS.surfaceSubtle,
+          badge: 'Stored Document',
+        };
     }
   };
 
-  const storedCategories: ('resume' | 'valid_id' | 'certificate' | 'pwd_id')[] = ['resume', 'valid_id', 'certificate', 'pwd_id'];
+  const storedCategories: DocCategory[] = ['resume', 'valid_id', 'certificate', 'pwd_id'];
   const storedCount = storedCategories.filter(
     (cat) => !!categories[cat] || documents.some((d) => d.category === cat)
   ).length;
   const vaultPercentage = Math.round((storedCount / 4) * 100);
 
+  const filteredDocs = useMemo(() => {
+    if (activeFilter === 'verified') {
+      return documents.filter((d) => d.status === 'verified' || d.status === 'approved');
+    }
+    if (activeFilter === 'review') {
+      return documents.filter((d) => d.status !== 'verified' && d.status !== 'approved' && d.status !== 'rejected');
+    }
+    if (activeFilter === 'rejected') {
+      return documents.filter((d) => d.status === 'rejected');
+    }
+    return documents;
+  }, [documents, activeFilter]);
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       {/* Information Header */}
       <View style={styles.headerCard}>
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
             <View style={styles.badgeRow}>
               <View style={styles.pulseDot} />
-              <Text style={styles.badgeText}>DMDP CREDENTIAL & VERIFICATION VAULT</Text>
+              <Text style={styles.badgeText}>DOLE-DMDP OFFICIAL CREDENTIAL VAULT</Text>
             </View>
             <Text style={styles.headerTitle}>Document Hub</Text>
             <Text style={styles.headerSubtitle}>
-              Upload your primary resume, government ID, and vocational certificates to earn official verified status.
+              Store your official resume, government ID, and vocational certificates to earn PESO verified status.
             </Text>
           </View>
           <View style={styles.vaultMeterBox}>
-            <Text style={styles.vaultMeterLabel}>VAULT STATUS</Text>
-            <Text style={styles.vaultMeterCount}>{storedCount} of 4 Stored</Text>
+            <Text style={styles.vaultMeterLabel}>COMPLETION</Text>
+            <Text style={styles.vaultMeterCount}>{vaultPercentage}%</Text>
+            <Text style={styles.vaultMeterSub}>{storedCount} of 4 Stored</Text>
             <View style={styles.vaultMeterBarBg}>
               <View style={[styles.vaultMeterBarFill, { width: `${vaultPercentage}%` }]} />
             </View>
@@ -140,125 +223,311 @@ export default function DocumentVaultScreen() {
         </View>
       </View>
 
-      {/* Explainer Info Card (Web Sync) */}
+      {/* Explainer Card */}
       <View style={styles.infoCard}>
         <View style={styles.infoIconBox}>
-          <Text style={{ fontSize: 20 }}>💡</Text>
+          <Ionicons name="shield-checkmark" size={22} color={COLORS.primary} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.infoTitle}>How the Document Hub Works:</Text>
+          <Text style={styles.infoTitle}>Verified Document Standards:</Text>
           <Text style={styles.infoText}>
-            • <Text style={styles.infoBold}>Resume:</Text> Attached automatically to job applications so employers can evaluate qualifications.{'\n'}
-            • <Text style={styles.infoBold}>Valid ID:</Text> Confirms identity with Public Employment Service Office (PESO/DMDP).{'\n'}
-            • <Text style={styles.infoBold}>Certifications:</Text> Boosts your AI Cosine-Similarity Match Score for skilled vacancies.{'\n'}
-            • <Text style={styles.infoBold}>PWD ID:</Text> Enables priority matching for disability-inclusive opportunities.
+            • <Text style={styles.infoBold}>Resume:</Text> Evaluated by Cebu City employers.{'\n'}
+            • <Text style={styles.infoBold}>Valid ID:</Text> Unlocks your DOLE-certified badge.{'\n'}
+            • <Text style={styles.infoBold}>Certificates:</Text> Automatically awarded upon completing DMDP online course quizzes.{'\n'}
+            • <Text style={styles.infoBold}>PWD ID:</Text> Priority matching for inclusive roles.
           </Text>
         </View>
       </View>
 
-      {/* Upload Quick Actions Grid matching web categories */}
+      {/* Category Upload Actions */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Document Categories</Text>
+        <Text style={styles.sectionSubtitle}>Tap any category to upload a PDF or image document (Max 5MB)</Text>
 
         <View style={styles.uploadGrid}>
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => handleUpload('resume')}
-            disabled={uploading}>
-            <View style={[styles.actionIconBox, { backgroundColor: COLORS.primaryUltraLight }]}>
-              <Ionicons name="document-attach-outline" size={24} color={COLORS.primary} />
-            </View>
-            <Text style={styles.actionLabel}>Upload Resume</Text>
-            <Text style={styles.actionSub}>PDF / Word Doc</Text>
-          </TouchableOpacity>
+          {storedCategories.map((cat) => {
+            const config = getCategoryConfig(cat);
+            const isStored = !!categories[cat] || documents.some((d) => d.category === cat);
+            const isUploading = uploadingCategory === cat;
 
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => handleUpload('valid_id')}
-            disabled={uploading}>
-            <View style={[styles.actionIconBox, { backgroundColor: COLORS.warningBg }]}>
-              <Ionicons name="card-outline" size={24} color={COLORS.warning} />
-            </View>
-            <Text style={styles.actionLabel}>Valid Govt ID</Text>
-            <Text style={styles.actionSub}>National ID, UMID, Driver</Text>
-          </TouchableOpacity>
+            return (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.actionCard, isStored && styles.actionCardStored]}
+                onPress={() => handleUpload(cat)}
+                disabled={!!uploadingCategory}
+                activeOpacity={0.85}>
+                <View style={[styles.actionIconBox, { backgroundColor: config.bg }]}>
+                  {isUploading ? (
+                    <ActivityIndicator size="small" color={config.color} />
+                  ) : (
+                    <Ionicons name={config.icon as any} size={24} color={config.color} />
+                  )}
+                </View>
 
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => handleUpload('certificate')}
-            disabled={uploading}>
-            <View style={[styles.actionIconBox, { backgroundColor: COLORS.purpleBg }]}>
-              <Ionicons name="ribbon-outline" size={24} color={COLORS.purple} />
-            </View>
-            <Text style={styles.actionLabel}>Certificate</Text>
-            <Text style={styles.actionSub}>DMDP or TESDA NC</Text>
-          </TouchableOpacity>
+                <Text style={styles.actionLabel} numberOfLines={1}>
+                  {config.shortTitle}
+                </Text>
 
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => handleUpload('pwd_id')}
-            disabled={uploading}>
-            <View style={[styles.actionIconBox, { backgroundColor: COLORS.infoBg }]}>
-              <Ionicons name="accessibility-outline" size={24} color={COLORS.info} />
-            </View>
-            <Text style={styles.actionLabel}>PWD ID</Text>
-            <Text style={styles.actionSub}>If PWD registered</Text>
-          </TouchableOpacity>
+                <View style={styles.actionStatusRow}>
+                  {isStored ? (
+                    <View style={styles.storedIndicator}>
+                      <Ionicons name="checkmark-circle" size={12} color={COLORS.emerald700} />
+                      <Text style={styles.storedIndicatorText}>Stored</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.actionSub}>Tap to upload</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {uploading && (
+        {uploadingCategory && (
           <View style={styles.uploadingBox}>
             <ActivityIndicator size="small" color={COLORS.primary} />
-            <Text style={styles.uploadingText}>Uploading document to vault...</Text>
+            <Text style={styles.uploadingText}>
+              Uploading {getCategoryConfig(uploadingCategory).shortTitle} to secure vault...
+            </Text>
           </View>
         )}
       </View>
 
       {/* Vault Items List */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Stored Documents ({documents.length})</Text>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Stored Documents ({documents.length})</Text>
+        </View>
 
-        {loading ? (
-          <ActivityIndicator size="small" color={COLORS.primary} />
-        ) : documents.length > 0 ? (
-          documents.map((item, idx) => {
-            const config = getCategoryConfig(item.category);
-            const isVerified = item.status === 'verified';
+        {/* Filter Pills */}
+        <View style={styles.filterRow}>
+          {(['all', 'verified', 'review', 'rejected'] as const).map((f) => {
+            const count =
+              f === 'all'
+                ? documents.length
+                : f === 'verified'
+                ? documents.filter((d) => d.status === 'verified' || d.status === 'approved').length
+                : f === 'review'
+                ? documents.filter((d) => d.status !== 'verified' && d.status !== 'approved' && d.status !== 'rejected').length
+                : documents.filter((d) => d.status === 'rejected').length;
 
             return (
-              <View key={item.id || idx} style={styles.itemRow}>
-                <View style={[styles.itemIcon, { backgroundColor: config.bg }]}>
-                  <Ionicons name={config.icon as any} size={20} color={config.color} />
+              <TouchableOpacity
+                key={f}
+                style={[styles.filterPill, activeFilter === f && styles.filterPillActive]}
+                onPress={() => setActiveFilter(f)}>
+                <Text style={[styles.filterPillText, activeFilter === f && styles.filterPillTextActive]}>
+                  {f.charAt(0).toUpperCase() + f.slice(1)} ({count})
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {loading ? (
+          <View style={styles.loaderBox}>
+            <ActivityIndicator size="small" color={COLORS.primary} />
+            <Text style={styles.loaderText}>Loading vault documents...</Text>
+          </View>
+        ) : filteredDocs.length > 0 ? (
+          filteredDocs.map((item, idx) => {
+            const config = getCategoryConfig(item.category);
+            const isVerified = item.status === 'verified' || item.status === 'approved';
+            const isRejected = item.status === 'rejected';
+
+            return (
+              <TouchableOpacity
+                key={item.id || idx}
+                style={styles.itemRow}
+                activeOpacity={0.88}
+                onPress={() => setSelectedPreviewDoc(item)}>
+                <View style={[styles.itemIcon, { backgroundColor: isRejected ? COLORS.dangerBg : config.bg }]}>
+                  <Ionicons
+                    name={isRejected ? 'alert-circle' : (config.icon as any)}
+                    size={22}
+                    color={isRejected ? COLORS.danger : config.color}
+                  />
                 </View>
+
                 <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+                  <Text style={styles.itemName} numberOfLines={1}>
+                    {item.name}
+                  </Text>
                   <Text style={styles.itemDate}>
                     {config.title} • {item.uploaded_at ? item.uploaded_at.split('T')[0] : 'Saved'}
                   </Text>
+
                   <View style={styles.statusRow}>
-                    <View style={[styles.statusTag, isVerified ? styles.verifiedTag : styles.reviewTag]}>
-                      <Text style={[styles.statusTagText, isVerified ? styles.verifiedText : styles.reviewText]}>
-                        {isVerified ? 'Verified' : 'Under Review'}
+                    <View
+                      style={[
+                        styles.statusTag,
+                        isVerified ? styles.verifiedTag : isRejected ? styles.rejectedTag : styles.reviewTag,
+                      ]}>
+                      <Ionicons
+                        name={isVerified ? 'shield-checkmark' : isRejected ? 'alert-circle' : 'time-outline'}
+                        size={11}
+                        color={isVerified ? COLORS.emerald800 : isRejected ? COLORS.danger : COLORS.amberDark}
+                      />
+                      <Text
+                        style={[
+                          styles.statusTagText,
+                          isVerified ? styles.verifiedText : isRejected ? styles.rejectedText : styles.reviewText,
+                        ]}>
+                        {isVerified ? 'Verified' : isRejected ? 'Rejected' : 'Under Review'}
                       </Text>
                     </View>
+
                     {item.certificate_no && (
-                      <Text style={styles.certNo}>#{item.certificate_no}</Text>
+                      <View style={styles.certBadge}>
+                        <Ionicons name="ribbon-outline" size={11} color={COLORS.purple} />
+                        <Text style={styles.certNo}>#{item.certificate_no}</Text>
+                      </View>
                     )}
+
+                    <View style={styles.previewPill}>
+                      <Ionicons name="eye-outline" size={12} color={COLORS.primary} />
+                      <Text style={styles.previewPillText}>Preview</Text>
+                    </View>
                   </View>
+
+                  {isRejected && (
+                    <View style={styles.rejectionNotice}>
+                      <Text style={styles.rejectionNoticeText}>
+                        Reason: {item.rejection_reason || 'Document does not meet requirements. Please re-upload.'}
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 <TouchableOpacity
                   style={styles.deleteBtn}
-                  onPress={() => handleDelete(item.id, item.name)}>
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    handleDelete(item.id, item.name);
+                  }}>
                   <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
                 </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             );
           })
         ) : (
-          <Text style={styles.emptyText}>No documents in your vault yet. Tap any category above to upload.</Text>
+          <View style={styles.emptyState}>
+            <Ionicons name="folder-open-outline" size={40} color={COLORS.slate300} />
+            <Text style={styles.emptyTitle}>No Documents in this View</Text>
+            <Text style={styles.emptyText}>Tap any category tile above to upload official records to your vault.</Text>
+          </View>
         )}
       </View>
+
+      {/* Document In-App Preview Modal */}
+      <Modal
+        visible={!!selectedPreviewDoc}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedPreviewDoc(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.previewModalCard}>
+            <View style={styles.previewModalHeader}>
+              <View style={{ flex: 1, paddingRight: 8 }}>
+                <Text style={styles.previewModalTitle} numberOfLines={1}>
+                  {selectedPreviewDoc?.name}
+                </Text>
+                <Text style={styles.previewModalSub}>
+                  {selectedPreviewDoc ? getCategoryConfig(selectedPreviewDoc.category).title : 'Official Document'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setSelectedPreviewDoc(null)} style={styles.modalCloseBtn}>
+                <Ionicons name="close" size={22} color={COLORS.slate600} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Document Body / Image Preview */}
+            <View style={styles.previewBody}>
+              {selectedPreviewDoc &&
+              (selectedPreviewDoc.file_url || selectedPreviewDoc.url) &&
+              (selectedPreviewDoc.name.match(/\.(png|jpe?g|webp)$/i) || selectedPreviewDoc.mime_type?.includes('image')) ? (
+                <Image
+                  source={{ uri: resolveDocUrl(selectedPreviewDoc.file_url || selectedPreviewDoc.url) }}
+                  style={styles.previewImage}
+                  resizeMode="contain"
+                />
+              ) : (
+                <View style={styles.pdfPlaceholder}>
+                  <View style={styles.pdfIconCircle}>
+                    <Ionicons name="document-text" size={48} color={COLORS.primary} />
+                  </View>
+                  <Text style={styles.pdfPlaceholderTitle}>
+                    {selectedPreviewDoc?.certificate_no ? 'Verified DMDP Certificate' : 'Official Document File'}
+                  </Text>
+                  <Text style={styles.pdfPlaceholderSub}>
+                    {selectedPreviewDoc?.file_size
+                      ? `${(selectedPreviewDoc.file_size / (1024 * 1024)).toFixed(2)} MB • `
+                      : ''}
+                    Stored securely in Cebu City DMDP Vault
+                  </Text>
+                  {selectedPreviewDoc?.certificate_no && (
+                    <View style={styles.modalCertBox}>
+                      <Ionicons name="ribbon" size={16} color={COLORS.purple} />
+                      <Text style={styles.modalCertText}>#{selectedPreviewDoc.certificate_no}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+
+            {/* Rejection Notice in Modal */}
+            {selectedPreviewDoc?.status === 'rejected' && (
+              <View style={styles.modalRejectionNotice}>
+                <Ionicons name="alert-circle" size={16} color={COLORS.danger} />
+                <Text style={styles.modalRejectionText}>
+                  Rejection Reason: {selectedPreviewDoc.rejection_reason || 'Does not meet requirements.'}
+                </Text>
+              </View>
+            )}
+
+            {/* Actions */}
+            <View style={styles.previewActionRow}>
+              {(selectedPreviewDoc?.file_url || selectedPreviewDoc?.url) && (
+                <TouchableOpacity
+                  style={styles.openExternalBtn}
+                  onPress={async () => {
+                    const url = resolveDocUrl(selectedPreviewDoc?.file_url || selectedPreviewDoc?.url);
+                    if (url) {
+                      try {
+                        await WebBrowser.openBrowserAsync(url, {
+                          toolbarColor: COLORS.navy,
+                          controlsColor: COLORS.white,
+                        });
+                      } catch {
+                        Alert.alert('File Link', url);
+                      }
+                    }
+                  }}>
+                  <Ionicons name="open-outline" size={16} color={COLORS.white} />
+                  <Text style={styles.openExternalBtnText}>Open in Viewer</Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                style={styles.deleteModalBtn}
+                onPress={() => {
+                  if (selectedPreviewDoc) {
+                    handleDelete(selectedPreviewDoc.id, selectedPreviewDoc.name);
+                  }
+                }}>
+                <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
+                <Text style={styles.deleteModalBtnText}>Delete</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.closeModalBtn} onPress={() => setSelectedPreviewDoc(null)}>
+                <Text style={styles.closeModalBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <View style={{ height: 40 }} />
     </ScrollView>
   );
@@ -270,18 +539,20 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   scrollContent: {
-    padding: SPACING.lg,
-    gap: SPACING.md,
+    padding: SPACING.md,
   },
   headerCard: {
     backgroundColor: COLORS.navy,
     borderRadius: BORDER_RADIUS.xl,
     padding: SPACING.lg,
+    marginBottom: SPACING.md,
     ...SHADOWS.md,
   },
   headerRow: {
-    flexDirection: 'column',
-    gap: SPACING.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
   },
   headerLeft: {
     flex: 1,
@@ -290,225 +561,497 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(5, 150, 105, 0.25)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: BORDER_RADIUS.full,
-    alignSelf: 'flex-start',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   pulseDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.primaryLight,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: COLORS.emerald400,
   },
   badgeText: {
     fontSize: 9,
-    fontWeight: 'bold',
-    color: COLORS.primaryLight,
+    fontWeight: '800',
+    color: COLORS.emerald400,
     letterSpacing: 0.5,
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: COLORS.white,
+    letterSpacing: -0.3,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: COLORS.primaryUltraLight,
+    color: COLORS.slate300,
     marginTop: 4,
-    lineHeight: 17,
+    lineHeight: 16,
   },
   vaultMeterBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: BORDER_RADIUS.lg,
+    padding: 10,
+    alignItems: 'center',
+    minWidth: 90,
   },
   vaultMeterLabel: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: COLORS.primaryLight,
-    letterSpacing: 0.5,
+    fontSize: 9,
+    fontWeight: '800',
+    color: COLORS.slate300,
   },
   vaultMeterCount: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '800',
     color: COLORS.white,
     marginTop: 2,
-    marginBottom: 6,
+  },
+  vaultMeterSub: {
+    fontSize: 9,
+    color: COLORS.slate400,
+    marginTop: 1,
   },
   vaultMeterBarBg: {
-    height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 3,
+    width: '100%',
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 2,
+    marginTop: 6,
     overflow: 'hidden',
   },
   vaultMeterBarFill: {
     height: '100%',
-    backgroundColor: COLORS.primaryLight,
-    borderRadius: 3,
+    backgroundColor: COLORS.emerald400,
+    borderRadius: 2,
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: COLORS.primaryUltraLight,
+    backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.md,
+    marginBottom: SPACING.md,
     borderWidth: 1,
-    borderColor: 'rgba(5, 150, 105, 0.2)',
-    gap: SPACING.sm,
+    borderColor: COLORS.slate200,
+    gap: 12,
+    ...SHADOWS.sm,
   },
   infoIconBox: {
     width: 36,
     height: 36,
-    borderRadius: BORDER_RADIUS.md,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
+    borderRadius: 18,
+    backgroundColor: COLORS.primaryUltraLight,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   infoTitle: {
     fontSize: 13,
-    fontWeight: 'bold',
-    color: COLORS.primaryDark,
+    fontWeight: '800',
+    color: COLORS.navy,
     marginBottom: 4,
   },
   infoText: {
     fontSize: 11,
-    color: COLORS.textSecondary,
-    lineHeight: 17,
+    color: COLORS.slate600,
+    lineHeight: 16,
   },
   infoBold: {
-    fontWeight: 'bold',
-    color: COLORS.navy,
+    fontWeight: '700',
+    color: COLORS.slate900,
   },
   section: {
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    ...SHADOWS.sm,
+    marginBottom: SPACING.lg,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '800',
     color: COLORS.navy,
-    marginBottom: SPACING.md,
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    color: COLORS.slate500,
+    marginTop: 2,
+    marginBottom: SPACING.sm,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
   },
   uploadGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: SPACING.md,
+    gap: 10,
   },
   actionCard: {
-    width: '47%',
-    backgroundColor: COLORS.surfaceSubtle,
-    borderRadius: BORDER_RADIUS.md,
+    width: '48.5%',
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.md,
-    alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.slate200,
+    ...SHADOWS.sm,
+  },
+  actionCardStored: {
+    borderColor: COLORS.emerald200,
+    backgroundColor: '#F8FAF9',
   },
   actionIconBox: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
+    borderRadius: BORDER_RADIUS.md,
     alignItems: 'center',
-    marginBottom: SPACING.xs,
+    justifyContent: 'center',
+    marginBottom: 8,
   },
   actionLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: COLORS.navy,
-    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.slate900,
+  },
+  actionStatusRow: {
+    marginTop: 4,
   },
   actionSub: {
-    fontSize: 10,
-    color: COLORS.textMuted,
-    textAlign: 'center',
-    marginTop: 2,
+    fontSize: 11,
+    color: COLORS.slate400,
+  },
+  storedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  storedIndicatorText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.emerald800,
   },
   uploadingBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 8,
-    marginTop: SPACING.md,
-    padding: SPACING.sm,
+    backgroundColor: COLORS.primaryUltraLight,
+    padding: 10,
+    borderRadius: BORDER_RADIUS.md,
+    marginTop: 10,
   },
   uploadingText: {
     fontSize: 12,
     color: COLORS.primaryDark,
     fontWeight: '600',
   },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginVertical: SPACING.sm,
+  },
+  filterPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: BORDER_RADIUS.full,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.slate200,
+  },
+  filterPillActive: {
+    backgroundColor: COLORS.navy,
+    borderColor: COLORS.navy,
+  },
+  filterPillText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.slate600,
+  },
+  filterPillTextActive: {
+    color: COLORS.white,
+    fontWeight: '700',
+  },
+  loaderBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 24,
+  },
+  loaderText: {
+    fontSize: 13,
+    color: COLORS.slate500,
+  },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: COLORS.slate200,
+    ...SHADOWS.sm,
   },
   itemIcon: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: BORDER_RADIUS.md,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   itemName: {
     fontSize: 13,
-    fontWeight: 'bold',
-    color: COLORS.navy,
+    fontWeight: '700',
+    color: COLORS.slate900,
   },
   itemDate: {
     fontSize: 11,
-    color: COLORS.textMuted,
+    color: COLORS.slate500,
     marginTop: 2,
   },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 6,
-    marginTop: 4,
+    marginTop: 6,
   },
   statusTag: {
-    paddingHorizontal: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: BORDER_RADIUS.sm,
+    borderRadius: BORDER_RADIUS.full,
   },
   verifiedTag: {
-    backgroundColor: COLORS.successBg,
+    backgroundColor: COLORS.emerald50,
   },
   reviewTag: {
     backgroundColor: COLORS.warningBg,
   },
+  rejectedTag: {
+    backgroundColor: COLORS.dangerBg,
+  },
   statusTagText: {
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   verifiedText: {
-    color: COLORS.success,
+    color: COLORS.emerald800,
   },
   reviewText: {
-    color: COLORS.warning,
+    color: COLORS.amberDark,
+  },
+  rejectedText: {
+    color: COLORS.danger,
+  },
+  certBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: COLORS.purpleBg,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: BORDER_RADIUS.full,
   },
   certNo: {
     fontSize: 10,
-    fontFamily: 'monospace',
+    fontWeight: '700',
+    color: COLORS.purple,
+  },
+  previewPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: COLORS.primaryUltraLight,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: BORDER_RADIUS.full,
+  },
+  previewPillText: {
+    fontSize: 10,
+    fontWeight: '700',
     color: COLORS.primary,
-    fontWeight: 'bold',
+  },
+  rejectionNotice: {
+    backgroundColor: COLORS.dangerBg,
+    borderRadius: BORDER_RADIUS.sm,
+    padding: 6,
+    marginTop: 6,
+  },
+  rejectionNoticeText: {
+    fontSize: 11,
+    color: COLORS.danger,
+    lineHeight: 14,
   },
   deleteBtn: {
     padding: 8,
   },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.xl,
+    borderWidth: 1,
+    borderColor: COLORS.slate200,
+  },
+  emptyTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.slate700,
+    marginTop: 8,
+  },
   emptyText: {
     fontSize: 12,
-    color: COLORS.textMuted,
-    fontStyle: 'italic',
+    color: COLORS.slate400,
     textAlign: 'center',
-    paddingVertical: SPACING.lg,
+    marginTop: 4,
+    lineHeight: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'center',
+    padding: SPACING.lg,
+  },
+  previewModalCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.lg,
+    maxHeight: '85%',
+    ...SHADOWS.lg,
+  },
+  previewModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.slate100,
+    paddingBottom: SPACING.sm,
+  },
+  previewModalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.navy,
+  },
+  previewModalSub: {
+    fontSize: 12,
+    color: COLORS.slate500,
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    padding: 4,
+  },
+  previewBody: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 220,
+    marginVertical: SPACING.md,
+  },
+  previewImage: {
+    width: '100%',
+    height: 260,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  pdfPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.lg,
+  },
+  pdfIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.primaryUltraLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  pdfPlaceholderTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.navy,
+    textAlign: 'center',
+  },
+  pdfPlaceholderSub: {
+    fontSize: 12,
+    color: COLORS.slate500,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  modalCertBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.purpleBg,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: BORDER_RADIUS.full,
+    marginTop: 12,
+  },
+  modalCertText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.purple,
+  },
+  modalRejectionNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.dangerBg,
+    borderRadius: BORDER_RADIUS.md,
+    padding: 10,
+    marginBottom: SPACING.md,
+  },
+  modalRejectionText: {
+    flex: 1,
+    fontSize: 12,
+    color: COLORS.danger,
+  },
+  previewActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: SPACING.sm,
+  },
+  openExternalBtn: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 12,
+    borderRadius: BORDER_RADIUS.md,
+    ...SHADOWS.sm,
+  },
+  openExternalBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.white,
+  },
+  deleteModalBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.dangerBg,
+  },
+  deleteModalBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.danger,
+  },
+  closeModalBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.slate100,
+  },
+  closeModalBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.slate700,
   },
 });

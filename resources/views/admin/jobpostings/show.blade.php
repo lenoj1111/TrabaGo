@@ -4,12 +4,12 @@
 
 @section('content')
 <div class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-7xl space-y-8">
+    <div class="w-full max-w-[1680px] mx-auto space-y-8">
 
         <!-- Header -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="space-y-1">
-                <a href="{{ route('admin.job-postings') }}" class="text-xs font-bold text-green-700 hover:text-green-900 inline-flex items-center gap-1">
+                <a href="{{ route('admin.job-postings') }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-900 inline-flex items-center gap-1">
                     &larr; Back to Job Postings Registry
                 </a>
                 <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{{ $jobPosting->title }}</h1>
@@ -18,8 +18,9 @@
 
             <div class="flex items-center gap-2">
                 <a href="{{ route('admin.job-postings.edit', $jobPosting->job_id) }}" 
-                   class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">
-                    ✏️ Edit Listing
+                   class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                    <span>Edit Listing</span>
                 </a>
             </div>
         </div>
@@ -37,7 +38,7 @@
                             $isExpired = $jobPosting->status === 'approved' && $jobPosting->valid_until < now()->toDateString();
                             $statusBadge = match($jobPosting->status) {
                                 'pending' => 'bg-amber-50 text-amber-800 border-amber-200',
-                                'approved' => $isExpired ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-green-50 text-green-800 border-green-200',
+                                'approved' => $isExpired ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200',
                                 'rejected' => 'bg-rose-50 text-rose-800 border-rose-200',
                                 'closed' => 'bg-slate-100 text-slate-700 border-slate-200',
                                 default => 'bg-slate-100 text-slate-700 border-slate-200',
@@ -48,7 +49,7 @@
                         </span>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                         <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                             <span class="text-[10px] font-bold uppercase text-slate-400">Employer Entity</span>
                             <p class="font-black text-slate-900 text-sm">{{ $jobPosting->company_name ?? 'DMDP Direct' }}</p>
@@ -56,25 +57,43 @@
                         </div>
 
                         <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                            <span class="text-[10px] font-bold uppercase text-slate-400">Job Type & Location</span>
+                            <p class="font-black text-slate-900 text-sm">{{ $jobPosting->job_type ?? 'Full-time' }}</p>
+                            <p class="text-[11px] text-slate-500 inline-flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                <span>{{ $jobPosting->location ?? 'Cebu City' }}</span>
+                            </p>
+                        </div>
+
+                        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                            <span class="text-[10px] font-bold uppercase text-slate-400">Compensation</span>
+                            <p class="font-black text-emerald-700 text-sm">{{ $jobPosting->salary_range ?: 'Competitive / Negotiable' }}</p>
+                            <p class="text-[11px] text-slate-500">Salary & benefits package</p>
+                        </div>
+
+                        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                             <span class="text-[10px] font-bold uppercase text-slate-400">Open Vacancies</span>
-                            <p class="font-black text-green-700 text-sm">{{ $jobPosting->vacancy_count }} positions</p>
+                            <p class="font-black text-emerald-700 text-sm">{{ $jobPosting->vacancy_count }} positions</p>
                             <p class="text-[11px] text-slate-500">Available quota</p>
                         </div>
 
                         <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                             <span class="text-[10px] font-bold uppercase text-slate-400">Application Deadline</span>
-                            <p class="font-black text-slate-900 text-sm">{{ \Carbon\Carbon::parse($jobPosting->valid_until)->format('F d, Y') }}</p>
+                            <p class="font-black text-slate-900 text-sm">{{ $jobPosting->valid_until ? \Carbon\Carbon::parse($jobPosting->valid_until)->format('F d, Y') : 'Open Continuous' }}</p>
                             @if($isExpired)
                                 <span class="text-[10px] font-bold text-rose-600">Past Deadline</span>
                             @else
-                                <span class="text-[10px] font-bold text-green-700">Currently Active</span>
+                                <span class="text-[10px] font-bold text-emerald-700">Currently Active</span>
                             @endif
                         </div>
 
                         <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                             <span class="text-[10px] font-bold uppercase text-slate-400">PWD Inclusivity</span>
                             @if($jobPosting->accepts_disability)
-                                <p class="font-bold text-green-800 text-xs">♿ {{ $jobPosting->disability_type ?: 'All PWD Applicants' }}</p>
+                                <p class="font-bold text-emerald-800 text-xs inline-flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="4" r="2"/><path d="M15.5 13.5A4.5 4.5 0 0 1 11 18a4.5 4.5 0 0 1-4.5-4.5A4.5 4.5 0 0 1 11 9c.4 0 .78.06 1.14.16L13.5 6.5C12.7 6.18 11.87 6 11 6a7.5 7.5 0 0 0-7.5 7.5A7.5 7.5 0 0 0 11 21a7.5 7.5 0 0 0 7.42-6.5h-2.92z"/><path d="M19 10h-4.5l-1.3-2.6A2 2 0 0 0 11.4 6.2L8.5 7.6 9.4 9.4l2.1-1 2 4.1V17h2v-4.5l1.6-1.6H19v-2z"/></svg>
+                                    <span>{{ $jobPosting->disability_type ?: 'All PWD Applicants' }}</span>
+                                </p>
                             @else
                                 <p class="text-slate-500 font-medium">Standard Listing</p>
                             @endif
@@ -83,18 +102,67 @@
 
                     <!-- Job Description -->
                     <div class="space-y-2 pt-2">
-                        <h3 class="text-xs font-bold uppercase text-slate-400 tracking-wider">Job Description</h3>
+                        <h3 class="text-xs font-bold uppercase text-slate-400 tracking-wider">Job Description & Responsibilities</h3>
                         <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-slate-700 leading-relaxed whitespace-pre-line">
                             {{ $jobPosting->description }}
                         </div>
                     </div>
 
                     <!-- Qualifications -->
-                    @if($jobPosting->qualifications)
+                    @if(!empty($jobPosting->qualifications_list))
+                        <div class="space-y-2">
+                            <h3 class="text-xs font-bold uppercase text-slate-400 tracking-wider">Qualifications & Requirements</h3>
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-slate-700 leading-relaxed">
+                                <ul class="list-disc list-inside space-y-1.5">
+                                    @foreach($jobPosting->qualifications_list as $qual)
+                                        <li class="pl-1">{{ $qual }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    @elseif($jobPosting->qualifications)
                         <div class="space-y-2">
                             <h3 class="text-xs font-bold uppercase text-slate-400 tracking-wider">Qualifications & Requirements</h3>
                             <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-slate-700 leading-relaxed whitespace-pre-line">
                                 {{ $jobPosting->qualifications }}
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- Skills -->
+                    @if(!empty($jobPosting->skills_list))
+                        <div class="space-y-2">
+                            <h3 class="text-xs font-bold uppercase text-slate-400 tracking-wider">Required Skills</h3>
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-slate-700 leading-relaxed">
+                                <ul class="list-disc list-inside space-y-1.5">
+                                    @foreach($jobPosting->skills_list as $skill)
+                                        <li class="pl-1 font-semibold text-slate-900">{{ $skill }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- Benefits & Perks -->
+                    @if(!empty($jobPosting->benefits_list))
+                        <div class="space-y-2">
+                            <h3 class="text-xs font-bold uppercase text-emerald-800 tracking-wider">Benefits & Perks</h3>
+                            <div class="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-200 text-xs text-emerald-950 leading-relaxed">
+                                <ul class="list-disc list-inside space-y-1.5">
+                                    @foreach($jobPosting->benefits_list as $benefit)
+                                        <li class="pl-1 font-medium">{{ $benefit }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- Other Instructions -->
+                    @if($jobPosting->other_instructions)
+                        <div class="space-y-2">
+                            <h3 class="text-xs font-bold uppercase text-slate-400 tracking-wider">Application Instructions</h3>
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-slate-700 leading-relaxed whitespace-pre-line">
+                                {{ $jobPosting->other_instructions }}
                             </div>
                         </div>
                     @endif
@@ -127,7 +195,7 @@
                                         $appBadge = match($app->status) {
                                             'pending' => 'bg-amber-50 text-amber-800 border-amber-200',
                                             'interview' => 'bg-blue-50 text-blue-800 border-blue-200',
-                                            'hired' => 'bg-green-50 text-green-800 border-green-200',
+                                            'hired' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
                                             'rejected' => 'bg-rose-50 text-rose-800 border-rose-200',
                                             default => 'bg-slate-100 text-slate-700 border-slate-200',
                                         };
@@ -148,8 +216,9 @@
                                         </td>
                                         <td class="py-4 px-6">
                                             @if(isset($app->recommendation) && $app->recommendation)
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-green-50 text-green-800 text-[10px] font-bold border border-green-200">
-                                                    ✓ {{ ucfirst($app->recommendation) }}
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200">
+                                                    <svg class="w-3 h-3 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                    <span>{{ ucfirst($app->recommendation) }}</span>
                                                 </span>
                                             @else
                                                 <span class="text-slate-400 font-medium">Under Review</span>
@@ -162,7 +231,9 @@
                                 @empty
                                     <tr>
                                         <td colspan="5" class="py-12 text-center text-slate-400">
-                                            <div class="text-3xl mb-2">📄</div>
+                                            <div class="h-12 w-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
+                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                            </div>
                                             <p class="font-bold text-slate-700">No applications received yet</p>
                                             <p class="text-xs mt-0.5">Candidates who apply will appear here.</p>
                                         </td>
@@ -187,25 +258,29 @@
                     <div class="space-y-2">
                         @if($jobPosting->status === 'pending')
                             <button onclick="approveJob({{ $jobPosting->job_id }})" 
-                                    class="w-full py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-xs font-bold transition-colors shadow-sm">
-                                ✓ Approve & Publish Listing
+                                    class="w-full inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                <span>Approve & Publish Listing</span>
                             </button>
                             <button onclick="rejectJob({{ $jobPosting->job_id }})" 
-                                    class="w-full py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition-colors">
-                                ✕ Reject Job Posting
+                                    class="w-full inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                <span>Reject Job Posting</span>
                             </button>
                         @endif
 
                         @if(in_array($jobPosting->status, ['approved', 'pending']))
                             <button onclick="closeJob({{ $jobPosting->job_id }})" 
-                                    class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors border border-slate-200">
-                                🔒 Close Job Listing
+                                    class="w-full inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors border border-slate-200">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                <span>Close Job Listing</span>
                             </button>
                         @endif
 
                         <a href="{{ route('admin.job-postings.edit', $jobPosting->job_id) }}" 
-                           class="w-full block text-center py-2.5 rounded-xl bg-slate-900 hover:bg-green-600 text-white text-xs font-bold transition-colors">
-                            ✏️ Edit Listing Details
+                           class="w-full inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-xs font-bold transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                            <span>Edit Listing Details</span>
                         </a>
                     </div>
                 </div>
@@ -232,9 +307,9 @@
                             <span class="font-black text-blue-800">{{ $applications->where('status', 'interview')->count() }}</span>
                         </div>
 
-                        <div class="flex items-center justify-between p-3 rounded-2xl bg-green-50/60 border border-green-200/60 text-xs">
-                            <span class="text-green-800 font-bold">Hired Placements</span>
-                            <span class="font-black text-green-800">{{ $applications->where('status', 'hired')->count() }}</span>
+                        <div class="flex items-center justify-between p-3 rounded-2xl bg-emerald-50/60 border border-emerald-200/60 text-xs">
+                            <span class="text-emerald-800 font-bold">Hired Placements</span>
+                            <span class="font-black text-emerald-800">{{ $applications->where('status', 'hired')->count() }}</span>
                         </div>
 
                         <div class="flex items-center justify-between p-3 rounded-2xl bg-rose-50/60 border border-rose-200/60 text-xs">

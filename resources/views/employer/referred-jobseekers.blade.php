@@ -39,13 +39,13 @@
         this.offerModal = true;
     }
 }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-7xl space-y-8">
+    <div class="w-full max-w-[1680px] mx-auto space-y-8">
         
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
-                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
+                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     DMDP Talent Evaluation Hub
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Candidate Evaluations</h1>
@@ -53,21 +53,23 @@
             </div>
 
             <div class="shrink-0 bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/10 text-center min-w-[160px]">
-                <span class="text-xs font-bold text-green-300 uppercase tracking-wider">Total Candidates</span>
-                <p class="text-3xl font-black text-green-400 mt-0.5">{{ $stats['total'] ?? $referredApplicants->total() }}</p>
+                <span class="text-xs font-bold text-emerald-300 uppercase tracking-wider">Total Candidates</span>
+                <p class="text-3xl font-black text-emerald-400 mt-0.5">{{ $stats['total'] ?? $referredApplicants->total() }}</p>
                 <span class="text-[10px] text-slate-300">{{ $stats['hired'] ?? 0 }} Hired &bull; {{ $stats['not_qualified'] ?? 0 }} Not Qualified</span>
             </div>
         </div>
 
         <!-- Flash Messages -->
         @if(session('success'))
-            <div class="p-4 rounded-2xl bg-green-50 border border-green-200 text-green-800 text-xs font-bold flex items-center gap-2">
-                <span>✓</span> {{ session('success') }}
+            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                <span>{{ session('success') }}</span>
             </div>
         @endif
         @if(session('info'))
             <div class="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 text-xs font-bold flex items-center gap-2">
-                <span>ℹ</span> {{ session('info') }}
+                <svg class="w-4 h-4 text-blue-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>{{ session('info') }}</span>
             </div>
         @endif
 
@@ -81,17 +83,17 @@
                 <span class="text-[11px] font-bold text-amber-700 uppercase">Awaiting Action</span>
                 <p class="text-2xl font-black text-amber-700 mt-1">{{ $stats['pending'] ?? 0 }}</p>
             </div>
-            <div class="bg-white rounded-2xl p-4 border border-green-200 bg-green-50/20 shadow-sm">
-                <span class="text-[11px] font-bold text-green-700 uppercase">Interviewing</span>
-                <p class="text-2xl font-black text-green-700 mt-1">{{ $stats['interview'] ?? 0 }}</p>
+            <div class="bg-white rounded-2xl p-4 border border-emerald-200 bg-emerald-50/20 shadow-sm">
+                <span class="text-[11px] font-bold text-emerald-700 uppercase">Interviewing</span>
+                <p class="text-2xl font-black text-emerald-700 mt-1">{{ $stats['interview'] ?? 0 }}</p>
             </div>
             <div class="bg-white rounded-2xl p-4 border border-blue-200 bg-blue-50/20 shadow-sm">
                 <span class="text-[11px] font-bold text-blue-700 uppercase">Offers Extended</span>
                 <p class="text-2xl font-black text-blue-700 mt-1">{{ $stats['offered'] ?? 0 }}</p>
             </div>
-            <div class="bg-white rounded-2xl p-4 border border-green-200 bg-green-50/20 shadow-sm">
-                <span class="text-[11px] font-bold text-green-700 uppercase">Hired Candidates</span>
-                <p class="text-2xl font-black text-green-700 mt-1">{{ $stats['hired'] ?? 0 }}</p>
+            <div class="bg-white rounded-2xl p-4 border border-emerald-200 bg-emerald-50/20 shadow-sm">
+                <span class="text-[11px] font-bold text-emerald-700 uppercase">Hired Candidates</span>
+                <p class="text-2xl font-black text-emerald-700 mt-1">{{ $stats['hired'] ?? 0 }}</p>
             </div>
             <div class="bg-white rounded-2xl p-4 border border-rose-200 bg-rose-50/20 shadow-sm col-span-2 sm:col-span-1">
                 <span class="text-[11px] font-bold text-rose-700 uppercase">Not Qualified</span>
@@ -104,7 +106,7 @@
             <!-- Filter Pills -->
             <div class="flex flex-wrap items-center gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm text-xs font-bold">
                 <a href="{{ route('employer.referred-jobseekers', array_merge(request()->except('page', 'status'), ['status' => 'all'])) }}"
-                   class="px-3 py-1.5 rounded-xl transition-colors {{ (!request()->has('status') || request()->status === 'all') ? 'bg-green-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' }}">
+                   class="px-3 py-1.5 rounded-xl transition-colors {{ (!request()->has('status') || request()->status === 'all') ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' }}">
                     All Candidates
                 </a>
                 <a href="{{ route('employer.referred-jobseekers', array_merge(request()->except('page'), ['status' => 'pending'])) }}"
@@ -112,15 +114,16 @@
                     Pending ({{ $stats['pending'] ?? 0 }})
                 </a>
                 <a href="{{ route('employer.referred-jobseekers', array_merge(request()->except('page'), ['status' => 'interview'])) }}"
-                   class="px-3 py-1.5 rounded-xl transition-colors {{ request()->status === 'interview' ? 'bg-green-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' }}">
+                   class="px-3 py-1.5 rounded-xl transition-colors {{ request()->status === 'interview' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' }}">
                     Interview ({{ $stats['interview'] ?? 0 }})
                 </a>
                 <a href="{{ route('employer.referred-jobseekers', array_merge(request()->except('page'), ['status' => 'offered'])) }}"
-                   class="px-3 py-1.5 rounded-xl transition-colors {{ request()->status === 'offered' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' }}">
-                    🎁 Offered ({{ $stats['offered'] ?? 0 }})
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-colors {{ request()->status === 'offered' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' }}">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V4a2 2 0 114 0v4m-4-4a2 2 0 10-4 0v4m-5 5h18m-18 4h18M5 9h14a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2v-9a2 2 0 012-2z"/></svg>
+                    <span>Offered ({{ $stats['offered'] ?? 0 }})</span>
                 </a>
                 <a href="{{ route('employer.referred-jobseekers', array_merge(request()->except('page'), ['status' => 'hired'])) }}"
-                   class="px-3 py-1.5 rounded-xl transition-colors {{ request()->status === 'hired' ? 'bg-green-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' }}">
+                   class="px-3 py-1.5 rounded-xl transition-colors {{ request()->status === 'hired' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' }}">
                     Hired ({{ $stats['hired'] ?? 0 }})
                 </a>
                 <a href="{{ route('employer.referred-jobseekers', array_merge(request()->except('page'), ['status' => 'not_qualified'])) }}"
@@ -129,8 +132,9 @@
                 </a>
                 @if(($stats['resignation_requested'] ?? 0) > 0)
                     <a href="{{ route('employer.referred-jobseekers', array_merge(request()->except('page'), ['status' => 'resignation_requested'])) }}"
-                       class="px-3 py-1.5 rounded-xl transition-colors {{ request()->status === 'resignation_requested' ? 'bg-amber-600 text-white shadow-sm' : 'text-amber-800 bg-amber-50 border border-amber-300 hover:bg-amber-100 animate-pulse' }}">
-                        ⚠️ Resignations ({{ $stats['resignation_requested'] }})
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-colors {{ request()->status === 'resignation_requested' ? 'bg-amber-600 text-white shadow-sm' : 'text-amber-800 bg-amber-50 border border-amber-300 hover:bg-amber-100 animate-pulse' }}">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span>Resignations ({{ $stats['resignation_requested'] }})</span>
                     </a>
                 @endif
             </div>
@@ -142,7 +146,7 @@
                 @endif
                 
                 @if(isset($employerJobs) && count($employerJobs) > 0)
-                    <select name="job_id" onchange="this.form.submit()" class="rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 bg-white focus:border-green-500 focus:outline-none">
+                    <select name="job_id" onchange="this.form.submit()" class="rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 bg-white focus:border-emerald-500 focus:outline-none">
                         <option value="">All Job Vacancies</option>
                         @foreach($employerJobs as $ej)
                             <option value="{{ $ej->job_id }}" {{ request('job_id') == $ej->job_id ? 'selected' : '' }}>
@@ -154,11 +158,11 @@
 
                 <div class="relative flex-1 min-w-[160px]">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search candidate name..."
-                           class="w-full rounded-xl border border-slate-200 pl-8 pr-3 py-2 text-xs text-slate-900 focus:border-green-500 focus:outline-none">
+                           class="w-full rounded-xl border border-slate-200 pl-8 pr-3 py-2 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none">
                     <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
 
-                <button type="submit" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-green-600 text-white text-xs font-bold transition-colors">
+                <button type="submit" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-xs font-bold transition-colors">
                     Filter
                 </button>
             </form>
@@ -173,13 +177,13 @@
                         $job = $app->jobPosting;
                         $fullName = trim(($jobseeker->first_name ?? '') . ' ' . ($jobseeker->last_name ?? ''));
                     @endphp
-                    <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-green-300 transition-all flex flex-col justify-between gap-5">
+                    <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between gap-5">
                         
                         <div class="space-y-4">
                             <!-- Top Header -->
                             <div class="flex items-start justify-between gap-4">
                                 <div class="flex items-center gap-3.5">
-                                    <div class="h-12 w-12 rounded-2xl bg-gradient-to-tr from-green-600 to-green-400 flex items-center justify-center text-white text-lg font-black shrink-0 shadow-sm">
+                                    <div class="h-12 w-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white text-lg font-black shrink-0 shadow-sm">
                                         {{ strtoupper(substr($jobseeker->first_name ?? 'C', 0, 1)) }}
                                     </div>
                                     <div>
@@ -194,37 +198,45 @@
                                 <div>
                                     @if($app->status === 'hired')
                                         @if($app->resignation_status === 'requested')
-                                            <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-extrabold bg-amber-100 text-amber-900 border border-amber-300 shadow-sm animate-pulse">
-                                                ⚠️ Resignation Requested
+                                            <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-extrabold bg-amber-100 text-amber-900 border border-amber-300 shadow-sm animate-pulse">
+                                                <svg class="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                                <span>Resignation Requested</span>
                                             </span>
                                         @elseif($app->resignation_status === 'approved')
-                                            <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-extrabold bg-slate-100 text-slate-700 border border-slate-300 shadow-sm">
-                                                💼 Resigned (Unemployed)
+                                            <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-extrabold bg-slate-100 text-slate-700 border border-slate-300 shadow-sm">
+                                                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                                <span>Resigned (Unemployed)</span>
                                             </span>
                                         @else
-                                            <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-extrabold bg-green-100 text-green-800 border border-green-300 shadow-sm">
-                                                ✓ Hired
+                                            <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm">
+                                                <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                <span>Hired</span>
                                             </span>
                                         @endif
                                     @elseif($app->status === 'offered')
-                                        <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-extrabold bg-blue-100 text-blue-800 border border-blue-300 shadow-sm animate-pulse">
-                                            🎁 Offer Extended
+                                        <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-extrabold bg-blue-100 text-blue-800 border border-blue-300 shadow-sm animate-pulse">
+                                            <svg class="w-3.5 h-3.5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V4a2 2 0 114 0v4m-4-4a2 2 0 10-4 0v4m-5 5h18m-18 4h18M5 9h14a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2v-9a2 2 0 012-2z"/></svg>
+                                            <span>Offer Extended</span>
                                         </span>
                                     @elseif($app->status === 'declined')
-                                        <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-extrabold bg-slate-100 text-slate-700 border border-slate-300 shadow-sm">
-                                            ✕ Offer Declined
+                                        <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-extrabold bg-slate-100 text-slate-700 border border-slate-300 shadow-sm">
+                                            <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            <span>Offer Declined</span>
                                         </span>
                                     @elseif($app->status === 'rejected')
-                                        <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-extrabold bg-rose-100 text-rose-800 border border-rose-300 shadow-sm">
-                                            ✕ Not Qualified
+                                        <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-extrabold bg-rose-100 text-rose-800 border border-rose-300 shadow-sm">
+                                            <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            <span>Not Qualified</span>
                                         </span>
                                     @elseif($app->status === 'interview')
-                                        <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-extrabold bg-green-100 text-green-800 border border-green-300 shadow-sm">
-                                            🗓️ Interview Scheduled
+                                        <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm">
+                                            <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                            <span>Interview Scheduled</span>
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
-                                            ⏳ Pending Review
+                                        <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
+                                            <svg class="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <span>Pending Review</span>
                                         </span>
                                     @endif
                                 </div>
@@ -241,7 +253,8 @@
                                 <div class="p-4 rounded-2xl bg-blue-50/90 border border-blue-200 text-xs space-y-2">
                                     <div class="flex items-center justify-between">
                                         <span class="font-extrabold text-blue-900 flex items-center gap-1.5">
-                                            <span>🎁</span> Formal Job Offer Extended
+                                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V4a2 2 0 114 0v4m-4-4a2 2 0 10-4 0v4m-5 5h18m-18 4h18M5 9h14a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2v-9a2 2 0 012-2z"/></svg>
+                                            <span>Formal Job Offer Extended</span>
                                         </span>
                                         <span class="text-[10px] text-blue-700 font-semibold">
                                             {{ $app->offered_at ? \Carbon\Carbon::parse($app->offered_at)->diffForHumans() : 'Recently' }}
@@ -262,15 +275,17 @@
                                             "{{ $app->offer_notes }}"
                                         </p>
                                     @endif
-                                    <p class="text-[10px] text-blue-700">
-                                        ⏳ Waiting for candidate to accept or decline in their portal.
+                                    <p class="text-[10px] text-blue-700 flex items-center gap-1">
+                                        <svg class="w-3 h-3 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <span>Waiting for candidate to accept or decline in their portal.</span>
                                     </p>
                                 </div>
                             @elseif($app->status === 'declined')
                                 <div class="p-3.5 rounded-2xl bg-slate-100 border border-slate-300 text-xs space-y-1">
                                     <div class="flex items-center justify-between">
-                                        <span class="font-bold text-slate-800 flex items-center gap-1">
-                                            <span>✕</span> Candidate Declined Offer
+                                        <span class="font-bold text-slate-800 flex items-center gap-1.5">
+                                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            <span>Candidate Declined Offer</span>
                                         </span>
                                         <span class="text-[10px] text-slate-500">
                                             {{ $app->declined_at ? \Carbon\Carbon::parse($app->declined_at)->diffForHumans() : '' }}
@@ -289,7 +304,8 @@
                                 <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-xs space-y-2">
                                     <div class="flex items-center justify-between">
                                         <span class="font-black text-amber-950 flex items-center gap-1.5">
-                                            <span>⚠️</span> Resignation Request from Employee
+                                            <svg class="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                            <span>Resignation Request from Employee</span>
                                         </span>
                                         <span class="text-[10px] text-amber-800 font-semibold">
                                             {{ $app->resignation_requested_at ? \Carbon\Carbon::parse($app->resignation_requested_at)->diffForHumans() : 'Recent' }}
@@ -307,7 +323,7 @@
                             @elseif($app->resignation_status === 'approved')
                                 <div class="p-3 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-600 flex items-center justify-between">
                                     <span class="font-semibold text-slate-700">Resignation approved on {{ $app->resignation_approved_at ? \Carbon\Carbon::parse($app->resignation_approved_at)->format('M d, Y') : 'N/A' }}</span>
-                                    <span class="text-[11px] text-green-700 font-bold">Profile: Unemployed</span>
+                                    <span class="text-[11px] text-emerald-700 font-bold">Profile: Unemployed</span>
                                 </div>
                             @elseif($app->resignation_status === 'rejected')
                                 <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800">
@@ -322,19 +338,20 @@
                             @if($app->status === 'rejected' && $app->jpo_notes)
                                 <div class="p-3.5 rounded-2xl bg-rose-50/80 border border-rose-200 text-xs space-y-1">
                                     <span class="font-bold text-rose-900 flex items-center gap-1.5">
-                                        <span>✕</span> Evaluation Feedback / Reason:
+                                        <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        <span>Evaluation Feedback / Reason:</span>
                                     </span>
                                     <p class="text-rose-800 text-[11px] leading-relaxed">
                                         {{ $app->jpo_notes }}
                                     </p>
                                 </div>
                             @elseif($app->jpo_notes)
-                                <div class="p-3.5 rounded-2xl bg-green-50/70 border border-green-200 text-xs space-y-1">
-                                    <span class="font-bold text-green-900 flex items-center gap-1.5">
-                                        <svg class="h-3.5 w-3.5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <div class="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 text-xs space-y-1">
+                                    <span class="font-bold text-emerald-900 flex items-center gap-1.5">
+                                        <svg class="h-3.5 w-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         Endorsement Note:
                                     </span>
-                                    <p class="text-green-800 text-[11px] leading-relaxed">
+                                    <p class="text-emerald-800 text-[11px] leading-relaxed">
                                         {{ $app->jpo_notes }}
                                     </p>
                                 </div>
@@ -367,25 +384,19 @@
                                         @foreach($uploadedDocs as $doc)
                                             @php
                                                 $cat = $doc['category'] ?? 'document';
-                                                $icon = match($cat) {
-                                                    'resume' => '📄',
-                                                    'valid_id' => '🪪',
-                                                    'certificate', 'certs' => '🎖️',
-                                                    'pwd_id' => '♿',
-                                                    default => '📎'
-                                                };
                                                 $label = ucfirst(str_replace('_', ' ', $cat));
                                                 $url = $doc['file_url'] ?? null;
                                             @endphp
                                             @if($url)
-                                                <a href="{{ $url }}" target="_blank" class="inline-flex items-center gap-1 rounded-xl bg-slate-100 hover:bg-green-50 hover:text-green-800 hover:border-green-300 border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-700 transition-colors" title="Click to preview {{ $doc['name'] ?? $label }}">
-                                                    <span>{{ $icon }}</span>
+                                                <a href="{{ $url }}" target="_blank" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-700 transition-colors" title="Click to preview {{ $doc['name'] ?? $label }}">
+                                                    <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                                     <span>{{ $label }}</span>
-                                                    <span class="text-[9px] text-slate-400">↗</span>
+                                                    <svg class="w-2.5 h-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                                                 </a>
                                             @else
-                                                <span class="inline-flex items-center gap-1 rounded-xl bg-slate-100 border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                                                    <span>{{ $icon }}</span> {{ $label }}
+                                                <span class="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                                    <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                    <span>{{ $label }}</span>
                                                 </span>
                                             @endif
                                         @endforeach
@@ -405,29 +416,33 @@
                                         <div class="flex items-center gap-2">
                                             <button type="button" 
                                                     @click="openResignation({{ $app->application_id }}, '{{ addslashes($fullName) }}', 'approve')"
-                                                    class="px-4 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-black shadow-md shadow-green-600/20 transition-all">
-                                                ✓ Approve Resignation
+                                                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md shadow-emerald-600/20 transition-all">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                <span>Approve Resignation</span>
                                             </button>
                                             <button type="button" 
                                                     @click="openResignation({{ $app->application_id }}, '{{ addslashes($fullName) }}', 'reject')"
-                                                    class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors">
-                                                ✕ Decline Request
+                                                    class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                <span>Decline Request</span>
                                             </button>
                                         </div>
                                     @else
-                                        <span class="text-xs font-bold text-green-700 flex items-center gap-1">
-                                            ✓ Confirmed Hired on {{ $app->hired_date ? date('M d, Y', strtotime($app->hired_date)) : 'Today' }}
+                                        <span class="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                            <span>Confirmed Hired on {{ $app->hired_date ? date('M d, Y', strtotime($app->hired_date)) : 'Today' }}</span>
                                         </span>
                                     @endif
 
-                                    <a href="{{ route('employer.placement-reports') }}" class="text-xs font-bold text-green-700 hover:underline">
+                                    <a href="{{ route('employer.placement-reports') }}" class="text-xs font-bold text-emerald-700 hover:underline">
                                         Include in Placement Report &rarr;
                                     </a>
                                 </div>
                             @elseif($app->status === 'rejected')
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="text-xs font-bold text-rose-700 flex items-center gap-1">
-                                        ✕ Marked as Not Qualified
+                                    <span class="text-xs font-bold text-rose-700 flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        <span>Marked as Not Qualified</span>
                                     </span>
                                     @if($app->jpo_notes)
                                         <span class="text-[11px] text-slate-500 italic max-w-sm truncate" title="{{ $app->jpo_notes }}">
@@ -442,28 +457,31 @@
                                         @csrf
                                         <input type="hidden" name="action" value="hire">
                                         <button type="submit" onclick="return confirm('Reconsider and confirm that you are officially hiring {{ addslashes($fullName) }}?')"
-                                                class="px-3.5 py-1.5 rounded-xl bg-green-50 hover:bg-green-100 text-green-800 text-xs font-bold border border-green-300 transition-colors">
+                                                class="px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300 transition-colors">
                                             Reconsider & Mark as Hired &rarr;
                                         </button>
                                     </form>
                                 </div>
                             @elseif($app->status === 'offered')
                                 <div class="flex items-center justify-between w-full gap-2 flex-wrap">
-                                    <span class="text-xs font-semibold text-blue-700 flex items-center gap-1">
-                                        ⏳ Offer Sent &bull; Awaiting Candidate Response
+                                    <span class="text-xs font-semibold text-blue-700 flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <span>Offer Sent &bull; Awaiting Candidate Response</span>
                                     </span>
                                     <div class="flex items-center gap-2">
                                         <button type="button"
                                                 @click="openOffer({{ $app->application_id }}, '{{ addslashes($fullName) }}', '{{ $app->offer_salary }}', '{{ $app->offer_start_date ? date('Y-m-d', strtotime($app->offer_start_date)) : '' }}', '{{ addslashes($app->offer_notes ?? '') }}')"
-                                                class="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 transition-colors">
-                                            ✏️ Revise Offer
+                                                class="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            <span>Revise Offer</span>
                                         </button>
                                         <form action="{{ route('employer.applicants.update_status', $app->application_id) }}" method="POST" class="inline">
                                             @csrf
                                             <input type="hidden" name="action" value="hire">
                                             <button type="submit" onclick="return confirm('Directly mark as hired (e.g. candidate verbally accepted or signed on-site)?')"
-                                                    class="px-3.5 py-1.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-bold shadow-sm transition-colors">
-                                                ✓ Direct Hire
+                                                    class="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-colors">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                <span>Direct Hire</span>
                                             </button>
                                         </form>
                                     </div>
@@ -476,13 +494,15 @@
                                     <div class="flex items-center gap-2">
                                         <button type="button"
                                                 @click="openOffer({{ $app->application_id }}, '{{ addslashes($fullName) }}')"
-                                                class="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 transition-colors">
-                                            🎁 Send Revised Offer
+                                                class="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V4a2 2 0 114 0v4m-4-4a2 2 0 10-4 0v4m-5 5h18m-18 4h18M5 9h14a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2v-9a2 2 0 012-2z"/></svg>
+                                            <span>Send Revised Offer</span>
                                         </button>
                                         <button type="button" 
                                                 @click="openNotQualified({{ $app->application_id }}, '{{ addslashes($fullName) }}')"
-                                                class="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors">
-                                            ✕ Close Application
+                                                class="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            <span>Close Application</span>
                                         </button>
                                     </div>
                                 </div>
@@ -491,22 +511,25 @@
                                     <!-- Schedule Interview -->
                                     <button type="button" 
                                             @click="openInterview({{ $app->application_id }}, '{{ addslashes($fullName) }}')"
-                                            class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-green-600 text-white text-xs font-bold transition-colors">
-                                        🗓️ Interview
+                                            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-xs font-bold transition-colors">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                        <span>Interview</span>
                                     </button>
 
                                     <!-- Send Formal Job Offer (Option C) -->
                                     <button type="button" 
                                             @click="openOffer({{ $app->application_id }}, '{{ addslashes($fullName) }}')"
-                                            class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black shadow-md shadow-blue-600/20 transition-all hover:scale-105">
-                                        🎁 Extend Offer
+                                            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black shadow-md shadow-blue-600/20 transition-all hover:scale-105">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V4a2 2 0 114 0v4m-4-4a2 2 0 10-4 0v4m-5 5h18m-18 4h18M5 9h14a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2v-9a2 2 0 012-2z"/></svg>
+                                        <span>Extend Offer</span>
                                     </button>
 
                                     <!-- Mark as Not Qualified Button -->
                                     <button type="button" 
                                             @click="openNotQualified({{ $app->application_id }}, '{{ addslashes($fullName) }}')"
-                                            class="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors">
-                                        ✕ Not Qualified
+                                            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        <span>Not Qualified</span>
                                     </button>
                                 </div>
 
@@ -515,8 +538,9 @@
                                     @csrf
                                     <input type="hidden" name="action" value="hire">
                                     <button type="submit" onclick="return confirm('Directly confirm that you are officially hiring {{ addslashes($fullName) }}?')"
-                                            class="px-3.5 py-2 rounded-xl bg-green-50 hover:bg-green-100 text-green-800 border border-green-300 text-xs font-bold transition-colors">
-                                        ✓ Direct Hire
+                                            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold transition-colors">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                        <span>Direct Hire</span>
                                     </button>
                                 </form>
                             @endif
@@ -544,7 +568,7 @@
             
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
-                    <span class="text-xs font-bold text-green-700 uppercase tracking-wider">Candidate Interview</span>
+                    <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Candidate Interview</span>
                     <h3 class="text-xl font-black text-slate-900 mt-0.5">Schedule Interview with <span x-text="selectedName"></span></h3>
                 </div>
                 <button @click="interviewModal = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
@@ -557,13 +581,13 @@
                 <div class="space-y-1">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Interview Date & Time *</label>
                     <input type="datetime-local" name="interview_schedule" min="{{ date('Y-m-d\TH:i') }}" required
-                           class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
+                           class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                 </div>
 
                 <div class="space-y-1">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Interview Format *</label>
                     <select name="interview_mode" required
-                            class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-green-500 focus:outline-none">
+                            class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none">
                         <option value="online">Online (Video Meeting / Google Meet / Zoom)</option>
                         <option value="onsite">On-site (Company Office in Cebu)</option>
                     </select>
@@ -572,14 +596,14 @@
                 <div class="space-y-1">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Meeting Link or Office Location *</label>
                     <input type="text" name="interview_location" required placeholder="e.g. https://meet.google.com/xyz-abc or 5th Flr IT Tower, Cebu IT Park"
-                           class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
+                           class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
                     <button type="button" @click="interviewModal = false" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
                         Cancel
                     </button>
-                    <button type="submit" class="px-7 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-black shadow-lg shadow-green-600/30">
+                    <button type="submit" class="px-7 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-600/30">
                         Send Interview Invitation &rarr;
                     </button>
                 </div>
@@ -633,7 +657,7 @@
             
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
-                    <span class="text-xs font-bold uppercase tracking-wider" :class="resignationAction === 'approve' ? 'text-green-700' : 'text-rose-700'" x-text="resignationAction === 'approve' ? 'Approve Employee Resignation' : 'Decline Resignation Request'"></span>
+                    <span class="text-xs font-bold uppercase tracking-wider" :class="resignationAction === 'approve' ? 'text-emerald-700' : 'text-rose-700'" x-text="resignationAction === 'approve' ? 'Approve Employee Resignation' : 'Decline Resignation Request'"></span>
                     <h3 class="text-xl font-black text-slate-900 mt-0.5">
                         <span x-text="resignationAction === 'approve' ? 'Release ' : 'Decline Request from '"></span>
                         <span x-text="selectedName"></span>
@@ -646,9 +670,10 @@
                 @csrf
                 <input type="hidden" name="action" :value="resignationAction">
 
-                <div x-show="resignationAction === 'approve'" class="p-4 rounded-2xl bg-green-50 border border-green-200 text-xs text-green-950 space-y-1">
-                    <p class="font-extrabold flex items-center gap-1">
-                        <span>✓</span> Resignation Clearance Impact:
+                <div x-show="resignationAction === 'approve'" class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-950 space-y-1">
+                    <p class="font-extrabold flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                        <span>Resignation Clearance Impact:</span>
                     </p>
                     <p class="leading-relaxed">
                         Approving this resignation will officially conclude their employment at your company. Their profile status will automatically be updated back to <strong>Unemployed</strong>, allowing them to browse and apply for other employment opportunities on TrabaGo.
@@ -656,8 +681,9 @@
                 </div>
 
                 <div x-show="resignationAction === 'reject'" class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-950 space-y-1">
-                    <p class="font-extrabold flex items-center gap-1">
-                        <span>✕</span> Request Declined:
+                    <p class="font-extrabold flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        <span>Request Declined:</span>
                     </p>
                     <p class="leading-relaxed">
                         The candidate will remain marked as <strong>Employed</strong> at your company and will continue to be restricted from applying to other jobs.
@@ -667,7 +693,7 @@
                 <div class="space-y-1">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Remarks / Clearance Notes (Optional)</label>
                     <textarea name="remarks" rows="3" placeholder="Provide any clearance notes, handover status, or reasons for your decision..."
-                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400"></textarea>
+                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
@@ -675,7 +701,7 @@
                         Cancel
                     </button>
                     <button type="submit" 
-                            :class="resignationAction === 'approve' ? 'bg-green-600 hover:bg-green-500 text-white shadow-green-600/30' : 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/30'"
+                            :class="resignationAction === 'approve' ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30' : 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/30'"
                             class="px-7 py-2.5 rounded-xl text-xs font-black shadow-lg transition-all">
                         <span x-text="resignationAction === 'approve' ? 'Confirm Resignation Approval &rarr;' : 'Confirm Decline &rarr;'"></span>
                     </button>
@@ -702,8 +728,9 @@
                 <input type="hidden" name="action" value="offer">
 
                 <div class="p-3.5 rounded-2xl bg-blue-50/80 border border-blue-200 text-xs text-blue-950 space-y-1">
-                    <p class="font-bold flex items-center gap-1">
-                        <span>💡</span> How Offer & Acceptance Works:
+                    <p class="font-bold flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                        <span>How Offer & Acceptance Works:</span>
                     </p>
                     <p class="leading-relaxed text-[11px] text-blue-900">
                         Sending this offer notifies <strong x-text="selectedName"></strong> with your terms. They can review and click <strong>Accept</strong> or <strong>Decline</strong> in their applications dashboard. Once accepted, their profile is automatically tagged as Employed at your company!

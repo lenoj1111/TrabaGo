@@ -11,13 +11,13 @@
         this.detailModal = true;
     }
 }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-7xl space-y-8">
+    <div class="w-full max-w-[1680px] mx-auto space-y-8">
 
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
-                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
+                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     DMDP City Employment Compliance
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Placement Reports Directory</h1>
@@ -29,7 +29,8 @@
             <div class="flex items-center gap-3 shrink-0">
                 <a href="{{ route('admin.approvals.index') }}" 
                    class="inline-flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-3 text-xs font-bold text-white transition-all">
-                    <span>📋 Manage Approvals</span>
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                    <span>Manage Approvals</span>
                 </a>
             </div>
         </div>
@@ -37,7 +38,7 @@
         <!-- Metric Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <a href="{{ route('admin.placement-reports.index') }}" 
-               class="rounded-3xl border {{ $statusFilter === 'all' ? 'border-green-500 ring-2 ring-green-500/20 bg-green-50/50' : 'border-slate-200 bg-white' }} p-5 shadow-sm transition-all hover:border-green-400">
+               class="rounded-3xl border {{ $statusFilter === 'all' ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/50' : 'border-slate-200 bg-white' }} p-5 shadow-sm transition-all hover:border-emerald-400">
                 <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Filings</span>
                 <p class="text-2xl font-black text-slate-900 mt-1">{{ $stats['total'] ?? 0 }}</p>
                 <span class="text-[10px] text-slate-500">All submissions</span>
@@ -58,10 +59,10 @@
             </a>
 
             <a href="{{ route('admin.placement-reports.index', ['status' => 'approved']) }}" 
-               class="rounded-3xl border {{ $statusFilter === 'approved' ? 'border-green-500 ring-2 ring-green-500/20 bg-green-50/50' : 'border-slate-200 bg-white' }} p-5 shadow-sm transition-all hover:border-green-400">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-green-700">Approved & Archived</span>
-                <p class="text-2xl font-black text-green-800 mt-1">{{ $stats['approved'] ?? 0 }}</p>
-                <span class="text-[10px] text-green-700">City records</span>
+               class="rounded-3xl border {{ $statusFilter === 'approved' ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/50' : 'border-slate-200 bg-white' }} p-5 shadow-sm transition-all hover:border-emerald-400">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Approved & Archived</span>
+                <p class="text-2xl font-black text-emerald-800 mt-1">{{ $stats['approved'] ?? 0 }}</p>
+                <span class="text-[10px] text-emerald-700">City records</span>
             </a>
 
             <a href="{{ route('admin.placement-reports.index', ['status' => 'rejected']) }}" 
@@ -97,8 +98,8 @@
                     <input type="hidden" name="status" value="{{ $statusFilter }}">
                     <div class="relative w-full md:w-72">
                         <input type="text" name="search" value="{{ $searchQuery }}" placeholder="Search company or report #..."
-                               class="w-full rounded-2xl border border-slate-200 pl-9 pr-4 py-2 text-xs text-slate-800 placeholder-slate-400 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
-                        <span class="absolute left-3 top-2.5 text-slate-400">🔍</span>
+                               class="w-full rounded-2xl border border-slate-200 pl-9 pr-4 py-2 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
                     @if($searchQuery || $statusFilter !== 'all')
                         <a href="{{ route('admin.placement-reports.index') }}" class="text-xs text-slate-500 hover:text-slate-900 font-bold whitespace-nowrap">
@@ -156,22 +157,25 @@
                                     {{ date('F Y', strtotime($rep->report_month)) }}
                                 </td>
                                 <td class="py-4 px-4 text-center">
-                                    <span class="inline-flex items-center px-3 py-1 rounded-xl bg-green-50 text-green-800 font-black border border-green-200">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 font-black border border-emerald-200">
                                         {{ $rData['total_hired'] ?? count($rData['hired_list'] ?? []) }} hired
                                     </span>
                                 </td>
                                 <td class="py-4 px-4">
                                     @if($rep->status === 'approved')
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-green-100 border border-green-300 px-2.5 py-0.5 text-xs font-bold text-green-800">
-                                            ✓ Approved & Archived
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                                            <svg class="w-3 h-3 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                            <span>Approved & Archived</span>
                                         </span>
                                     @elseif($rep->status === 'jpo_evaluated')
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-blue-100 border border-blue-300 px-2.5 py-0.5 text-xs font-bold text-blue-800">
-                                            📋 JPO Evaluated (Action Needed)
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-100 border border-blue-300 px-2.5 py-0.5 text-xs font-bold text-blue-800">
+                                            <svg class="w-3 h-3 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                            <span>JPO Evaluated (Action Needed)</span>
                                         </span>
                                     @elseif($rep->status === 'submitted_to_jpo')
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-xs font-bold text-amber-800">
-                                            ⏳ Under JPO Audit
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+                                            <svg class="w-3 h-3 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <span>Under JPO Audit</span>
                                         </span>
                                     @else
                                         <span class="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-800">
@@ -186,7 +190,7 @@
                                     <div class="inline-flex items-center gap-2">
                                         <button type="button" 
                                                 @click='viewReport({!! $repJson !!})'
-                                                class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-green-50 text-slate-700 hover:text-green-800 font-bold text-xs border border-slate-200 transition-colors flex items-center gap-1">
+                                                class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-bold text-xs border border-slate-200 transition-colors flex items-center gap-1">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             View Report
                                         </button>
@@ -195,14 +199,15 @@
                                            target="_blank"
                                            class="p-1.5 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors" 
                                            title="Print Official Report">
-                                            🖨️
+                                            <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                                         </a>
 
                                         @if($rep->status === 'jpo_evaluated' || $rep->status === 'submitted_to_jpo')
                                             <form action="{{ route('admin.approvals.placement-reports.approve', $rep->report_id) }}" method="POST" class="inline">
                                                 @csrf
-                                                <button type="submit" class="px-3 py-1.5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs transition-colors shadow-sm">
-                                                    ✓ Approve
+                                                <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm">
+                                                    <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                    <span>Approve</span>
                                                 </button>
                                             </form>
                                         @endif
@@ -212,7 +217,9 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="py-12 text-center text-slate-400">
-                                    <div class="text-3xl mb-2">📊</div>
+                                    <div class="h-12 w-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                    </div>
                                     <p class="font-bold text-slate-700">No placement reports found</p>
                                     <p class="text-xs mt-0.5">Adjust your filters or wait for employers to submit monthly hiring reports.</p>
                                 </td>
@@ -238,7 +245,7 @@
                     <!-- Modal Header -->
                     <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                         <div>
-                            <span class="text-[11px] font-extrabold text-green-700 uppercase tracking-wider">Placement Compliance Details</span>
+                            <span class="text-[11px] font-extrabold text-emerald-700 uppercase tracking-wider">Placement Compliance Details</span>
                             <h3 class="text-xl font-black text-slate-900 mt-0.5">
                                 <span x-text="selectedReport.company_name"></span> &bull; <span x-text="selectedReport.report_month"></span>
                             </h3>
@@ -251,7 +258,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs">
                         <div>
                             <span class="text-slate-400 font-bold uppercase text-[10px]">Total Placements</span>
-                            <p class="text-lg font-black text-green-800"><span x-text="selectedReport.total_hired"></span> Hired Candidates</p>
+                            <p class="text-lg font-black text-emerald-800"><span x-text="selectedReport.total_hired"></span> Hired Candidates</p>
                         </div>
                         <div>
                             <span class="text-slate-400 font-bold uppercase text-[10px]">Current Workflow Status</span>
@@ -296,7 +303,7 @@
                                             <td class="py-2.5 px-3 text-slate-600" x-text="item.hired_date"></td>
                                             <td class="py-2.5 px-3 text-right">
                                                 <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold"
-                                                      :class="item.referred_by_jpo === 'Yes' || item.referred_by_jpo === true ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-700'"
+                                                      :class="item.referred_by_jpo === 'Yes' || item.referred_by_jpo === true ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'"
                                                       x-text="item.referred_by_jpo === 'Yes' || item.referred_by_jpo === true ? 'JPO Referred' : 'Direct'">
                                                 </span>
                                             </td>
@@ -331,7 +338,8 @@
                     <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
                         <a :href="selectedReport.print_url" target="_blank"
                            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors">
-                            🖨️ Open Official Printable Report &rarr;
+                            <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                            <span>Open Official Printable Report &rarr;</span>
                         </a>
 
                         <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
@@ -339,8 +347,9 @@
                                 <div class="flex items-center gap-2">
                                     <form :action="selectedReport.approve_url" method="POST">
                                         @csrf
-                                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-black text-xs shadow-md">
-                                            ✓ Authorize & Archive
+                                        <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md">
+                                            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                            <span>Authorize & Archive</span>
                                         </button>
                                     </form>
                                     <form :action="selectedReport.reject_url" method="POST">

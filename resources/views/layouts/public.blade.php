@@ -23,7 +23,7 @@
     </style>
     @stack('styles')
 </head>
-<body class="min-h-full flex flex-col bg-white text-gray-900 antialiased">
+<body class="min-h-full flex flex-col bg-white text-slate-900 antialiased">
     @include('partials.public-navbar')
     
     <main class="flex-1">

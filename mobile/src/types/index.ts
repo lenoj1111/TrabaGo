@@ -50,9 +50,13 @@ export interface UserProfile {
   user_id: number;
   email: string;
   firstName: string;
+  first_name?: string;
   lastName: string;
+  last_name?: string;
   middleName?: string;
+  middle_name?: string;
   fullName: string;
+  full_name?: string;
   phone?: string;
   mobile_number?: string;
   education?: string;
@@ -65,8 +69,10 @@ export interface UserProfile {
   skills: string[];
   sex?: string | null;
   civilStatus?: string | null;
+  civil_status?: string | null;
   citizenship?: string;
   birthDate?: string | null;
+  birth_date?: string | null;
   employmentStatus?: string;
   employment_status?: string;
   hired_company?: string | null;
@@ -78,6 +84,15 @@ export interface UserProfile {
   role: string;
   status: string;
   isApproved?: boolean;
+  is_approved?: boolean;
+  is_verified?: boolean;
+  isVerified?: boolean;
+  is_contact_verified?: boolean;
+  isContactVerified?: boolean;
+  account_status?: 'unverified' | 'pending_review' | 'verified' | string;
+  accountStatus?: 'unverified' | 'pending_review' | 'verified' | string;
+  is_profile_complete?: boolean;
+  missing_requirements?: string[];
   avatar?: string | null;
 }
 
@@ -220,7 +235,12 @@ export interface VaultDocument {
   category: 'resume' | 'valid_id' | 'certificate' | 'pwd_id' | string;
   file_url?: string;
   url?: string;
+  file_path?: string;
+  file_size?: number;
+  mime_type?: string;
   status?: string;
+  rejection_reason?: string;
+  reviewed_at?: string;
   uploaded_at?: string;
   certificate_no?: string;
   course_title?: string;

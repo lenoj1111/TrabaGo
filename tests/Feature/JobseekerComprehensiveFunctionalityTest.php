@@ -50,6 +50,9 @@ class JobseekerComprehensiveFunctionalityTest extends TestCase
             'user_id' => $userId,
             'first_name' => 'Juan',
             'last_name' => 'Dela Cruz',
+            'birth_date' => '1995-06-15',
+            'sex' => 'Male',
+            'civil_status' => 'Single',
             'email' => 'juan.delacruz@example.com',
             'mobile_number' => '09123456789',
             'employment_status' => 'Looking for job',
@@ -61,10 +64,12 @@ class JobseekerComprehensiveFunctionalityTest extends TestCase
         // Create jobseeker details
         DB::table('jobseeker_details')->insert([
             'jobseeker_id' => $jobseekerId,
-            'address' => json_encode(['city' => 'Cebu City', 'full' => 'Cebu City']),
-            'education' => json_encode(['Bachelor of Science in Information Technology']),
+            'address' => json_encode(['barangay' => 'Lahug', 'city' => 'Cebu City', 'full' => 'Lahug, Cebu City']),
+            'education' => json_encode(['school' => 'Cebu Institute of Technology', 'course' => 'Bachelor of Science in Information Technology']),
             'work_experience' => json_encode(['Junior Web Developer']),
-            'training_certificates' => json_encode([]),
+            'training_certificates' => json_encode([
+                ['category' => 'valid_id', 'name' => 'juan_id.pdf', 'file_url' => '/storage/ids/juan.pdf', 'status' => 'approved'],
+            ]),
         ]);
 
         // Add initial skills

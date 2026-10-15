@@ -14,7 +14,7 @@ class AdminMiddleware
             return redirect()->route('login');
         }
 
-        if (Auth::user()->role !== 'admin') {
+        if (!in_array(Auth::user()->role, ['admin', 'supervisor', 'pesd_supervisor'])) {
             abort(403, 'Unauthorized access. Admin only.');
         }
 

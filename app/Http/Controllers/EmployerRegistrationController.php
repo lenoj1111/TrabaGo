@@ -68,25 +68,7 @@ class EmployerRegistrationController extends Controller
         try {
             DB::beginTransaction();
 
-            // 1. Create user account
-            $user = DB::table('users')->insertGetId([
-                'email' => $validated['email'],
-                'password' => Hash::make($validated['password']),
-                'role' => 'employer',
-                'status' => 'active',
-                'is_approved' => 0,
-                'created_at' => Carbon::now(),
-            ]);
-
-            // 2. Create employer profile
-            $employerId = DB::table('employers')->insertGetId([
-                'user_id' => $user,
-                'company_name' => $validated['company_name'],
-                'is_accredited' => 0,
-                'accredited_at' => null,
-            ]);
-
-            // 3. Store documents if uploaded
+            // Store documents if uploaded
             $documents = [];
             $documentTypes = [
                 'bir_2303',
@@ -106,20 +88,44 @@ class EmployerRegistrationController extends Controller
             foreach ($documentTypes as $docType) {
                 if ($request->hasFile("documents.{$docType}")) {
                     $file = $request->file("documents.{$docType}");
-                    $path = $file->store("employer_documents/{$employerId}", 'public');
+                    $path = $file->store("employer_documents", 'public');
                     $documents[$docType] = $path;
                 }
             }
 
-            // 4. Create accreditation record
+            $hasDocs = count($documents) > 0;
+            $accountStatus = $hasDocs ? 'pending_review' : 'unverified';
+
+            // 1. Create user account
+            $user = DB::table('users')->insertGetId([
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'role' => 'employer',
+                'status' => 'active',
+                'is_approved' => 0,
+                'phone_number' => $validated['phone'] ?? null,
+                'is_contact_verified' => 1,
+                'account_status' => $accountStatus,
+                'created_at' => Carbon::now(),
+            ]);
+
+            // 2. Create employer profile
+            $employerId = DB::table('employers')->insertGetId([
+                'user_id' => $user,
+                'company_name' => $validated['company_name'],
+                'is_accredited' => 0,
+                'accredited_at' => null,
+            ]);
+
+            // 3. Create accreditation record
             DB::table('employer_accreditation')->insert([
                 'employer_id' => $employerId,
                 'documents' => json_encode($documents),
                 'submitted_at' => Carbon::now(),
-                'ocr_validation_status' => 'pending',
+                'ocr_validation_status' => $hasDocs ? 'pending' : 'not_submitted',
             ]);
 
-            // 5. Create user profile (for contact information)
+            // 4. Create user profile (for contact information)
             DB::table('user_profiles')->insert([
                 'user_id' => $user,
                 'full_name' => $validated['contact_person'],
@@ -131,7 +137,7 @@ class EmployerRegistrationController extends Controller
 
             // Redirect to success page
             return redirect()->route('employer.register.success')
-                ->with('success', 'Employer registration successful! Please wait for admin approval.');
+                ->with('success', 'Employer registration successful! You can now log in to set up your corporate profile.');
 
         } catch (\Exception $e) {
             DB::rollBack();

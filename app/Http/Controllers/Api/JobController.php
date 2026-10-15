@@ -8,10 +8,13 @@ use App\Models\JobPosting;
 use App\Models\Jobseeker;
 use App\Models\TrainingProgram;
 use App\Services\SkillMatchingService;
+use App\Traits\ResolvesJobseeker;
 use Illuminate\Http\Request;
 
 class JobController extends Controller
 {
+    use ResolvesJobseeker;
+
     protected SkillMatchingService $matchingService;
 
     public function __construct(SkillMatchingService $matchingService)
@@ -83,33 +86,6 @@ class JobController extends Controller
             'missing_skills' => $missingSkills,
             'has_applied' => $hasApplied,
         ];
-    }
-
-    /**
-     * Resolve the jobseeker model from authenticated Sanctum user or fallback.
-     */
-    private function resolveJobseeker(?Request $request): ?\App\Models\Jobseeker
-    {
-        $user = auth('sanctum')->user() ?? ($request ? ($request->user() ?? \Illuminate\Support\Facades\Auth::user()) : \Illuminate\Support\Facades\Auth::user());
-        if ($user) {
-            $jobseeker = $user->jobseeker ?? \App\Models\Jobseeker::where('user_id', $user->user_id)->first();
-            if (!$jobseeker) {
-                $nameParts = explode(' ', $user->full_name ?? '', 2);
-                $jobseeker = \App\Models\Jobseeker::firstOrCreate(
-                    ['user_id' => $user->user_id],
-                    [
-                        'first_name' => $nameParts[0] ?? explode('@', $user->email)[0] ?? 'Jobseeker',
-                        'last_name' => $nameParts[1] ?? 'User',
-                        'email' => $user->email,
-                        'employment_status' => 'Looking for job',
-                        'citizenship' => 'Filipino',
-                    ]
-                );
-            }
-            return $jobseeker;
-        }
-
-        return \App\Models\Jobseeker::first();
     }
 
     /**
@@ -311,5 +287,51 @@ class JobController extends Controller
             'is_employed' => $jobseeker ? $jobseeker->isEmployed() : false,
             'hired_company' => $jobseeker ? $jobseeker->hired_company : null,
         ]);
+    }
+
+    /**
+     * Create a new job vacancy (Employer only, must be account verified).
+     */
+    public function store(Request $request)
+    {
+        $user = $request->user();
+        if (!$user || !$user->isEmployer()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only registered employers can post job openings.',
+            ], 403);
+        }
+
+        $employer = $user->employer;
+        if (!$employer) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Employer profile not found.',
+            ], 404);
+        }
+
+        $request->validate([
+            'title' => 'required|string|max:150',
+            'description' => 'required|string',
+            'vacancies_count' => 'nullable|integer|min:1',
+            'salary' => 'nullable|string|max:100',
+            'location' => 'nullable|string|max:150',
+        ]);
+
+        $job = JobPosting::create([
+            'employer_id' => $employer->employer_id,
+            'title' => $request->title,
+            'description' => $request->description,
+            'vacancies_count' => $request->vacancies_count ?? 1,
+            'salary' => $request->salary ?? 'Competitive',
+            'location' => $request->location ?? 'Cebu City',
+            'status' => 'pending',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Job posting submitted successfully and sent for administrative review.',
+            'job' => $job,
+        ], 201);
     }
 }

@@ -70,6 +70,10 @@ class AuthController extends Controller
         $lastName = $jobseeker->last_name ?? '';
         $phone = $jobseeker->mobile_number ?? ($user->profile->phone ?? '');
 
+        $missingRequirements = $jobseeker ? $jobseeker->getMissingRequirements() : [];
+        $isProfileComplete = empty($missingRequirements);
+        $isVerified = (bool) ($user->is_approved && $isProfileComplete);
+
         return [
             'id' => $user->user_id,
             'user_id' => $user->user_id,
@@ -122,6 +126,14 @@ class AuthController extends Controller
             'status' => $user->status,
             'isApproved' => (bool)$user->is_approved,
             'is_approved' => (bool)$user->is_approved,
+            'isVerified' => $isVerified,
+            'is_verified' => $isVerified,
+            'is_contact_verified' => (bool)$user->is_contact_verified,
+            'isContactVerified' => (bool)$user->is_contact_verified,
+            'account_status' => $user->account_status ?? ($isVerified ? 'verified' : ($user->is_approved ? 'pending_review' : 'unverified')),
+            'accountStatus' => $user->account_status ?? ($isVerified ? 'verified' : ($user->is_approved ? 'pending_review' : 'unverified')),
+            'is_profile_complete' => $isProfileComplete,
+            'missing_requirements' => array_values($missingRequirements),
             'avatar' => null,
         ];
     }
@@ -155,11 +167,32 @@ class AuthController extends Controller
             ], 401);
         }
 
-        if ($user->status !== 'active') {
+        if ($user->status === 'inactive') {
             return response()->json([
                 'success' => false,
                 'message' => 'Your account is inactive. Please contact support.',
             ], 403);
+        }
+
+        // Restrict mobile app exclusively to Jobseekers
+        if ($user->role !== 'jobseeker') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Access restricted. The TrabaGo mobile application is exclusively for Jobseekers. Admins, Trainers, and JPOs must log in via the Web Portal.',
+            ], 403);
+        }
+
+        if ($user->role === 'jobseeker' && !$user->jobseeker) {
+            $nameParts = explode(' ', $user->full_name ?? explode('@', $user->email)[0], 2);
+            Jobseeker::create([
+                'user_id' => $user->user_id,
+                'first_name' => $nameParts[0] ?? 'Jobseeker',
+                'last_name' => $nameParts[1] ?? '',
+                'email' => $user->email,
+                'employment_status' => 'Looking for job',
+                'citizenship' => 'Filipino',
+            ]);
+            $user->load(['jobseeker.details', 'jobseeker.skills', 'jobseeker.preferences', 'jobseeker.socialStatus', 'profile']);
         }
 
         // Generate Sanctum plain text token
@@ -179,13 +212,270 @@ class AuthController extends Controller
     }
 
     /**
-     * Register a new jobseeker user and generate token.
+     * Send OTP verification code to email or phone number.
+     * Enforces duplicate account prevention for registration.
+     */
+    public function sendOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'identifier' => 'nullable|string|max:191',
+            'email' => 'nullable|email|max:191',
+            'phone_number' => 'nullable|string|max:50',
+            'mobile_number' => 'nullable|string|max:50',
+            'type' => 'nullable|string|in:registration,recovery,login',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $email = $request->input('email', filter_var($request->input('identifier'), FILTER_VALIDATE_EMAIL) ? $request->input('identifier') : null);
+        $phone = $request->input('phone_number', $request->input('mobile_number', !filter_var($request->input('identifier'), FILTER_VALIDATE_EMAIL) ? $request->input('identifier') : null));
+        $identifier = $email ?: $phone;
+
+        if (!$identifier) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please provide a valid email address or phone number.',
+            ], 422);
+        }
+
+        $type = $request->input('type', 'registration');
+
+        // B. Duplicate Check & Account Retrieval Flow (auth-implementation-patterns + error-handling-patterns)
+        if ($type === 'registration') {
+            $existingUser = User::where(function ($q) use ($email, $phone) {
+                if ($email) $q->where('email', $email);
+                if ($phone) $q->orWhere('phone_number', $phone);
+            })->orWhereHas('jobseeker', function ($q) use ($email, $phone) {
+                if ($email) $q->where('email', $email);
+                if ($phone) $q->orWhere('mobile_number', $phone);
+            })->first();
+
+            if ($existingUser) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'ACCOUNT_ALREADY_EXISTS',
+                    'message' => 'This email or phone number is already registered. Would you like to retrieve your existing account?',
+                    'identifier' => $existingUser->email ?: $identifier,
+                ], 409);
+            }
+        } elseif ($type === 'recovery') {
+            $existingUser = User::where('email', $email)
+                ->when($phone, fn($q) => $q->orWhere('phone_number', $phone))
+                ->orWhereHas('jobseeker', function ($q) use ($email, $phone) {
+                    if ($email) $q->where('email', $email);
+                    if ($phone) $q->orWhere('mobile_number', $phone);
+                })->first();
+
+            if (!$existingUser) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'ACCOUNT_NOT_FOUND',
+                    'message' => 'No account found matching this email or phone number.',
+                ], 404);
+            }
+        }
+
+        // Generate 6-digit cryptographic random OTP code
+        $otpCode = (string) random_int(100000, 999999);
+
+        // Invalidate previous unverified OTPs for this identifier
+        \App\Models\OtpVerification::where('identifier', $identifier)
+            ->whereNull('verified_at')
+            ->delete();
+
+        // Create new verification record (10 minute expiry)
+        \App\Models\OtpVerification::create([
+            'identifier' => $identifier,
+            'otp_code' => $otpCode,
+            'type' => $type,
+            'expires_at' => now()->addMinutes(10),
+            'attempts' => 0,
+        ]);
+
+        // In production dispatch SMS / Email. For dev/demo, log and return preview
+        \Illuminate\Support\Facades\Log::info("TrabaGo OTP for {$identifier} ({$type}): {$otpCode}");
+
+        return response()->json([
+            'success' => true,
+            'message' => "A 6-digit verification code has been sent to {$identifier}.",
+            'identifier' => $identifier,
+            'type' => $type,
+            'expires_in_minutes' => 10,
+            'otp_preview' => app()->environment('local', 'testing') ? $otpCode : null,
+        ]);
+    }
+
+    /**
+     * Verify submitted OTP code.
+     */
+    public function verifyOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'identifier' => 'required|string',
+            'otp_code' => 'required|string|min:4|max:10',
+            'type' => 'nullable|string|in:registration,recovery,login',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $type = $request->input('type', 'registration');
+        $otp = \App\Models\OtpVerification::where('identifier', $request->identifier)
+            ->where('type', $type)
+            ->whereNull('verified_at')
+            ->latest()
+            ->first();
+
+        if (!$otp) {
+            return response()->json([
+                'success' => false,
+                'error' => 'OTP_EXPIRED_OR_NOT_FOUND',
+                'message' => 'No pending OTP verification code found. Please request a new code.',
+            ], 422);
+        }
+
+        if ($otp->expires_at->isPast()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'OTP_EXPIRED',
+                'message' => 'The verification code has expired. Please request a new code.',
+            ], 422);
+        }
+
+        if ($otp->attempts >= 5) {
+            return response()->json([
+                'success' => false,
+                'error' => 'TOO_MANY_ATTEMPTS',
+                'message' => 'Too many failed verification attempts. Please request a new code.',
+            ], 429);
+        }
+
+        if (trim($otp->otp_code) !== trim($request->otp_code)) {
+            $otp->increment('attempts');
+            $remaining = max(0, 5 - $otp->attempts);
+            return response()->json([
+                'success' => false,
+                'error' => 'INVALID_OTP',
+                'message' => "Invalid verification code. {$remaining} attempts remaining.",
+            ], 422);
+        }
+
+        $otp->update(['verified_at' => now()]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Verification code verified successfully.',
+            'verified' => true,
+            'verification_token' => base64_encode("{$otp->id}:{$otp->identifier}:{$otp->otp_code}"),
+        ]);
+    }
+
+    /**
+     * Account recovery via OTP.
+     */
+    public function recoverAccount(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'identifier' => 'required|string',
+            'otp_code' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $otp = \App\Models\OtpVerification::where('identifier', $request->identifier)
+            ->where('type', 'recovery')
+            ->where('otp_code', $request->otp_code)
+            ->latest()
+            ->first();
+
+        if (!$otp || $otp->expires_at->isPast()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'INVALID_OTP',
+                'message' => 'Invalid or expired recovery code.',
+            ], 422);
+        }
+
+        $identifier = $request->identifier;
+        $user = User::where('email', $identifier)
+            ->orWhere('phone_number', $identifier)
+            ->orWhereHas('jobseeker', function ($q) use ($identifier) {
+                $q->where('email', $identifier)->orWhere('mobile_number', $identifier);
+            })->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'error' => 'ACCOUNT_NOT_FOUND',
+                'message' => 'No account found matching this contact info.',
+            ], 404);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->password),
+            'is_contact_verified' => true,
+        ]);
+        $otp->update(['verified_at' => now()]);
+
+        $token = $user->createToken('trabago-mobile-app')->plainTextToken;
+        $formattedUser = $this->formatUserProfile($user->fresh(['jobseeker.details', 'jobseeker.skills', 'jobseeker.preferences', 'jobseeker.socialStatus', 'profile']));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password reset and account retrieved successfully.',
+            'token' => $token,
+            'user' => $formattedUser,
+        ]);
+    }
+
+    /**
+     * Register a new user and generate token.
      */
     public function register(Request $request)
     {
+        $phone = $request->input('phone', $request->input('mobile_number', $request->input('phone_number')));
+        $email = $request->input('email');
+
+        // Duplicate account prevention check (backend-security-coder + auth-implementation-patterns)
+        $existing = User::where('email', $email)
+            ->when($phone, fn($q) => $q->orWhere('phone_number', $phone))
+            ->orWhereHas('jobseeker', function ($q) use ($email, $phone) {
+                if ($email) $q->where('email', $email);
+                if ($phone) $q->orWhere('mobile_number', $phone);
+            })
+            ->first();
+
+        if ($existing) {
+            return response()->json([
+                'success' => false,
+                'error' => 'ACCOUNT_ALREADY_EXISTS',
+                'message' => 'This email or phone number is already registered. Would you like to retrieve your existing account?',
+                'identifier' => $existing->email ?: ($email ?: $phone),
+            ], 409);
+        }
+
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
+            'role' => 'nullable|string|in:jobseeker,employer',
             'firstName' => 'nullable|string|max:100',
             'first_name' => 'nullable|string|max:100',
             'lastName' => 'nullable|string|max:100',
@@ -201,6 +491,7 @@ class AuthController extends Controller
             'education' => 'nullable',
             'phone' => 'nullable|string|max:50',
             'mobile_number' => 'nullable|string|max:50',
+            'phone_number' => 'nullable|string|max:50',
         ]);
 
         if ($validator->fails()) {
@@ -217,69 +508,81 @@ class AuthController extends Controller
             $firstName = $request->input('firstName', $request->input('first_name', 'Jobseeker'));
             $lastName = $request->input('lastName', $request->input('last_name', ''));
             $fullName = trim("{$firstName} {$lastName}");
+            $role = $request->input('role', 'jobseeker');
 
             $user = User::create([
                 'email' => $request->email,
+                'phone_number' => $phone ?: null,
                 'password' => Hash::make($request->password),
-                'role' => 'jobseeker',
+                'role' => $role,
                 'status' => 'active',
                 'is_approved' => true,
+                'is_contact_verified' => true,
+                'account_status' => 'unverified',
             ]);
 
-            $jobseeker = Jobseeker::create([
-                'user_id' => $user->user_id,
-                'first_name' => $firstName,
-                'last_name' => $lastName,
-                'middle_name' => $request->input('middleName', $request->input('middle_name')),
-                'birth_date' => $request->input('birthDate', $request->input('birth_date')),
-                'sex' => $request->input('sex', 'Male'),
-                'civil_status' => $request->input('civilStatus', $request->input('civil_status', 'Single')),
-                'citizenship' => $request->input('citizenship', 'Filipino'),
-                'mobile_number' => $request->input('phone', $request->input('mobile_number')),
-                'employment_status' => 'Looking for job',
-                'email' => $user->email,
-            ]);
+            if ($role === 'employer') {
+                \App\Models\Employer::create([
+                    'user_id' => $user->user_id,
+                    'company_name' => $request->input('company_name', $request->input('company', $fullName ?: 'Partner Employer')),
+                    'is_accredited' => false,
+                ]);
+            } else {
+                $jobseeker = Jobseeker::create([
+                    'user_id' => $user->user_id,
+                    'first_name' => $firstName,
+                    'last_name' => $lastName,
+                    'middle_name' => $request->input('middleName', $request->input('middle_name')),
+                    'birth_date' => $request->input('birthDate', $request->input('birth_date')),
+                    'sex' => $request->input('sex', 'Male'),
+                    'civil_status' => $request->input('civilStatus', $request->input('civil_status', 'Single')),
+                    'citizenship' => $request->input('citizenship', 'Filipino'),
+                    'mobile_number' => $phone,
+                    'employment_status' => 'Looking for job',
+                    'email' => $user->email,
+                ]);
 
-            // Save details
-            $details = JobseekerDetail::create([
-                'jobseeker_id' => $jobseeker->jobseeker_id,
-                'education' => $request->has('education') 
-                    ? (is_array($request->education) ? $request->education : ['level' => (string)$request->education]) 
-                    : ['level' => 'College Graduate'],
-                'address' => $request->input('address', [
-                    'street' => '', 'barangay' => '', 'city' => 'Cebu City', 'province' => 'Cebu', 'zip' => '', 'full' => 'Cebu City, Cebu'
-                ]),
-                'training_certificates' => [],
-            ]);
+                // Save details
+                $details = JobseekerDetail::create([
+                    'jobseeker_id' => $jobseeker->jobseeker_id,
+                    'education' => $request->has('education') 
+                        ? (is_array($request->education) ? $request->education : ['level' => (string)$request->education]) 
+                        : ['level' => 'College Graduate'],
+                    'address' => $request->input('address', [
+                        'street' => '', 'barangay' => '', 'city' => 'Cebu City', 'province' => 'Cebu', 'zip' => '', 'full' => 'Cebu City, Cebu'
+                    ]),
+                    'training_certificates' => [],
+                ]);
 
-            // Save skills
-            $skillsInput = $request->input('skills', []);
-            if (is_string($skillsInput)) {
-                $skillsInput = array_map('trim', explode(',', $skillsInput));
-            }
-            if (is_array($skillsInput)) {
-                foreach (array_unique(array_filter($skillsInput)) as $skill) {
-                    JobseekerSkill::create([
-                        'jobseeker_id' => $jobseeker->jobseeker_id,
-                        'skill_name' => $skill,
-                        'skill_type' => 'technical',
-                    ]);
+                // Save skills
+                $skillsInput = $request->input('skills', []);
+                if (is_string($skillsInput)) {
+                    $skillsInput = array_map('trim', explode(',', $skillsInput));
                 }
+                if (is_array($skillsInput)) {
+                    foreach (array_unique(array_filter($skillsInput)) as $skill) {
+                        JobseekerSkill::create([
+                            'jobseeker_id' => $jobseeker->jobseeker_id,
+                            'skill_name' => $skill,
+                            'skill_type' => 'technical',
+                        ]);
+                    }
+                }
+
+                // Save preferences
+                JobPreference::create([
+                    'jobseeker_id' => $jobseeker->jobseeker_id,
+                    'preferred_location' => 'Cebu City',
+                ]);
+
+                // Save social status
+                SocialStatus::create([
+                    'jobseeker_id' => $jobseeker->jobseeker_id,
+                    'is_pwd' => false,
+                    'is_4ps' => false,
+                    'is_ofw' => false,
+                ]);
             }
-
-            // Save preferences
-            JobPreference::create([
-                'jobseeker_id' => $jobseeker->jobseeker_id,
-                'preferred_location' => 'Cebu City',
-            ]);
-
-            // Save social status
-            SocialStatus::create([
-                'jobseeker_id' => $jobseeker->jobseeker_id,
-                'is_pwd' => false,
-                'is_4ps' => false,
-                'is_ofw' => false,
-            ]);
 
             DB::commit();
 
@@ -311,6 +614,24 @@ class AuthController extends Controller
     public function getProfile(Request $request)
     {
         $user = $request->user()->load(['jobseeker.details', 'jobseeker.skills', 'jobseeker.preferences', 'jobseeker.socialStatus', 'profile']);
+        if ($user->role !== 'jobseeker') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Access restricted. The mobile profile is exclusively for Jobseekers.',
+            ], 403);
+        }
+        if ($user->role === 'jobseeker' && !$user->jobseeker) {
+            $nameParts = explode(' ', $user->full_name ?? explode('@', $user->email)[0], 2);
+            Jobseeker::create([
+                'user_id' => $user->user_id,
+                'first_name' => $nameParts[0] ?? 'Jobseeker',
+                'last_name' => $nameParts[1] ?? '',
+                'email' => $user->email,
+                'employment_status' => 'Looking for job',
+                'citizenship' => 'Filipino',
+            ]);
+            $user->load(['jobseeker.details', 'jobseeker.skills', 'jobseeker.preferences', 'jobseeker.socialStatus', 'profile']);
+        }
         $formattedUser = $this->formatUserProfile($user);
 
         return response()->json([
@@ -327,6 +648,12 @@ class AuthController extends Controller
     public function updateProfile(Request $request)
     {
         $user = $request->user();
+        if ($user->role !== 'jobseeker') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Access restricted. Only Jobseekers can update profile details.',
+            ], 403);
+        }
 
         $jobseeker = $user->jobseeker;
         if (!$jobseeker) {
@@ -375,14 +702,16 @@ class AuthController extends Controller
         if ($request->has('address')) {
             $details->address = is_array($request->address) ? $request->address : $details->address;
         }
-        if ($request->has('education')) {
+        if ($request->has('education_details') && is_array($request->education_details)) {
+            $details->education = $request->education_details;
+        } elseif ($request->has('education')) {
             $details->education = is_array($request->education) ? $request->education : ['level' => (string)$request->education];
         }
         if ($request->has('work_experience')) {
             $details->work_experience = is_array($request->work_experience) ? $request->work_experience : $details->work_experience;
         }
-        if ($request->has('bio') && is_array($details->work_experience)) {
-            $w = $details->work_experience;
+        if ($request->has('bio')) {
+            $w = is_array($details->work_experience) ? $details->work_experience : [];
             $w['summary'] = $request->input('bio');
             $details->work_experience = $w;
         }

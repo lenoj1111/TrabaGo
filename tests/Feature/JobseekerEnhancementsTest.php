@@ -69,11 +69,28 @@ class JobseekerEnhancementsTest extends TestCase
             'first_name' => 'Pedro',
             'last_name' => 'Penduko',
             'middle_name' => 'Ramos',
+            'birth_date' => '1998-05-15',
             'mobile_number' => '09171234567',
             'sex' => 'Male',
             'civil_status' => 'Single',
             'citizenship' => 'Filipino',
             'employment_status' => 'Unemployed',
+        ]);
+
+        \Illuminate\Support\Facades\DB::table('jobseeker_details')->insert([
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'address' => json_encode(['barangay' => 'Lahug', 'city' => 'Cebu City']),
+            'education' => json_encode(['course' => 'BS Information Technology', 'school' => 'Cebu University']),
+            'training_certificates' => json_encode([
+                ['category' => 'resume', 'name' => 'pedro_resume.pdf', 'file_url' => '/storage/resumes/pedro.pdf', 'status' => 'approved'],
+                ['category' => 'valid_id', 'name' => 'pedro_id.pdf', 'file_url' => '/storage/ids/pedro.pdf', 'status' => 'approved'],
+            ]),
+        ]);
+
+        \Illuminate\Support\Facades\DB::table('jobseeker_skills')->insert([
+            ['jobseeker_id' => $this->jobseeker->jobseeker_id, 'skill_name' => 'Laravel', 'skill_type' => 'technical'],
+            ['jobseeker_id' => $this->jobseeker->jobseeker_id, 'skill_name' => 'PHP', 'skill_type' => 'technical'],
+            ['jobseeker_id' => $this->jobseeker->jobseeker_id, 'skill_name' => 'Flutter', 'skill_type' => 'technical'],
         ]);
 
         // 3. Create Trainer Profile & Training Program

@@ -75,69 +75,106 @@
     <div class="mx-auto max-w-5xl space-y-8">
         
         <!-- Profile Banner Card in green Theme -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="flex items-center gap-5">
-                <div class="h-20 w-20 rounded-3xl bg-gradient-to-tr from-green-600 via-green-500 to-green-400 flex items-center justify-center text-white text-3xl font-black shadow-lg shadow-green-500/30 ring-4 ring-white/10 shrink-0">
+                <div class="h-20 w-20 rounded-3xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-emerald-400 flex items-center justify-center text-white text-3xl font-black shadow-lg shadow-emerald-500/30 ring-4 ring-white/10 shrink-0">
                     {{ strtoupper(substr($user->full_name ?? ($user->email ?? 'U'), 0, 1)) }}
                 </div>
                 <div class="space-y-1">
                     <div class="flex items-center gap-2 flex-wrap">
                         <h1 class="text-2xl sm:text-3xl font-black">{{ $jobseeker->first_name ? ($jobseeker->first_name . ' ' . ($jobseeker->middle_name ? $jobseeker->middle_name . ' ' : '') . $jobseeker->last_name) : $user->full_name }}</h1>
                         @if($jobseeker->isEmployed())
-                            <span class="rounded-full bg-green-500 text-white px-3 py-0.5 text-[11px] font-black shadow-sm flex items-center gap-1">
-                                <span>💼</span> Employed
+                            <span class="rounded-full bg-emerald-500 text-white px-3 py-0.5 text-[11px] font-black shadow-sm flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z"/></svg>
+                                <span>Employed</span>
+                            </span>
+                        @elseif($jobseeker->isVerified())
+                            <span class="rounded-full bg-emerald-500/20 border border-emerald-400/40 px-2.5 py-0.5 text-[11px] font-black text-emerald-300 flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/></svg>
+                                <span>Verified Jobseeker</span>
                             </span>
                         @else
-                            <span class="rounded-full bg-green-400/20 border border-green-400/30 px-2.5 py-0.5 text-[11px] font-bold text-green-300">
-                                Verified Jobseeker
+                            <span class="rounded-full bg-amber-500/20 border border-amber-400/40 px-2.5 py-0.5 text-[11px] font-black text-amber-300 flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
+                                <span>{{ !$user->is_approved ? 'Pending DMDP Approval' : 'Unverified (Profile/Docs Incomplete)' }}</span>
                             </span>
                         @endif
                         @if($socialStatus->is_pwd)
-                            <span class="rounded-full bg-blue-400/20 border border-blue-400/30 px-2.5 py-0.5 text-[11px] font-bold text-blue-300">
-                                ♿ PWD Inclusive
+                            <span class="rounded-full bg-blue-400/20 border border-blue-400/30 px-2.5 py-0.5 text-[11px] font-bold text-blue-300 inline-flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="2.25"/><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9h4.5l1.5 5.25H12l-1.5-3.75H7.5M9.75 20.25a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Z"/></svg>
+                                <span>PWD Inclusive</span>
                             </span>
                         @endif
                     </div>
                     <p class="text-xs text-slate-300">{{ $user->email }} &bull; Member since {{ $user->created_at ? $user->created_at->format('M Y') : '2026' }}</p>
                     @if($jobseeker->isEmployed())
                         <div class="pt-0.5 space-y-0.5">
-                            <p class="text-xs text-green-300 font-extrabold flex items-center gap-1.5">
-                                <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
+                            <p class="text-xs text-emerald-300 font-extrabold flex items-center gap-1.5">
+                                <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
                                 Tagged as Employed
                             </p>
                             @if($jobseeker->hired_company)
                                 <p class="text-xs text-white font-bold flex items-center gap-1.5">
-                                    <svg class="h-3.5 w-3.5 text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                                    Hired at: <span class="underline decoration-green-400 decoration-2 font-black text-green-200">{{ $jobseeker->hired_company }}</span>
+                                    <svg class="h-3.5 w-3.5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                    Hired at: <span class="underline decoration-green-400 decoration-2 font-black text-emerald-200">{{ $jobseeker->hired_company }}</span>
                                 </p>
                             @endif
                         </div>
                     @else
-                        <p class="text-xs text-green-300 font-semibold">{{ $jobseeker->employment_status ?? 'Actively Seeking Employment' }}</p>
+                        <p class="text-xs text-emerald-300 font-semibold">{{ $jobseeker->employment_status ?? 'Actively Seeking Employment' }}</p>
                     @endif
                 </div>
             </div>
 
             <!-- Profile Strength Widget -->
             <div class="shrink-0 bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/10 text-center min-w-[150px]">
-                <span class="text-xs font-bold text-green-300 uppercase tracking-wider">Profile Strength</span>
-                <p class="text-3xl font-black text-green-400 mt-0.5">{{ $profileStrength ?? 50 }}%</p>
+                <span class="text-xs font-bold text-emerald-300 uppercase tracking-wider">Profile Strength</span>
+                <p class="text-3xl font-black text-emerald-400 mt-0.5">{{ $profileStrength ?? 50 }}%</p>
                 <div class="w-full bg-white/20 h-1.5 rounded-full overflow-hidden mt-1.5">
-                    <div class="bg-green-400 h-full rounded-full" style="width: {{ $profileStrength ?? 50 }}%"></div>
+                    <div class="bg-emerald-400 h-full rounded-full" style="width: {{ $profileStrength ?? 50 }}%"></div>
                 </div>
                 <span class="text-[10px] text-slate-300 mt-1 block" x-text="skills.length + ' Skills Active'">{{ count($skills) }} Skills Active</span>
             </div>
         </div>
 
+        @if(!$jobseeker->isProfileAndDocumentsComplete())
+            @php
+                $missingReqs = $jobseeker->getMissingRequirements();
+            @endphp
+            <div class="p-5 rounded-3xl bg-amber-50 border border-amber-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
+                        <h3 class="text-sm font-black text-amber-950">Verification & Job Application Notice</h3>
+                    </div>
+                    <p class="text-xs text-amber-800">
+                        You cannot be tagged as <span class="font-bold underline">Verified</span> and cannot apply for job openings until your profile information and required documents are complete.
+                    </p>
+                    <div class="pt-1 text-xs text-amber-900">
+                        <span class="font-bold">Missing requirements:</span>
+                        <span class="font-medium">{{ implode(', ', $missingReqs) }}</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" @click="activeTab = 'profile'" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors shadow-xs">
+                        Complete Profile
+                    </button>
+                    <a href="{{ route('jobseeker.documents') }}" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors shadow-xs">
+                        Upload Documents
+                    </a>
+                </div>
+            </div>
+        @endif
+
         @if(session('success'))
-            <div class="p-4 rounded-2xl bg-green-50 border border-green-200 text-green-800 text-xs font-bold flex items-center gap-2">
-                <span>✓</span> {{ session('success') }}
+            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-700 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg> {{ session('success') }}
             </div>
         @endif
 
         @if(session('info'))
-            <div class="p-4 rounded-2xl bg-green-50 border border-green-200 text-green-800 text-xs font-bold flex items-center gap-2">
-                <span>ℹ️</span> {{ session('info') }}
+            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-700 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"/></svg> {{ session('info') }}
             </div>
         @endif
 
@@ -159,31 +196,31 @@
             <button type="button" @click="activeTab = 'view'"
                     class="px-5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
                     :class="activeTab === 'view' ? 'bg-slate-900 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'">
-                <span>👁️</span>
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
                 <span>My Profile</span>
             </button>
 
             <button type="button" @click="activeTab = 'edit'"
                     class="px-5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
-                    :class="activeTab === 'edit' ? 'bg-green-600 text-white shadow-md shadow-green-600/20' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'">
-                <span>✏️</span>
+                    :class="activeTab === 'edit' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"/></svg>
                 <span>Update Profile</span>
             </button>
 
             <button type="button" @click="activeTab = 'skills'"
                     class="px-5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
-                    :class="activeTab === 'skills' ? 'bg-green-600 text-white shadow-md shadow-green-600/20' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'">
-                <span>⚡</span>
+                    :class="activeTab === 'skills' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"/></svg>
                 <span>Skills Matrix</span>
                 <span class="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold"
-                      :class="activeTab === 'skills' ? 'bg-green-800 text-white' : 'bg-slate-100 text-slate-700'"
+                      :class="activeTab === 'skills' ? 'bg-emerald-800 text-white' : 'bg-slate-100 text-slate-700'"
                       x-text="skills.length"></span>
             </button>
 
             <button type="button" @click="activeTab = 'security'"
                     class="px-5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
                     :class="activeTab === 'security' ? 'bg-amber-600 text-white shadow-md shadow-amber-600/20' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'">
-                <span>🔒</span>
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
                 <span>Reset Password</span>
             </button>
         </div>
@@ -201,12 +238,14 @@
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                     <button type="button" @click="activeTab = 'edit'"
-                            class="px-4 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-black shadow-sm transition-colors flex items-center gap-1.5">
-                        <span>✏️</span> Edit Profile
+                            class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-sm transition-colors flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"/></svg>
+                        <span>Edit Profile</span>
                     </button>
                     <button type="button" @click="activeTab = 'security'"
                             class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors flex items-center gap-1.5">
-                        <span>🔒</span> Reset Password
+                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+                        <span>Reset Password</span>
                     </button>
                 </div>
             </div>
@@ -217,8 +256,8 @@
                 <!-- Personal Info Card -->
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
                     <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-                        <div class="h-9 w-9 rounded-xl bg-green-50 text-green-700 flex items-center justify-center font-bold">
-                            👤
+                        <div class="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/></svg>
                         </div>
                         <div>
                             <h3 class="text-sm font-black text-slate-900">Personal Information</h3>
@@ -263,8 +302,8 @@
                             <dt class="text-[10px] font-bold text-slate-400 uppercase">Employment Status</dt>
                             @if($jobseeker->isEmployed())
                                 <dd class="mt-0.5 space-y-1.5">
-                                    <span class="inline-flex items-center gap-1 font-black text-xs text-green-800 bg-green-100 border border-green-300 px-2.5 py-0.5 rounded-lg">
-                                        💼 Employed
+                                    <span class="inline-flex items-center gap-1 font-black text-xs text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-lg">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z"/></svg> Employed
                                     </span>
                                     @if($jobseeker->hired_company)
                                         <div class="text-[11px] text-slate-700 font-semibold flex items-center gap-1">
@@ -276,19 +315,20 @@
                                         $activeApp = $jobseeker->activeHiredApplication;
                                     @endphp
                                     @if($activeApp && $activeApp->resignation_status === 'requested')
-                                        <div class="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-1.5 flex items-center gap-1">
-                                            <span>⏳</span> Resignation Pending Approval
+                                        <div class="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-1.5 flex items-center gap-1.5">
+                                            <svg class="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                                            <span>Resignation Pending Approval</span>
                                         </div>
                                     @else
                                         <div class="pt-1">
-                                            <a href="{{ route('jobseeker.applications') }}" class="text-[11px] font-bold text-green-700 hover:text-green-800 underline">
+                                            <a href="{{ route('jobseeker.applications') }}" class="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 underline">
                                                 Request Resignation to Apply for Jobs &rarr;
                                             </a>
                                         </div>
                                     @endif
                                 </dd>
                             @else
-                                <dd class="font-bold text-green-700 mt-0.5">{{ $jobseeker->employment_status ?: 'Unemployed' }}</dd>
+                                <dd class="font-bold text-emerald-700 mt-0.5">{{ $jobseeker->employment_status ?: 'Unemployed' }}</dd>
                             @endif
                         </div>
                     </dl>
@@ -297,8 +337,8 @@
                 <!-- Residential Address Card -->
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
                     <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-                        <div class="h-9 w-9 rounded-xl bg-green-50 text-green-700 flex items-center justify-center font-bold">
-                            📍
+                        <div class="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
                         </div>
                         <div>
                             <h3 class="text-sm font-black text-slate-900">Residential Address</h3>
@@ -342,8 +382,8 @@
                 <!-- Education Card -->
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
                     <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-                        <div class="h-9 w-9 rounded-xl bg-green-50 text-green-700 flex items-center justify-center font-bold">
-                            🎓
+                        <div class="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-5.25 6.557q0 .148.01.295"/></svg>
                         </div>
                         <div>
                             <h3 class="text-sm font-black text-slate-900">Educational Attainment</h3>
@@ -376,8 +416,8 @@
                 <!-- Experience & Bio Card -->
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
                     <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-                        <div class="h-9 w-9 rounded-xl bg-green-50 text-green-700 flex items-center justify-center font-bold">
-                            💼
+                        <div class="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z"/></svg>
                         </div>
                         <div>
                             <h3 class="text-sm font-black text-slate-900">Work Experience</h3>
@@ -417,8 +457,8 @@
                 <!-- Eligibilities Card -->
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
                     <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-                        <div class="h-9 w-9 rounded-xl bg-green-50 text-green-700 flex items-center justify-center font-bold">
-                            📜
+                        <div class="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/></svg>
                         </div>
                         <div>
                             <h3 class="text-sm font-black text-slate-900">Eligibilities & Licenses</h3>
@@ -449,8 +489,8 @@
                 <!-- Languages Card -->
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
                     <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-                        <div class="h-9 w-9 rounded-xl bg-green-50 text-green-700 flex items-center justify-center font-bold">
-                            🗣️
+                        <div class="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.502 49.188 49.188 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v5.018Z"/></svg>
                         </div>
                         <div>
                             <h3 class="text-sm font-black text-slate-900">Languages & Dialects</h3>
@@ -460,7 +500,7 @@
 
                     <div class="flex flex-wrap gap-1.5 pt-1">
                         @forelse($langList as $lang)
-                            <span class="rounded-xl bg-green-50 text-green-800 border border-green-200 px-3 py-1 text-xs font-bold">
+                            <span class="rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 text-xs font-bold">
                                 {{ $lang }}
                             </span>
                         @empty
@@ -472,8 +512,8 @@
                 <!-- Social Inclusivity Card -->
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
                     <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-                        <div class="h-9 w-9 rounded-xl bg-green-50 text-green-700 flex items-center justify-center font-bold">
-                            🤝
+                        <div class="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"/></svg>
                         </div>
                         <div>
                             <h3 class="text-sm font-black text-slate-900">Social Support & Priority</h3>
@@ -486,7 +526,10 @@
                             <dt class="text-[10px] font-bold text-slate-400 uppercase">PWD Status</dt>
                             <dd class="font-bold text-slate-900 mt-0.5">
                                 @if($socialStatus->is_pwd)
-                                    <span class="text-green-700 font-black">✓ Registered ({{ $socialStatus->pwd_type ?: 'PWD' }})</span>
+                                    <span class="text-emerald-700 font-black inline-flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+                                        <span>Registered ({{ $socialStatus->pwd_type ?: 'PWD' }})</span>
+                                    </span>
                                 @else
                                     <span class="text-slate-500">Not Applicable</span>
                                 @endif
@@ -496,7 +539,10 @@
                             <dt class="text-[10px] font-bold text-slate-400 uppercase">4Ps Beneficiary</dt>
                             <dd class="font-bold text-slate-900 mt-0.5">
                                 @if($socialStatus->is_4ps)
-                                    <span class="text-amber-700 font-black">✓ Registered (ID: {{ $socialStatus->household_id ?: 'Active' }})</span>
+                                    <span class="text-amber-700 font-black inline-flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+                                        <span>Registered (ID: {{ $socialStatus->household_id ?: 'Active' }})</span>
+                                    </span>
                                 @else
                                     <span class="text-slate-500">No</span>
                                 @endif
@@ -517,23 +563,24 @@
             <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-4">
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                     <div class="flex items-center gap-3">
-                        <div class="h-9 w-9 rounded-xl bg-green-50 text-green-700 flex items-center justify-center font-bold">
-                            ⚡
+                        <div class="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"/></svg>
                         </div>
                         <div>
                             <h3 class="text-sm font-black text-slate-900">Verified Skills Matrix</h3>
                             <p class="text-[11px] text-slate-400">Used by AI matching engine to match you with top Cebu jobs</p>
                         </div>
                     </div>
-                    <button type="button" @click="activeTab = 'skills'" class="text-xs font-bold text-green-700 hover:text-green-800 flex items-center gap-1">
+                    <button type="button" @click="activeTab = 'skills'" class="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1">
                         Manage Skills &rarr;
                     </button>
                 </div>
 
                 <div class="flex flex-wrap gap-2 pt-1">
                     @forelse($skills as $s)
-                        <span class="inline-flex items-center gap-1 rounded-xl bg-green-50 border border-green-200 px-3 py-1.5 text-xs font-bold text-green-900">
-                            ✓ {{ $s }}
+                        <span class="inline-flex items-center gap-1 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-xs font-bold text-emerald-900">
+                            <svg class="w-3.5 h-3.5 text-emerald-700 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+                            <span>{{ $s }}</span>
                         </span>
                     @empty
                         <p class="text-xs text-slate-400 italic">No skills registered yet. Go to Skills Matrix tab to add verified skills.</p>
@@ -545,35 +592,36 @@
             <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-4">
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                     <div class="flex items-center gap-3">
-                        <div class="h-9 w-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
-                            🎓
+                        <div class="h-9 w-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-5.25 6.557q0 .148.01.295"/></svg>
                         </div>
                         <div>
                             <h3 class="text-sm font-black text-slate-900">Official DMDP Training Certificates</h3>
                             <p class="text-[11px] text-slate-400">Certificates earned through completed courses</p>
                         </div>
                     </div>
-                    <a href="{{ route('jobseeker.training') }}" class="text-xs font-bold text-green-700 hover:text-green-800">
+                    <a href="{{ route('jobseeker.training') }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-800">
                         Enroll in Courses &rarr;
                     </a>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     @forelse($certificates ?? [] as $cert)
-                        <div class="p-4 rounded-2xl bg-slate-950 text-white flex flex-col justify-between gap-3 border border-green-500/20">
+                        <div class="p-4 rounded-2xl bg-slate-950 text-white flex flex-col justify-between gap-3 border border-emerald-500/20">
                             <div>
-                                <span class="text-[10px] font-bold text-green-400 uppercase tracking-wider">DMDP Certified</span>
+                                <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">DMDP Certified</span>
                                 <h4 class="text-sm font-bold text-white mt-1">{{ $cert->course_title }}</h4>
                                 <p class="text-[11px] text-slate-400 mt-0.5">Cert #{{ $cert->certificate_no }}</p>
                             </div>
                             <a href="{{ route('jobseeker.certificates.preview', $cert->enrollment_id) }}" target="_blank"
-                               class="text-xs font-bold text-green-300 hover:text-green-200 flex items-center gap-1">
-                                🖨️ View Certificate PDF &rarr;
+                               class="text-xs font-bold text-emerald-300 hover:text-emerald-200 flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.03-.42-2.106-.52-3.216m11.6 3.216c.24-1.03.42-2.106.52-3.216M6.72 13.829C4.545 14.25 3 15.688 3 17.4V19.5h18v-2.1c0-1.712-1.545-3.15-3.72-3.571M6.72 13.829A41.782 41.782 0 0 1 12 13.5c1.802 0 3.553.113 5.28.329M6 8.25V4.5h12v3.75m-10.5 9h9"/></svg>
+                                <span>View Certificate PDF &rarr;</span>
                             </a>
                         </div>
                     @empty
                         <div class="col-span-full rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-400">
-                            <p class="text-xs">No certificates earned yet. <a href="{{ route('jobseeker.training') }}" class="text-green-700 font-bold underline">Enroll in a course</a> to earn certification!</p>
+                            <p class="text-xs">No certificates earned yet. <a href="{{ route('jobseeker.training') }}" class="text-emerald-700 font-bold underline">Enroll in a course</a> to earn certification!</p>
                         </div>
                     @endforelse
                 </div>
@@ -590,8 +638,9 @@
                     <h2 class="text-xl font-black text-slate-900">Update Profile Details</h2>
                     <p class="text-xs text-slate-500">Edit and save your official jobseeker portfolio details.</p>
                 </div>
-                <button type="button" @click="activeTab = 'view'" class="text-xs font-bold text-slate-600 hover:text-slate-900">
-                    ✕ Cancel & Return to View
+                <button type="button" @click="activeTab = 'view'" class="text-xs font-bold text-slate-600 hover:text-slate-900 inline-flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                    <span>Cancel & Return to View</span>
                 </button>
             </div>
 
@@ -601,8 +650,8 @@
                 <!-- Section 2.1: Personal & Civil Identification -->
                 <section class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
                     <div class="pb-4 border-b border-slate-100 flex items-center gap-3">
-                        <div class="h-10 w-10 rounded-2xl bg-green-50 text-green-700 flex items-center justify-center text-lg font-bold">
-                            👤
+                        <div class="h-10 w-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/></svg>
                         </div>
                         <div>
                             <h2 class="text-lg font-black text-slate-900">Personal & Civil Identification</h2>
@@ -614,30 +663,30 @@
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">First Name <span class="text-rose-500">*</span></label>
                             <input type="text" name="first_name" value="{{ old('first_name', $jobseeker->first_name ?? '') }}" required
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Middle Name</label>
                             <input type="text" name="middle_name" value="{{ old('middle_name', $jobseeker->middle_name ?? '') }}" placeholder="Middle Name"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Last Name <span class="text-rose-500">*</span></label>
                             <input type="text" name="last_name" value="{{ old('last_name', $jobseeker->last_name ?? '') }}" required
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Date of Birth</label>
                             <input type="date" name="birth_date" value="{{ old('birth_date', $jobseeker->birth_date ? date('Y-m-d', strtotime($jobseeker->birth_date)) : '') }}"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Sex at Birth</label>
-                            <select name="sex" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                            <select name="sex" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                                 <option value="">-- Select Sex --</option>
                                 <option value="Male" {{ old('sex', $jobseeker->sex ?? '') === 'Male' ? 'selected' : '' }}>Male</option>
                                 <option value="Female" {{ old('sex', $jobseeker->sex ?? '') === 'Female' ? 'selected' : '' }}>Female</option>
@@ -646,7 +695,7 @@
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Civil Status</label>
-                            <select name="civil_status" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                            <select name="civil_status" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                                 <option value="">-- Select Civil Status --</option>
                                 <option value="Single" {{ old('civil_status', $jobseeker->civil_status ?? '') === 'Single' ? 'selected' : '' }}>Single</option>
                                 <option value="Married" {{ old('civil_status', $jobseeker->civil_status ?? '') === 'Married' ? 'selected' : '' }}>Married</option>
@@ -658,18 +707,18 @@
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Citizenship</label>
                             <input type="text" name="citizenship" value="{{ old('citizenship', $jobseeker->citizenship ?? 'Filipino') }}"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Primary Mobile Number <span class="text-rose-500">*</span></label>
                             <input type="text" name="mobile_number" value="{{ old('mobile_number', $jobseeker->mobile_number ?? '') }}" placeholder="09123456789"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Current Employment Status</label>
-                            <select name="employment_status" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                            <select name="employment_status" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                                 <option value="Unemployed" {{ old('employment_status', $jobseeker->employment_status ?? '') === 'Unemployed' ? 'selected' : '' }}>Unemployed / Looking for Work</option>
                                 <option value="Fresh Graduate" {{ old('employment_status', $jobseeker->employment_status ?? '') === 'Fresh Graduate' ? 'selected' : '' }}>Fresh Graduate / Entry Level</option>
                                 <option value="Employed" {{ old('employment_status', $jobseeker->employment_status ?? '') === 'Employed' ? 'selected' : '' }}>Employed (Hired)</option>
@@ -681,7 +730,7 @@
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Hiring / Current Company</label>
                             <input type="text" name="hired_company" value="{{ old('hired_company', $jobseeker->hired_company ?? '') }}" placeholder="e.g. Cebu IT Solutions Inc"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
                     </div>
                 </section>
@@ -689,8 +738,8 @@
                 <!-- Section 2.2: Address & Location Details -->
                 <section class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
                     <div class="pb-4 border-b border-slate-100 flex items-center gap-3">
-                        <div class="h-10 w-10 rounded-2xl bg-green-50 text-green-700 flex items-center justify-center text-lg font-bold">
-                            📍
+                        <div class="h-10 w-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
                         </div>
                         <div>
                             <h2 class="text-lg font-black text-slate-900">Residential Address & Barangay</h2>
@@ -702,31 +751,39 @@
                         <div class="sm:col-span-2 space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">House No. / Street / Building</label>
                             <input type="text" name="address_street" value="{{ old('address_street', $streetVal) }}" placeholder="e.g. 123 Gorordo Ave / Sitio San Roque"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Barangay</label>
-                            <input type="text" name="address_barangay" value="{{ old('address_barangay', $brgyVal) }}" placeholder="e.g. Lahug, Mabolo, Guadalupe, Apas"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                            @php
+                                $profileBrgys = \App\Services\BarangayDistributionService::getBarangayNames();
+                            @endphp
+                            <input list="profile_cebu_brgys" type="text" name="address_barangay" value="{{ old('address_barangay', $brgyVal) }}" placeholder="e.g. Lahug, Mabolo, Guadalupe, Apas"
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400" autocomplete="off">
+                            <datalist id="profile_cebu_brgys">
+                                @foreach($profileBrgys as $pb)
+                                    <option value="{{ $pb }}">{{ $pb }}</option>
+                                @endforeach
+                            </datalist>
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">City / Municipality</label>
                             <input type="text" name="address_city" value="{{ old('address_city', $cityVal ?: 'Cebu City') }}" placeholder="Cebu City"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Province</label>
                             <input type="text" name="address_province" value="{{ old('address_province', $provVal ?: 'Cebu') }}" placeholder="Cebu"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Postal / Zip Code</label>
                             <input type="text" name="address_zip" value="{{ old('address_zip', $zipVal) }}" placeholder="6000"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
                     </div>
                 </section>
@@ -734,8 +791,8 @@
                 <!-- Section 2.3: Educational Attainment -->
                 <section class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
                     <div class="pb-4 border-b border-slate-100 flex items-center gap-3">
-                        <div class="h-10 w-10 rounded-2xl bg-green-50 text-green-700 flex items-center justify-center text-lg font-bold">
-                            🎓
+                        <div class="h-10 w-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-5.25 6.557q0 .148.01.295"/></svg>
                         </div>
                         <div>
                             <h2 class="text-lg font-black text-slate-900">Educational Background</h2>
@@ -746,7 +803,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Highest Level Attained</label>
-                            <select name="education_level" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                            <select name="education_level" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                                 <option value="">-- Select Education Level --</option>
                                 <option value="College Degree" {{ old('education_level', $eduLevel) === 'College Degree' ? 'selected' : '' }}>College / Bachelor's Degree</option>
                                 <option value="TVET / Vocational NC II" {{ old('education_level', $eduLevel) === 'TVET / Vocational NC II' ? 'selected' : '' }}>TVET / TESDA Vocational NC II / NC III</option>
@@ -761,19 +818,19 @@
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">School / College / Training Center</label>
                             <input type="text" name="education_school" value="{{ old('education_school', $eduSchool) }}" placeholder="e.g. University of Cebu, DMDP Center, CIT-U"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Degree / Course / Major</label>
                             <input type="text" name="education_course" value="{{ old('education_course', $eduCourse) }}" placeholder="e.g. BS Information Technology / Automotive NC II"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Year Graduated / Last Attended</label>
                             <input type="text" name="education_year" value="{{ old('education_year', $eduYear) }}" placeholder="e.g. 2024"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
                     </div>
                 </section>
@@ -781,8 +838,8 @@
                 <!-- Section 2.4: Work Experience & Career Background -->
                 <section class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
                     <div class="pb-4 border-b border-slate-100 flex items-center gap-3">
-                        <div class="h-10 w-10 rounded-2xl bg-green-50 text-green-700 flex items-center justify-center text-lg font-bold">
-                            💼
+                        <div class="h-10 w-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z"/></svg>
                         </div>
                         <div>
                             <h2 class="text-lg font-black text-slate-900">Work Experience & Professional History</h2>
@@ -794,18 +851,18 @@
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Most Recent Company / Employer</label>
                             <input type="text" name="experience_company" value="{{ old('experience_company', $expCompany) }}" placeholder="e.g. Qualfon Cebu, Concentrix, City Gov"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Job Title / Role</label>
                             <input type="text" name="experience_position" value="{{ old('experience_position', $expPosition) }}" placeholder="e.g. Customer Service Rep, Junior Developer"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Duration / Total Experience</label>
-                            <select name="experience_duration" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                            <select name="experience_duration" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                                 <option value="Fresh Graduate / No Experience" {{ old('experience_duration', $expDuration) === 'Fresh Graduate / No Experience' ? 'selected' : '' }}>Fresh Graduate / No Experience</option>
                                 <option value="Less than 1 Year" {{ old('experience_duration', $expDuration) === 'Less than 1 Year' ? 'selected' : '' }}>Less than 1 Year</option>
                                 <option value="1 - 2 Years" {{ old('experience_duration', $expDuration) === '1 - 2 Years' ? 'selected' : '' }}>1 - 2 Years</option>
@@ -818,21 +875,21 @@
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Key Duties & Achievements</label>
                         <textarea name="experience_description" rows="2" placeholder="Summary of major responsibilities and skills used..."
-                                  class="w-full rounded-xl border border-slate-200 p-4 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">{{ old('experience_description', $expDesc) }}</textarea>
+                                  class="w-full rounded-xl border border-slate-200 p-4 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">{{ old('experience_description', $expDesc) }}</textarea>
                     </div>
 
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Professional Summary / Candidate Bio</label>
                         <textarea name="bio" rows="3" placeholder="Write a short introductory profile summarizing your strengths, career goals, and what you offer to prospective employers..."
-                                  class="w-full rounded-xl border border-slate-200 p-4 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">{{ old('bio', $expBio) }}</textarea>
+                                  class="w-full rounded-xl border border-slate-200 p-4 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">{{ old('bio', $expBio) }}</textarea>
                     </div>
                 </section>
 
                 <!-- Section 2.5: Career Target & Job Preferences -->
                 <section class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
                     <div class="pb-4 border-b border-slate-100 flex items-center gap-3">
-                        <div class="h-10 w-10 rounded-2xl bg-green-50 text-green-700 flex items-center justify-center text-lg font-bold">
-                            🎯
+                        <div class="h-10 w-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
                         </div>
                         <div>
                             <h2 class="text-lg font-black text-slate-900">Career Targets & Job Preferences</h2>
@@ -844,18 +901,18 @@
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Preferred Target Occupation (Primary)</label>
                             <input type="text" name="occupation1" value="{{ old('occupation1', $preferences->occupation1 ?? '') }}" placeholder="e.g. Software Developer / CSR / Electrician"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Alternative Target Occupation (Secondary)</label>
                             <input type="text" name="occupation2" value="{{ old('occupation2', $preferences->occupation2 ?? '') }}" placeholder="e.g. Technical Support / Admin Assistant"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Preferred Industry / Sector</label>
-                            <select name="industry1" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                            <select name="industry1" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                                 <option value="">-- Select Target Industry --</option>
                                 <option value="Information Technology & BPO" {{ old('industry1', $preferences->industry1 ?? '') === 'Information Technology & BPO' ? 'selected' : '' }}>Information Technology & BPO</option>
                                 <option value="Customer Service & Sales" {{ old('industry1', $preferences->industry1 ?? '') === 'Customer Service & Sales' ? 'selected' : '' }}>Customer Service & Retail</option>
@@ -869,7 +926,7 @@
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Preferred Work Location / Modality</label>
-                            <select name="preferred_location" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                            <select name="preferred_location" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                                 <option value="Cebu City (Onsite)" {{ old('preferred_location', $preferences->preferred_location ?? '') === 'Cebu City (Onsite)' ? 'selected' : '' }}>Cebu City (Onsite)</option>
                                 <option value="Cebu IT Park / Business Park" {{ old('preferred_location', $preferences->preferred_location ?? '') === 'Cebu IT Park / Business Park' ? 'selected' : '' }}>Cebu IT Park / Business Park</option>
                                 <option value="Mandaue / Lapu-Lapu" {{ old('preferred_location', $preferences->preferred_location ?? '') === 'Mandaue / Lapu-Lapu' ? 'selected' : '' }}>Mandaue / Lapu-Lapu District</option>
@@ -881,7 +938,7 @@
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Expected Monthly Salary Range</label>
-                            <select name="salary_expectation" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500 focus:ring-green-400">
+                            <select name="salary_expectation" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
                                 <option value="Minimum Wage (₱12,000 - ₱16,000)" {{ old('salary_expectation', $preferences->salary_expectation ?? '') === 'Minimum Wage (₱12,000 - ₱16,000)' ? 'selected' : '' }}>Minimum Wage (₱12,000 - ₱16,000)</option>
                                 <option value="₱16,000 - ₱22,000 / month" {{ old('salary_expectation', $preferences->salary_expectation ?? '') === '₱16,000 - ₱22,000 / month' ? 'selected' : '' }}>₱16,000 - ₱22,000 / month</option>
                                 <option value="₱22,000 - ₱30,000 / month" {{ old('salary_expectation', $preferences->salary_expectation ?? '') === '₱22,000 - ₱30,000 / month' ? 'selected' : '' }}>₱22,000 - ₱30,000 / month</option>
@@ -896,8 +953,8 @@
                 <!-- Section 2.6: Social Inclusivity, PWD & 4Ps Support -->
                 <section class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
                     <div class="pb-4 border-b border-slate-100 flex items-center gap-3">
-                        <div class="h-10 w-10 rounded-2xl bg-green-50 text-green-700 flex items-center justify-center text-lg font-bold">
-                            🤝
+                        <div class="h-10 w-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"/></svg>
                         </div>
                         <div>
                             <h2 class="text-lg font-black text-slate-900">Government Support & Inclusivity (PWD & 4Ps)</h2>
@@ -910,14 +967,14 @@
                         <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
                             <label class="flex items-center gap-3 cursor-pointer">
                                 <input type="checkbox" name="is_pwd" value="1" x-model="isPwd"
-                                       class="h-4 w-4 rounded text-green-600 focus:ring-green-500 border-slate-300">
+                                       class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
                                 <span class="text-xs font-bold text-slate-900">I am a registered Person with Disability (PWD)</span>
                             </label>
 
                             <div x-show="isPwd" x-cloak class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-200">
                                 <div class="space-y-1">
                                     <label class="block text-[11px] font-bold text-slate-700 uppercase">Type of Disability / Accommodation Need</label>
-                                    <select name="pwd_type" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-green-500">
+                                    <select name="pwd_type" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-emerald-500">
                                         <option value="Visual / Low Vision" {{ old('pwd_type', $socialStatus->pwd_type ?? '') === 'Visual / Low Vision' ? 'selected' : '' }}>Visual / Low Vision</option>
                                         <option value="Hearing / Hard of Hearing" {{ old('pwd_type', $socialStatus->pwd_type ?? '') === 'Hearing / Hard of Hearing' ? 'selected' : '' }}>Hearing / Hard of Hearing</option>
                                         <option value="Orthopedic / Physical Mobility" {{ old('pwd_type', $socialStatus->pwd_type ?? '') === 'Orthopedic / Physical Mobility' ? 'selected' : '' }}>Orthopedic / Physical Mobility</option>
@@ -934,19 +991,19 @@
                             <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                                 <label class="flex items-center gap-3 cursor-pointer">
                                     <input type="checkbox" name="is_4ps" value="1" x-model="is4ps"
-                                           class="h-4 w-4 rounded text-green-600 focus:ring-green-500 border-slate-300">
+                                           class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
                                     <span class="text-xs font-bold text-slate-900">4Ps (Pantawid Pamilya) Beneficiary</span>
                                 </label>
                                 <div x-show="is4ps" x-cloak class="pt-2 border-t border-slate-200">
                                     <input type="text" name="household_id" value="{{ old('household_id', $socialStatus->household_id ?? '') }}" placeholder="Household ID Number"
-                                           class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-green-500">
+                                           class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-emerald-500">
                                 </div>
                             </div>
 
                             <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
                                 <label class="flex items-center gap-3 cursor-pointer">
                                     <input type="checkbox" name="is_ofw" value="1" {{ ($socialStatus->is_ofw ?? false) ? 'checked' : '' }}
-                                           class="h-4 w-4 rounded text-green-600 focus:ring-green-500 border-slate-300">
+                                           class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
                                     <span class="text-xs font-bold text-slate-900">Returning Overseas Filipino Worker (OFW)</span>
                                 </label>
                                 <p class="text-[11px] text-slate-400 mt-1 pl-7">Qualifies for DMDP local reintegration and skills bridging programs.</p>
@@ -958,8 +1015,8 @@
                 <!-- Section 2.7: Professional Licenses & Languages -->
                 <section class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
                     <div class="pb-4 border-b border-slate-100 flex items-center gap-3">
-                        <div class="h-10 w-10 rounded-2xl bg-green-50 text-green-700 flex items-center justify-center text-lg font-bold">
-                            📜
+                        <div class="h-10 w-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/></svg>
                         </div>
                         <div>
                             <h2 class="text-lg font-black text-slate-900">Licenses, Eligibilities & Languages</h2>
@@ -971,25 +1028,25 @@
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Civil Service Eligibility</label>
                             <input type="text" name="eligibility_civil_service" value="{{ old('eligibility_civil_service', $eligCS) }}" placeholder="e.g. Professional / Sub-Prof"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">PRC Board License</label>
                             <input type="text" name="eligibility_prc_license" value="{{ old('eligibility_prc_license', $eligPRC) }}" placeholder="e.g. Registered Nurse / LPT"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">TESDA NC Certificate</label>
                             <input type="text" name="eligibility_tesda_nc" value="{{ old('eligibility_tesda_nc', $eligTESDA) }}" placeholder="e.g. NC II Barista, SMAW NC II"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Driver's License</label>
                             <input type="text" name="eligibility_driver_license" value="{{ old('eligibility_driver_license', $eligDriver) }}" placeholder="e.g. Non-Pro (Code 1, 2) / Pro"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-green-500">
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
                         </div>
                     </div>
 
@@ -1000,9 +1057,9 @@
                                 $availableLangs = ['Cebuano / Bisaya', 'English', 'Tagalog / Filipino', 'Ilonggo / Hiligaynon', 'Waray', 'Mandarin', 'Japanese'];
                             @endphp
                             @foreach($availableLangs as $l)
-                                <label class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer hover:bg-green-50 hover:border-green-300 transition-colors">
+                                <label class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer hover:bg-emerald-50 hover:border-emerald-300 transition-colors">
                                     <input type="checkbox" name="languages[]" value="{{ $l }}" {{ in_array($l, $langList) ? 'checked' : '' }}
-                                           class="h-3.5 w-3.5 rounded text-green-600 focus:ring-green-500 border-slate-300">
+                                           class="h-3.5 w-3.5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
                                     <span>{{ $l }}</span>
                                 </label>
                             @endforeach
@@ -1020,8 +1077,9 @@
                         <button type="button" @click="activeTab = 'view'" class="px-5 py-3 rounded-xl border border-white/20 text-xs font-bold text-slate-300 hover:bg-white/10 transition-colors">
                             Cancel
                         </button>
-                        <button type="submit" class="rounded-xl bg-gradient-to-r from-green-500 to-green-400 hover:from-green-400 hover:to-green-300 text-slate-950 px-8 py-3 text-xs font-black shadow-lg shadow-green-500/30 transition-all hover:scale-105">
-                            ✓ Save Complete Profile
+                        <button type="submit" class="rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 px-8 py-3 text-xs font-black shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 inline-flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+                            <span>Save Complete Profile</span>
                         </button>
                     </div>
                 </div>
@@ -1035,8 +1093,8 @@
             <section class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
                     <div>
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-800 border border-green-200">
-                            <span class="h-2 w-2 rounded-full bg-green-600 animate-pulse"></span>
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
+                            <span class="h-2 w-2 rounded-full bg-emerald-600 animate-pulse"></span>
                             AI Vector Skills Matrix
                         </span>
                         <h2 class="text-xl font-black text-slate-900 mt-1">My Skills Profile</h2>
@@ -1045,7 +1103,7 @@
 
                     <div class="flex items-center gap-2">
                         <span class="text-xs font-bold text-slate-400">Skills Total:</span>
-                        <span class="rounded-xl bg-green-100 px-3 py-1 text-xs font-black text-green-800" x-text="skills.length"></span>
+                        <span class="rounded-xl bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-800" x-text="skills.length"></span>
                     </div>
                 </div>
 
@@ -1054,10 +1112,10 @@
                     <div class="relative flex-1">
                         <input type="text" x-model="newSkill" @keydown.enter.prevent="addSkill()"
                                placeholder="Type a skill (e.g., Python, Welding, Barista, Customer Service, Bookkeeping, ESL)..."
-                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 placeholder:text-slate-400 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400/30 shadow-xs">
+                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30 shadow-xs">
                     </div>
                     <button type="button" @click="addSkill()" 
-                            class="rounded-2xl bg-green-600 hover:bg-green-500 px-6 py-3 text-xs font-black text-white shadow-md shadow-green-600/30 transition-all hover:scale-105 shrink-0">
+                            class="rounded-2xl bg-emerald-600 hover:bg-emerald-500 px-6 py-3 text-xs font-black text-white shadow-md shadow-emerald-600/30 transition-all hover:scale-105 shrink-0">
                         + Add Skill
                     </button>
                 </div>
@@ -1066,7 +1124,7 @@
                 <div class="space-y-3 rounded-2xl bg-slate-50/70 border border-slate-200 p-5">
                     <div class="flex items-center justify-between border-b border-slate-200 pb-2">
                         <div>
-                            <span class="text-[11px] font-black uppercase tracking-wider text-green-800">DOLE NSRP Form 1 • Section VII</span>
+                            <span class="text-[11px] font-black uppercase tracking-wider text-emerald-800">DOLE NSRP Form 1 • Section VII</span>
                             <h3 class="text-xs font-black text-slate-900">21st Century Skills (Self-Assessment)</h3>
                         </div>
                         <span class="text-[10px] text-slate-500 font-semibold">Click to select/deselect skills</span>
@@ -1087,10 +1145,17 @@
                                     <button type="button" @click="toggleSkill('{{ $cs }}')"
                                             class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left border"
                                             :class="hasSkill('{{ $cs }}') 
-                                                ? 'bg-green-600 text-white border-green-600 shadow-xs' 
+                                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' 
                                                 : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100/80'">
                                         <span>{{ $cs }}</span>
-                                        <span x-text="hasSkill('{{ $cs }}') ? '✓' : '+'" class="text-xs font-black"></span>
+                                        <span class="inline-flex items-center">
+                                            <template x-if="hasSkill('{{ $cs }}')">
+                                                <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+                                            </template>
+                                            <template x-if="!hasSkill('{{ $cs }}')">
+                                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                                            </template>
+                                        </span>
                                     </button>
                                 @endforeach
                             </div>
@@ -1102,7 +1167,7 @@
                 <div class="space-y-3 rounded-2xl bg-slate-50/70 border border-slate-200 p-5">
                     <div class="flex items-center justify-between border-b border-slate-200 pb-2">
                         <div>
-                            <span class="text-[11px] font-black uppercase tracking-wider text-green-800">DOLE NSRP Form 1 • Section IX</span>
+                            <span class="text-[11px] font-black uppercase tracking-wider text-emerald-800">DOLE NSRP Form 1 • Section IX</span>
                             <h3 class="text-xs font-black text-slate-900">Technical Skills Acquired Without Formal Training</h3>
                         </div>
                         <span class="text-[10px] text-slate-500 font-semibold">Practical / Vocational Experience</span>
@@ -1123,10 +1188,17 @@
                                     <button type="button" @click="toggleSkill('{{ $ts }}')"
                                             class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left border"
                                             :class="hasSkill('{{ $ts }}') 
-                                                ? 'bg-green-600 text-white border-green-600 shadow-xs' 
+                                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' 
                                                 : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100/80'">
                                         <span>{{ $ts }}</span>
-                                        <span x-text="hasSkill('{{ $ts }}') ? '✓' : '+'" class="text-xs font-black"></span>
+                                        <span class="inline-flex items-center">
+                                            <template x-if="hasSkill('{{ $ts }}')">
+                                                <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+                                            </template>
+                                            <template x-if="!hasSkill('{{ $ts }}')">
+                                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                                            </template>
+                                        </span>
                                     </button>
                                 @endforeach
                             </div>
@@ -1147,7 +1219,7 @@
                         @endphp
                         @foreach($cebuSkills as $cs)
                             <button type="button" @click="addSkill('{{ $cs }}')"
-                                    class="rounded-xl bg-slate-50 hover:bg-green-50 hover:text-green-800 hover:border-green-300 border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition-colors shadow-2xs">
+                                    class="rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition-colors shadow-2xs">
                                 + {{ $cs }}
                             </button>
                         @endforeach
@@ -1159,9 +1231,9 @@
                     <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Your Active Verified Skills:</span>
                     <div class="flex flex-wrap gap-2 min-h-[50px] p-4 rounded-2xl bg-slate-50/50 border border-dashed border-slate-200">
                         <template x-for="(skill, index) in skills" :key="index">
-                            <span class="inline-flex items-center gap-1.5 rounded-xl bg-green-100 text-green-950 border border-green-300 px-3 py-1.5 text-xs font-black shadow-xs">
+                            <span class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-100 text-emerald-950 border border-emerald-300 px-3 py-1.5 text-xs font-black shadow-xs">
                                 <span x-text="skill"></span>
-                                <button type="button" @click="removeSkill(index)" class="text-green-700 hover:text-rose-600 font-black ml-1 text-sm leading-none">&times;</button>
+                                <button type="button" @click="removeSkill(index)" class="text-emerald-700 hover:text-rose-600 font-black ml-1 text-sm leading-none">&times;</button>
                             </span>
                         </template>
                         <template x-if="skills.length === 0">
@@ -1178,7 +1250,7 @@
                     </template>
                     
                     <p class="text-[11px] text-slate-500">Changes will instantly update your AI job match percentages.</p>
-                    <button type="submit" class="rounded-xl bg-green-700 hover:bg-green-800 text-white px-6 py-2.5 text-xs font-black shadow-md transition-all">
+                    <button type="submit" class="rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-6 py-2.5 text-xs font-black shadow-md transition-all">
                         Save Skills Matrix
                     </button>
                 </form>
@@ -1195,8 +1267,10 @@
                 <!-- Password Change Form (2 cols) -->
                 <div class="md:col-span-2 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
                     <div class="pb-4 border-b border-slate-100 flex items-center gap-3">
-                        <div class="h-10 w-10 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center text-lg font-bold">
-                            🔒
+                        <div class="h-10 w-10 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
                         </div>
                         <div>
                             <h2 class="text-lg font-black text-slate-900">Reset & Change Account Password</h2>
@@ -1275,23 +1349,40 @@
                         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Password Requirements</h3>
                         <ul class="space-y-2 text-xs text-slate-600">
                             <li class="flex items-center gap-2">
-                                <span class="text-green-600 font-bold">✓</span> At least 8 characters long
+                                <svg class="h-4 w-4 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>At least 8 characters long</span>
                             </li>
                             <li class="flex items-center gap-2">
-                                <span class="text-green-600 font-bold">✓</span> Mix of uppercase & lowercase letters
+                                <svg class="h-4 w-4 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>Mix of uppercase & lowercase letters</span>
                             </li>
                             <li class="flex items-center gap-2">
-                                <span class="text-green-600 font-bold">✓</span> Include numbers & special symbols
+                                <svg class="h-4 w-4 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>Include numbers & special symbols</span>
                             </li>
                             <li class="flex items-center gap-2">
-                                <span class="text-green-600 font-bold">✓</span> Avoid using your birth date or name
+                                <svg class="h-4 w-4 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>Avoid using your birth date or name</span>
                             </li>
                         </ul>
                     </div>
 
-                    <div class="rounded-3xl bg-green-50/70 border border-green-200 p-6 space-y-2">
-                        <span class="text-xs font-bold text-green-900">🛡️ Account Protection</span>
-                        <p class="text-[11px] text-green-800 leading-relaxed">
+                    <div class="rounded-3xl bg-emerald-50/70 border border-emerald-200 p-6 space-y-2">
+                        <span class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                            <svg class="h-4 w-4 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                            Account Protection
+                        </span>
+                        <p class="text-[11px] text-emerald-800 leading-relaxed">
                             Your password secures your legal documentation, verified government IDs, and application records within the Cebu City DMDP TrabaGo ecosystem.
                         </p>
                     </div>

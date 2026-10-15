@@ -232,23 +232,29 @@
                             </td>
 
                             <!-- Status Checkboxes: Hired -->
-                            <td class="border-r border-black p-1 text-center font-mono font-bold text-xs">
-                                @if($hire)
-                                    {{ $isHired ? '✓' : '' }}
+                            <td class="border-r border-black p-1 text-center">
+                                @if($hire && $isHired)
+                                    <svg class="h-3.5 w-3.5 mx-auto text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                                    </svg>
                                 @endif
                             </td>
 
                             <!-- Status Checkboxes: On-going -->
-                            <td class="border-r border-black p-1 text-center font-mono font-bold text-xs">
-                                @if($hire)
-                                    {{ $isOnGoing ? '✓' : '' }}
+                            <td class="border-r border-black p-1 text-center">
+                                @if($hire && $isOnGoing)
+                                    <svg class="h-3.5 w-3.5 mx-auto text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                                    </svg>
                                 @endif
                             </td>
 
                             <!-- Status Checkboxes: Not Hired -->
-                            <td class="border-r-2 border-black p-1 text-center font-mono font-bold text-xs">
-                                @if($hire)
-                                    {{ $isNotHired ? '✓' : '' }}
+                            <td class="border-r-2 border-black p-1 text-center">
+                                @if($hire && $isNotHired)
+                                    <svg class="h-3.5 w-3.5 mx-auto text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                                    </svg>
                                 @endif
                             </td>
 

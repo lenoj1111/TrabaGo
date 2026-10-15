@@ -19,6 +19,9 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/send-otp', [AuthController::class, 'sendOtp']);
+    Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+    Route::post('/recover-account', [AuthController::class, 'recoverAccount']);
 });
 
 // --- DASHBOARD (AI Skill Matching, Metrics & Recommendations) ---
@@ -37,11 +40,6 @@ Route::prefix('training')->group(function () {
     Route::get('/{id}', [TrainingController::class, 'getById']);
 });
 
-// --- DOCUMENT UPLOADS ---
-Route::get('/documents', [DocumentController::class, 'getAll']);
-Route::post('/documents/upload', [DocumentController::class, 'upload']);
-Route::delete('/documents/{id}', [DocumentController::class, 'delete']);
-
 // --- PROTECTED ROUTES (SANCTUM) ---
 Route::middleware('auth:sanctum')->group(function () {
     // User / Profile
@@ -55,16 +53,26 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
+    // Document Uploads & Hub
+    Route::get('/documents', [DocumentController::class, 'getAll']);
+    Route::post('/documents/upload', [DocumentController::class, 'upload']);
+    Route::post('/documents/{id}/review', [DocumentController::class, 'review']);
+    Route::delete('/documents/{id}', [DocumentController::class, 'delete']);
+
     // Dashboard (Authenticated with tailored AI Cosine Similarity rankings)
     Route::get('/jobseeker/dashboard', [JobController::class, 'getDashboard']);
 
-    // Applications Lifecycle
+    // Applications Lifecycle (Guarded by requireAccountVerified)
     Route::get('/applications', [ApplicationController::class, 'getAll']);
-    Route::post('/applications', [ApplicationController::class, 'submit']);
+    Route::post('/applications', [ApplicationController::class, 'submit'])->middleware('requireAccountVerified');
+    Route::post('/jobs/{id}/apply', [ApplicationController::class, 'submit'])->middleware('requireAccountVerified');
     Route::delete('/applications/{id}', [ApplicationController::class, 'withdraw']);
     Route::post('/applications/{id}/accept-offer', [ApplicationController::class, 'acceptOffer']);
     Route::post('/applications/{id}/decline-offer', [ApplicationController::class, 'declineOffer']);
     Route::post('/applications/request-resignation', [ApplicationController::class, 'requestResignation']);
+
+    // Job Posting Creation (Employer only, guarded by requireAccountVerified)
+    Route::post('/jobs', [JobController::class, 'store'])->middleware('requireAccountVerified');
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'getAll']);
@@ -78,12 +86,3 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/training/{id}/enroll', [TrainingController::class, 'enroll']);
     Route::post('/training/{id}/quiz-result', [TrainingController::class, 'submitQuiz']);
 });
-
-// Fallback handlers for local development
-Route::get('/applications', [ApplicationController::class, 'getAll']);
-Route::post('/applications/{id}/accept-offer', [ApplicationController::class, 'acceptOffer']);
-Route::post('/applications/{id}/decline-offer', [ApplicationController::class, 'declineOffer']);
-Route::post('/applications/request-resignation', [ApplicationController::class, 'requestResignation']);
-Route::get('/notifications', [NotificationController::class, 'getAll']);
-Route::post('/training/{id}/enroll', [TrainingController::class, 'enroll']);
-Route::post('/training/{id}/quiz-result', [TrainingController::class, 'submitQuiz']);

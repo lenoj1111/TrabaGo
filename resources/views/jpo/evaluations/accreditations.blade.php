@@ -38,80 +38,83 @@
         this.docStatusModal = true;
     },
 
-    openDocInspection(company, docs) {
+    openDocInspection(company, docs, initialKey = null) {
         this.activeDocCompany = company;
         this.activeDocList = [];
         
         for (let [key, val] of Object.entries(docs || {})) {
+            if (!val) continue;
+
             let label = 'Attached Document';
-            let icon = '📄';
             let issuer = 'Regulatory Authority';
             let filename = '';
             let url = '';
+            let pathVal = '';
 
             if (typeof val === 'object' && val !== null) {
-                filename = val.original_name || val.path || '';
-                url = val.path ? ('/storage/' + val.path) : '';
+                filename = val.original_name || (val.path ? val.path.split('/').pop() : '');
+                pathVal = val.file_url || val.url || val.path || '';
             } else if (typeof val === 'string') {
                 filename = val.split('/').pop() || val;
-                url = (val.startsWith('http') || val.startsWith('/')) ? val : ('/storage/' + val);
+                pathVal = val;
+            }
+
+            if (pathVal) {
+                if (pathVal.startsWith('http://') || pathVal.startsWith('https://') || pathVal.startsWith('/storage/')) {
+                    url = pathVal;
+                } else if (pathVal.startsWith('storage/')) {
+                    url = '/' + pathVal;
+                } else if (pathVal.startsWith('/')) {
+                    url = pathVal;
+                } else {
+                    url = '/storage/' + pathVal;
+                }
             }
 
             let validity = 'Current / Valid';
 
             if (key.includes('bir') || key.includes('2303') || key.includes('tin')) {
                 label = 'BIR Certificate of Registration (Form 2303)';
-                icon = '📑';
                 issuer = 'Bureau of Internal Revenue (BIR District 080)';
                 validity = 'Current / Valid';
             } else if (key.includes('sec') || key.includes('dti')) {
                 label = 'SEC Registration or DTI Registration';
-                icon = '📜';
                 issuer = 'Securities and Exchange Commission (SEC) / DTI';
                 validity = 'Perpetual / Registered';
             } else if (key.includes('mayor') || key.includes('permit') || key.includes('business')) {
                 label = 'Mayor’s Business Permit (current year)';
-                icon = '🏢';
                 issuer = 'City Government of Cebu - BPLO';
                 validity = 'Calendar Year ' + new Date().getFullYear();
             } else if (key.includes('philjobnet')) {
                 label = 'PhilJobNet Proof of Registration';
-                icon = '🌐';
                 issuer = 'PhilJobNet / DOLE Bureau of Local Employment';
                 validity = 'Active Registration Certificate';
             } else if (key.includes('vacanc') || key.includes('job_vacanc')) {
                 label = 'Updated Job Vacancies (prescribed form)';
-                icon = '💼';
                 issuer = 'Cebu City DMDP Prescribed Template';
                 validity = 'Active Hiring Needs';
             } else if (key.includes('dole')) {
                 label = 'DOLE License / DO 174';
-                icon = '🛡️';
                 issuer = 'Department of Labor and Employment (DOLE RO-7)';
                 validity = 'Valid License (PRPA / Subcontractor)';
             } else if (key.includes('dmw_license') || (key.includes('dmw') && !key.includes('order'))) {
                 label = 'DMW License (Overseas Agency)';
-                icon = '✈️';
                 issuer = 'Department of Migrant Workers (DMW / POEA)';
                 validity = 'Valid DMW License';
             } else if (key.includes('order') || key.includes('job_order')) {
                 label = 'DMW Approved and Validated Job Orders';
-                icon = '📋';
                 issuer = 'Department of Migrant Workers (DMW)';
                 validity = 'Verified Job Orders Period';
             } else if (key.includes('intent') || key.includes('letter')) {
                 label = 'Letter of Intent (Services & Assistance Details)';
-                icon = '✉️';
                 issuer = 'Corporate Executive / Authorized Signatory';
                 validity = 'Official Signed Request';
             } else if (key.includes('profile')) {
                 label = 'Company Overview Profile / Org Chart';
-                icon = '📁';
                 issuer = 'Corporate Executive Board';
                 validity = 'Current Operations Overview';
             } else {
                 label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                icon = '📄';
                 issuer = 'Government Regulatory Agency';
                 validity = 'On File';
             }
@@ -119,7 +122,6 @@
             this.activeDocList.push({
                 key: key,
                 label: label,
-                icon: icon,
                 issuer: issuer,
                 validity: validity,
                 filename: filename,
@@ -129,7 +131,12 @@
         }
 
         if (this.activeDocList.length > 0) {
-            this.selectDocument(this.activeDocList[0]);
+            let targetDoc = this.activeDocList[0];
+            if (initialKey) {
+                let found = this.activeDocList.find(d => d.key === initialKey);
+                if (found) targetDoc = found;
+            }
+            this.selectDocument(targetDoc);
             this.docModalOpen = true;
         }
     },
@@ -137,31 +144,31 @@
         this.selectedDocKey = doc.key;
         this.currentDoc = doc;
     }
-}" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-7xl space-y-8">
+}" class="min-h-screen bg-slate-50/80 px-4 py-6 sm:px-6 lg:px-8">
+    <div class="space-y-6 max-w-[1680px] mx-auto">
         
         <!-- Header -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-            <div class="space-y-2">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-400/20 px-3 py-1 text-xs font-bold text-green-300 border border-green-400/30">
-                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
+        <div class="rounded-2xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-7 text-white shadow-lg border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div class="space-y-1.5">
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-0.5 text-xs font-bold text-emerald-300 border border-emerald-400/30">
+                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     Accreditation Verification Pipeline
                 </span>
-                <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Evaluate Accreditation Papers</h1>
-                <p class="text-sm text-slate-300 max-w-3xl">
-                    Inspect employer legal credentials, verify document completeness, specify reasons if incomplete, and recommend fully verified complete submissions directly to the City Administrator.
+                <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Evaluate Accreditation Papers</h1>
+                <p class="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                    Inspect employer legal credentials, verify document completeness, specify reasons if incomplete, and recommend fully verified submissions directly to the City Administrator.
                 </p>
             </div>
 
-            <div class="shrink-0 bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/10 text-center min-w-[150px]">
-                <span class="text-xs font-bold text-green-300 uppercase tracking-wider">Total Submissions</span>
-                <p class="text-3xl font-black text-green-400 mt-0.5">{{ $accreditations->total() }}</p>
+            <div class="shrink-0 bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10 text-center min-w-[140px]">
+                <span class="text-[11px] font-bold text-emerald-300 uppercase tracking-wider">Total Submissions</span>
+                <p class="text-3xl font-black text-emerald-400 mt-0.5">{{ $accreditations->total() }}</p>
                 <span class="text-[10px] text-slate-300">Employer Applications</span>
             </div>
         </div>
 
         <!-- Filter Bar -->
-        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
             <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
                 <span class="text-xs font-bold uppercase text-slate-400 mr-1">Document Status:</span>
                 <a href="{{ route('jpo.evaluations.accreditations') }}" 
@@ -169,16 +176,19 @@
                     All
                 </a>
                 <a href="{{ route('jpo.evaluations.accreditations', ['doc_status' => 'complete']) }}" 
-                   class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors {{ request('doc_status') === 'complete' ? 'bg-green-600 text-white shadow-sm' : 'bg-green-50 text-green-800 hover:bg-green-100' }}">
-                    🟢 Complete
+                   class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors inline-flex items-center gap-1.5 {{ request('doc_status') === 'complete' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100' }}">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>Complete</span>
                 </a>
                 <a href="{{ route('jpo.evaluations.accreditations', ['doc_status' => 'incomplete']) }}" 
-                   class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors {{ request('doc_status') === 'incomplete' ? 'bg-rose-600 text-white shadow-sm' : 'bg-rose-50 text-rose-800 hover:bg-rose-100' }}">
-                    🔴 Incomplete
+                   class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors inline-flex items-center gap-1.5 {{ request('doc_status') === 'incomplete' ? 'bg-rose-600 text-white shadow-sm' : 'bg-rose-50 text-rose-800 hover:bg-rose-100' }}">
+                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                    <span>Incomplete</span>
                 </a>
                 <a href="{{ route('jpo.evaluations.accreditations', ['doc_status' => 'pending']) }}" 
-                   class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors {{ request('doc_status') === 'pending' ? 'bg-amber-600 text-white shadow-sm' : 'bg-amber-50 text-amber-800 hover:bg-amber-100' }}">
-                    🟡 Pending Review
+                   class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors inline-flex items-center gap-1.5 {{ request('doc_status') === 'pending' ? 'bg-amber-600 text-white shadow-sm' : 'bg-amber-50 text-amber-800 hover:bg-amber-100' }}">
+                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                    <span>Pending Review</span>
                 </a>
             </div>
 
@@ -188,39 +198,39 @@
                 @endif
                 <div class="relative w-full md:w-64">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search company..."
-                           class="w-full rounded-xl border border-slate-200 pl-8 pr-3 py-1.5 text-xs text-slate-900 focus:border-green-500 focus:outline-none">
-                    <span class="absolute left-2.5 top-2 text-slate-400 text-xs">🔍</span>
+                           class="w-full rounded-xl border border-slate-200 pl-8 pr-3 py-1.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none">
+                    <svg class="w-3.5 h-3.5 absolute left-2.5 top-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
-                <button type="submit" class="px-4 py-1.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-bold shadow-sm">
+                <button type="submit" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm">
                     Filter
                 </button>
             </form>
         </div>
 
-        <!-- Accreditations Table -->
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+        <!-- Accreditations Table Card -->
+        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div class="p-5 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 bg-white">
                 <div>
-                    <h2 class="text-lg font-black text-slate-900">Employer Accreditation Records</h2>
+                    <h2 class="text-base font-black text-slate-900">Employer Accreditation Records</h2>
                     <p class="text-xs text-slate-500 mt-0.5">JPO document verification determines whether an employer is eligible for official recommendation to Admin.</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold text-green-800 bg-green-50 border border-green-200 px-3 py-1.5 rounded-xl hidden sm:inline">
+                    <span class="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-xl self-start sm:self-auto">
                         Workflow: JPO Verification &rarr; Admin Official Accreditation
                     </span>
                 </div>
             </div>
 
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs">
-                    <thead>
-                        <tr class="border-b border-slate-200 text-slate-400 uppercase tracking-wider font-bold text-[11px]">
-                            <th class="pb-3 px-3">Company Name</th>
-                            <th class="pb-3 px-3">Submitted Documents</th>
-                            <th class="pb-3 px-3">Document Status</th>
-                            <th class="pb-3 px-3">Workflow Status</th>
-                            <th class="pb-3 px-3">Date Submitted</th>
-                            <th class="pb-3 px-3 text-right">Actions</th>
+                <table class="w-full text-left text-xs min-w-[980px] divide-y divide-slate-100">
+                    <thead class="bg-slate-50/80 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-bold text-[11px]">
+                        <tr>
+                            <th class="py-3.5 px-5 w-[22%] min-w-[200px]">Company Name</th>
+                            <th class="py-3.5 px-4 w-[28%] min-w-[250px]">Submitted Documents</th>
+                            <th class="py-3.5 px-4 w-[20%] min-w-[190px]">Document Status</th>
+                            <th class="py-3.5 px-4 w-[12%] min-w-[130px]">Workflow Status</th>
+                            <th class="py-3.5 px-4 w-[8%] min-w-[100px] whitespace-nowrap">Date Submitted</th>
+                            <th class="py-3.5 px-5 w-[10%] min-w-[140px] text-right whitespace-nowrap">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
@@ -232,91 +242,106 @@
                                 $isIncomplete = ($docStatus === 'incomplete');
                             @endphp
                             <tr class="hover:bg-slate-50/80 transition-colors">
-                                <td class="py-4 px-3 font-bold text-slate-900">
-                                    <span class="text-sm block font-black">{{ $acc->company_name }}</span>
-                                    <span class="text-[11px] text-slate-400">Employer ID #{{ $acc->employer_id }} &bull; Ref #{{ $acc->accreditation_id }}</span>
+                                <!-- Company Name -->
+                                <td class="py-4 px-5 align-top">
+                                    <div class="flex items-start gap-3">
+                                        <div class="h-9 w-9 rounded-xl bg-slate-900 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                                            {{ strtoupper(substr($acc->company_name ?? 'C', 0, 1)) }}
+                                        </div>
+                                        <div class="min-w-0">
+                                            <span class="text-sm font-bold text-slate-900 block leading-snug" title="{{ $acc->company_name }}">{{ $acc->company_name }}</span>
+                                            <div class="flex items-center gap-1.5 text-[11px] text-slate-500 mt-1 font-medium">
+                                                <span>Employer #{{ $acc->employer_id }}</span>
+                                                <span>&bull;</span>
+                                                <span>Ref #{{ $acc->accreditation_id }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
 
-                                <td class="py-4 px-3">
+                                <!-- Submitted Documents -->
+                                <td class="py-4 px-4 align-top">
                                     <div class="space-y-1.5">
-                                        <div class="flex flex-wrap gap-1">
+                                        <div class="flex flex-wrap gap-1.5">
                                             @if(is_array($docs) && count($docs) > 0)
                                                 @foreach($docs as $key => $doc)
                                                     <button type="button" 
-                                                            @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs))'
-                                                            class="inline-flex items-center gap-1 rounded-xl bg-slate-100 hover:bg-green-100 hover:text-green-900 border border-slate-200 px-2 py-1 text-[10px] font-bold text-slate-700 transition-colors cursor-pointer"
+                                                            @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs), "{{ $key }}")'
+                                                            class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-900 hover:border-emerald-300 border border-slate-200/80 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors cursor-pointer group"
                                                             title="Click to inspect this document">
-                                                        <span>📄</span>
+                                                        <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                                         <span>{{ ucfirst(str_replace('_', ' ', $key)) }}</span>
-                                                        <span class="text-[9px] text-green-600">↗</span>
                                                     </button>
                                                 @endforeach
                                             @else
-                                                <span class="text-slate-400 italic">No digital files attached</span>
+                                                <span class="text-slate-400 italic text-[11px]">No digital files attached</span>
                                             @endif
                                         </div>
-                                        @if(is_array($docs) && count($docs) > 0)
-                                            <button type="button" 
-                                                    @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs))'
-                                                    class="inline-flex items-center gap-1 text-[11px] font-bold text-green-700 hover:text-green-900 transition-colors">
-                                                <span>👁️</span> Inspect Files ({{ count($docs) }})
-                                            </button>
-                                        @endif
                                     </div>
                                 </td>
 
                                 <!-- Document Verification Status Column -->
-                                <td class="py-4 px-3">
-                                    <div class="space-y-1">
-                                        @if($isComplete)
-                                            <span class="inline-flex items-center gap-1.5 rounded-full bg-green-100 border border-green-300 px-3 py-1 text-xs font-extrabold text-green-800">
-                                                <span>✓</span> Complete
-                                            </span>
-                                            <span class="block text-[10px] text-green-700 font-semibold">Eligible for Admin recommendation</span>
-                                        @elseif($isIncomplete)
-                                            <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-100 border border-rose-300 px-3 py-1 text-xs font-extrabold text-rose-800">
-                                                <span>✕</span> Incomplete
-                                            </span>
-                                            @if($acc->document_incomplete_reason)
-                                                <div class="p-2 rounded-xl bg-rose-50 border border-rose-200 text-[10px] text-rose-900 max-w-xs mt-1">
-                                                    <span class="font-bold block">Reason:</span>
-                                                    <span>{{ $acc->document_incomplete_reason }}</span>
-                                                </div>
+                                <td class="py-4 px-4 align-top">
+                                    <div class="space-y-1.5">
+                                        <div class="flex items-center gap-2">
+                                            @if($isComplete)
+                                                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                                                    <svg class="w-3 h-3 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                    <span>Complete</span>
+                                                </span>
+                                            @elseif($isIncomplete)
+                                                <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-100 border border-rose-300 px-2.5 py-0.5 text-xs font-bold text-rose-800">
+                                                    <svg class="w-3 h-3 text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                    <span>Incomplete</span>
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+                                                    <svg class="w-3 h-3 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    <span>Pending Review</span>
+                                                </span>
                                             @endif
-                                        @else
-                                            <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 border border-amber-300 px-3 py-1 text-xs font-extrabold text-amber-800">
-                                                <span>⏳</span> Pending Review
-                                            </span>
-                                            <span class="block text-[10px] text-amber-700 font-medium">Documents await verification</span>
-                                        @endif
 
-                                        <div>
                                             <button type="button" 
                                                     @click='openDocStatusModal({{ $acc->accreditation_id }}, "{{ addslashes($acc->company_name) }}", "{{ $docStatus }}", "{{ addslashes($acc->document_incomplete_reason ?? '') }}")'
-                                                    class="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-green-700 transition-colors underline decoration-dotted">
-                                                <span>⚙️</span> Update Status & Reason
+                                                    class="p-1 rounded-lg text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 border border-transparent hover:border-emerald-200 transition-colors"
+                                                    title="Update Status & Reason">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                             </button>
                                         </div>
+
+                                        @if($isIncomplete && $acc->document_incomplete_reason)
+                                            <div class="p-2 rounded-xl bg-rose-50 border border-rose-200 text-[11px] text-rose-900 leading-snug">
+                                                <span class="font-bold">Reason:</span> {{ $acc->document_incomplete_reason }}
+                                            </div>
+                                        @elseif($isComplete)
+                                            <p class="text-[11px] text-emerald-700 font-medium">Eligible for Admin recommendation</p>
+                                        @else
+                                            <p class="text-[11px] text-slate-500 font-medium">Documents await verification</p>
+                                        @endif
                                     </div>
                                 </td>
 
                                 <!-- Workflow Pipeline Status -->
-                                <td class="py-4 px-3">
+                                <td class="py-4 px-4 align-top whitespace-nowrap">
                                     @if($acc->status === 'admin_approved')
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-green-100 border border-green-300 px-2.5 py-0.5 text-xs font-bold text-green-800">
-                                            🛡️ Officially Accredited
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                                            <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                            <span>Officially Accredited</span>
                                         </span>
                                     @elseif($acc->status === 'jpo_approved')
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-blue-100 border border-blue-300 px-2.5 py-0.5 text-xs font-bold text-blue-800">
-                                            📋 Recommended to Admin
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-100 border border-blue-300 px-2.5 py-0.5 text-xs font-bold text-blue-800">
+                                            <svg class="w-3.5 h-3.5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                                            <span>Recommended to Admin</span>
                                         </span>
                                     @elseif($acc->status === 'submitted_to_jpo')
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-xs font-bold text-amber-800">
-                                            ⏳ Awaiting JPO Action
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+                                            <svg class="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <span>Awaiting JPO Action</span>
                                         </span>
                                     @elseif($acc->status === 'rejected')
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-rose-100 border border-rose-300 px-2.5 py-0.5 text-xs font-bold text-rose-800">
-                                            ✕ Rejected
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-100 border border-rose-300 px-2.5 py-0.5 text-xs font-bold text-rose-800">
+                                            <svg class="w-3.5 h-3.5 text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            <span>Rejected</span>
                                         </span>
                                     @else
                                         <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600">
@@ -325,45 +350,39 @@
                                     @endif
                                 </td>
 
-                                <td class="py-4 px-3 text-slate-500 font-medium">
+                                <!-- Date Submitted -->
+                                <td class="py-4 px-4 align-top text-slate-500 font-medium whitespace-nowrap text-xs">
                                     {{ $acc->submitted_at ? date('M d, Y', strtotime($acc->submitted_at)) : 'Today' }}
                                 </td>
 
                                 <!-- Actions Column -->
-                                <td class="py-4 px-3 text-right">
-                                    <div class="flex flex-col sm:flex-row items-end sm:items-center justify-end gap-2">
+                                <td class="py-4 px-5 align-top text-right whitespace-nowrap">
+                                    <div class="flex items-center justify-end gap-2">
                                         
                                         <!-- Official Establishment Registration PDF View -->
                                         <a href="{{ route('jpo.evaluations.accreditations.print', $acc->accreditation_id) }}" target="_blank"
-                                           class="px-2.5 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 transition-colors flex items-center gap-1"
+                                           class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition-colors inline-flex items-center gap-1.5 shrink-0"
                                            title="Inspect Official Cebu City DMDP Establishment Registration Form">
-                                            <span>📑 PDF</span>
-                                            <span class="text-[10px] text-slate-400">↗</span>
+                                            <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                            <span>PDF</span>
+                                            <svg class="w-2.5 h-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                                         </a>
-
-                                        <!-- Update Status Dropdown Trigger -->
-                                        <button type="button" 
-                                                @click='openDocStatusModal({{ $acc->accreditation_id }}, "{{ addslashes($acc->company_name) }}", "{{ $docStatus }}", "{{ addslashes($acc->document_incomplete_reason ?? '') }}")'
-                                                class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors">
-                                            Document Status &rarr;
-                                        </button>
 
                                         <!-- Recommend to Admin Button (Conditioned on Documents Complete) -->
                                         @if($acc->status === 'submitted_to_jpo')
                                             @if($isComplete)
                                                 <button type="button" 
                                                         @click='openRecommend({{ $acc->accreditation_id }}, "{{ addslashes($acc->company_name) }}", "{{ $docStatus }}", "")'
-                                                        class="px-3.5 py-1.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-black shadow-md shadow-green-600/20 transition-all flex items-center gap-1">
+                                                        class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-all inline-flex items-center gap-1 shrink-0">
                                                     <span>Recommend to Admin</span>
                                                     <span>&rarr;</span>
                                                 </button>
                                             @else
-                                                <button type="button" 
-                                                        @click='openDocStatusModal({{ $acc->accreditation_id }}, "{{ addslashes($acc->company_name) }}", "{{ $docStatus }}", "{{ addslashes($acc->document_incomplete_reason ?? '') }}")'
-                                                        class="px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-400 hover:text-slate-600 text-xs font-bold border border-dashed border-slate-300 transition-colors flex items-center gap-1"
-                                                        title="Cannot recommend: Documents must be marked as Complete first">
-                                                    <span>🔒 Needs Complete Docs</span>
-                                                </button>
+                                                <span class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl shrink-0"
+                                                      title="Documents must be marked Complete before recommending to Admin">
+                                                    <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                                    <span>Awaiting Complete Docs</span>
+                                                </span>
                                             @endif
                                         @else
                                             <span class="text-[11px] text-slate-400 font-semibold px-2">Processed</span>
@@ -384,7 +403,7 @@
             </div>
 
             @if(method_exists($accreditations, 'links'))
-                <div class="pt-4 border-t border-slate-100">
+                <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/50">
                     {{ $accreditations->links() }}
                 </div>
             @endif
@@ -398,7 +417,7 @@
             
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
-                    <span class="text-xs font-bold text-green-700 uppercase tracking-wider">Document Verification Assessment</span>
+                    <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Document Verification Assessment</span>
                     <h3 class="text-xl font-black text-slate-900 mt-0.5">Evaluate <span x-text="editCompany"></span></h3>
                 </div>
                 <button @click="docStatusModal = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
@@ -413,17 +432,23 @@
                         Employer Documents Status <span class="text-rose-500">*</span>
                     </label>
                     <select name="document_status" x-model="editDocStatus" required
-                            class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-xs font-bold text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400">
-                        <option value="pending">⏳ Pending Review / In Progress</option>
-                        <option value="complete">🟢 Complete - All Required Documents Validated & In Order</option>
-                        <option value="incomplete">🔴 Incomplete - Missing or Deficient Documents</option>
+                            class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-xs font-bold text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                        <option value="pending">Pending Review / In Progress</option>
+                        <option value="complete">Complete - All Required Documents Validated & In Order</option>
+                        <option value="incomplete">Incomplete - Missing or Deficient Documents</option>
                     </select>
                     <p class="text-[11px] text-slate-500">
                         <template x-if="editDocStatus === 'complete'">
-                            <span class="text-green-700 font-bold">✓ Complete documents permit JPO to officially recommend the employer to Admin.</span>
+                            <span class="text-emerald-700 font-bold inline-flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                <span>Complete documents permit JPO to officially recommend the employer to Admin.</span>
+                            </span>
                         </template>
                         <template x-if="editDocStatus === 'incomplete'">
-                            <span class="text-rose-600 font-bold">✕ You must provide the reason below explaining what documents are missing or invalid.</span>
+                            <span class="text-rose-600 font-bold inline-flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                <span>You must provide the reason below explaining what documents are missing or invalid.</span>
+                            </span>
                         </template>
                         <template x-if="editDocStatus === 'pending'">
                             <span class="text-amber-700">Documents remain under evaluation. Recommendation will stay locked.</span>
@@ -447,7 +472,7 @@
                     <button type="button" @click="docStatusModal = false" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
                         Cancel
                     </button>
-                    <button type="submit" class="px-7 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-black shadow-lg shadow-green-600/30 transition-all">
+                    <button type="submit" class="px-7 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-600/30 transition-all">
                         Save Document Status &rarr;
                     </button>
                 </div>
@@ -462,7 +487,7 @@
             
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
-                    <span class="text-xs font-bold text-green-700 uppercase tracking-wider">Recommend Accreditation to Admin</span>
+                    <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Recommend Accreditation to Admin</span>
                     <h3 class="text-xl font-black text-slate-900 mt-0.5">Endorse <span x-text="selectedCompany"></span></h3>
                 </div>
                 <button @click="recModal = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
@@ -472,7 +497,8 @@
             <template x-if="selectedDocStatus !== 'complete'">
                 <div class="p-4 rounded-2xl bg-rose-50 border border-rose-300 text-xs text-rose-900 space-y-1">
                     <p class="font-black flex items-center gap-1.5">
-                        <span>⛔</span> Cannot Recommend Employer to Admin
+                        <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span>Cannot Recommend Employer to Admin</span>
                     </p>
                     <p>Required legal documents are currently marked as <strong class="uppercase" x-text="selectedDocStatus"></strong>.</p>
                     <p class="text-[11px] text-rose-700">JPO and Admin are not permitted to recommend or accredit any employer whose documents are incomplete. Please update the document status to Complete first.</p>
@@ -480,11 +506,12 @@
             </template>
 
             <template x-if="selectedDocStatus === 'complete'">
-                <div class="p-3.5 rounded-2xl bg-green-50 border border-green-300 text-xs text-green-950 space-y-0.5">
-                    <p class="font-black flex items-center gap-1.5 text-green-900">
-                        <span>✓</span> Documents Verified Complete
+                <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-300 text-xs text-emerald-950 space-y-0.5">
+                    <p class="font-black flex items-center gap-1.5 text-emerald-900">
+                        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                        <span>Documents Verified Complete</span>
                     </p>
-                    <p class="text-[11px] text-green-800">All required legal credentials have been reviewed and validated. You may submit your recommendation to the City Administrator.</p>
+                    <p class="text-[11px] text-emerald-800">All required legal credentials have been reviewed and validated. You may submit your recommendation to the City Administrator.</p>
                 </div>
             </template>
 
@@ -494,16 +521,16 @@
                 <div class="space-y-1">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Recommendation Action *</label>
                     <select name="action" required
-                            class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-green-500 focus:outline-none">
-                        <option value="recommend">✓ Recommend Approval to Admin (Forward for Official Accreditation)</option>
-                        <option value="reject">✕ Reject Accreditation</option>
+                            class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none">
+                        <option value="recommend">Recommend Approval to Admin (Forward for Official Accreditation)</option>
+                        <option value="reject">Reject Accreditation</option>
                     </select>
                 </div>
 
                 <div class="space-y-1">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">JPO Verification Remarks</label>
                     <textarea name="remarks" rows="3" placeholder="State document verification notes and endorsement remarks for the City Administrator..."
-                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400"></textarea>
+                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
@@ -512,7 +539,7 @@
                     </button>
                     <button type="submit" 
                             :disabled="selectedDocStatus !== 'complete'"
-                            :class="selectedDocStatus === 'complete' ? 'bg-green-600 hover:bg-green-500 text-white cursor-pointer shadow-lg shadow-green-600/30' : 'bg-slate-200 text-slate-400 cursor-not-allowed'"
+                            :class="selectedDocStatus === 'complete' ? 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-lg shadow-emerald-600/30' : 'bg-slate-200 text-slate-400 cursor-not-allowed'"
                             class="px-7 py-2.5 rounded-xl text-xs font-black transition-all">
                         Forward to Admin &rarr;
                     </button>

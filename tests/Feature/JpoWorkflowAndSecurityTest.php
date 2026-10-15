@@ -458,8 +458,6 @@ class JpoWorkflowAndSecurityTest extends TestCase
         $response->assertSee('Establishment Contact Details');
         $response->assertSee('Documentary Requirements');
         $response->assertSee('APPROVAL');
-        $response->assertSee('JOB VACANCIES AND QUALIFICATION FORM');
-        $response->assertSee('Customer Care Specialist');
-        $response->assertSee('ACCEPTS DISABILITY?');
+        $response->assertDontSee('JOB VACANCIES AND QUALIFICATION FORM');
     }
 }

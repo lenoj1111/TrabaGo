@@ -15,12 +15,12 @@
         points: 1
     }
 }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-7xl space-y-8">
+    <div class="w-full max-w-[1680px] mx-auto space-y-8">
         
         <!-- Breadcrumb & Actions -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                <a href="{{ route('trainer.courses') }}" class="hover:text-green-700 transition-colors">Courses Catalog</a>
+                <a href="{{ route('trainer.courses') }}" class="hover:text-emerald-700 transition-colors">Courses Catalog</a>
                 <span>/</span>
                 <span class="text-slate-900 font-bold truncate max-w-md">{{ $course->title }}</span>
             </div>
@@ -33,23 +33,31 @@
         </div>
 
         <!-- Course Header Card -->
-        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-green-500/20">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div class="space-y-3">
                     <div class="flex flex-wrap items-center gap-2">
-                        <span class="rounded-full bg-green-500/20 border border-green-400/30 px-3 py-0.5 text-xs font-bold text-green-300">
+                        <span class="rounded-full bg-emerald-500/20 border border-emerald-400/30 px-3 py-0.5 text-xs font-bold text-emerald-300">
                             {{ $course->training_type === 'laboratory_onsite' ? 'Laboratory / Onsite Hands-on' : 'Online Track' }}
                         </span>
                         <span class="rounded-full bg-white/10 px-3 py-0.5 text-xs font-semibold text-slate-300">
                             {{ $course->duration_months ?: 1 }} Month Track
                         </span>
                         @if($course->auto_generate_certificate ?? true)
-                            <span class="rounded-full bg-green-400/20 border border-green-300/30 px-3 py-0.5 text-xs font-bold text-green-300">
-                                🎓 Auto-Generate Certificate Enabled
+                            <span class="rounded-full bg-emerald-400/20 border border-emerald-300/30 px-3 py-0.5 text-xs font-bold text-emerald-300 inline-flex items-center gap-1.5">
+                                <svg class="h-3.5 w-3.5 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+                                    <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
+                                </svg>
+                                <span>Auto-Generate Certificate Enabled</span>
                             </span>
                         @else
-                            <span class="rounded-full bg-amber-400/20 border border-amber-300/30 px-3 py-0.5 text-xs font-bold text-amber-300">
-                                📋 Manual Assessment & Certificate Approval
+                            <span class="rounded-full bg-amber-400/20 border border-amber-300/30 px-3 py-0.5 text-xs font-bold text-amber-300 inline-flex items-center gap-1.5">
+                                <svg class="h-3.5 w-3.5 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                </svg>
+                                <span>Manual Assessment & Certificate Approval</span>
                             </span>
                         @endif
                     </div>
@@ -59,10 +67,10 @@
 
                     @if(!empty($course->skills))
                         <div class="pt-2 flex flex-wrap items-center gap-1.5">
-                            <span class="text-[11px] font-bold text-green-400 uppercase tracking-wider mr-1">Target Skills:</span>
+                            <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider mr-1">Target Skills:</span>
                             @foreach(array_map('trim', explode(',', $course->skills)) as $s)
                                 @if(!empty($s))
-                                    <span class="rounded-lg bg-green-950/80 border border-green-700/50 px-2.5 py-0.5 text-xs text-green-200 font-medium">
+                                    <span class="rounded-lg bg-emerald-950/80 border border-emerald-700/50 px-2.5 py-0.5 text-xs text-emerald-200 font-medium">
                                         {{ $s }}
                                     </span>
                                 @endif
@@ -74,7 +82,7 @@
                 <div class="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0">
                     <div class="rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 p-4 text-center">
                         <div class="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Passing Score</div>
-                        <div class="text-2xl font-black text-green-400">{{ $course->passing_score ?: 80 }}%</div>
+                        <div class="text-2xl font-black text-emerald-400">{{ $course->passing_score ?: 80 }}%</div>
                     </div>
                     <div class="rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 p-4 text-center">
                         <div class="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Trainees Enrolled</div>
@@ -94,7 +102,9 @@
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                         <div>
                             <div class="flex items-center gap-2">
-                                <span class="text-xl">📝</span>
+                                <svg class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
                                 <h2 class="text-lg font-black text-slate-900">Trainer-Created Assessment</h2>
                             </div>
                             <p class="text-xs text-slate-500 mt-0.5">
@@ -102,8 +112,11 @@
                             </p>
                         </div>
 
-                        <button @click="addQuestionModal = true" type="button" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-green-600 hover:bg-green-500 text-white text-xs font-extrabold shadow-md shadow-green-600/20 transition-all">
-                            <span>➕</span> Add Question
+                        <button @click="addQuestionModal = true" type="button" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 transition-all">
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            <span>Add Question</span>
                         </button>
                     </div>
 
@@ -113,7 +126,7 @@
                             @php
                                 $choices = is_array($item->options) ? $item->options : json_decode($item->options ?? '[]', true);
                             @endphp
-                            <div class="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 space-y-3 hover:border-green-300 transition-colors">
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 space-y-3 hover:border-emerald-300 transition-colors">
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="flex items-start gap-2.5">
                                         <span class="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-900 text-white text-xs font-bold shrink-0">
@@ -149,13 +162,13 @@
                                 <!-- Choices -->
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 pl-8">
                                     @foreach($choices as $cIndex => $choice)
-                                        <div class="rounded-xl px-3 py-2 text-xs flex items-center gap-2 border {{ (int)$item->correct_answer === $cIndex ? 'border-green-500 bg-green-50 text-green-950 font-bold' : 'border-slate-200 bg-white text-slate-700' }}">
-                                            <span class="h-4 w-4 rounded-full flex items-center justify-center text-[10px] {{ (int)$item->correct_answer === $cIndex ? 'bg-green-600 text-white font-bold' : 'bg-slate-100 text-slate-500' }}">
+                                        <div class="rounded-xl px-3 py-2 text-xs flex items-center gap-2 border {{ (int)$item->correct_answer === $cIndex ? 'border-emerald-500 bg-emerald-50 text-emerald-950 font-bold' : 'border-slate-200 bg-white text-slate-700' }}">
+                                            <span class="h-4 w-4 rounded-full flex items-center justify-center text-[10px] {{ (int)$item->correct_answer === $cIndex ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 text-slate-500' }}">
                                                 {{ chr(65 + $cIndex) }}
                                             </span>
                                             <span class="truncate">{{ $choice }}</span>
                                             @if((int)$item->correct_answer === $cIndex)
-                                                <span class="ml-auto text-[10px] text-green-700 uppercase font-black tracking-wider">Correct</span>
+                                                <span class="ml-auto text-[10px] text-emerald-700 uppercase font-black tracking-wider">Correct</span>
                                             @endif
                                         </div>
                                     @endforeach
@@ -169,7 +182,11 @@
                             </div>
                         @empty
                             <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center space-y-2">
-                                <div class="text-3xl">✏️</div>
+                                <div class="h-12 w-12 rounded-2xl bg-slate-200 text-slate-500 flex items-center justify-center mx-auto">
+                                    <svg class="h-6 w-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </div>
                                 <h3 class="text-xs font-bold text-slate-800">No assessment questions published yet</h3>
                                 <p class="text-[11px] text-slate-500 max-w-md mx-auto">
                                     Assessments are not automatically generated. Click "Add Question" above to author multiple-choice evaluation questions for your trainees.
@@ -187,7 +204,7 @@
                             <h3 class="text-base font-black text-slate-900">Enrolled Trainees</h3>
                             <p class="text-xs text-slate-500">Track jobseeker progress and review assessment scores.</p>
                         </div>
-                        <span class="text-xs font-bold text-green-800 bg-green-50 px-3 py-1 rounded-full border border-green-200">
+                        <span class="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
                             {{ count($enrollments) }} Trainees
                         </span>
                     </div>
@@ -211,7 +228,7 @@
                                             <div class="text-[11px] text-slate-400">{{ $enr->jobseeker_email }}</div>
                                         </td>
                                         <td class="py-3 px-3">
-                                            <span class="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase {{ $enr->status === 'completed' ? 'bg-green-100 text-green-800' : ($enr->status === 'failed' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-800') }}">
+                                            <span class="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase {{ $enr->status === 'completed' ? 'bg-emerald-100 text-emerald-800' : ($enr->status === 'failed' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-800') }}">
                                                 {{ str_replace('_', ' ', $enr->status) }}
                                             </span>
                                         </td>
@@ -220,8 +237,13 @@
                                         </td>
                                         <td class="py-3 px-3">
                                             @if($enr->certificate_issued)
-                                                <span class="text-green-700 font-bold flex items-center gap-1 text-[11px]">
-                                                    <span>🎓</span> {{ $enr->certificate_no ?: 'Issued' }}
+                                                <span class="text-emerald-700 font-bold flex items-center gap-1 text-[11px]">
+                                                    <svg class="h-3.5 w-3.5 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+                                                        <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
+                                                    </svg>
+                                                    <span>{{ $enr->certificate_no ?: 'Issued' }}</span>
                                                 </span>
                                             @else
                                                 <span class="text-slate-400 text-[11px]">Not issued</span>
@@ -231,16 +253,16 @@
                                             @if(!$enr->certificate_issued && $enr->status === 'completed')
                                                 <form action="{{ route('trainer.enrollments.certificate', $enr->enrollment_id) }}" method="POST" class="inline">
                                                     @csrf
-                                                    <button type="submit" class="px-2.5 py-1 rounded-lg bg-green-600 hover:bg-green-500 text-white text-[11px] font-bold shadow-sm">
+                                                    <button type="submit" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-sm">
                                                         Issue Certificate
                                                     </button>
                                                 </form>
                                             @elseif($enr->certificate_issued)
-                                                <a href="{{ route('trainer.certificates.preview', $enr->enrollment_id) }}" target="_blank" class="text-green-700 hover:underline text-[11px] font-bold">
+                                                <a href="{{ route('trainer.certificates.preview', $enr->enrollment_id) }}" target="_blank" class="text-emerald-700 hover:underline text-[11px] font-bold">
                                                     View Cert &rarr;
                                                 </a>
                                             @else
-                                                <a href="{{ route('trainer.enrollments.evaluate', $enr->enrollment_id) }}" class="text-slate-600 hover:text-green-700 text-[11px] font-bold">
+                                                <a href="{{ route('trainer.enrollments.evaluate', $enr->enrollment_id) }}" class="text-slate-600 hover:text-emerald-700 text-[11px] font-bold">
                                                     Evaluate &rarr;
                                                 </a>
                                             @endif
@@ -279,8 +301,11 @@
                                     <span class="font-bold text-slate-800">#{{ $topic->topic_order ?: ($tIndex + 1) }}. {{ $topic->title }}</span>
                                 </div>
                                 @if(!empty($topic->video_url))
-                                    <div class="text-[10px] text-green-700 truncate">
-                                        🔗 {{ $topic->video_url }}
+                                    <div class="text-[10px] text-emerald-700 truncate flex items-center gap-1">
+                                        <svg class="h-3 w-3 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                        </svg>
+                                        <span>{{ $topic->video_url }}</span>
                                     </div>
                                 @endif
                             </div>
@@ -299,7 +324,7 @@
                     <div class="space-y-3 text-xs">
                         <div class="flex justify-between py-1 border-b border-slate-50">
                             <span class="text-slate-400">Issuance Rule:</span>
-                            <span class="font-bold {{ ($course->auto_generate_certificate ?? true) ? 'text-green-700' : 'text-amber-700' }}">
+                            <span class="font-bold {{ ($course->auto_generate_certificate ?? true) ? 'text-emerald-700' : 'text-amber-700' }}">
                                 {{ ($course->auto_generate_certificate ?? true) ? 'Automatic upon passing' : 'Manual Trainer Assessment' }}
                             </span>
                         </div>
@@ -333,12 +358,16 @@
             <div x-show="addQuestionModal" x-transition class="relative inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full border border-slate-200">
                 <form action="{{ route('trainer.courses.assessments.store', $course->training_id) }}" method="POST">
                     @csrf
-                    <div class="bg-gradient-to-r from-slate-950 via-green-950 to-slate-900 px-6 py-5 text-white flex items-center justify-between border-b border-green-500/20">
+                    <div class="bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 px-6 py-5 text-white flex items-center justify-between border-b border-emerald-500/20">
                         <div class="flex items-center gap-3">
-                            <span class="text-xl">➕</span>
+                            <div class="h-9 w-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300">
+                                <svg class="h-4 w-4 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                                </svg>
+                            </div>
                             <div>
                                 <h3 class="text-base font-bold text-white">Add Assessment Question</h3>
-                                <p class="text-xs text-green-300/80">Trainer-authored question for trainee evaluation.</p>
+                                <p class="text-xs text-emerald-300/80">Trainer-authored question for trainee evaluation.</p>
                             </div>
                         </div>
                         <button @click="addQuestionModal = false" type="button" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
@@ -348,7 +377,7 @@
                         <!-- Question Prompt -->
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Question Prompt <span class="text-rose-500">*</span></label>
-                            <textarea name="question" rows="3" required placeholder="State the question clearly..." class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-green-500 outline-none"></textarea>
+                            <textarea name="question" rows="3" required placeholder="State the question clearly..." class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none"></textarea>
                         </div>
 
                         <!-- Choices -->
@@ -358,9 +387,9 @@
 
                             @for($i = 0; $i < 4; $i++)
                                 <div class="flex items-center gap-3">
-                                    <input type="radio" name="correct_answer" value="{{ $i }}" {{ $i === 0 ? 'checked' : '' }} class="h-4 w-4 text-green-600 focus:ring-green-500 border-slate-300" title="Mark as correct answer">
+                                    <input type="radio" name="correct_answer" value="{{ $i }}" {{ $i === 0 ? 'checked' : '' }} class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-slate-300" title="Mark as correct answer">
                                     <span class="text-xs font-bold text-slate-400 w-4">{{ chr(65 + $i) }}</span>
-                                    <input type="text" name="options[]" required placeholder="Option {{ chr(65 + $i) }}" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 focus:border-green-500 outline-none">
+                                    <input type="text" name="options[]" required placeholder="Option {{ chr(65 + $i) }}" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
                                 </div>
                             @endfor
                         </div>
@@ -368,13 +397,13 @@
                         <!-- Explanation -->
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Explanation / Rationale (Optional)</label>
-                            <textarea name="explanation" rows="2" placeholder="Explain why the correct answer is standard procedure..." class="w-full rounded-xl border border-slate-200 px-4 py-2 text-xs font-medium text-slate-800 focus:border-green-500 outline-none"></textarea>
+                            <textarea name="explanation" rows="2" placeholder="Explain why the correct answer is standard procedure..." class="w-full rounded-xl border border-slate-200 px-4 py-2 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none"></textarea>
                         </div>
 
                         <!-- Points -->
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Points</label>
-                            <input type="number" name="points" value="1" min="1" max="10" class="w-32 rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 focus:border-green-500 outline-none">
+                            <input type="number" name="points" value="1" min="1" max="10" class="w-32 rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
                         </div>
                     </div>
 
@@ -382,7 +411,7 @@
                         <button @click="addQuestionModal = false" type="button" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors">
                             Cancel
                         </button>
-                        <button type="submit" class="px-5 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-extrabold shadow-md shadow-green-600/20 transition-all">
+                        <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 transition-all">
                             Save Question
                         </button>
                     </div>
@@ -403,7 +432,11 @@
                     @method('PUT')
                     <div class="bg-slate-900 px-6 py-5 text-white flex items-center justify-between border-b border-slate-800">
                         <div class="flex items-center gap-3">
-                            <span class="text-xl">✏️</span>
+                            <div class="h-9 w-9 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center">
+                                <svg class="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                            </div>
                             <div>
                                 <h3 class="text-base font-bold text-white">Edit Assessment Question</h3>
                                 <p class="text-xs text-slate-400">Modify prompt, options, or correct answer.</p>
@@ -415,7 +448,7 @@
                     <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Question Prompt <span class="text-rose-500">*</span></label>
-                            <textarea name="question" x-model="activeQuestion.question" rows="3" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-green-500 outline-none"></textarea>
+                            <textarea name="question" x-model="activeQuestion.question" rows="3" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none"></textarea>
                         </div>
 
                         <div class="space-y-3">
@@ -423,21 +456,21 @@
                             
                             <template x-for="(opt, idx) in activeQuestion.options" :key="idx">
                                 <div class="flex items-center gap-3">
-                                    <input type="radio" name="correct_answer" :value="idx" :checked="activeQuestion.correct_answer == idx" class="h-4 w-4 text-green-600 focus:ring-green-500 border-slate-300">
+                                    <input type="radio" name="correct_answer" :value="idx" :checked="activeQuestion.correct_answer == idx" class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-slate-300">
                                     <span class="text-xs font-bold text-slate-400 w-4" x-text="String.fromCharCode(65 + idx)"></span>
-                                    <input type="text" name="options[]" x-model="activeQuestion.options[idx]" required class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 focus:border-green-500 outline-none">
+                                    <input type="text" name="options[]" x-model="activeQuestion.options[idx]" required class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
                                 </div>
                             </template>
                         </div>
 
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Explanation / Rationale</label>
-                            <textarea name="explanation" x-model="activeQuestion.explanation" rows="2" class="w-full rounded-xl border border-slate-200 px-4 py-2 text-xs font-medium text-slate-800 focus:border-green-500 outline-none"></textarea>
+                            <textarea name="explanation" x-model="activeQuestion.explanation" rows="2" class="w-full rounded-xl border border-slate-200 px-4 py-2 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none"></textarea>
                         </div>
 
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Points</label>
-                            <input type="number" name="points" x-model="activeQuestion.points" min="1" max="10" class="w-32 rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 focus:border-green-500 outline-none">
+                            <input type="number" name="points" x-model="activeQuestion.points" min="1" max="10" class="w-32 rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
                         </div>
                     </div>
 
@@ -445,7 +478,7 @@
                         <button @click="editQuestionModal = false" type="button" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors">
                             Cancel
                         </button>
-                        <button type="submit" class="px-5 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-bold shadow-md shadow-green-600/20 transition-all">
+                        <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all">
                             Update Question
                         </button>
                     </div>

@@ -46,7 +46,10 @@
         <div class="flex items-center gap-3">
             <span class="text-xs font-bold text-slate-600">NSRP Form 1.REV 3 &bull; Candidate Ref #{{ $application->application_id }}</span>
             <button onclick="window.print()" class="inline-flex items-center gap-2 text-xs font-black text-white bg-green-700 hover:bg-green-600 px-6 py-2.5 rounded-xl shadow-lg shadow-green-700/30 transition-all cursor-pointer">
-                🖨️ Print / Save as PDF
+                <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                </svg>
+                <span>Print / Save as PDF</span>
             </button>
         </div>
     </div>
@@ -169,7 +172,17 @@
                     <tr>
                         <td colspan="3">
                             <span class="text-[8px] text-slate-500 block uppercase font-bold">MOBILE NUMBER & EMAIL</span>
-                            <span class="font-bold">📱 {{ $jobseeker->mobile_number }} &bull; ✉️ {{ $jobseeker->email }}</span>
+                            <span class="font-bold inline-flex items-center gap-1.5 flex-wrap">
+                                <svg class="h-2.5 w-2.5 text-slate-700 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                </svg>
+                                <span>{{ $jobseeker->mobile_number }}</span>
+                                <span>&bull;</span>
+                                <svg class="h-2.5 w-2.5 text-slate-700 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                </svg>
+                                <span>{{ $jobseeker->email }}</span>
+                            </span>
                         </td>
                         <td colspan="3">
                             <span class="text-[8px] text-slate-500 block uppercase font-bold">DISABILITY / SPECIAL NEEDS</span>

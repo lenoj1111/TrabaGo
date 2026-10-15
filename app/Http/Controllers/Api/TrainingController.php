@@ -9,6 +9,7 @@ use App\Models\Notification;
 use App\Models\TrainingEnrollment;
 use App\Models\TrainingProgram;
 use App\Services\TrainingQuizService;
+use App\Traits\ResolvesJobseeker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,8 @@ use Illuminate\Support\Str;
 
 class TrainingController extends Controller
 {
+    use ResolvesJobseeker;
+
     protected TrainingQuizService $quizService;
 
     public function __construct(TrainingQuizService $quizService)
@@ -152,34 +155,6 @@ class TrainingController extends Controller
             'success' => true,
             'data' => $formatted,
         ]);
-    }
-
-    /**
-     * Resolve the jobseeker model from authenticated user or fallback to first available jobseeker.
-     */
-    private function resolveJobseeker(?Request $request): ?\App\Models\Jobseeker
-    {
-        $user = auth('sanctum')->user() ?? ($request ? ($request->user() ?? Auth::user()) : Auth::user());
-        if ($user) {
-            $jobseeker = $user->jobseeker ?? \App\Models\Jobseeker::where('user_id', $user->user_id)->first();
-            if (!$jobseeker) {
-                $nameParts = explode(' ', $user->full_name ?? '', 2);
-                $jobseeker = \App\Models\Jobseeker::firstOrCreate(
-                    ['user_id' => $user->user_id],
-                    [
-                        'first_name' => $nameParts[0] ?? explode('@', $user->email)[0] ?? 'Jobseeker',
-                        'last_name' => $nameParts[1] ?? 'User',
-                        'email' => $user->email,
-                        'employment_status' => 'Looking for job',
-                        'citizenship' => 'Filipino',
-                    ]
-                );
-            }
-            return $jobseeker;
-        }
-
-        // Fallback for dev / unauthenticated demo requests
-        return \App\Models\Jobseeker::first();
     }
 
     /**

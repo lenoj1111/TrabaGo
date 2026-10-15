@@ -9,6 +9,8 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
+  RefreshControl,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,7 +21,14 @@ import { getApiBaseUrl, setApiBaseUrl, getDefaultApiUrl, getCurrentApiUrlSync } 
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, isAuthenticated, logout, addSkill, removeSkill, changePassword } = useAuth();
+  const { user, isAuthenticated, logout, addSkill, removeSkill, changePassword, refreshProfile } = useAuth();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refreshProfile();
+    setRefreshing(false);
+  };
 
   // Settings modal
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
@@ -196,8 +205,15 @@ export default function ProfileScreen() {
   const preferences = user.preferences || {};
   const social = user.social_status || {};
 
+  const isVerified = Boolean(user.is_verified || user.isVerified);
+  const isApproved = Boolean(user.isApproved || user.is_approved);
+  const missingRequirements = user.missing_requirements || [];
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}>
       {/* Cebu DMDP Jobseeker Digital ID Card */}
       <View style={styles.idCard}>
         <View style={styles.idCardHeader}>
@@ -205,9 +221,9 @@ export default function ProfileScreen() {
             <Text style={styles.idCardDMDP}>CITY OF CEBU • DMDP & PESD</Text>
             <Text style={styles.idCardCategory}>OFFICIAL JOBSEEKER DIGITAL ID</Text>
           </View>
-          <View style={styles.idCardBadge}>
-            <Ionicons name="shield-checkmark" size={14} color={COLORS.white} />
-            <Text style={styles.idCardBadgeText}>VERIFIED</Text>
+          <View style={[styles.idCardBadge, !isVerified && styles.idCardBadgeIncomplete]}>
+            <Ionicons name={isVerified ? "shield-checkmark" : "alert-circle"} size={13} color={COLORS.white} />
+            <Text style={styles.idCardBadgeText}>{isVerified ? "VERIFIED" : (isApproved ? "INCOMPLETE" : "PENDING")}</Text>
           </View>
         </View>
 
@@ -218,7 +234,7 @@ export default function ProfileScreen() {
             </Text>
           </View>
           <View style={styles.idInfo}>
-            <Text style={styles.idName}>{user.fullName || `${user.firstName} ${user.lastName}`}</Text>
+            <Text style={styles.idName}>{user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Jobseeker'}</Text>
             <Text style={styles.idRole}>
               {user.is_employed ? `Employed at ${user.hired_company || 'Employer'}` : (user.employmentStatus || 'Active Jobseeker')}
             </Text>
@@ -232,7 +248,40 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Profile Strength Progress Meter (Web Sync) */}
+      {/* Verification Notice Card if Incomplete / Unverified */}
+      {!isVerified && (
+        <View style={styles.verificationNoticeCard}>
+          <View style={styles.verificationNoticeHeader}>
+            <Ionicons name="alert-circle" size={20} color="#b45309" />
+            <Text style={styles.verificationNoticeTitle}>
+              {!isApproved ? "Account Pending Approval" : "Profile & Documents Incomplete"}
+            </Text>
+          </View>
+          <Text style={styles.verificationNoticeDesc}>
+            {!isApproved
+              ? "Your registration is currently under review by DMDP officers. You will be able to apply for jobs once approved."
+              : "Jobseekers cannot be tagged as Verified and cannot apply for job openings until profile details and required documents (Resume & Valid ID) are completed."}
+          </Text>
+          {missingRequirements.length > 0 && (
+            <View style={styles.missingListContainer}>
+              <Text style={styles.missingListLabel}>Missing Requirements:</Text>
+              {missingRequirements.map((item, idx) => (
+                <Text key={idx} style={styles.missingListItem}>• {item}</Text>
+              ))}
+            </View>
+          )}
+          <View style={styles.verificationActionsRow}>
+            <TouchableOpacity style={styles.verificationBtnOutline} onPress={() => router.push('/profile/edit')}>
+              <Text style={styles.verificationBtnOutlineText}>Complete Profile</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.verificationBtnPrimary} onPress={() => router.push('/profile/vault')}>
+              <Text style={styles.verificationBtnPrimaryText}>Document Vault</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Profile Strength Progress Meter */}
       <View style={styles.section}>
         <View style={styles.strengthHeader}>
           <View>
@@ -246,7 +295,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Social Status Tags (Web Sync) */}
+      {/* Social Welfare Classifications */}
       {(social.is_pwd || social.is_4ps || social.is_ofw) && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Social Welfare Classifications</Text>
@@ -279,9 +328,6 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>Personal & Contact Details</Text>
-          <TouchableOpacity onPress={() => router.push('/profile/edit')}>
-            <Text style={styles.sectionLink}>Edit</Text>
-          </TouchableOpacity>
         </View>
         <View style={styles.detailRow}>
           <Ionicons name="mail-outline" size={16} color={COLORS.primary} />
@@ -402,7 +448,7 @@ export default function ProfileScreen() {
         </View>
         {skillsList.length > 0 ? (
           <View style={styles.chipsContainer}>
-            {skillsList.map((skill, index) => (
+            {skillsList.map((skill: string, index: number) => (
               <TouchableOpacity
                 key={index}
                 style={styles.chip}
@@ -496,6 +542,7 @@ export default function ProfileScreen() {
             <TextInput
               style={styles.input}
               placeholder="e.g. Graphic Design, Auto Mechanics, Accounting"
+              placeholderTextColor={COLORS.slate400}
               value={newSkillText}
               onChangeText={setNewSkillText}
             />
@@ -520,7 +567,7 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Change Password Modal (Exact Web Parity) */}
+      {/* Change Password Modal */}
       <Modal visible={passwordModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -531,6 +578,7 @@ export default function ProfileScreen() {
             <TextInput
               style={styles.input}
               placeholder="••••••••"
+              placeholderTextColor={COLORS.slate400}
               value={currentPass}
               onChangeText={setCurrentPass}
               secureTextEntry
@@ -540,6 +588,7 @@ export default function ProfileScreen() {
             <TextInput
               style={styles.input}
               placeholder="••••••••"
+              placeholderTextColor={COLORS.slate400}
               value={newPass}
               onChangeText={setNewPass}
               secureTextEntry
@@ -549,6 +598,7 @@ export default function ProfileScreen() {
             <TextInput
               style={styles.input}
               placeholder="••••••••"
+              placeholderTextColor={COLORS.slate400}
               value={confirmPass}
               onChangeText={setConfirmPass}
               secureTextEntry
@@ -586,7 +636,7 @@ const styles = StyleSheet.create({
   guestCard: {
     margin: SPACING.lg,
     backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.xl,
+    borderRadius: BORDER_RADIUS.xxl,
     padding: SPACING.xl,
     alignItems: 'center',
     borderWidth: 1,
@@ -597,37 +647,39 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   guestTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '800',
     color: COLORS.navy,
     textAlign: 'center',
+    letterSpacing: -0.3,
   },
   guestSubtitle: {
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: COLORS.slate500,
     textAlign: 'center',
     marginTop: SPACING.sm,
-    lineHeight: 18,
+    lineHeight: 19,
     marginBottom: SPACING.xl,
   },
   primaryBtn: {
     backgroundColor: COLORS.primary,
     width: '100%',
     paddingVertical: 14,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.xl,
     alignItems: 'center',
     marginBottom: SPACING.md,
+    ...SHADOWS.sm,
   },
   primaryBtnText: {
     color: COLORS.white,
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   secondaryBtn: {
     backgroundColor: COLORS.surfaceSubtle,
     width: '100%',
     paddingVertical: 14,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.xl,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -636,7 +688,7 @@ const styles = StyleSheet.create({
   secondaryBtnText: {
     color: COLORS.navy,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   settingsLink: {
     flexDirection: 'row',
@@ -646,14 +698,16 @@ const styles = StyleSheet.create({
   },
   settingsLinkText: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: COLORS.slate500,
     textDecorationLine: 'underline',
   },
   idCard: {
     backgroundColor: COLORS.navy,
     margin: SPACING.lg,
-    borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.xxl,
+    padding: SPACING.xl,
+    borderWidth: 1.5,
+    borderColor: COLORS.emerald600,
     ...SHADOWS.lg,
   },
   idCardHeader: {
@@ -661,34 +715,117 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.15)',
+    borderBottomColor: 'rgba(255,255,255,0.12)',
     paddingBottom: SPACING.md,
   },
   idCardDMDP: {
-    color: COLORS.primaryLight,
-    fontSize: 11,
-    fontWeight: 'bold',
+    color: COLORS.emerald300,
+    fontSize: 10,
+    fontWeight: '800',
     letterSpacing: 1,
   },
   idCardCategory: {
     color: COLORS.white,
     fontSize: 13,
-    fontWeight: 'bold',
+    fontWeight: '700',
     marginTop: 2,
+    letterSpacing: 0.3,
   },
   idCardBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: BORDER_RADIUS.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: BORDER_RADIUS.full,
     gap: 4,
   },
   idCardBadgeText: {
     color: COLORS.white,
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  idCardBadgeIncomplete: {
+    backgroundColor: '#d97706',
+  },
+  verificationNoticeCard: {
+    marginHorizontal: SPACING.lg,
+    marginBottom: SPACING.md,
+    backgroundColor: '#fffbeb',
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.lg,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    ...SHADOWS.sm,
+  },
+  verificationNoticeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  verificationNoticeTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#92400e',
+  },
+  verificationNoticeDesc: {
+    fontSize: 12,
+    color: '#b45309',
+    lineHeight: 18,
+  },
+  missingListContainer: {
+    marginTop: SPACING.sm,
+    padding: SPACING.sm,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  missingListLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#78350f',
+    marginBottom: 2,
+  },
+  missingListItem: {
+    fontSize: 11,
+    color: '#92400e',
+    marginLeft: 4,
+    fontWeight: '500',
+  },
+  verificationActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginTop: SPACING.md,
+  },
+  verificationBtnOutline: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    borderColor: '#d97706',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+  },
+  verificationBtnOutlineText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#b45309',
+  },
+  verificationBtnPrimary: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: BORDER_RADIUS.lg,
+    backgroundColor: COLORS.navy,
+    alignItems: 'center',
+  },
+  verificationBtnPrimaryText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.white,
   },
   idCardBody: {
     flexDirection: 'row',
@@ -699,45 +836,51 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: COLORS.primaryDark,
+    borderWidth: 2,
+    borderColor: COLORS.emerald300,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.md,
   },
   idAvatarText: {
     color: COLORS.white,
-    fontSize: 26,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '800',
   },
   idInfo: {
     flex: 1,
   },
   idName: {
     color: COLORS.white,
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: -0.2,
   },
   idRole: {
-    color: COLORS.primaryUltraLight,
+    color: COLORS.emerald200,
     fontSize: 13,
     marginTop: 2,
+    fontWeight: '500',
   },
   idNumber: {
-    color: COLORS.textMuted,
+    color: COLORS.slate400,
     fontSize: 11,
     marginTop: 4,
-    fontFamily: 'monospace',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontWeight: '600',
   },
   idCardFooter: {
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.15)',
+    borderTopColor: 'rgba(255,255,255,0.12)',
     paddingTop: SPACING.sm,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   idFooterText: {
-    color: COLORS.textMuted,
+    color: COLORS.slate300,
     fontSize: 11,
+    fontWeight: '500',
   },
   strengthHeader: {
     flexDirection: 'row',
@@ -747,13 +890,13 @@ const styles = StyleSheet.create({
   },
   strengthLabel: {
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: COLORS.primary,
     letterSpacing: 0.5,
   },
   strengthTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: COLORS.navy,
     marginTop: 2,
   },
@@ -786,14 +929,14 @@ const styles = StyleSheet.create({
   },
   socialBadgeText: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   section: {
     backgroundColor: COLORS.white,
     marginHorizontal: SPACING.lg,
     marginBottom: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.xl,
     borderWidth: 1,
     borderColor: COLORS.border,
     ...SHADOWS.sm,
@@ -806,13 +949,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: COLORS.navy,
     marginBottom: SPACING.sm,
+    letterSpacing: -0.2,
   },
   sectionLink: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: COLORS.primary,
   },
   detailRow: {
@@ -826,7 +970,8 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 11,
-    color: COLORS.textMuted,
+    color: COLORS.slate400,
+    fontWeight: '500',
   },
   detailValue: {
     fontSize: 13,
@@ -848,47 +993,47 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primaryUltraLight,
-    paddingHorizontal: SPACING.md,
+    backgroundColor: COLORS.emerald50,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: BORDER_RADIUS.full,
     borderWidth: 1,
-    borderColor: 'rgba(5, 150, 105, 0.2)',
+    borderColor: COLORS.emerald200,
   },
   chipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.primaryDark,
+    color: COLORS.emerald800,
   },
   emptySkillsText: {
     fontSize: 12,
-    color: COLORS.textMuted,
+    color: COLORS.slate400,
     fontStyle: 'italic',
     marginTop: 4,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
   },
   menuIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: BORDER_RADIUS.md,
+    width: 38,
+    height: 38,
+    borderRadius: BORDER_RADIUS.lg,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.md,
   },
   menuTitle: {
     fontSize: 13,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: COLORS.navy,
   },
   menuSubtitle: {
     fontSize: 11,
-    color: COLORS.textSecondary,
+    color: COLORS.slate500,
     marginTop: 2,
   },
   logoutContainer: {
@@ -902,18 +1047,18 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: COLORS.white,
     paddingVertical: 14,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.xl,
     borderWidth: 1,
-    borderColor: COLORS.dangerBg,
+    borderColor: COLORS.dangerBorder,
   },
   logoutBtnText: {
     color: COLORS.danger,
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: SPACING.xl,
@@ -921,13 +1066,13 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: COLORS.white,
     width: '100%',
-    borderRadius: BORDER_RADIUS.xl,
+    borderRadius: BORDER_RADIUS.xxl,
     padding: SPACING.xl,
     ...SHADOWS.md,
   },
   modalTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '700',
     color: COLORS.navy,
     marginBottom: 4,
   },
@@ -935,19 +1080,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textSecondary,
     marginBottom: SPACING.md,
-    lineHeight: 16,
+    lineHeight: 17,
   },
   modalFieldLabel: {
     fontSize: 11,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: COLORS.navy,
     marginBottom: 4,
   },
   input: {
     backgroundColor: COLORS.surfaceSubtle,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.xl,
     paddingHorizontal: SPACING.md,
-    height: 44,
+    height: 48,
     borderWidth: 1,
     borderColor: COLORS.border,
     fontSize: 13,
@@ -957,21 +1102,23 @@ const styles = StyleSheet.create({
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: SPACING.md,
+    gap: SPACING.sm,
     marginTop: SPACING.sm,
   },
   modalCancelBtn: {
     paddingVertical: 10,
     paddingHorizontal: SPACING.lg,
+    borderRadius: BORDER_RADIUS.md,
   },
   modalCancelText: {
-    color: COLORS.textSecondary,
+    color: COLORS.slate500,
     fontSize: 13,
     fontWeight: '600',
   },
   modalResetBtn: {
     paddingVertical: 10,
     paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
   },
   modalResetBtnText: {
     color: COLORS.danger,
@@ -982,19 +1129,21 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingVertical: 10,
     paddingHorizontal: SPACING.xl,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.xl,
+    ...SHADOWS.sm,
   },
   modalSaveBtnText: {
     color: COLORS.white,
     fontSize: 13,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   modalCloseBtn: {
     alignItems: 'center',
     marginTop: SPACING.md,
   },
   modalCloseText: {
-    color: COLORS.textSecondary,
+    color: COLORS.slate400,
     fontSize: 12,
+    fontWeight: '500',
   },
 });

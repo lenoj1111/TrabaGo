@@ -1,82 +1,65 @@
-# 📱 TrabaGo — Jobseeker Mobile App (React Native & Expo Go)
+# 📱 TrabaGo — Jobseeker Mobile Application
 
-> **Dedicated cross-platform mobile application for Cebu City DMDP Jobseekers built with React Native, TypeScript, and Expo Go.**
-
----
-
-## 🌟 Key Features
-
-1. **Explore Jobs (`/`)**:
-   - Live search by job title, company, or skills.
-   - Filter pills: All, Full-time, PWD/Disability-friendly.
-   - Job cards with vacancy badges, salary display, and posting dates.
-   - Job Details view (`/jobs/[id]`) with DMDP verification banner and qualifications checklist.
-   - One-tap Application Sheet (`/jobs/apply`) with resume attachment (`expo-document-picker`) and cover notes.
-
-2. **Applications Tracker (`/applications`)**:
-   - Filter by status: All, Pending, Under Review, Hired.
-   - Interview Schedule alerts (date, venue/location, and meeting mode).
-   - Instant application withdrawal with confirmation.
-
-3. **DMDP Training & Courses (`/training`)**:
-   - Browse vocational and digital courses offered by the Cebu DMDP.
-   - View syllabus, topic modules, and lecture video indicators.
-   - Interactive Competency Quiz with real-time scoring and DMDP certificate eligibility verification.
-
-4. **Notifications Center (`/notifications`)**:
-   - Real-time updates on application status changes, interview invites, and DMDP bulletins.
-   - Unread indicators with tap-to-read functionality.
-
-5. **Profile & DMDP Digital ID (`/profile`)**:
-   - Official Cebu City DMDP Jobseeker Digital ID card.
-   - Personal information & skills chips manager (`/profile/edit`).
-   - Credentials & Document Vault (`/profile/vault`) for uploading resumes and certificates.
-   - Live Backend LAN IP Switcher modal to seamlessly connect from physical devices.
+> **Dedicated Cross-Platform Mobile Client for the Cebu City Department of Manpower Development and Placement (DMDP). Built with React Native, Expo Router, TypeScript, and Tailwind tokens.**
 
 ---
 
-## 🚀 Quick Start Guide
+## 🔒 Access Policy
+This mobile application is **exclusively designated for Jobseekers**. Administrative, verification, and facilitation staff (**Admin**, **Trainer**, **JPO**, and **Employer**) are restricted by API guard policies and must access their respective workspaces via the **TrabaGo Web Portal**.
 
-### Step 1: Start the Laravel Backend
+---
 
-To allow your mobile device on the same local network to connect to the backend, serve Laravel on `0.0.0.0`:
+## 🌟 Features & Capabilities
 
-```bash
-# In project root: c:\Users\Jimmy\TrabaGo
-php artisan serve --host=0.0.0.0 --port=8000
-```
+- **Live Job Vacancy Feed (`/(tabs)`)**: Real-time listing with keyword search, location filtering, and disability-inclusive badges.
+- **AI Skill-Matching Engine**: Cosine similarity algorithm analyzes applicant competencies against requirements and displays match percentages.
+- **Application Tracking (`/(tabs)/applications`)**: Track submission status across multi-stage review pipelines (`Pending`, `Screening`, `Interview Scheduled`, `Hired`).
+- **DMDP Vocational Hub (`/(tabs)/training`)**: Browse free technical and vocational modules with direct video lectures.
+- **In-App Competency Assessments (`/training/[id]`)**: Interactive quiz with dynamic passing score thresholds (80%), question-by-question review, and instant official digital certificate issuance.
+- **Credentials Vault (`/profile/vault`)**: Multi-document storage supporting Resumes, Valid Government IDs, Technical Licenses, and PWD IDs with in-app preview and status verification tracking.
+- **DOLE NSRP Profile (`/profile/edit`)**: Official DOLE-DMDP NSRP Form 1 fields including education attainment, career preferences, civil service eligibility, and social welfare status.
+- **Real-Time Push Updates (`/(tabs)/notifications`)**: Real-time notifications powered by Laravel Reverb WebSockets.
 
-> 💡 Your machine's LAN IP is pre-configured as **`192.168.100.9`**.
+---
 
-### Step 2: Start the Expo Development Server
+## 🚀 Mobile Quick Start
 
-Open a new terminal tab and navigate into the `mobile` directory:
-
+### 1. Install Dependencies
 ```bash
 cd mobile
-npx expo start
+npm install
 ```
 
-### Step 3: Open in Expo Go
+### 2. Configure Environment
+Copy `.env.example` to `.env`:
+```powershell
+Copy-Item .env.example .env
+```
 
-- **Android**: Open the **Expo Go** app on your phone and scan the QR code displayed in the terminal.
-- **iOS**: Open the native **Camera** app, point at the QR code, and tap the prompt to open in **Expo Go**.
+Set your machine's local Wi-Fi / LAN IP in `mobile/.env`:
+```env
+# Physical Device (Expo Go): Replace with your computer's LAN IPv4 (run 'ipconfig')
+EXPO_PUBLIC_API_URL=http://192.168.100.9:8000/api
+
+# Realtime WebSocket Configuration (Laravel Reverb)
+EXPO_PUBLIC_REVERB_HOST=192.168.100.9
+EXPO_PUBLIC_REVERB_PORT=8080
+EXPO_PUBLIC_REVERB_KEY=ckzj1ifqrv7u8cszy3tq
+```
+
+### 3. Launch Expo Development Server
+```bash
+npx expo start -c
+```
+
+- **Physical Phone**: Scan the QR code with **Expo Go** (Android) or **Camera** (iOS).
+- **Web Browser**: Press `w` in the terminal to launch the mobile web emulator at `http://localhost:8081`.
 - **Android Emulator**: Press `a` in the terminal.
-- **Web Preview**: Press `w` in the terminal.
 
 ---
 
-## 🔑 Demo Jobseeker Account
-
-For instant testing, use the pre-seeded account:
-
-- **Email**: `jobseeker@example.com`
-- **Password**: `password123`
-- *(Or tap the **"Fill Demo Credentials"** button on the mobile Sign In screen!)*
-
----
-
-## ⚙️ Network Configuration
-
-If you change Wi-Fi networks, update the IP in `mobile/src/config/api.ts` or directly within the app by navigating to:
-**Profile Tab ➔ Configure Backend IP** and entering your new host IP (e.g. `http://192.168.X.X:8000/api`).
+## 🧪 TypeScript Verification
+Ensure all mobile screens and service hooks compile with zero errors:
+```bash
+npx tsc --noEmit
+```
