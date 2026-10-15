@@ -427,6 +427,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('/users/{id}', [UserManagementController::class, 'destroy'])->name('users.destroy');
 
     // Employer Management
+    Route::get('/accreditations/{accreditationId}/documents/{documentKey}/{action}', [ApprovalsController::class, 'accreditationDocument'])
+        ->whereIn('action', ['preview', 'download'])
+        ->name('accreditation.documents');
+
     Route::get('/employers', function (Request $request) {
         $query = DB::table('employers')
             ->leftJoin('users', 'employers.user_id', '=', 'users.user_id')
@@ -438,12 +442,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
                 'users.email',
                 'users.status as user_status',
                 'users.is_approved as user_approved',
-                'users.created_at',
+                'users.created_at as user_created_at',
                 'user_profiles.full_name as contact_person',
                 'user_profiles.phone as contact_number',
                 'employer_accreditation.accreditation_id',
                 'employer_accreditation.documents',
                 'employer_accreditation.status as accreditation_status',
+                'employer_accreditation.document_status',
+                'employer_accreditation.document_incomplete_reason',
                 'employer_accreditation.jpo_reviewed',
                 'employer_accreditation.jpo_remarks'
             )

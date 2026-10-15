@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
 // Local Machine IP on Ethernet/Wi-Fi for physical device testing
-export const DEFAULT_LAN_IP = '192.168.100.9';
+export const DEFAULT_LAN_IP = '192.168.1.6';
 export const DEFAULT_PORT = '8000';
 
 const STORAGE_KEY_BASE_URL = 'TRABAGO_API_BASE_URL';

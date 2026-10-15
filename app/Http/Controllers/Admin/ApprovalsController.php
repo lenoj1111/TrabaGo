@@ -13,9 +13,50 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ApprovalsController extends Controller
 {
+    public function accreditationDocument(int $accreditationId, string $documentKey, string $action)
+    {
+        abort_unless(in_array($action, ['preview', 'download'], true), 404);
+
+        $accreditation = DB::table('employer_accreditation')
+            ->where('accreditation_id', $accreditationId)
+            ->first();
+        abort_unless($accreditation, 404);
+
+        $documents = json_decode($accreditation->documents ?? '[]', true);
+        abort_unless(is_array($documents) && array_key_exists($documentKey, $documents), 404);
+
+        $document = $documents[$documentKey];
+        $path = is_array($document) ? ($document['path'] ?? null) : $document;
+        abort_unless(is_string($path), 404);
+
+        $path = str_replace('\\', '/', $path);
+        $segments = explode('/', $path);
+        abort_unless(
+            (str_starts_with($path, 'accreditation_docs/') || str_starts_with($path, 'employer_documents/'))
+                && !in_array('..', $segments, true)
+                && !in_array('.', $segments, true),
+            404
+        );
+
+        $disk = Storage::disk('public');
+        abort_unless($disk->exists($path), 404);
+
+        $filename = is_array($document) && !empty($document['original_name'])
+            ? $document['original_name']
+            : basename($path);
+
+        return $disk->response(
+            $path,
+            $filename,
+            [],
+            $action === 'download' ? 'attachment' : 'inline'
+        );
+    }
+
     public function index()
     {
         // 1. Pending Job Postings with employer & accreditation details

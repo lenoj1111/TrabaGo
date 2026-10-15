@@ -1,17 +1,17 @@
 -- ============================================================================
 -- TrabaGo Full Database Schema & Seed Script for Microsoft SQL Server (SSMS)
--- Database Name: Trabago1
+-- Database Name: TrabaGoDB
 -- Target: SQL Server Management Studio (SSMS) 2017 / 2019 / 2022 / Azure SQL
 -- ============================================================================
 
 -- Step 1: Create Database if it does not exist
-IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'Trabago1')
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'TrabaGoDB')
 BEGIN
-    CREATE DATABASE [Trabago1];
+    CREATE DATABASE [TrabaGoDB];
 END
 GO
 
-USE [Trabago1];
+USE [TrabaGoDB];
 GO
 
 -- ============================================================================
