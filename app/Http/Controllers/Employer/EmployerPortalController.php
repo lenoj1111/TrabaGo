@@ -35,6 +35,19 @@ class EmployerPortalController extends Controller
         return $employer;
     }
 
+    private function employerIsAccredited(Employer $employer): bool
+    {
+        if ($employer->is_accredited) {
+            return true;
+        }
+
+        $accreditation = DB::table('employer_accreditation')
+            ->where('employer_id', $employer->employer_id)
+            ->first();
+
+        return $accreditation && $accreditation->status === 'admin_approved';
+    }
+
     public function homepage()
     {
         $employer = $this->getOrCreateEmployer();
@@ -147,6 +160,7 @@ class EmployerPortalController extends Controller
     public function jobPostings(Request $request)
     {
         $employer = $this->getOrCreateEmployer();
+        $accreditation = DB::table('employer_accreditation')->where('employer_id', $employer->employer_id)->first();
 
         $query = JobPosting::where('employer_id', $employer->employer_id);
 
@@ -173,15 +187,15 @@ class EmployerPortalController extends Controller
             'closed' => JobPosting::where('employer_id', $employer->employer_id)->where('status', 'closed')->count(),
         ];
 
-        return view('employer.job-postings', compact('employer', 'jobs', 'stats'));
+        return view('employer.job-postings', compact('employer', 'jobs', 'stats', 'accreditation'));
     }
 
     public function createJobPosting()
     {
-        $user = Auth::user();
-        if (!$user || !$user->isAccountVerified()) {
-            return redirect()->route('employer.accreditation')
-                ->with('error', 'Your company is not yet accredited. Please submit your required business documents and wait for Admin/JPO accreditation before posting job openings.');
+        $employer = $this->getOrCreateEmployer();
+
+        if (!$this->employerIsAccredited($employer)) {
+            return redirect()->route('employer.accreditation')->with('error', 'You must be accredited before creating a job posting.');
         }
 
         return redirect()->route('employer.job-postings', ['create' => 1]);
@@ -196,6 +210,10 @@ class EmployerPortalController extends Controller
         }
 
         $employer = $this->getOrCreateEmployer();
+
+        if (!$this->employerIsAccredited($employer)) {
+            return redirect()->route('employer.accreditation')->with('error', 'You must be accredited before creating a job posting.');
+        }
 
         $request->validate([
             'title' => 'required|string|max:150',
@@ -934,7 +952,7 @@ class EmployerPortalController extends Controller
             'password.min' => 'The new password must be at least 8 characters in length.',
         ]);
 
-        $user = Auth::user();
+        $user = User::findOrFail(Auth::id());
 
         if (!Hash::check($request->current_password, $user->password)) {
             return redirect()->route('employer.profile', ['tab' => 'security'])
@@ -942,9 +960,9 @@ class EmployerPortalController extends Controller
                 ->withInput();
         }
 
-        $user->forceFill([
+        $user->update([
             'password' => Hash::make($request->password),
-        ])->save();
+        ]);
 
         Notification::create([
             'user_id' => $user->user_id,

@@ -227,10 +227,34 @@
                                         </button>
 
                                         <a href="{{ route('admin.users.edit', $user->user_id) }}" 
-                                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs transition-colors" title="Edit User">
-                                            <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                            <span>Edit</span>
+                                           class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors" title="Edit User">
+                                            ✏️ Edit
                                         </a>
+
+                                        @if($user->status === 'active')
+                                            <button type="button"
+                                                    data-action="toggle-status"
+                                                    data-user-id="{{ $user->user_id }}"
+                                                    class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors" title="Deactivate Account">
+                                                Deactivate
+                                            </button>
+                                        @else
+                                            <button type="button"
+                                                    data-action="toggle-status"
+                                                    data-user-id="{{ $user->user_id }}"
+                                                    class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs border border-emerald-200 transition-colors" title="Activate Account">
+                                                Activate
+                                            </button>
+                                        @endif
+
+                                        @if(!$user->is_approved && $user->role !== 'admin')
+                                            <button type="button"
+                                                    data-action="approve-user"
+                                                    data-user-id="{{ $user->user_id }}"
+                                                    class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm" title="Approve Account">
+                                                ✓ Approve
+                                            </button>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -386,4 +410,74 @@
 
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-action="toggle-status"]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const userId = this.dataset.userId;
+
+                Swal.fire({
+                    title: 'Toggle User Status?',
+                    text: 'Are you sure you want to change this user\'s access status?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#059669',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, change status'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch(`/admin/users/${userId}/toggle-status`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire('Success!', data.success, 'success').then(() => location.reload());
+                            } else {
+                                Swal.fire('Error', data.error || 'Something went wrong.', 'error');
+                            }
+                        })
+                        .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));
+                    }
+                });
+            });
+        });
+
+        document.querySelectorAll('[data-action="approve-user"]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const userId = this.dataset.userId;
+
+                Swal.fire({
+                    title: 'Approve User Account?',
+                    text: 'This will authorize the user account to log in and access system functions.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#059669',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, approve'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch(`/admin/users/${userId}/approve`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire('Approved!', data.success, 'success').then(() => location.reload());
+                            }
+                        })
+                        .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));
+                    }
+                });
+            });
+        });
+    });
+</script>
 @endsection

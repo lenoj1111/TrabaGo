@@ -72,6 +72,41 @@ class EmployerPortalComprehensiveTest extends TestCase
     }
 
     /**
+     * Test an unaccredited employer cannot create a job posting.
+     */
+    public function test_unaccredited_employer_cannot_create_job_posting(): void
+    {
+        $unaccreditedEmployerUser = User::create([
+            'email' => 'unaccredited@cebutech.com',
+            'password' => Hash::make('secret123'),
+            'role' => 'employer',
+            'status' => 'active',
+            'is_approved' => 1,
+        ]);
+
+        Employer::create([
+            'user_id' => $unaccreditedEmployerUser->user_id,
+            'company_name' => 'Pending Accreditation Firm',
+            'is_accredited' => 0,
+        ]);
+
+        $response = $this->actingAs($unaccreditedEmployerUser)->post(route('employer.job-postings.store'), [
+            'title' => 'Junior Marketing Associate',
+            'description' => 'Support campaign execution and employer branding initiatives.',
+            'qualifications' => 'Diploma in any field',
+            'vacancy_count' => 1,
+            'valid_until' => now()->addMonth()->toDateString(),
+        ]);
+
+        $response->assertRedirect(route('employer.accreditation'));
+        $response->assertSessionHas('error', 'You must be accredited before creating a job posting.');
+
+        $this->assertDatabaseMissing('job_postings', [
+            'title' => 'Junior Marketing Associate',
+        ]);
+    }
+
+    /**
      * Test creating a job posting rejects a past date.
      */
     public function test_job_posting_creation_fails_when_valid_until_is_in_the_past(): void

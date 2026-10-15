@@ -10,11 +10,13 @@ class AdminMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
+        // Check if user is logged in using Laravel's Auth facade
         if (!Auth::check()) {
             return redirect()->route('login');
         }
 
-        if (!in_array(Auth::user()->role, ['admin', 'supervisor', 'pesd_supervisor'])) {
+        // Check if the authenticated user has the admin role
+        if (Auth::user()->role !== 'admin') {
             abort(403, 'Unauthorized access. Admin only.');
         }
 

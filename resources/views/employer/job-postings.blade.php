@@ -70,28 +70,18 @@
                 <p class="text-sm text-slate-300">Create, edit, and manage company vacancies. Openings sent to DMDP Administration are reviewed and matched with jobseekers via AI.</p>
             </div>
 
-            @if(auth()->user()->isAccountVerified())
+            @if($employer->is_accredited || ($accreditation && $accreditation->status === 'admin_approved'))
                 <button @click="createModal = true" 
-                        class="shrink-0 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 px-6 py-3.5 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                        class="shrink-0 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-6 py-3.5 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                    <span>Create New Job Opening</span>
-                </button>
-            @elseif(auth()->user()->account_status === 'unverified')
-                <button type="button" 
-                        onclick="if(confirm('Your company is not yet accredited. Would you like to submit your required business documents now?')) { window.location.href='{{ route('employer.accreditation') }}'; }"
-                        class="shrink-0 inline-flex items-center gap-2 rounded-2xl bg-slate-800 hover:bg-slate-700 px-6 py-3.5 text-xs font-black text-amber-300 shadow-md transition-all cursor-pointer border border-amber-500/40"
-                        title="Submit documents to unlock job posting">
-                    <svg class="h-4 w-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                    <span>Create Job (Accreditation Required)</span>
+                    + Create New Job Opening
                 </button>
             @else
-                <button type="button" 
-                        onclick="alert('Your accreditation documents have been submitted and are under review by DMDP / JPO officers. You will be able to post jobs once approved.')"
-                        class="shrink-0 inline-flex items-center gap-2 rounded-2xl bg-slate-800 hover:bg-slate-700 px-6 py-3.5 text-xs font-black text-slate-300 shadow-md transition-all cursor-not-allowed border border-slate-700"
-                        title="Accreditation evaluation in progress">
-                    <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                    <span>Create Job (Accreditation Pending)</span>
-                </button>
+                <a href="{{ route('employer.accreditation') }}" 
+                   class="shrink-0 inline-flex items-center gap-2 rounded-2xl bg-amber-100 border border-amber-200 text-amber-800 px-6 py-3.5 text-xs font-black shadow-sm hover:bg-amber-200 transition-all">
+                    <span>⚠</span>
+                    Accreditation Required
+                </a>
             @endif
         </div>
 
@@ -148,9 +138,13 @@
             </div>
         @endif
         @if(session('info'))
-            <div class="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 text-xs font-bold flex items-center gap-2.5">
-                <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span>{{ session('info') }}</span>
+            <div class="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 text-xs font-bold flex items-center gap-2">
+                <span>ℹ</span> {{ session('info') }}
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2">
+                <span>⚠</span> {{ session('error') }}
             </div>
         @endif
         @if($errors->any())
