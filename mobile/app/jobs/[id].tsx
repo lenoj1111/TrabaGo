@@ -150,7 +150,7 @@ export default function JobDetailsScreen() {
               </View>
               <Text style={styles.metricLabel}>Salary</Text>
               <Text style={styles.metricValue} numberOfLines={1}>
-                {job.salary || job.salary_expectation || 'Competitive'}
+                {job.salary || job.salary_expectation || 'Not specified'}
               </Text>
             </View>
 
@@ -160,7 +160,7 @@ export default function JobDetailsScreen() {
               </View>
               <Text style={styles.metricLabel}>Type</Text>
               <Text style={styles.metricValue} numberOfLines={1}>
-                {job.type || job.employment_type || 'Full-time'}
+                {job.type || job.employment_type || 'Not specified'}
               </Text>
             </View>
 
@@ -257,7 +257,7 @@ export default function JobDetailsScreen() {
         <View style={styles.bottomBarInfo}>
           <Text style={styles.bottomBarLabel}>Compensation</Text>
           <Text style={styles.bottomBarSalary} numberOfLines={1}>
-            {job.salary || job.salary_expectation || 'Competitive'}
+            {job.salary || job.salary_expectation || 'Not specified'}
           </Text>
         </View>
 

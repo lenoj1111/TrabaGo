@@ -62,10 +62,10 @@ class JobController extends Controller
             'company_name' => $companyName,
             'employer_id' => $job->employer_id,
             'location' => $location,
-            'type' => 'Full-time',
-            'employment_type' => 'Full-time',
-            'salary' => '₱18,000 - ₱35,000',
-            'salary_expectation' => '₱18,000 - ₱35,000',
+            'type' => $job->job_type ?? '',
+            'employment_type' => $job->job_type ?? '',
+            'salary' => $job->salary_range ?? '',
+            'salary_expectation' => $job->salary_range ?? '',
             'description' => $job->description ?? 'No description provided.',
             'qualifications' => $job->qualifications ?? '',
             'requirements' => $reqs,
@@ -99,7 +99,7 @@ class JobController extends Controller
             ? JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->pluck('job_id')->toArray() 
             : [];
 
-        $query = JobPosting::with('employer');
+        $query = JobPosting::with('employer')->availableForJobseekers();
 
         $searchTerm = $request->input('q', $request->input('query'));
         if (!empty($searchTerm)) {
@@ -147,7 +147,7 @@ class JobController extends Controller
      */
     public function getById(Request $request, $id)
     {
-        $job = JobPosting::with('employer')->find($id);
+        $job = JobPosting::with('employer')->availableForJobseekers()->find($id);
 
         if (!$job) {
             return response()->json([
