@@ -58,7 +58,7 @@
                             <span>&bull;</span>
                             <span>Cebu City</span>
                             <span>&bull;</span>
-                            <span class="text-emerald-700 font-bold">₱18,000 - ₱35,000 / mo</span>
+                            <span class="text-emerald-700 font-bold">{{ $topJob->salary_range ?: 'Salary not specified' }}</span>
                             @if ($topJob->valid_until)
                                 <span>&bull;</span>
                                 <span class="text-xs text-slate-400">
@@ -193,7 +193,7 @@
                                 </h3>
 
                                 <p class="text-xs text-slate-500 font-medium">
-                                    {{ $company }} &bull; Cebu City &bull; ₱18,000 - ₱35,000
+                                    {{ $company }} &bull; {{ $job->location ?: 'Location not specified' }} &bull; {{ $job->salary_range ?: 'Salary not specified' }}
                                     @if ($job->valid_until)
                                         &bull; <span>Available until {{ $job->valid_until->format('M d, Y') }}</span>
                                     @endif

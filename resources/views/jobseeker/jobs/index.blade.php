@@ -141,7 +141,7 @@
                                     Cebu City
                                 </span>
                                 <span>&bull;</span>
-                                <span class="font-bold text-slate-800">₱18k - ₱35k</span>
+                                <span class="font-bold text-slate-800">{{ $job->salary_range ?: 'Salary not specified' }}</span>
                                 @if ($job->accepts_disability)
                                     <span>&bull;</span>
                                     <span class="text-emerald-700 font-bold inline-flex items-center gap-1">
@@ -212,7 +212,7 @@
                                     </div>
                                     <h2 class="text-2xl font-black text-slate-900 mt-1">{{ $job->title }}</h2>
                                     <p class="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
-                                        <span>Cebu City, Philippines &bull; Full-time Position &bull; ₱18,000 - ₱35,000 / month</span>
+                                        <span>{{ $job->location ?: 'Location not specified' }} &bull; {{ $job->job_type ?: 'Job type not specified' }} &bull; {{ $job->salary_range ?: 'Salary not specified' }}</span>
                                         @if ($job->valid_until)
                                             <span>&bull;</span>
                                             <span class="inline-flex items-center gap-1 font-bold {{ $job->valid_until->isPast() ? 'text-rose-600' : 'text-emerald-700' }}">

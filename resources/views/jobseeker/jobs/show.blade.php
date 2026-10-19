@@ -53,9 +53,9 @@
                             {{ $job->location ?? 'Cebu City, Philippines' }}
                         </span>
                         <span>&bull;</span>
-                        <span class="font-bold text-slate-900">{{ $job->salary_range ?: 'Competitive / Negotiable' }}</span>
+                        <span class="font-bold text-slate-900">{{ $job->salary_range ?: 'Salary not specified' }}</span>
                         <span>&bull;</span>
-                        <span>{{ $job->job_type ?? 'Full-time Position' }}</span>
+                        <span>{{ $job->job_type ?: 'Job type not specified' }}</span>
                         @if ($job->valid_until)
                             <span>&bull;</span>
                             <span class="inline-flex items-center gap-1 font-bold {{ $job->valid_until->isPast() ? 'text-rose-600' : 'text-emerald-700' }}">

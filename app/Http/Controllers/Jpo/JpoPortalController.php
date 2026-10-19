@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class JpoPortalController extends Controller
 {
@@ -240,6 +241,83 @@ class JpoPortalController extends Controller
         $employer = $job->employer ?? null;
 
         return view('reports.nsrp-printable', compact('application', 'jobseeker', 'details', 'socialStatus', 'skills', 'job', 'employer'));
+    }
+
+    public function viewJobseekerDocument(int $id, int $documentIndex)
+    {
+        $application = JobApplication::with('jobseeker.details')->findOrFail($id);
+        $jobseeker = $application->jobseeker;
+        abort_unless($jobseeker && $jobseeker->details, 404);
+
+        $documents = $jobseeker->details->training_certificates;
+        if (!is_array($documents)) {
+            $documents = json_decode($documents ?? '[]', true) ?: [];
+        }
+        abort_unless(isset($documents[$documentIndex]) && is_array($documents[$documentIndex]), 404);
+
+        $document = $documents[$documentIndex];
+        if (($document['category'] ?? null) === 'certificate' && !empty($document['enrollment_id'])) {
+            $enrollment = DB::table('training_enrollments')
+                ->join('jobseekers', 'training_enrollments.jobseeker_id', '=', 'jobseekers.jobseeker_id')
+                ->join('training_programs', 'training_enrollments.training_id', '=', 'training_programs.training_id')
+                ->where('training_enrollments.enrollment_id', $document['enrollment_id'])
+                ->where('training_enrollments.jobseeker_id', $jobseeker->jobseeker_id)
+                ->where('training_enrollments.certificate_issued', 1)
+                ->select(
+                    'training_enrollments.*',
+                    'jobseekers.first_name',
+                    'jobseekers.last_name',
+                    'training_programs.title as course_title'
+                )
+                ->first();
+
+            abort_unless($enrollment, 404, 'Certificate not found or not yet issued.');
+
+            return view('trainer.certificates.preview', [
+                'enrollment' => $enrollment,
+                'backUrl' => route('jpo.evaluations.jobseekers'),
+            ]);
+        }
+
+        $path = null;
+        foreach (['file_path', 'path', 'file_url', 'url'] as $pathKey) {
+            $candidate = $document[$pathKey] ?? null;
+            if (!is_string($candidate) || trim($candidate) === '') {
+                continue;
+            }
+
+            $urlPath = parse_url($candidate, PHP_URL_PATH);
+            $path = is_string($urlPath) && $urlPath !== '' ? $urlPath : $candidate;
+            break;
+        }
+
+        abort_unless(is_string($path) && $path !== '', 404, 'Document file not found.');
+        $path = str_replace('\\', '/', $path);
+        if (($storagePosition = strrpos($path, '/storage/')) !== false) {
+            $path = substr($path, $storagePosition + strlen('/storage/'));
+        }
+        $path = ltrim($path, '/');
+        foreach (['storage/app/public/', 'app/public/', 'storage/'] as $prefix) {
+            if (str_starts_with($path, $prefix)) {
+                $path = substr($path, strlen($prefix));
+                break;
+            }
+        }
+        $segments = explode('/', $path);
+        $isApplicantDocument = str_starts_with($path, 'documents/');
+        $isResume = str_starts_with($path, 'resumes/');
+        $isLegacyId = str_starts_with($path, 'ids/') || str_starts_with($path, 'valid_ids/');
+        abort_unless(
+            ($isApplicantDocument || $isResume || $isLegacyId)
+                && !in_array('..', $segments, true)
+                && !in_array('.', $segments, true),
+            404
+        );
+
+        $disk = Storage::disk('public');
+        abort_unless($disk->exists($path), 404, 'Document file not found on storage.');
+
+        return $disk->response($path, basename($path), [], 'inline');
     }
 
     // =========================================================================

@@ -261,6 +261,7 @@ Route::prefix('jpo')->name('jpo.')->middleware(['auth', 'jpo'])->group(function 
 
     // 1. Evaluate Jobseekers (Refer to Employer) & NSRP Form
     Route::get('/evaluations/jobseekers', [JpoPortalController::class, 'evaluateJobseekers'])->name('evaluations.jobseekers');
+    Route::get('/evaluations/jobseekers/{id}/documents/{documentIndex}', [JpoPortalController::class, 'viewJobseekerDocument'])->name('evaluations.jobseekers.documents.show');
     Route::post('/evaluations/jobseekers/{id}/refer', [JpoPortalController::class, 'referJobseeker'])->name('evaluations.jobseekers.refer');
     Route::post('/evaluations/jobseekers/{id}/approve', [JpoPortalController::class, 'approveJobseeker'])->name('evaluations.jobseekers.approve');
     Route::post('/evaluations/jobseekers/{id}/reject', [JpoPortalController::class, 'rejectJobseeker'])->name('evaluations.jobseekers.reject');

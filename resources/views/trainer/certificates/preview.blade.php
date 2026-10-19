@@ -26,7 +26,7 @@
 
     <!-- Top Action Bar -->
     <div class="no-print w-full max-w-4xl mb-6 flex items-center justify-between">
-        <a href="{{ route('trainer.enrollments.index') }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200">
+        <a href="{{ $backUrl ?? route('trainer.enrollments.index') }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200">
             &larr; Back to Enrollments
         </a>
         <button onclick="window.print()" class="inline-flex items-center gap-2 text-xs font-black text-white bg-emerald-600 hover:bg-emerald-500 px-6 py-2 rounded-xl shadow-lg shadow-emerald-600/30">
