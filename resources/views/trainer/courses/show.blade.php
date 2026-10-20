@@ -15,7 +15,7 @@
         points: 1
     }
 }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-7xl space-y-8">
+    <div class="w-full max-w-[1680px] mx-auto space-y-8">
         
         <!-- Breadcrumb & Actions -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -44,12 +44,20 @@
                             {{ $course->duration_months ?: 1 }} Month Track
                         </span>
                         @if($course->auto_generate_certificate ?? true)
-                            <span class="rounded-full bg-teal-400/20 border border-teal-300/30 px-3 py-0.5 text-xs font-bold text-teal-300">
-                                🎓 Auto-Generate Certificate Enabled
+                            <span class="rounded-full bg-emerald-400/20 border border-emerald-300/30 px-3 py-0.5 text-xs font-bold text-emerald-300 inline-flex items-center gap-1.5">
+                                <svg class="h-3.5 w-3.5 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+                                    <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
+                                </svg>
+                                <span>Auto-Generate Certificate Enabled</span>
                             </span>
                         @else
-                            <span class="rounded-full bg-amber-400/20 border border-amber-300/30 px-3 py-0.5 text-xs font-bold text-amber-300">
-                                📋 Manual Assessment & Certificate Approval
+                            <span class="rounded-full bg-amber-400/20 border border-amber-300/30 px-3 py-0.5 text-xs font-bold text-amber-300 inline-flex items-center gap-1.5">
+                                <svg class="h-3.5 w-3.5 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                </svg>
+                                <span>Manual Assessment & Certificate Approval</span>
                             </span>
                         @endif
                     </div>
@@ -94,7 +102,9 @@
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                         <div>
                             <div class="flex items-center gap-2">
-                                <span class="text-xl">📝</span>
+                                <svg class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
                                 <h2 class="text-lg font-black text-slate-900">Trainer-Created Assessment</h2>
                             </div>
                             <p class="text-xs text-slate-500 mt-0.5">
@@ -103,7 +113,10 @@
                         </div>
 
                         <button @click="addQuestionModal = true" type="button" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 transition-all">
-                            <span>➕</span> Add Question
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            <span>Add Question</span>
                         </button>
                     </div>
 
@@ -169,7 +182,11 @@
                             </div>
                         @empty
                             <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center space-y-2">
-                                <div class="text-3xl">✏️</div>
+                                <div class="h-12 w-12 rounded-2xl bg-slate-200 text-slate-500 flex items-center justify-center mx-auto">
+                                    <svg class="h-6 w-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </div>
                                 <h3 class="text-xs font-bold text-slate-800">No assessment questions published yet</h3>
                                 <p class="text-[11px] text-slate-500 max-w-md mx-auto">
                                     Assessments are not automatically generated. Click "Add Question" above to author multiple-choice evaluation questions for your trainees.
@@ -221,7 +238,12 @@
                                         <td class="py-3 px-3">
                                             @if($enr->certificate_issued)
                                                 <span class="text-emerald-700 font-bold flex items-center gap-1 text-[11px]">
-                                                    <span>🎓</span> {{ $enr->certificate_no ?: 'Issued' }}
+                                                    <svg class="h-3.5 w-3.5 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+                                                        <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
+                                                    </svg>
+                                                    <span>{{ $enr->certificate_no ?: 'Issued' }}</span>
                                                 </span>
                                             @else
                                                 <span class="text-slate-400 text-[11px]">Not issued</span>
@@ -279,8 +301,11 @@
                                     <span class="font-bold text-slate-800">#{{ $topic->topic_order ?: ($tIndex + 1) }}. {{ $topic->title }}</span>
                                 </div>
                                 @if(!empty($topic->video_url))
-                                    <div class="text-[10px] text-emerald-700 truncate">
-                                        🔗 {{ $topic->video_url }}
+                                    <div class="text-[10px] text-emerald-700 truncate flex items-center gap-1">
+                                        <svg class="h-3 w-3 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                        </svg>
+                                        <span>{{ $topic->video_url }}</span>
                                     </div>
                                 @endif
                             </div>
@@ -335,7 +360,11 @@
                     @csrf
                     <div class="bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 px-6 py-5 text-white flex items-center justify-between border-b border-emerald-500/20">
                         <div class="flex items-center gap-3">
-                            <span class="text-xl">➕</span>
+                            <div class="h-9 w-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300">
+                                <svg class="h-4 w-4 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                                </svg>
+                            </div>
                             <div>
                                 <h3 class="text-base font-bold text-white">Add Assessment Question</h3>
                                 <p class="text-xs text-emerald-300/80">Trainer-authored question for trainee evaluation.</p>
@@ -403,7 +432,11 @@
                     @method('PUT')
                     <div class="bg-slate-900 px-6 py-5 text-white flex items-center justify-between border-b border-slate-800">
                         <div class="flex items-center gap-3">
-                            <span class="text-xl">✏️</span>
+                            <div class="h-9 w-9 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center">
+                                <svg class="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                            </div>
                             <div>
                                 <h3 class="text-base font-bold text-white">Edit Assessment Question</h3>
                                 <p class="text-xs text-slate-400">Modify prompt, options, or correct answer.</p>

@@ -6,14 +6,58 @@ use App\Http\Controllers\Controller;
 use App\Models\Employer;
 use App\Models\EmployerAccreditation;
 use App\Models\JobPosting;
+use App\Models\Jobseeker;
+use App\Models\JobseekerDetail;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class ApprovalsController extends Controller
 {
+    public function accreditationDocument(int $accreditationId, string $documentKey, string $action)
+    {
+        abort_unless(in_array($action, ['preview', 'download'], true), 404);
+
+        $accreditation = DB::table('employer_accreditation')
+            ->where('accreditation_id', $accreditationId)
+            ->first();
+        abort_unless($accreditation, 404);
+
+        $documents = json_decode($accreditation->documents ?? '[]', true);
+        abort_unless(is_array($documents) && array_key_exists($documentKey, $documents), 404);
+
+        $document = $documents[$documentKey];
+        $path = is_array($document) ? ($document['path'] ?? null) : $document;
+        abort_unless(is_string($path), 404);
+
+        $path = str_replace('\\', '/', $path);
+        $segments = explode('/', $path);
+        abort_unless(
+            (str_starts_with($path, 'accreditation_docs/') || str_starts_with($path, 'employer_documents/'))
+                && !in_array('..', $segments, true)
+                && !in_array('.', $segments, true),
+            404
+        );
+
+        $disk = Storage::disk('public');
+        abort_unless($disk->exists($path), 404);
+
+        $filename = is_array($document) && !empty($document['original_name'])
+            ? $document['original_name']
+            : basename($path);
+
+        return $disk->response(
+            $path,
+            $filename,
+            [],
+            $action === 'download' ? 'attachment' : 'inline'
+        );
+    }
+
     public function index()
     {
         // 1. Pending Job Postings with employer & accreditation details
@@ -74,7 +118,67 @@ class ApprovalsController extends Controller
             ->latest('users.created_at')
             ->get();
 
-        return view('admin.approvals.index', compact('pendingJobs', 'pendingAccreditations', 'pendingPlacementReports', 'pendingTrainers'));
+        // 5. Pending Jobseekers (Awaiting Account & Government ID Verification)
+        $hasAccountStatusColumn = Schema::hasColumn('users', 'account_status');
+
+        $pendingJobseekers = DB::table('jobseekers')
+            ->join('users', 'jobseekers.user_id', '=', 'users.user_id')
+            ->leftJoin('jobseeker_details', 'jobseekers.jobseeker_id', '=', 'jobseeker_details.jobseeker_id')
+            ->leftJoin('social_status', 'jobseekers.jobseeker_id', '=', 'social_status.jobseeker_id')
+            ->select(
+                'jobseekers.*',
+                'users.email as user_email',
+                $hasAccountStatusColumn ? 'users.account_status' : 'users.status as account_status',
+                'users.is_approved as user_is_approved',
+                'users.status as user_status',
+                'users.created_at as registered_at',
+                'jobseeker_details.training_certificates',
+                'social_status.is_pwd',
+                'social_status.pwd_type'
+            )
+            ->where('users.role', 'jobseeker')
+            ->where(function ($q) use ($hasAccountStatusColumn) {
+                $q->where('users.is_approved', 0);
+
+                if ($hasAccountStatusColumn) {
+                    $q->orWhere('users.account_status', 'pending_review')
+                      ->orWhere('users.account_status', 'unverified')
+                      ->orWhereNull('users.account_status');
+                } else {
+                    $q->orWhere('users.status', 'pending')
+                      ->orWhereNull('users.status');
+                }
+            })
+            ->latest('users.created_at')
+            ->get();
+
+        foreach ($pendingJobseekers as $js) {
+            $docs = [];
+            if (!empty($js->training_certificates)) {
+                $raw = is_array($js->training_certificates) 
+                    ? $js->training_certificates 
+                    : json_decode($js->training_certificates, true);
+                if (is_array($raw)) {
+                    foreach ($raw as $d) {
+                        $cat = $d['category'] ?? '';
+                        $docs[$cat] = $d;
+                    }
+                }
+            }
+            $js->parsed_docs = $docs;
+            $js->has_valid_id = !empty($docs['valid_id']);
+            $js->valid_id_doc = $docs['valid_id'] ?? null;
+            $js->has_resume = !empty($docs['resume']);
+            $js->resume_doc = $docs['resume'] ?? null;
+        }
+
+        return view('admin.approvals.index', compact(
+            'pendingJobs', 
+            'pendingAccreditations', 
+            'pendingPlacementReports', 
+            'pendingTrainers',
+            'pendingJobseekers'
+        ));
     }
 
     // =========================================================================
@@ -171,13 +275,19 @@ class ApprovalsController extends Controller
             'accredited_at' => now()->toDateString(),
         ]);
 
-        // Notify employer
+        // Notify employer and verify account
         $employer = Employer::with('user')->find($accreditation->employer_id);
         if ($employer && $employer->user) {
+            DB::table('users')->where('user_id', $employer->user->user_id)->update([
+                'account_status' => 'verified',
+                'is_approved' => 1,
+                'updated_at' => now(),
+            ]);
+
             Notification::create([
                 'user_id' => $employer->user->user_id,
                 'title' => 'Official Accreditation Granted!',
-                'message' => "Congratulations! {$employer->company_name} is now officially accredited with the Cebu City Department of Manpower Development and Placement (DMDP).",
+                'message' => "Congratulations! {$employer->company_name} is now officially accredited with the Cebu City Department of Manpower Development and Placement (DMDP). Job posting is now unlocked.",
                 'type' => 'approval',
                 'is_read' => false,
                 'related_id' => $employer->employer_id,
@@ -328,14 +438,15 @@ class ApprovalsController extends Controller
             ->leftJoin('social_status', 'jobseekers.jobseeker_id', '=', 'social_status.jobseeker_id')
             ->select(
                 'jobseekers.*', 
+                'users.user_id',
                 'users.email as user_email', 
                 'users.status as account_status',
-                'users.is_approved as account_approved',
                 'social_status.is_pwd',
                 'social_status.pwd_type',
                 'social_status.is_4ps'
             )
             ->selectRaw('(SELECT COUNT(*) FROM jobseeker_skills WHERE jobseeker_id = jobseekers.jobseeker_id) as skills_count')
+            ->selectRaw("NULL as skills_text")
             ->selectRaw('(SELECT COUNT(*) FROM job_applications WHERE jobseeker_id = jobseekers.jobseeker_id) as applications_count')
             ->selectRaw('(SELECT COUNT(*) FROM training_enrollments WHERE jobseeker_id = jobseekers.jobseeker_id) as trainings_count')
             ->selectRaw('(SELECT COUNT(*) FROM training_enrollments WHERE jobseeker_id = jobseekers.jobseeker_id AND certificate_issued = 1) as certs_count')
@@ -375,6 +486,33 @@ class ApprovalsController extends Controller
         }
 
         $jobseekers = $query->orderBy('jobseekers.jobseeker_id', 'desc')->paginate(15)->withQueryString();
+
+        // Attach is_verified, missing_requirements, skills_text, location_text, education_text
+        $jobseekerIds = collect($jobseekers->items())->pluck('jobseeker_id');
+        $models = \App\Models\Jobseeker::with(['user', 'details', 'socialStatus', 'skills'])
+            ->whereIn('jobseeker_id', $jobseekerIds)
+            ->get()
+            ->keyBy('jobseeker_id');
+
+        foreach ($jobseekers->items() as $item) {
+            $model = $models->get($item->jobseeker_id);
+            $item->is_verified = $model ? $model->isVerified() : false;
+            $item->missing_requirements = $model ? array_values($model->getMissingRequirements()) : [];
+            $item->skills_text = $model && $model->skills ? $model->skills->pluck('skill_name')->implode(', ') : '';
+
+            $address = $model && $model->details ? ($model->details->address ?? []) : [];
+            $education = $model && $model->details ? ($model->details->education ?? []) : [];
+
+            $barangay = is_array($address) ? ($address['barangay'] ?? '') : '';
+            $city = is_array($address) ? ($address['city'] ?? '') : '';
+            $province = is_array($address) ? ($address['province'] ?? 'Cebu') : 'Cebu';
+            $loc = trim("{$barangay}, {$city}, {$province}", " ,");
+            $item->location_text = !empty($loc) ? $loc : 'Cebu City';
+
+            $eduLevel = is_array($education) ? ($education['level'] ?? ($education['educational_level'] ?? '')) : '';
+            $eduCourse = is_array($education) ? ($education['course'] ?? ($education['course_degree'] ?? '')) : '';
+            $item->education_text = !empty($eduLevel) ? ($eduLevel . (!empty($eduCourse) ? " ({$eduCourse})" : '')) : 'N/A';
+        }
 
         $totalJobseekers = DB::table('jobseekers')->count();
         $pwdJobseekers = DB::table('social_status')->where('is_pwd', 1)->count();
@@ -435,5 +573,106 @@ class ApprovalsController extends Controller
         ]);
 
         return redirect()->back()->with('info', "Collaborator trainer account for '{$user->email}' was rejected.");
+    }
+
+    // =========================================================================
+    // PILLAR 5: JOBSEEKER IDENTITY & VERIFICATION APPROVAL
+    // =========================================================================
+
+    public function approveJobseeker(Request $request, int $id)
+    {
+        $jobseeker = Jobseeker::with('user', 'details')->find($id);
+        if (!$jobseeker) {
+            $jobseeker = Jobseeker::with('user', 'details')->where('user_id', $id)->firstOrFail();
+        }
+
+        $user = $jobseeker->user;
+        if ($user) {
+            $user->update([
+                'status' => 'active',
+                'is_approved' => 1,
+                'account_status' => 'verified',
+            ]);
+        }
+
+        // Update document status in details if present
+        $details = $jobseeker->details;
+        if ($details && !empty($details->training_certificates)) {
+            $docs = is_array($details->training_certificates) 
+                ? $details->training_certificates 
+                : (json_decode($details->training_certificates, true) ?: []);
+            
+            foreach ($docs as &$doc) {
+                if (in_array($doc['category'] ?? '', ['valid_id', 'resume', 'certificate', 'pwd_id'])) {
+                    $doc['status'] = 'approved';
+                    $doc['reviewed_by'] = Auth::id();
+                    $doc['reviewed_at'] = now()->toIso8601String();
+                }
+            }
+            $details->training_certificates = array_values($docs);
+            $details->save();
+        }
+
+        if ($user) {
+            Notification::create([
+                'user_id' => $user->user_id,
+                'title' => 'Account & Government ID Approved!',
+                'message' => 'Congratulations! Your jobseeker account and government ID have been verified and approved by the DMDP Admin. You are now authorized to submit job applications.',
+                'type' => 'approval',
+                'is_read' => false,
+                'related_id' => $jobseeker->jobseeker_id,
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' has been approved and verified successfully.");
+    }
+
+    public function rejectJobseeker(Request $request, int $id)
+    {
+        $jobseeker = Jobseeker::with('user', 'details')->find($id);
+        if (!$jobseeker) {
+            $jobseeker = Jobseeker::with('user', 'details')->where('user_id', $id)->firstOrFail();
+        }
+
+        $reason = $request->input('remarks') ?: 'Your submitted government ID or documents did not meet verification criteria. Please upload a clear valid government ID in your Document Hub.';
+
+        $user = $jobseeker->user;
+        if ($user) {
+            $user->update([
+                'account_status' => 'unverified',
+                'is_approved' => 0,
+            ]);
+        }
+
+        $details = $jobseeker->details;
+        if ($details && !empty($details->training_certificates)) {
+            $docs = is_array($details->training_certificates) 
+                ? $details->training_certificates 
+                : (json_decode($details->training_certificates, true) ?: []);
+            
+            foreach ($docs as &$doc) {
+                if (($doc['category'] ?? '') === 'valid_id') {
+                    $doc['status'] = 'rejected';
+                    $doc['rejection_reason'] = $reason;
+                    $doc['reviewed_by'] = Auth::id();
+                    $doc['reviewed_at'] = now()->toIso8601String();
+                }
+            }
+            $details->training_certificates = array_values($docs);
+            $details->save();
+        }
+
+        if ($user) {
+            Notification::create([
+                'user_id' => $user->user_id,
+                'title' => 'Verification Document Requires Revision',
+                'message' => "Your government ID submission requires revision: {$reason}",
+                'type' => 'rejection',
+                'is_read' => false,
+                'related_id' => $jobseeker->jobseeker_id,
+            ]);
+        }
+
+        return redirect()->back()->with('info', "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' returned for document revision.");
     }
 }

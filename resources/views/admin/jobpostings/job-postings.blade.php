@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8" x-data="{ createModalOpen: false, acceptsDisability: false }">
-    <div class="mx-auto max-w-7xl space-y-8">
+    <div class="w-full max-w-[1680px] mx-auto space-y-8">
 
         <!-- Header -->
         <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
@@ -22,10 +22,11 @@
             <div class="flex items-center gap-3 shrink-0">
                 <a href="{{ route('admin.job-postings-list.export') }}" 
                    class="inline-flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 text-white text-xs font-bold transition-all">
-                    <span>📥 Export CSV</span>
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <span>Export CSV</span>
                 </a>
                 <button type="button" @click="createModalOpen = true" 
-                        class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-5 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                        class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 px-5 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
                     <span>+ Create Job Posting</span>
                 </button>
             </div>
@@ -39,8 +40,8 @@
                     <p class="text-3xl font-black text-slate-900">{{ $stats['total'] ?? 0 }}</p>
                     <span class="text-[11px] text-slate-500">All registered listings</span>
                 </div>
-                <div class="h-12 w-12 rounded-2xl bg-slate-100 text-slate-800 flex items-center justify-center text-xl font-black">
-                    💼
+                <div class="h-12 w-12 rounded-2xl bg-slate-100 text-slate-800 flex items-center justify-center shadow-xs">
+                    <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                 </div>
             </div>
 
@@ -50,8 +51,8 @@
                     <p class="text-3xl font-black text-amber-600">{{ $stats['pending'] ?? 0 }}</p>
                     <span class="text-[11px] text-amber-700">Awaiting authorization</span>
                 </div>
-                <div class="h-12 w-12 rounded-2xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-center text-xl font-black">
-                    ⏳
+                <div class="h-12 w-12 rounded-2xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-center shadow-xs">
+                    <svg class="w-6 h-6 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
             </div>
 
@@ -61,8 +62,8 @@
                     <p class="text-3xl font-black text-emerald-700">{{ $stats['approved'] ?? 0 }}</p>
                     <span class="text-[11px] text-emerald-800">Live on portal</span>
                 </div>
-                <div class="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-center text-xl font-black">
-                    ✓
+                <div class="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-center shadow-xs">
+                    <svg class="w-6 h-6 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
             </div>
 
@@ -72,8 +73,8 @@
                     <p class="text-3xl font-black text-rose-700">{{ $stats['expired'] ?? 0 }}</p>
                     <span class="text-[11px] text-rose-800">Past deadline</span>
                 </div>
-                <div class="h-12 w-12 rounded-2xl bg-rose-50 text-rose-800 border border-rose-200 flex items-center justify-center text-xl font-black">
-                    ⏱️
+                <div class="h-12 w-12 rounded-2xl bg-rose-50 text-rose-800 border border-rose-200 flex items-center justify-center shadow-xs">
+                    <svg class="w-6 h-6 text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
             </div>
         </div>
@@ -170,8 +171,9 @@
                                 </td>
                                 <td class="py-4 px-6">
                                     @if($job->company_name === 'DMDP')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 font-bold text-[10px] border border-emerald-200">
-                                            🏛️ DMDP Direct
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 font-bold text-[10px] border border-emerald-200">
+                                            <svg class="w-3 h-3 text-emerald-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                            <span>DMDP Direct</span>
                                         </span>
                                     @else
                                         <div class="font-bold text-slate-900">{{ $job->company_name ?? 'N/A' }}</div>
@@ -179,15 +181,18 @@
                                         <div>
                                             @if($job->is_accredited || ($job->accreditation_status ?? '') === 'admin_approved')
                                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200">
-                                                    🛡️ Accredited
+                                                    <svg class="w-3 h-3 text-emerald-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                                    <span>Accredited</span>
                                                 </span>
                                             @elseif(in_array($job->accreditation_status ?? '', ['submitted_to_jpo', 'jpo_approved', 'supervisor_approved', 'manual_review', 'pending']))
                                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200">
-                                                    ⏳ Pending
+                                                    <svg class="w-3 h-3 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    <span>Pending</span>
                                                 </span>
                                             @else
                                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-bold border border-slate-200">
-                                                    ✕ Not Accredited
+                                                    <svg class="w-3 h-3 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                    <span>Not Accredited</span>
                                                 </span>
                                             @endif
                                         </div>
@@ -217,29 +222,30 @@
                                 <td class="py-4 px-6 text-right">
                                     <div class="inline-flex items-center gap-1.5">
                                         <a href="{{ route('admin.job-postings-list.show', $job->job_id) }}" 
-                                           class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors" title="View Details">
-                                            👁️ View
+                                           class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors" title="View Details">
+                                            <svg class="w-3.5 h-3.5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <span>View</span>
                                         </a>
                                         <a href="{{ route('admin.job-postings-list.edit', $job->job_id) }}" 
-                                           class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors" title="Edit Listing">
-                                            ✏️
+                                           class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors" title="Edit Listing">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                         </a>
 
                                         @if($job->status === 'pending')
                                             <button onclick="approveJob({{ $job->job_id }})" 
-                                                    class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm" title="Approve">
-                                                ✓
+                                                    class="p-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm" title="Approve">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                                             </button>
                                             <button onclick="rejectJob({{ $job->job_id }})" 
-                                                    class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors" title="Reject">
-                                                ✕
+                                                    class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors" title="Reject">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
                                             </button>
                                         @endif
 
                                         @if(in_array($job->status, ['approved', 'pending']))
                                             <button onclick="closeJob({{ $job->job_id }})" 
-                                                    class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition-colors" title="Close Listing">
-                                                🔒
+                                                    class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition-colors" title="Close Listing">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                                             </button>
                                         @endif
                                     </div>
@@ -248,7 +254,9 @@
                         @empty
                             <tr>
                                 <td colspan="7" class="py-12 text-center text-slate-400">
-                                    <div class="text-3xl mb-2">💼</div>
+                                    <div class="h-12 w-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                    </div>
                                     <p class="font-bold text-slate-700">No job postings found</p>
                                     <p class="text-xs mt-0.5">Click "Create Job Posting" to add a new listing.</p>
                                 </td>
@@ -343,7 +351,10 @@
                         <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 select-none">
                             <input type="checkbox" name="accepts_disability" value="1" x-model="acceptsDisability"
                                    class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4">
-                            <span>♿ Accepts PWD Applicants</span>
+                            <span class="inline-flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-slate-600" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="4" r="2"/><path d="M15.5 13.5A4.5 4.5 0 0 1 11 18a4.5 4.5 0 0 1-4.5-4.5A4.5 4.5 0 0 1 11 9c.4 0 .78.06 1.14.16L13.5 6.5C12.7 6.18 11.87 6 11 6a7.5 7.5 0 0 0-7.5 7.5A7.5 7.5 0 0 0 11 21a7.5 7.5 0 0 0 7.42-6.5h-2.92z"/><path d="M19 10h-4.5l-1.3-2.6A2 2 0 0 0 11.4 6.2L8.5 7.6 9.4 9.4l2.1-1 2 4.1V17h2v-4.5l1.6-1.6H19v-2z"/></svg>
+                                <span>Accepts PWD Applicants</span>
+                            </span>
                         </label>
                         <div x-show="acceptsDisability" style="display: none;" class="pt-1">
                             <input type="text" name="disability_type" placeholder="Specify disability types (e.g. Visual, Hearing, Orthopedic)"
@@ -359,8 +370,9 @@
                         Cancel
                     </button>
                     <button type="submit" 
-                            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-xs shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
-                        ✓ Publish & Approve
+                            class="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                        <span>Publish & Approve</span>
                     </button>
                 </div>
             </form>

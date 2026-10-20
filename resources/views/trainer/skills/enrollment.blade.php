@@ -16,7 +16,7 @@
         }
     }
 }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-7xl space-y-8">
+    <div class="w-full max-w-[1680px] mx-auto space-y-8">
         
         <!-- Header -->
         <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
@@ -98,7 +98,10 @@
                                         </td>
                                         <td class="py-3 px-3 text-right">
                                             <button @click="selectedJobseeker = { id: {{ $js->jobseeker_id }}, name: '{{ addslashes($js->first_name . ' ' . $js->last_name) }}', email: '{{ addslashes($js->user_email) }}' }; enrollModal = true;" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-extrabold transition-colors">
-                                                <span>🎯</span> Enroll in Skills Track
+                                                <svg class="h-3.5 w-3.5 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                                </svg>
+                                                <span>Enroll in Skills Track</span>
                                             </button>
                                         </td>
                                     </tr>
@@ -178,7 +181,11 @@
 
                     <div class="bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 px-6 py-5 text-white flex items-center justify-between border-b border-emerald-500/20">
                         <div class="flex items-center gap-3">
-                            <span class="text-xl">🎯</span>
+                            <div class="h-9 w-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300">
+                                <svg class="h-4 w-4 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
+                            </div>
                             <div>
                                 <h3 class="text-base font-bold text-white">Enroll in Skills Training Track</h3>
                                 <p class="text-xs text-emerald-300/80">Target specific skills for candidate development.</p>

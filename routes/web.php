@@ -1,17 +1,29 @@
 <?php
 
 use App\Http\Controllers\Admin\ApprovalsController;
+use App\Http\Controllers\Admin\BarangayDistributionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\JobPostingController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\ConfirmablePasswordController;
+use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\Auth\EmailVerificationPromptController;
+use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\Employer\EmployerPortalController;
 use App\Http\Controllers\EmployerRegistrationController;
 use App\Http\Controllers\Jobseeker\JobseekerPortalController;
 use App\Http\Controllers\JobseekerRegistrationController;
+use App\Http\Controllers\Jpo\JpoBarangayDistributionController;
 use App\Http\Controllers\Jpo\JpoPortalController;
 use App\Http\Controllers\Lmo\LmoPortalController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicJobController;
 use App\Http\Controllers\Supervisor\SupervisorPortalController;
 use App\Http\Controllers\Trainer\TrainerPortalController;
 use Illuminate\Http\Request;
@@ -29,6 +41,9 @@ Route::get('/', function () {
     return view('homepage');
 })->name('home');
 
+Route::get('/jobs', [PublicJobController::class, 'index'])->name('jobs.index');
+Route::get('/jobs/{id}', [PublicJobController::class, 'show'])->name('jobs.show');
+
 Route::get('/contact', [ContactController::class, 'index'])->name('contact');
 Route::post('/contact', [ContactController::class, 'submit'])->name('contact.submit');
 
@@ -41,10 +56,62 @@ Route::post('/contact', [ContactController::class, 'submit'])->name('contact.sub
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-Route::get('/accreditation-documents/{accreditationId}/{documentKey}/{action}', [EmployerPortalController::class, 'accreditationDocument'])
-    ->where('action', 'preview|download')
-    ->middleware('auth')
-    ->name('accreditation.documents');
+
+Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
+Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.post');
+
+Route::get('/dashboard', function () {
+    $user = Auth::user();
+    if (!$user) {
+        return redirect()->route('login');
+    }
+    switch ($user->role) {
+        case 'admin':
+        case 'supervisor':
+        case 'pesd_supervisor':
+            return redirect('/admin/dashboard');
+        case 'jpo':
+            return redirect('/jpo/dashboard');
+        case 'trainer':
+            return redirect('/trainer/dashboard');
+        case 'lmo':
+            return redirect('/lmo/dashboard');
+        case 'employer':
+            return redirect('/employer/dashboard');
+        case 'jobseeker':
+        default:
+            return redirect('/jobseeker/home');
+    }
+})->middleware('auth')->name('dashboard');
+
+Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
+Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
+Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.store');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/verify-email', EmailVerificationPromptController::class)
+        ->name('verification.notice');
+
+    Route::get('/verify-email/{id}/{hash}', VerifyEmailController::class)
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
+
+    Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::put('/password', [PasswordController::class, 'update'])->name('password.update');
+    Route::get('/confirm-password', [ConfirmablePasswordController::class, 'show'])->name('password.confirm');
+    Route::post('/confirm-password', [ConfirmablePasswordController::class, 'store']);
+
+    Route::get('/accreditations/{accreditationId}/documents/{documentKey}/{action}', [ApprovalsController::class, 'accreditationDocument'])
+        ->whereIn('action', ['preview', 'download'])
+        ->name('accreditation.documents');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -156,6 +223,7 @@ Route::prefix('employer')->name('employer.')->group(function () {
         // 2. Pass Accreditation Papers (Send to JPO)
         Route::get('/accreditation', [EmployerPortalController::class, 'accreditation'])->name('accreditation');
         Route::post('/accreditation/upload', [EmployerPortalController::class, 'submitAccreditation'])->name('accreditation.upload');
+        Route::post('/accreditation/submit', [EmployerPortalController::class, 'submitAccreditation'])->name('accreditation.submit');
         Route::get('/accreditation/print', [EmployerPortalController::class, 'printAccreditation'])->name('accreditation.print');
 
         // 3. Review Referred Jobseekers (From JPO) & Schedule Interview / Hire / Mark Not Qualified
@@ -197,7 +265,10 @@ Route::prefix('jpo')->name('jpo.')->middleware(['auth', 'jpo'])->group(function 
 
     // 1. Evaluate Jobseekers (Refer to Employer) & NSRP Form
     Route::get('/evaluations/jobseekers', [JpoPortalController::class, 'evaluateJobseekers'])->name('evaluations.jobseekers');
+    Route::get('/evaluations/jobseekers/{id}/documents/{documentIndex}', [JpoPortalController::class, 'viewJobseekerDocument'])->name('evaluations.jobseekers.documents.show');
     Route::post('/evaluations/jobseekers/{id}/refer', [JpoPortalController::class, 'referJobseeker'])->name('evaluations.jobseekers.refer');
+    Route::post('/evaluations/jobseekers/{id}/approve', [JpoPortalController::class, 'approveJobseeker'])->name('evaluations.jobseekers.approve');
+    Route::post('/evaluations/jobseekers/{id}/reject', [JpoPortalController::class, 'rejectJobseeker'])->name('evaluations.jobseekers.reject');
     Route::get('/evaluations/jobseekers/{id}/nsrp', [JpoPortalController::class, 'showNsrpForm'])->name('evaluations.jobseekers.nsrp');
 
     // 2. Evaluate Accreditation Papers (Recommend to Admin)
@@ -212,6 +283,9 @@ Route::prefix('jpo')->name('jpo.')->middleware(['auth', 'jpo'])->group(function 
     Route::post('/evaluations/placement-reports/{id}/forward', [JpoPortalController::class, 'forwardPlacementReport'])->name('evaluations.placement-reports.forward');
     Route::get('/evaluations/placement-reports/{id}', [JpoPortalController::class, 'showPlacementReport'])->name('evaluations.placement-reports.show');
     Route::get('/evaluations/placement-reports/{id}/print', [JpoPortalController::class, 'showPlacementReport'])->name('evaluations.placement-reports.print');
+
+    // 4. Barangay Distribution (Operational Read-Only Summary for BESD Coordination & Job Fairs)
+    Route::get('/barangay-distribution', [JpoBarangayDistributionController::class, 'index'])->name('barangay-distribution');
 
     // Officer Profile & Security Settings
     Route::get('/profile', [JpoPortalController::class, 'profile'])->name('profile');
@@ -308,7 +382,7 @@ Route::prefix('lmo')->name('lmo.')->middleware(['auth'])->group(function () {
     // LMO role removed - Admin handles all responsibilities
     Route::get('/dashboard', fn() => redirect()->route('admin.dashboard'))->name('dashboard');
     Route::get('/jobseekers/supervise', fn() => redirect()->route('admin.jobseekers.index'))->name('jobseekers.supervise');
-    Route::get('/analytics', fn() => redirect()->route('admin.analytics.index'))->name('analytics.index');
+    Route::get('/analytics', fn() => redirect()->route('admin.dashboard'))->name('analytics.index');
     Route::get('/profile', fn() => redirect()->route('admin.profile'))->name('profile');
     Route::get('/notifications', fn() => redirect()->route('admin.notifications'))->name('notifications');
     Route::any('{any}', fn() => redirect()->route('admin.dashboard'))->where('any', '.*');
@@ -336,6 +410,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/approvals/placement-reports/{id}/reject', [ApprovalsController::class, 'rejectPlacementReport'])->name('approvals.placement-reports.reject');
     Route::post('/approvals/trainers/{id}/approve', [ApprovalsController::class, 'approveTrainer'])->name('approvals.trainers.approve');
     Route::post('/approvals/trainers/{id}/reject', [ApprovalsController::class, 'rejectTrainer'])->name('approvals.trainers.reject');
+    Route::post('/approvals/jobseekers/{id}/approve', [ApprovalsController::class, 'approveJobseeker'])->name('approvals.jobseekers.approve');
+    Route::post('/approvals/jobseekers/{id}/reject', [ApprovalsController::class, 'rejectJobseeker'])->name('approvals.jobseekers.reject');
 
     // Placement Reports Management Directory
     Route::get('/placement-reports', [ApprovalsController::class, 'placementReports'])->name('placement-reports.index');
@@ -356,9 +432,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('/users/{id}', [UserManagementController::class, 'destroy'])->name('users.destroy');
 
     // Employer Management
+    Route::get('/accreditations/{accreditationId}/documents/{documentKey}/{action}', [ApprovalsController::class, 'accreditationDocument'])
+        ->whereIn('action', ['preview', 'download'])
+        ->name('accreditation.documents');
+
     Route::get('/employers', function (Request $request) {
         $query = DB::table('employers')
             ->leftJoin('users', 'employers.user_id', '=', 'users.user_id')
+            ->leftJoin('user_profiles', 'users.user_id', '=', 'user_profiles.user_id')
             ->leftJoin('employer_accreditation', 'employers.employer_id', '=', 'employer_accreditation.employer_id')
             ->select(
                 'employers.*',
@@ -367,6 +448,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
                 'users.status as user_status',
                 'users.is_approved as user_approved',
                 'users.created_at as user_created_at',
+                'user_profiles.full_name as contact_person',
+                'user_profiles.phone as contact_number',
                 'employer_accreditation.accreditation_id',
                 'employer_accreditation.documents',
                 'employer_accreditation.status as accreditation_status',
@@ -475,9 +558,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         return view('admin.reports', compact('stats'));
     })->name('reports');
 
-    // Labor Market Insights & Analytics (Admin handling LMO responsibilities)
-    Route::get('/analytics', [DashboardController::class, 'analytics'])->name('analytics.index');
-    Route::get('/market-insights', [DashboardController::class, 'analytics'])->name('market-insights');
+    // Barangay Distribution (City-Wide Macro-Level Visualization, Heatmaps & Resource Deployment)
+    Route::get('/barangay-distribution', [BarangayDistributionController::class, 'index'])->name('barangay-distribution');
+    Route::get('/barangay-distribution/export', [BarangayDistributionController::class, 'export'])->name('barangay-distribution.export');
+
+    // Labor Market Insights & Analytics (Redirected to Dashboard)
+    Route::get('/analytics', fn() => redirect()->route('admin.dashboard'))->name('analytics.index');
+    Route::get('/market-insights', fn() => redirect()->route('admin.dashboard'))->name('market-insights');
 
     // Admin Profile & Security Credentials
     Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');

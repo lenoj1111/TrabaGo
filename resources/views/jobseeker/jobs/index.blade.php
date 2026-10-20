@@ -14,19 +14,7 @@
     selectedJobTitle: '{{ $selectedItem ? addslashes($selectedItem['job']->title) : '' }}',
     selectedJobCompany: '{{ $selectedItem ? addslashes($selectedItem['job']->employer->company_name ?? 'Partner Employer') : '' }}'
 }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-7xl space-y-6">
-
-        @if(!$isApproved)
-            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5 shadow-sm">
-                <div class="flex items-start gap-3">
-                    <div class="h-10 w-10 rounded-xl bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center text-lg shrink-0">⚠️</div>
-                    <div>
-                        <h2 class="text-sm font-black text-amber-900">Approval Required Before Applying</h2>
-                        <p class="text-xs text-amber-800 mt-0.5">Your jobseeker account is still pending admin approval. You can continue browsing open positions, but you must be approved before you can apply for a job posting.</p>
-                    </div>
-                </div>
-            </div>
-        @endif
+    <div class="w-full max-w-[1680px] mx-auto space-y-6">
         
         <!-- Header & Search Controls -->
         <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-8 text-white shadow-xl border border-emerald-500/20">
@@ -58,7 +46,7 @@
                 </div>
 
                 <div class="sm:col-span-3 flex gap-2">
-                    <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm shadow-md transition-all">
+                    <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-sm shadow-md transition-all">
                         Search Jobs
                     </button>
                     @if(request()->hasAny(['q', 'location', 'pwd_only', 'sort']))
@@ -77,8 +65,9 @@
                     All Matches
                 </a>
                 <a href="{{ route('jobseeker.jobs', array_merge(request()->query(), ['pwd_only' => 1])) }}" 
-                   class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all {{ request('pwd_only') ? 'bg-teal-500 text-white shadow-sm' : 'bg-white/10 text-slate-300 hover:bg-white/20' }}">
-                    ♿ PWD Inclusive Only
+                   class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all inline-flex items-center gap-1.5 {{ request('pwd_only') ? 'bg-emerald-500 text-white shadow-sm' : 'bg-white/10 text-slate-300 hover:bg-white/20' }}">
+                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="4" r="2"/><path d="M15.5 13.5A4.5 4.5 0 0 1 11 18a4.5 4.5 0 0 1-4.5-4.5A4.5 4.5 0 0 1 11 9c.4 0 .78.06 1.14.16L13.5 6.5C12.7 6.18 11.87 6 11 6a7.5 7.5 0 0 0-7.5 7.5A7.5 7.5 0 0 0 11 21a7.5 7.5 0 0 0 7.42-6.5h-2.92z"/><path d="M19 10h-4.5l-1.3-2.6A2 2 0 0 0 11.4 6.2L8.5 7.6 9.4 9.4l2.1-1 2 4.1V17h2v-4.5l1.6-1.6H19v-2z"/></svg>
+                    <span>PWD Inclusive Only</span>
                 </a>
                 <a href="{{ route('jobseeker.jobs', array_merge(request()->query(), ['sort' => 'latest'])) }}" 
                    class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all {{ request('sort') === 'latest' ? 'bg-emerald-500 text-white shadow-sm' : 'bg-white/10 text-slate-300 hover:bg-white/20' }}">
@@ -90,8 +79,8 @@
         @if($jobseeker->isEmployed())
             <div class="rounded-2xl bg-amber-50 border border-amber-300 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs shadow-sm">
                 <div class="flex items-center gap-3">
-                    <div class="h-10 w-10 rounded-xl bg-amber-100 border border-amber-200 text-amber-900 flex items-center justify-center text-lg font-bold shrink-0">
-                        💼
+                    <div class="h-10 w-10 rounded-xl bg-amber-100 border border-amber-200 text-amber-900 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                     </div>
                     <div>
                         <h3 class="font-extrabold text-amber-950 text-sm">You are Currently Employed at {{ $jobseeker->hired_company ?: 'Partner Employer' }}</h3>
@@ -157,10 +146,13 @@
                                     Cebu City
                                 </span>
                                 <span>&bull;</span>
-                                <span class="font-bold text-slate-800">₱18k - ₱35k</span>
+                                <span class="font-bold text-slate-800">{{ $job->salary_range ?: 'Salary not specified' }}</span>
                                 @if ($job->accepts_disability)
                                     <span>&bull;</span>
-                                    <span class="text-teal-700 font-bold">♿ PWD</span>
+                                    <span class="text-emerald-700 font-bold inline-flex items-center gap-1">
+                                        <svg class="w-3 h-3 text-emerald-700" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="4" r="2"/><path d="M15.5 13.5A4.5 4.5 0 0 1 11 18a4.5 4.5 0 0 1-4.5-4.5A4.5 4.5 0 0 1 11 9c.4 0 .78.06 1.14.16L13.5 6.5C12.7 6.18 11.87 6 11 6a7.5 7.5 0 0 0-7.5 7.5A7.5 7.5 0 0 0 11 21a7.5 7.5 0 0 0 7.42-6.5h-2.92z"/><path d="M19 10h-4.5l-1.3-2.6A2 2 0 0 0 11.4 6.2L8.5 7.6 9.4 9.4l2.1-1 2 4.1V17h2v-4.5l1.6-1.6H19v-2z"/></svg>
+                                        <span>PWD</span>
+                                    </span>
                                 @endif
                                 @if ($job->valid_until)
                                     <span>&bull;</span>
@@ -179,8 +171,9 @@
                             <!-- Skills preview pills -->
                             <div class="mt-3 flex flex-wrap gap-1">
                                 @foreach (array_slice($match['matchedSkills'] ?? [], 0, 2) as $s)
-                                    <span class="rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold">
-                                        ✓ {{ $s }}
+                                    <span class="rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold inline-flex items-center gap-1">
+                                        <svg class="w-2.5 h-2.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                        <span>{{ $s }}</span>
                                     </span>
                                 @endforeach
                                 @if(count($match['missingSkills'] ?? []) > 0)
@@ -216,22 +209,15 @@
                                     <div class="flex items-center gap-2">
                                         <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">{{ $company }}</span>
                                         @if ($job->accepts_disability)
-                                            <span class="rounded-full bg-teal-50 text-teal-800 border border-teal-200 px-2 py-0.5 text-[10px] font-bold">
-                                                ♿ PWD Inclusive
+                                            <span class="rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold inline-flex items-center gap-1">
+                                                <svg class="w-3 h-3 text-emerald-700" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="4" r="2"/><path d="M15.5 13.5A4.5 4.5 0 0 1 11 18a4.5 4.5 0 0 1-4.5-4.5A4.5 4.5 0 0 1 11 9c.4 0 .78.06 1.14.16L13.5 6.5C12.7 6.18 11.87 6 11 6a7.5 7.5 0 0 0-7.5 7.5A7.5 7.5 0 0 0 11 21a7.5 7.5 0 0 0 7.42-6.5h-2.92z"/><path d="M19 10h-4.5l-1.3-2.6A2 2 0 0 0 11.4 6.2L8.5 7.6 9.4 9.4l2.1-1 2 4.1V17h2v-4.5l1.6-1.6H19v-2z"/></svg>
+                                                <span>PWD Inclusive</span>
                                             </span>
                                         @endif
                                     </div>
                                     <h2 class="text-2xl font-black text-slate-900 mt-1">{{ $job->title }}</h2>
                                     <p class="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
-                                        @if($job->location)
-                                            <span>{{ $job->location }}</span>
-                                        @endif
-                                        @if($job->job_type)
-                                            <span>{{ $job->job_type }}</span>
-                                        @endif
-                                        @if($job->salary_compensation)
-                                            <span class="font-bold text-slate-900">{{ $job->salary_compensation }}</span>
-                                        @endif
+                                        <span>{{ $job->location ?: 'Location not specified' }} &bull; {{ $job->job_type ?: 'Job type not specified' }} &bull; {{ $job->salary_range ?: 'Salary not specified' }}</span>
                                         @if ($job->valid_until)
                                             <span>&bull;</span>
                                             <span class="inline-flex items-center gap-1 font-bold {{ $job->valid_until->isPast() ? 'text-rose-600' : 'text-emerald-700' }}">
@@ -365,12 +351,32 @@
                                 @elseif($jobseeker->isEmployed())
                                     <div class="text-right space-y-1">
                                         <button disabled class="inline-flex items-center gap-2 rounded-xl bg-amber-100 border border-amber-300 px-5 py-2.5 text-xs font-bold text-amber-900 cursor-not-allowed">
-                                            <span>💼</span>
+                                            <svg class="w-3.5 h-3.5 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                                             <span>Employed ({{ $jobseeker->hired_company ?: 'Currently Hired' }})</span>
                                         </button>
                                         <p class="text-[10px] text-slate-500">
                                             Resignation approval required to apply.
                                             <a href="{{ route('jobseeker.applications') }}" class="text-emerald-700 font-bold underline">Resignation Details</a>
+                                        </p>
+                                    </div>
+                                @elseif(!auth()->user()->is_approved)
+                                    <div class="text-right space-y-1">
+                                        <button type="button" onclick="alert('Your jobseeker account is pending approval by DMDP. You cannot apply for jobs until approved.')"
+                                                class="inline-flex items-center gap-1.5 rounded-xl bg-slate-200 border border-slate-300 px-5 py-2.5 text-xs font-bold text-slate-600 cursor-not-allowed">
+                                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                            <span>Pending Approval</span>
+                                        </button>
+                                        <p class="text-[10px] text-amber-700 font-semibold">Account undergoing DMDP verification.</p>
+                                    </div>
+                                @elseif(!$jobseeker->isProfileAndDocumentsComplete())
+                                    <div class="text-right space-y-1">
+                                        <button type="button" onclick="alert('You cannot apply for this job yet. Please complete your profile and upload required documents (Resume, Valid ID) in the Document Hub.\n\nMissing: {{ implode(', ', $jobseeker->getMissingRequirements()) }}')"
+                                                class="inline-flex items-center gap-1.5 rounded-xl bg-amber-100 border border-amber-300 px-5 py-2.5 text-xs font-bold text-amber-900 cursor-not-allowed">
+                                            <svg class="w-3.5 h-3.5 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                            <span>Incomplete Requirements</span>
+                                        </button>
+                                        <p class="text-[10px] text-amber-800 font-medium">
+                                            <a href="{{ route('jobseeker.documents') }}" class="underline font-bold text-emerald-700">Upload Docs</a> or <a href="{{ route('jobseeker.profile') }}" class="underline font-bold text-emerald-700">Complete Profile</a>
                                         </p>
                                     </div>
                                 @else

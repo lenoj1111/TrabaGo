@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class JpoPortalController extends Controller
 {
@@ -20,10 +21,16 @@ class JpoPortalController extends Controller
     {
         $user = Auth::user();
 
-        // Metrics
-        $pendingJobseekers = JobApplication::where('referred_by_jpo', 0)
-            ->whereIn('status', ['pending', 'reviewed'])
-            ->count();
+        // Metrics (Aggregated single query)
+        $appStats = JobApplication::selectRaw("
+            SUM(CASE WHEN referred_by_jpo = 0 AND status IN ('pending', 'reviewed') THEN 1 ELSE 0 END) as pending_jobseekers,
+            SUM(CASE WHEN referred_by_jpo = 1 THEN 1 ELSE 0 END) as total_referred,
+            SUM(CASE WHEN referred_by_jpo = 1 AND status = 'hired' THEN 1 ELSE 0 END) as total_hired
+        ")->first();
+
+        $pendingJobseekers = (int) ($appStats->pending_jobseekers ?? 0);
+        $totalReferredJobseekers = (int) ($appStats->total_referred ?? 0);
+        $totalHiredReferred = (int) ($appStats->total_hired ?? 0);
 
         $pendingAccreditations = DB::table('employer_accreditation')
             ->where('status', 'submitted_to_jpo')
@@ -32,9 +39,6 @@ class JpoPortalController extends Controller
         $pendingPlacementReports = DB::table('placement_reports')
             ->where('status', 'submitted_to_jpo')
             ->count();
-
-        $totalReferredJobseekers = JobApplication::where('referred_by_jpo', 1)->count();
-        $totalHiredReferred = JobApplication::where('referred_by_jpo', 1)->where('status', 'hired')->count();
 
         // Recent applications awaiting JPO evaluation
         $recentApplicants = JobApplication::with(['jobseeker.skills', 'jobPosting.employer'])
@@ -53,10 +57,42 @@ class JpoPortalController extends Controller
             ->take(5)
             ->get();
 
+        // Monthly referral trends (single grouped query instead of 12 sequential queries)
+        $sixMonthsAgo = now()->subMonths(5)->startOfMonth();
+        $trendRows = JobApplication::where('referred_by_jpo', 1)
+            ->where('created_at', '>=', $sixMonthsAgo)
+            ->selectRaw("
+                CONVERT(varchar(7), created_at, 120) as yrmo,
+                COUNT(*) as referred_count,
+                SUM(CASE WHEN status = 'hired' THEN 1 ELSE 0 END) as hired_count
+            ")
+            ->groupBy(DB::raw("CONVERT(varchar(7), created_at, 120)"))
+            ->get()
+            ->keyBy('yrmo');
+
+        $monthlyReferralTrends = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $monthDate = now()->subMonths($i);
+            $yrmo = $monthDate->format('Y-m');
+            $label = $monthDate->format('M Y');
+            $row = $trendRows->get($yrmo);
+
+            $monthlyReferralTrends[] = [
+                'month' => $label,
+                'referred' => (int) ($row->referred_count ?? 0),
+                'hired' => (int) ($row->hired_count ?? 0),
+            ];
+        }
+
+        $conversionRate = $totalReferredJobseekers > 0 
+            ? round(($totalHiredReferred / $totalReferredJobseekers) * 100, 1) 
+            : 0;
+
         return view('jpo.dashboard', compact(
             'user', 'pendingJobseekers', 'pendingAccreditations', 
             'pendingPlacementReports', 'totalReferredJobseekers', 
-            'totalHiredReferred', 'recentApplicants', 'recentAccreditations'
+            'totalHiredReferred', 'conversionRate', 'monthlyReferralTrends',
+            'recentApplicants', 'recentAccreditations'
         ));
     }
 
@@ -205,6 +241,83 @@ class JpoPortalController extends Controller
         $employer = $job->employer ?? null;
 
         return view('reports.nsrp-printable', compact('application', 'jobseeker', 'details', 'socialStatus', 'skills', 'job', 'employer'));
+    }
+
+    public function viewJobseekerDocument(int $id, int $documentIndex)
+    {
+        $application = JobApplication::with('jobseeker.details')->findOrFail($id);
+        $jobseeker = $application->jobseeker;
+        abort_unless($jobseeker && $jobseeker->details, 404);
+
+        $documents = $jobseeker->details->training_certificates;
+        if (!is_array($documents)) {
+            $documents = json_decode($documents ?? '[]', true) ?: [];
+        }
+        abort_unless(isset($documents[$documentIndex]) && is_array($documents[$documentIndex]), 404);
+
+        $document = $documents[$documentIndex];
+        if (($document['category'] ?? null) === 'certificate' && !empty($document['enrollment_id'])) {
+            $enrollment = DB::table('training_enrollments')
+                ->join('jobseekers', 'training_enrollments.jobseeker_id', '=', 'jobseekers.jobseeker_id')
+                ->join('training_programs', 'training_enrollments.training_id', '=', 'training_programs.training_id')
+                ->where('training_enrollments.enrollment_id', $document['enrollment_id'])
+                ->where('training_enrollments.jobseeker_id', $jobseeker->jobseeker_id)
+                ->where('training_enrollments.certificate_issued', 1)
+                ->select(
+                    'training_enrollments.*',
+                    'jobseekers.first_name',
+                    'jobseekers.last_name',
+                    'training_programs.title as course_title'
+                )
+                ->first();
+
+            abort_unless($enrollment, 404, 'Certificate not found or not yet issued.');
+
+            return view('trainer.certificates.preview', [
+                'enrollment' => $enrollment,
+                'backUrl' => route('jpo.evaluations.jobseekers'),
+            ]);
+        }
+
+        $path = null;
+        foreach (['file_path', 'path', 'file_url', 'url'] as $pathKey) {
+            $candidate = $document[$pathKey] ?? null;
+            if (!is_string($candidate) || trim($candidate) === '') {
+                continue;
+            }
+
+            $urlPath = parse_url($candidate, PHP_URL_PATH);
+            $path = is_string($urlPath) && $urlPath !== '' ? $urlPath : $candidate;
+            break;
+        }
+
+        abort_unless(is_string($path) && $path !== '', 404, 'Document file not found.');
+        $path = str_replace('\\', '/', $path);
+        if (($storagePosition = strrpos($path, '/storage/')) !== false) {
+            $path = substr($path, $storagePosition + strlen('/storage/'));
+        }
+        $path = ltrim($path, '/');
+        foreach (['storage/app/public/', 'app/public/', 'storage/'] as $prefix) {
+            if (str_starts_with($path, $prefix)) {
+                $path = substr($path, strlen($prefix));
+                break;
+            }
+        }
+        $segments = explode('/', $path);
+        $isApplicantDocument = str_starts_with($path, 'documents/');
+        $isResume = str_starts_with($path, 'resumes/');
+        $isLegacyId = str_starts_with($path, 'ids/') || str_starts_with($path, 'valid_ids/');
+        abort_unless(
+            ($isApplicantDocument || $isResume || $isLegacyId)
+                && !in_array('..', $segments, true)
+                && !in_array('.', $segments, true),
+            404
+        );
+
+        $disk = Storage::disk('public');
+        abort_unless($disk->exists($path), 404, 'Document file not found on storage.');
+
+        return $disk->response($path, basename($path), [], 'inline');
     }
 
     // =========================================================================
@@ -558,5 +671,101 @@ class JpoPortalController extends Controller
             ->update(['is_read' => true]);
 
         return redirect()->back()->with('success', 'All notifications marked as read.');
+    }
+
+    public function approveJobseeker(Request $request, $id)
+    {
+        $jobseeker = Jobseeker::with('user', 'details')->find($id);
+        if (!$jobseeker) {
+            $jobseeker = Jobseeker::with('user', 'details')->where('user_id', $id)->firstOrFail();
+        }
+
+        $user = $jobseeker->user;
+        if ($user) {
+            $user->update([
+                'status' => 'active',
+                'is_approved' => 1,
+                'account_status' => 'verified',
+            ]);
+        }
+
+        $details = $jobseeker->details;
+        if ($details && !empty($details->training_certificates)) {
+            $docs = is_array($details->training_certificates) 
+                ? $details->training_certificates 
+                : (json_decode($details->training_certificates, true) ?: []);
+            
+            foreach ($docs as &$doc) {
+                if (in_array($doc['category'] ?? '', ['valid_id', 'resume', 'certificate', 'pwd_id'])) {
+                    $doc['status'] = 'approved';
+                    $doc['reviewed_by'] = Auth::id();
+                    $doc['reviewed_at'] = now()->toIso8601String();
+                }
+            }
+            $details->training_certificates = array_values($docs);
+            $details->save();
+        }
+
+        if ($user) {
+            Notification::create([
+                'user_id' => $user->user_id,
+                'title' => 'Jobseeker Identity Verified by JPO!',
+                'message' => 'Your government ID and account have been verified by the Job Placement Officer (JPO). You may now apply for job openings.',
+                'type' => 'approval',
+                'is_read' => false,
+                'related_id' => $jobseeker->jobseeker_id,
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' verified and approved successfully.");
+    }
+
+    public function rejectJobseeker(Request $request, $id)
+    {
+        $jobseeker = Jobseeker::with('user', 'details')->find($id);
+        if (!$jobseeker) {
+            $jobseeker = Jobseeker::with('user', 'details')->where('user_id', $id)->firstOrFail();
+        }
+
+        $reason = $request->input('remarks') ?: 'Your submitted government ID does not meet PESO/DMDP criteria. Please upload a clear, legible ID in your Document Hub.';
+
+        $user = $jobseeker->user;
+        if ($user) {
+            $user->update([
+                'account_status' => 'unverified',
+                'is_approved' => 0,
+            ]);
+        }
+
+        $details = $jobseeker->details;
+        if ($details && !empty($details->training_certificates)) {
+            $docs = is_array($details->training_certificates) 
+                ? $details->training_certificates 
+                : (json_decode($details->training_certificates, true) ?: []);
+            
+            foreach ($docs as &$doc) {
+                if (($doc['category'] ?? '') === 'valid_id') {
+                    $doc['status'] = 'rejected';
+                    $doc['rejection_reason'] = $reason;
+                    $doc['reviewed_by'] = Auth::id();
+                    $doc['reviewed_at'] = now()->toIso8601String();
+                }
+            }
+            $details->training_certificates = array_values($docs);
+            $details->save();
+        }
+
+        if ($user) {
+            Notification::create([
+                'user_id' => $user->user_id,
+                'title' => 'Government ID Requires Revision',
+                'message' => "Your government ID submission requires revision: {$reason}",
+                'type' => 'rejection',
+                'is_read' => false,
+                'related_id' => $jobseeker->jobseeker_id,
+            ]);
+        }
+
+        return redirect()->back()->with('info', "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' returned for ID revision.");
     }
 }

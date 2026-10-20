@@ -56,6 +56,17 @@ class Notification extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::created(function (Notification $notification) {
+            try {
+                broadcast(new \App\Events\NotificationSent($notification))->toOthers();
+            } catch (\Throwable $e) {
+                // Ignore connection errors if websocket server is offline
+            }
+        });
+    }
+
     // =============================================
     // RELATIONSHIPS
     // =============================================

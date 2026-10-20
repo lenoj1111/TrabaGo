@@ -1,246 +1,287 @@
 # 🌴 TrabaGo — Cebu City DMDP Employment & Skills Facilitation Platform
 
-> **Official Capstone Project & Platform for the City Government of Cebu — Department of Manpower Development and Placement (DMDP) & Public Employment Service Division (PESD)**
+> **Official Integrated Digital Platform for the City Government of Cebu — Department of Manpower Development and Placement (DMDP) & Public Employment Service Office (PESO)**
 
 ---
 
 ## 📌 Project Overview
 
-**TrabaGo** is a multi-role web platform designed to streamline and modernize public employment services, vocational training certifications, corporate employer accreditations, labor market supervision, and placement reporting for Cebu City.
+**TrabaGo** is an enterprise-grade, multi-role web platform and cross-platform mobile application built to modernize public employment facilitation, vocational skills certification, employer accreditation, and workforce placement analytics for the City Government of Cebu.
 
-### Key Roles & Ecosystem:
-1. **Jobseekers:** Discover jobs, view AI skill-match compatibility, track application stages, manage secure credentials vault, and enroll in DMDP training programs.
-2. **Corporate Employers:** Submit legal accreditation papers, post job vacancies, manage applicant pipelines, review JPO referrals, and submit monthly placement reports.
-3. **Job Placement Officers (JPO):** Evaluate applicant credentials, recommend jobseeker referrals, evaluate employer accreditation papers, and audit monthly placement reports.
-4. **PESD Supervisors:** Review and endorse JPO-evaluated employer accreditations, audit labor placement programs, and monitor compliance metrics.
-5. **Labor Market Officers (LMO):** Supervise jobseeker employment statuses, record verified hiring dates, generate monthly placement analytics, and track hiring rates.
-6. **Skills Trainers:** Manage DMDP vocational and digital training courses, conduct attendance, and grade participants.
-7. **System Administrators:** 3-Pillar authorization center (Job postings, Employer accreditations, Placement reports), user account management, and city-wide audit logs.
+Built with a unified **Minimalist Emerald Green** design system, TrabaGo bridges Cebuano jobseekers with accredited corporate employers through AI-driven cosine skill matching, self-paced DMDP vocational training, and transparent PESO coordination.
 
 ---
 
-## 🛠️ System Requirements
+## 🏛️ System Architecture & Access Model
 
-Before setting up the project, make sure you have the following installed on your machine:
+The TrabaGo ecosystem consists of two synchronized client interfaces connected to a unified Laravel REST API backend:
 
-- **PHP**: `^8.2` or higher (Recommended: PHP 8.2, 8.3, or 8.4)
-  - Required PHP Extensions: `pdo`, `mbstring`, `openssl`, `fileinfo`, `curl`, `json`, `tokenizer`, `xml`, `ctype`, `bcmath`
-  - For SQL Server users: `php_sqlsrv` and `php_pdo_sqlsrv` extensions + Microsoft ODBC Driver 17/18
-- **Composer**: `v2.x` ([Download Composer](https://getcomposer.org/))
-- **Node.js & NPM**: Node.js `^18.x` or higher ([Download Node.js](https://nodejs.org/))
-- **Database**: Microsoft SQL Server / MySQL / MariaDB / SQLite
-- **Git**: ([Download Git](https://git-scm.com/))
+```mermaid
+graph TD
+    subgraph Clients
+        Web["🖥️ Web Portal (Tailwind + Alpine.js)<br/>Admin, Trainer, JPO, Employer, Jobseeker"]
+        Mobile["📱 Mobile App (React Native + Expo)<br/>Exclusively for Jobseekers"]
+    end
+
+    subgraph Backend["⚙️ TrabaGo Core Backend (Laravel 12)"]
+        Sanctum["Auth Guard & Sanctum Token Engine"]
+        API["REST API (/api/*) & Web Routes"]
+        Reverb["Realtime WebSockets (Laravel Reverb :8080)"]
+    end
+
+    subgraph Storage["💾 Persistence Layer"]
+        DB[("Database (SQL Server / MySQL / SQLite)")]
+        Disk[("Storage Disk (Document Hub & Certs)")]
+    end
+
+    Web --> API
+    Mobile --> Sanctum
+    Sanctum --> API
+    API --> DB
+    API --> Disk
+    API --> Reverb
+    Reverb -. Realtime Events .-> Web
+    Reverb -. Push Updates .-> Mobile
+```
+
+> [!IMPORTANT]
+> **Mobile Access Policy**: The mobile application is **strictly reserved for Jobseekers**. Administrative, verification, and facilitation roles (**Admin**, **Trainer**, **JPO**, and **Employer**) must access their portals via the **Web Application**.
 
 ---
 
-## 🚀 Quick Start Installation Guide
+## 🌟 Ecosystem Roles & Features
 
-Follow these steps in your terminal (Command Prompt, PowerShell, or Bash):
+### 1. 🧑‍💼 Jobseeker Portal (Web & Mobile)
+- **AI Skill-Match Engine:** Cosine-similarity matching calculates real-time candidate compatibility scores against live job vacancies.
+- **National Skills Profile (NSRP Form 1):** DOLE-compliant profile with education attainment, licenses, civil service status, 4Ps beneficiary, and PWD priority placement.
+- **Official Credentials Vault:** Secure multi-category storage for Resumes, Valid Government IDs, Technical Licensures, and PWD IDs.
+- **DMDP Vocational Training Hub:** Direct access to course syllabi, video lectures, and in-app competency assessments.
+- **Automated Digital Certificates:** Immediate issuance of verified certificates (`DMDP-CERT-YYYY-XXXXXX`) with auto-synced profile skill badges.
+
+### 2. 👑 System Administrator Portal (Web)
+- **Central Approvals Queue:** Authorize job postings, review employer accreditation packets, and inspect monthly placement reports.
+- **User Account Management:** Control platform accounts, statuses, and role privileges.
+- **Statistical Analytics & Audit Logs:** City-wide placement percentages, applicant influx tracking, and system audit trail.
+
+### 3. 📋 Job Placement Officer (JPO) Portal (Web)
+- **Candidate Evaluation & Referrals:** Review jobseeker qualifications and refer screened candidates directly to employers.
+- **Employer Accreditation Audit:** Authenticate SEC/DTI certificates, Mayor's Permits, and BIR 2303 records.
+- **Placement Monitoring:** Validate employer monthly hiring and placement logs.
+
+### 4. 🎓 Skills Trainer Portal (Web)
+- **Curriculum & Module Builder:** Author course syllabi, lesson topics, and video lecture materials.
+- **Interactive Quiz Management:** Configure question banks and passing score thresholds (default: 80%).
+- **Roster & Certifications:** Monitor trainee enrollment rosters, score assessments, and issue verified credentials.
+
+### 5. 🏢 Corporate Employer Portal (Web)
+- **Accreditation Pipeline:** Digital submission of legal company documentation for JPO and Admin verification.
+- **Job Vacancy Management:** Post and manage job openings with disability-inclusive tagging and qualification requirements.
+- **Candidate Pipeline:** Schedule candidate interviews, issue job offers, and record hires.
+
+---
+
+## 🛠️ Technology Stack
+
+| Layer | Technology |
+| :--- | :--- |
+| **Backend Framework** | Laravel 12 / PHP 8.2+ |
+| **Database** | Microsoft SQL Server (SSMS) / MySQL / SQLite |
+| **API Authentication** | Laravel Sanctum & Session Guards |
+| **Realtime WebSockets** | Laravel Reverb (Port 8080) |
+| **Web Frontend** | Blade Components, TailwindCSS, Alpine.js, Vite |
+| **Mobile App** | React Native (Expo SDK 52, Expo Router), TypeScript |
+
+---
+
+## 🚀 Step-by-Step Installation & Setup
+
+### Prerequisites
+Make sure your workstation has the following installed:
+- **PHP** 8.2 or 8.3 with PDO, OpenSSL, and cURL extensions
+- **Composer** (v2.x)
+- **Node.js** (v18.x or v20.x LTS) & npm
+- **Git**
+- **Expo Go App** (installed on your iOS or Android phone)
+
+---
 
 ### Step 1: Clone the Repository
 ```bash
 git clone https://github.com/lenoj1111/TrabaGo.git
 cd TrabaGo
+git checkout jimmy-v2
 ```
 
-### Step 2: Install PHP & Composer Dependencies
+---
+
+### Step 2: Install Dependencies
+
+#### A. Backend & Web Dependencies (Project Root):
 ```bash
 composer install
-```
-
-### Step 3: Install NPM Packages & Front-End Assets
-```bash
 npm install
 ```
 
-### Step 4: Setup the Environment File
-Create a `.env` file by copying the example template:
+#### B. Mobile Dependencies:
+```bash
+cd mobile
+npm install
+cd ..
+```
 
-**On Windows (PowerShell):**
+---
+
+### Step 3: Environment Configuration
+
+#### A. Backend `.env`:
 ```powershell
+# Windows PowerShell
 Copy-Item .env.example .env
-```
-**On Mac / Linux / Git Bash:**
-```bash
-cp .env.example .env
-```
 
-### Step 5: Generate Application Encryption Key
-```bash
+# Generate application key
 php artisan key:generate
 ```
 
-### Step 6: Configure Your Database Connection
-Open your `.env` file in VS Code or any text editor and configure your database credentials.
-
-#### Option A: Using Microsoft SQL Server (Default Configuration)
+Open `.env` and configure your database settings:
 ```env
+APP_NAME=TrabaGo
+APP_ENV=local
+APP_KEY=base64:...
+APP_DEBUG=true
+APP_URL=http://localhost:8000
+
+# Database Configuration (Example: SQL Server)
 DB_CONNECTION=sqlsrv
 DB_HOST=localhost
 DB_PORT=1433
 DB_DATABASE=Trabago1
-DB_USERNAME=your_sql_username
-DB_PASSWORD=your_sql_password
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+DB_ENCRYPT=no
+DB_TRUST_SERVER_CERTIFICATE=true
+
+# Realtime WebSocket Configuration (Laravel Reverb)
+BROADCAST_CONNECTION=reverb
+REVERB_APP_ID=trabago-app
+REVERB_APP_KEY=ckzj1ifqrv7u8cszy3tq
+REVERB_APP_SECRET=reverb-secret-key
+REVERB_HOST="localhost"
+REVERB_PORT=8080
+REVERB_SCHEME="http"
 ```
 
-#### Option B: Using MySQL / MariaDB (XAMPP / Laragon / MySQL Workbench)
-```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=trabago
-DB_USERNAME=root
-DB_PASSWORD=
+#### B. Mobile `.env`:
+In `mobile/`, create `.env` from `.env.example`:
+```powershell
+# Windows PowerShell
+Copy-Item mobile\.env.example mobile\.env
 ```
 
-#### Option C: Using SQLite (Zero Configuration / Standalone)
+Open `mobile/.env` and set your computer's local IP address so physical mobile devices can connect over Wi-Fi:
 ```env
-DB_CONNECTION=sqlite
+# Check your local IP with 'ipconfig' (e.g. 192.168.1.X)
+EXPO_PUBLIC_API_URL=http://192.168.100.9:8000/api
+EXPO_PUBLIC_REVERB_HOST=192.168.100.9
+EXPO_PUBLIC_REVERB_PORT=8080
+EXPO_PUBLIC_REVERB_KEY=ckzj1ifqrv7u8cszy3tq
 ```
-*(If using SQLite, create an empty file: `database/database.sqlite`)*
 
 ---
 
-### Step 7: Run Database Migrations & Seed Demo Accounts
-Run the migrations along with the complete database seeder to populate all roles, test users, demo jobs, and accreditation records:
+### Step 4: Run Database Migrations & Seeds
 
 ```bash
+# Run migrations and seed official staff accounts
 php artisan migrate --seed
-```
 
-> 💡 **Tip:** If you ever need to reset and re-seed the entire database from scratch:
-> ```bash
-> php artisan migrate:fresh --seed
-> ```
-
----
-
-### Step 8: Link Public Storage for Uploaded Documents
-Link the storage directory so uploaded resumes, certificates, and legal accreditation documents are accessible in the browser:
-
-```bash
+# Link public storage disk (critical for document vault & certificates)
 php artisan storage:link
 ```
 
 ---
 
-### Step 9: Start the Development Servers
+## 🖥️ Running the Platform
 
-Open two terminal tabs:
+To run the complete system, open separate terminal windows for each service:
 
-**Terminal 1 (Laravel Backend Server):**
+### Terminal 1: Laravel Backend Server
+Serve on `0.0.0.0` so mobile devices on your local network can communicate with the API:
 ```bash
-php artisan serve
+php artisan serve --host=0.0.0.0 --port=8000
 ```
-*(Server will start at `http://127.0.0.1:8000`)*
+- Web Portal URL: **`http://localhost:8000`**
+- REST API Base: **`http://localhost:8000/api`**
 
-**Terminal 2 (Vite Asset Server):**
+### Terminal 2: Web Asset Compiler (Vite)
 ```bash
 npm run dev
 ```
 
-Now open your browser and navigate to: **[http://127.0.0.1:8000](http://127.0.0.1:8000)** 🎉
+### Terminal 3: Realtime WebSockets (Laravel Reverb)
+```bash
+php artisan reverb:start --host=0.0.0.0 --port=8080
+```
+
+### Terminal 4: Mobile Application (Expo Go)
+```bash
+cd mobile
+npx expo start -c
+```
+- **Physical Device:** Scan the terminal QR code with **Expo Go** (Android) or the native **Camera** (iOS).
+- **Web Browser:** Press **`w`** in the terminal to open the mobile web preview at `http://localhost:8081`.
+- **Android Emulator:** Press **`a`** in the terminal.
 
 ---
 
-## 🔑 Pre-Seeded Demo User Accounts
+## 🔑 Official Seeded Accounts
 
-All demo accounts come pre-configured with the default password: **`password123`**
+The database seed maintains **exactly one clean account** for each administrative role. All accounts share the default password: **`password123`**
 
-| Role | Email Address | Default Password | Description & Portal Access |
+| Role | Email Address | Default Password | Authorized Interface |
 | :--- | :--- | :--- | :--- |
-| 👑 **Administrator** | `admin@trabago.com` | `password123` | Approvals Center, System Audit, User Management (`/admin/approvals`) |
-| 🏛️ **PESD Supervisor** | `supervisor@trabago.com` | `password123` | Endorse accreditation papers & audit placement queue (`/supervisor/dashboard`) |
-| 📋 **Job Placement Officer (JPO)** | `jpo@trabago.com` | `password123` | Evaluate jobseekers, recommend applicants, evaluate employer accreditations (`/jpo/dashboard`) |
-| 📊 **Labor Market Officer (LMO)** | `lmo@trabago.com` | `password123` | Supervise jobseekers, track verified hires & placement metrics (`/lmo/dashboard`) |
-| 🏢 **Employer 1 (TechCorp)** | `employer@techcorp.com` | `password123` | Accredited employer with active job postings & referrals (`/employer/homepage`) |
-| 🏢 **Employer 2 (Cebu BPO)** | `hr@cebubpo.com` | `password123` | Corporate partner portal (`/employer/homepage`) |
-| 🧑‍💼 **Jobseeker** | `jobseeker@trabago.com` | `password123` | Job matching, document vault, training programs (`/jobseeker/dashboard`) |
-| 🎓 **DMDP Trainer** | `trainer@trabago.com` | `password123` | Skills training programs & class enrollment (`/trainer/dashboard`) |
+| 👑 **System Administrator** | `admin@trabago.com` | `password123` | **Web Portal Only** (`/admin/dashboard`) |
+| 🎓 **Skills Trainer** | `trainer@trabago.com` | `password123` | **Web Portal Only** (`/trainer/dashboard`) |
+| 📋 **Job Placement Officer (JPO)** | `jpo@trabago.com` | `password123` | **Web Portal Only** (`/jpo/dashboard`) |
+| 🧑‍💼 **Jobseeker** | *Self-registered* | *User defined* | **Mobile App** & **Web Portal** |
+| 🏢 **Employer** | *Self-registered* | *User defined* | **Web Portal Only** (`/employer/homepage`) |
+
+> [!NOTE]
+> Jobseekers can register instantly via the **Mobile App** (`/auth/register`) or **Web Portal** (`/register`). Non-jobseeker roles attempting to sign into the mobile app will receive an **Access Restricted (HTTP 403)** notification.
 
 ---
 
-## 🔄 Core System Workflows
+## 🧪 Testing & Code Quality
 
-```mermaid
-graph TD
-    subgraph "Employer Accreditation Pipeline (Figure 11)"
-        A1["1. Employer Uploads SEC & Permits"] --> A2["2. JPO Evaluates Legal Docs"]
-        A2 --> A3["3. PESD Supervisor Endorses"]
-        A3 --> A4["4. Admin Authorizes Official Accreditation"]
-    end
-
-    subgraph "Job Placement & Referral Pipeline (Figure 8 & 10)"
-        B1["1. Jobseeker Applies"] --> B2["2. JPO Recommends & Refers"]
-        B2 --> B3["3. Employer Conducts Interview & Hires"]
-        B3 --> B4["4. LMO Verifies Hired Date & Computes Stats"]
-    end
-```
-
-### 1. 4-Stage Employer Accreditation (Figure 11)
-1. **Employer** uploads business permit, SEC/DTI registration, and BIR 2303 via `/employer/accreditation`.
-2. **JPO** reviews and inspects documents via `/jpo/evaluations/accreditations` and clicks **"Recommend & Send to Supervisor"**.
-3. **PESD Supervisor** inspects papers via `/supervisor/accreditations` and clicks **"Approve & Send to Admin"**.
-4. **Admin** approves via `/admin/approvals` under the Accreditations tab, granting official DMDP accreditation.
-
-### 2. Job Matching, Referral & LMO Supervision
-1. **Jobseeker** applies for a position at `/jobseeker/jobs`.
-2. **JPO** assesses the applicant at `/jpo/evaluations/jobseekers` and clicks **"Recommend to Employer"**.
-3. **Employer** reviews referred candidates at `/employer/referred-jobseekers`, schedules interviews, and marks them as **"Hired"**.
-4. **LMO** verifies the placement at `/lmo/jobseekers/supervise`, records the official start date, and monitors monthly placement analytics at `/lmo/reports/monthly`.
-
-### 3. Notification Center
-- Built-in notification bell icons with live unread counters are available in the top navbar across all roles (`/employer/notifications`, `/jpo/notifications`, `/supervisor/notifications`, `/lmo/notifications`, `/jobseeker/notifications`).
-
----
-
-## 🧰 Useful Artisan & Maintenance Commands
+Run automated test suites across backend and mobile:
 
 ```bash
-# Clear all cached configurations, routes, and views
-php artisan optimize:clear
-
-# Re-run all migrations and fresh seed
-php artisan migrate:fresh --seed
-
-# Re-generate application key
-php artisan key:generate
-
-# Re-link public storage
-php artisan storage:link
-
-# Run automated feature & unit test suite
+# 1. Run PHPUnit test suite
 php artisan test
+
+# 2. Run Document Vault & Verification flow tests
+php artisan test --filter=DocumentValidationFlowTest
+
+# 3. Verify Mobile TypeScript compilation
+cd mobile
+npx tsc --noEmit
 ```
 
 ---
 
-## ❓ Frequently Asked Questions & Troubleshooting
+## 🛡️ Troubleshooting Checklist
 
-### Q: Why do images or uploaded documents show 404?
-**Answer:** Ensure you have created the storage symlink by running:
-```bash
-php artisan storage:link
-```
-
-### Q: SQL Server ODBC Driver errors on Windows?
-**Answer:** Ensure the Microsoft ODBC Driver 17 or 18 for SQL Server is installed, and your `php.ini` has enabled:
-```ini
-extension=php_sqlsrv.dll
-extension=php_pdo_sqlsrv.dll
-```
-
-### Q: Changes in Blade views or routes are not reflecting?
-**Answer:** Clear your application caches:
-```bash
-php artisan optimize:clear
-```
+1. **Mobile Cannot Reach Backend (`Network Error` / `Connection Timed Out`)**:
+   - Ensure your mobile device and computer are connected to the **same Wi-Fi network**.
+   - Verify that port `8000` is allowed through **Windows Defender Firewall** (`Inbound Rules -> New Rule -> Port 8000 -> Allow`).
+   - Run `ipconfig` in Command Prompt to confirm your IPv4 address matches `EXPO_PUBLIC_API_URL` in `mobile/.env`.
+2. **Missing Document / Certificate Images (404 Not Found)**:
+   - Run `php artisan storage:link` in the project root to ensure `public/storage` points to `storage/app/public`.
+3. **Stale Mobile Screen / Bundler Errors**:
+   - Stop Metro bundler (`Ctrl + C`) and start with a fresh cache: `npx expo start -c`.
 
 ---
 
-## 👥 Contributors & Capstone Team
-
-- **Platform:** TrabaGo
-- **Department:** Cebu City Department of Manpower Development and Placement (DMDP) / PESD
-- **Framework:** Laravel 12 / PHP 8.x / TailwindCSS / Alpine.js / Vite
+## 👥 DMDP Capstone Team & Credits
+- **Project:** TrabaGo
+- **Agency:** Cebu City Department of Manpower Development and Placement (DMDP) / PESO
 - **License:** Open-source under the [MIT License](LICENSE)

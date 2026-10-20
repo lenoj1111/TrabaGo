@@ -26,9 +26,20 @@ class UserManagementController extends Controller
                 'user_profiles.full_name',
                 'user_profiles.position',
                 'user_profiles.department',
+                'user_profiles.phone as profile_phone',
+                'employers.employer_id',
                 'employers.company_name',
+                DB::raw("NULL as trade_name"),
+                DB::raw("NULL as contact_person"),
+                DB::raw("NULL as employer_contact"),
+                DB::raw("NULL as business_nature"),
+                'jobseekers.jobseeker_id',
                 'jobseekers.first_name',
-                'jobseekers.last_name'
+                'jobseekers.last_name',
+                'jobseekers.mobile_number as jobseeker_mobile',
+                DB::raw("NULL as current_city"),
+                DB::raw("NULL as current_barangay"),
+                'jobseekers.employment_status'
             );
 
         if ($request->has('role') && $request->role != '') {
@@ -299,7 +310,7 @@ class UserManagementController extends Controller
     /**
      * Toggle user status (Activate/Deactivate) — returns JSON
      */
-    public function toggleStatus(int $id)
+    public function toggleStatus(Request $request, int $id)
     {
         try {
             $user = DB::table('users')->where('user_id', $id)->first();
@@ -340,7 +351,7 @@ class UserManagementController extends Controller
     /**
      * Approve a user — returns JSON
      */
-    public function approve(int $id)
+    public function approve(Request $request, int $id)
     {
         try {
             $user = DB::table('users')->where('user_id', $id)->first();

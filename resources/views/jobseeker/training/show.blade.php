@@ -20,7 +20,7 @@
             $isEnrolled = $enrollment && in_array($enrollment->status, ['enrolled', 'in_progress', 'completed']);
         @endphp
 
-        <!-- Course Header Card in Emerald Theme -->
+        <!-- Course Header Card in green Theme -->
         <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-2 max-w-2xl">
                 <div class="flex items-center gap-2 flex-wrap">
@@ -28,12 +28,18 @@
                         {{ ucfirst($training->training_type ?: 'Online') }}
                     </span>
                     @if($isCompleted)
-                        <span class="rounded-full bg-emerald-500/30 px-3 py-1 text-xs font-bold text-emerald-200 border border-emerald-400/40 flex items-center gap-1">
-                            ✓ Certificate Earned
+                        <span class="rounded-full bg-emerald-500/30 px-3 py-1 text-xs font-bold text-emerald-200 border border-emerald-400/40 flex items-center gap-1.5">
+                            <svg class="h-3.5 w-3.5 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <span>Certificate Earned</span>
                         </span>
                     @elseif($isEnrolled)
-                        <span class="rounded-full bg-amber-400/20 px-3 py-1 text-xs font-bold text-amber-300 border border-amber-400/30 flex items-center gap-1">
-                            📚 Enrolled &bull; {{ ucfirst(str_replace('_', ' ', $enrollment->status)) }}
+                        <span class="rounded-full bg-amber-400/20 px-3 py-1 text-xs font-bold text-amber-300 border border-amber-400/30 flex items-center gap-1.5">
+                            <svg class="h-3.5 w-3.5 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                            </svg>
+                            <span>Enrolled &bull; {{ ucfirst(str_replace('_', ' ', $enrollment->status)) }}</span>
                         </span>
                     @else
                         <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-300">
@@ -49,7 +55,12 @@
                 @if($enrollment && $enrollment->certificate_issued)
                     <a href="{{ route('jobseeker.certificates.preview', $enrollment->enrollment_id) }}" target="_blank"
                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 px-5 py-2.5 text-xs font-black shadow-lg shadow-amber-500/20 transition-all hover:scale-105">
-                        <span>🎓</span> View & Download Certificate
+                        <svg class="h-4 w-4 text-slate-950" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+                            <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
+                        </svg>
+                        <span>View & Download Certificate</span>
                     </a>
                 @endif
 
@@ -57,14 +68,14 @@
                     <form action="{{ route('jobseeker.training.enroll', $training->training_id) }}" method="POST">
                         @csrf
                         <button type="submit" 
-                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-7 py-3.5 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 cursor-pointer">
+                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 px-7 py-3.5 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 cursor-pointer">
                             <span>+</span> Enroll in Course
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                         </button>
                     </form>
                 @else
                     <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}" 
-                       class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-6 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                       class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 px-6 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
                         {{ $isCompleted ? 'Retake Quiz' : 'Take Skill Quiz' }}
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                     </a>
@@ -76,7 +87,12 @@
             <div class="rounded-2xl bg-emerald-50 border border-emerald-200 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div class="space-y-0.5">
                     <h3 class="text-sm font-black text-emerald-950 flex items-center gap-2">
-                        <span>🎓</span> Not yet enrolled in this course
+                        <svg class="h-4 w-4 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+                            <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
+                        </svg>
+                        <span>Not yet enrolled in this course</span>
                     </h3>
                     <p class="text-xs text-emerald-800">Enroll now to register your participation with DMDP, study the curriculum modules, and take the skill competency quiz.</p>
                 </div>
@@ -159,8 +175,10 @@
                                 @else
                                     <div class="rounded-2xl p-6 bg-slate-900 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-md">
                                         <div class="flex items-center gap-3.5">
-                                            <div class="h-12 w-12 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-xl shrink-0">
-                                                🎬
+                                            <div class="h-12 w-12 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                                                <svg class="h-6 w-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                                </svg>
                                             </div>
                                             <div>
                                                 <p class="text-xs font-bold text-emerald-300">Course Interactive Video Lecture</p>
@@ -174,7 +192,7 @@
                                 @endif
                             @endif
 
-                            <!-- Key Lesson Takeaways in Emerald Theme -->
+                            <!-- Key Lesson Takeaways in green Theme -->
                             <div class="rounded-2xl bg-emerald-50/50 p-6 border border-emerald-100 space-y-3">
                                 <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-2">
                                     <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>

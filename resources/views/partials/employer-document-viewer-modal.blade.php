@@ -1,180 +1,116 @@
-<!-- Employer Document Inspection Modal -->
-<div x-show="docModalOpen" 
-     x-cloak 
-     class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+<div x-show="docModalOpen" x-cloak
+     class="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/70 backdrop-blur-sm"
      @keydown.escape.window="docModalOpen = false">
-    
-    <div @click.away="docModalOpen = false" 
-         class="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-150">
-        
-        <!-- Modal Header -->
-        <div class="bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-5 sm:p-6 text-white flex items-center justify-between border-b border-emerald-500/20">
-            <div class="flex items-center gap-3">
-                <div class="h-10 w-10 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-xl text-emerald-400">
-                    📂
-                </div>
+    <div class="flex min-h-full items-center justify-center p-4">
+        <div @click.away="docModalOpen = false"
+             class="w-full max-w-5xl rounded-3xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
+
+            <div class="flex items-start justify-between gap-4 border-b border-slate-100 bg-slate-50/60 p-6">
                 <div>
-                    <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block">DMDP Document Inspection Hub</span>
-                    <h3 class="text-lg sm:text-xl font-black text-white leading-tight" x-text="activeDocCompany || 'Employer Verification Documents'"></h3>
-                </div>
-            </div>
-            <button @click="docModalOpen = false" 
-                    type="button" 
-                    class="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors text-xl font-bold">
-                &times;
-            </button>
-        </div>
-
-        <!-- Document Selection Tabs -->
-        <div class="bg-slate-50 border-b border-slate-200 p-3 sm:px-6 flex items-center gap-2 overflow-x-auto scrollbar-none">
-            <template x-for="(doc, idx) in activeDocList" :key="idx">
-                <button type="button" 
-                        @click="selectDocument(doc)"
-                        class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0"
-                        :class="selectedDocKey === doc.key ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-900'">
-                    <span x-text="doc.icon || '📄'"></span>
-                    <span x-text="doc.label"></span>
-                </button>
-            </template>
-        </div>
-
-        <!-- Modal Body: Document Preview Sheet -->
-        <div class="p-6 overflow-y-auto space-y-6 flex-1">
-            
-            <!-- Document Meta Bar -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-0.5">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Document Classification</span>
-                    <p class="text-xs font-black text-slate-900 truncate" x-text="currentDoc.label || 'Legal Certificate'"></p>
-                </div>
-                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-0.5">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Issuing Authority</span>
-                    <p class="text-xs font-black text-slate-900 truncate" x-text="currentDoc.issuer || 'Government Regulatory Agency'"></p>
-                </div>
-                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-0.5">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Validity Period</span>
-                    <p class="text-xs font-black text-emerald-800 truncate flex items-center gap-1">
-                        <span>⏱️</span>
-                        <span x-text="currentDoc.validity || 'Current / Valid'"></span>
+                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Document Inspection</span>
+                    <h2 class="mt-1 text-lg font-black text-slate-900" x-text="activeDocCompany"></h2>
+                    <p class="text-xs text-slate-500">
+                        <span x-text="activeDocList.length"></span> document(s) on record
                     </p>
                 </div>
-                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-0.5">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Verification Status</span>
-                    <p class="text-xs font-black text-emerald-700 flex items-center gap-1">
-                        <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-                        <span x-text="currentDoc.status || 'Verified Valid'"></span>
-                    </p>
-                </div>
+                <button type="button" @click="docModalOpen = false"
+                        class="text-2xl font-bold text-slate-400 hover:text-slate-800"
+                        aria-label="Close documents">&times;</button>
             </div>
 
-            <!-- Official Document Inspection Certificate View -->
-            <template x-if="currentDoc.isImage && currentDoc.previewUrl">
-                <div class="rounded-2xl border border-slate-200 bg-slate-100 p-3 flex items-center justify-center">
-                    <img :src="currentDoc.previewUrl" :alt="currentDoc.filename || currentDoc.label"
-                         class="max-h-[65vh] max-w-full rounded-lg object-contain shadow-sm">
-                </div>
-            </template>
-
-            <div class="rounded-3xl border-2 border-emerald-100 bg-gradient-to-b from-emerald-50/30 to-white p-6 sm:p-8 space-y-6 shadow-sm relative overflow-hidden">
-                <!-- Background Seal Watermark -->
-                <div class="absolute -right-8 -bottom-8 opacity-5 text-slate-900 pointer-events-none text-9xl font-black select-none">
-                    DMDP
-                </div>
-
-                <!-- Certificate Header -->
-                <div class="text-center space-y-1 pb-4 border-b border-emerald-100">
-                    <div class="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-800 tracking-wider uppercase">
-                        Republic of the Philippines &bull; City of Cebu
-                    </div>
-                    <h4 class="text-base font-black text-slate-900">DEPARTMENT OF MANPOWER DEVELOPMENT AND PLACEMENT</h4>
-                    <p class="text-xs text-slate-500 font-medium">Employer Accreditation & Legal Verification Division</p>
-                </div>
-
-                <!-- Document Details Grid -->
-                <div class="space-y-3 text-xs">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-slate-100 gap-1">
-                        <span class="font-bold text-slate-500">Registered Business Entity:</span>
-                        <span class="font-black text-slate-900 text-sm" x-text="activeDocCompany"></span>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-slate-100 gap-1">
-                        <span class="font-bold text-slate-500">Legal Document Type:</span>
-                        <span class="font-bold text-emerald-900" x-text="currentDoc.label"></span>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-slate-100 gap-1">
-                        <span class="font-bold text-slate-500">Validity Period:</span>
-                        <span class="font-bold text-emerald-800 flex items-center gap-1">
-                            <span>⏱️</span>
-                            <span x-text="currentDoc.validity || 'Current / Valid'"></span>
-                        </span>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-slate-100 gap-1">
-                        <span class="font-bold text-slate-500">Attached File Reference:</span>
-                        <span class="font-mono text-slate-700 font-semibold" x-text="currentDoc.filename || 'electronic_record.pdf'"></span>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-slate-100 gap-1">
-                        <span class="font-bold text-slate-500">Digital Authentication:</span>
-                        <span class="font-mono text-[11px] text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md font-bold">
-                            SHA-256 / DMDP-VERIFIED-REG-2026
-                        </span>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-slate-100 gap-1">
-                        <span class="font-bold text-slate-500">Evaluation Compliance:</span>
-                        <span class="font-bold text-slate-800">Meets DMDP City Ordinance Standards for Employment Facilitation</span>
-                    </div>
-
-                    <div class="pt-2 p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/80 text-[11px] text-emerald-900 flex items-center gap-2">
-                        <span class="text-sm">⚖️</span>
-                        <span><strong>Official Notice:</strong> Original and other documents, when applicable, should be presented for validation.</span>
-                    </div>
-                </div>
-
-                <!-- Document Inspection Action -->
-                <div class="p-4 rounded-2xl bg-white border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-                    <div class="flex items-center gap-3">
-                        <div class="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-lg">
-                            📄
-                        </div>
-                        <div>
-                            <p class="text-xs font-bold text-slate-900 truncate" x-text="currentDoc.filename || (currentDoc.label + '.pdf')"></p>
-                            <p class="text-[10px] text-slate-400">Official legal submission for DMDP corporate partner accreditation</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-2 shrink-0">
-                        <template x-if="currentDoc.downloadUrl">
-                            <a :href="currentDoc.downloadUrl"
-                               :download="currentDoc.filename"
-                               class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all shrink-0">
-                                <span>Download Document</span>
-                                <span class="text-[10px]">↓</span>
-                            </a>
+            <div class="grid grid-cols-1 lg:grid-cols-12">
+                <aside class="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-slate-100 max-h-[60vh] lg:max-h-[70vh] overflow-y-auto">
+                    <ul class="divide-y divide-slate-100">
+                        <template x-for="doc in activeDocList" :key="doc.key">
+                            <li>
+                                <button type="button"
+                                        @click="selectDocument(doc)"
+                                        :class="selectedDocKey === doc.key
+                                            ? 'bg-emerald-50 border-l-4 border-emerald-500'
+                                            : 'hover:bg-slate-50 border-l-4 border-transparent'"
+                                        class="w-full text-left p-4 transition-colors">
+                                    <div class="flex items-start gap-3">
+                                        <span class="text-2xl shrink-0" x-text="doc.icon"></span>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-xs font-black text-slate-900 leading-tight" x-text="doc.label"></p>
+                                            <p class="text-[10px] text-slate-500 mt-0.5" x-text="doc.issuer"></p>
+                                            <div class="flex items-center gap-1.5 mt-1.5">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
+                                                    ✓ <span x-text="doc.status"></span>
+                                                </span>
+                                            </div>
+                                            <p class="text-[10px] text-slate-400 mt-1" x-text="doc.validity"></p>
+                                        </div>
+                                    </div>
+                                </button>
+                            </li>
                         </template>
-                        <template x-if="!currentDoc.downloadUrl">
-                            <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200 shrink-0">
-                                <span>✓</span> Verified Digital Copy
-                            </span>
-                        </template>
-                    </div>
-                </div>
 
+                        <template x-if="activeDocList.length === 0">
+                            <li class="p-6 text-center text-xs text-slate-400 italic">
+                                No documents attached.
+                            </li>
+                        </template>
+                    </ul>
+                </aside>
+
+                <div class="lg:col-span-7 bg-slate-50/40 p-6 max-h-[60vh] lg:max-h-[70vh] overflow-y-auto">
+                    <template x-if="currentDoc && currentDoc.key">
+                        <div class="space-y-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Currently Viewing</span>
+                                    <h3 class="mt-1 text-sm font-black text-slate-900" x-text="currentDoc.label"></h3>
+                                    <p class="text-[11px] text-slate-500 mt-0.5" x-text="currentDoc.issuer"></p>
+                                </div>
+                                <a :href="currentDoc.downloadUrl"
+                                   class="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-emerald-600 text-white text-[11px] font-bold transition-colors">
+                                    ⬇ Download
+                                </a>
+                            </div>
+
+                            <div class="rounded-xl border border-slate-200 bg-white p-3">
+                                <template x-if="currentDoc.isImage && currentDoc.previewUrl">
+                                    <img :src="currentDoc.previewUrl"
+                                         :alt="currentDoc.label"
+                                         class="w-full rounded-lg border border-slate-100"
+                                         loading="lazy">
+                                </template>
+                                <template x-if="!currentDoc.isImage || !currentDoc.previewUrl">
+                                    <div class="flex flex-col items-center justify-center py-12 text-center">
+                                        <div class="text-5xl mb-3" x-text="currentDoc.icon || '📄'"></div>
+                                        <p class="text-xs font-bold text-slate-700">Preview not available</p>
+                                        <p class="text-[11px] text-slate-500 mt-1">Use the Download button above to view this file.</p>
+                                        <p class="text-[10px] text-slate-400 mt-3 font-mono break-all" x-text="currentDoc.filename"></p>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <div class="rounded-xl bg-white border border-slate-200 p-4 space-y-2 text-[11px]">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="text-slate-500 font-semibold">File Name</span>
+                                    <span class="text-slate-900 font-bold truncate max-w-[60%]" x-text="currentDoc.filename || 'N/A'"></span>
+                                </div>
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="text-slate-500 font-semibold">Status</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200" x-text="currentDoc.status"></span>
+                                </div>
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="text-slate-500 font-semibold">Validity</span>
+                                    <span class="text-slate-900 font-bold" x-text="currentDoc.validity"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template x-if="!currentDoc || !currentDoc.key">
+                        <div class="flex flex-col items-center justify-center py-20 text-center">
+                            <div class="text-4xl mb-3">📁</div>
+                            <p class="text-xs font-bold text-slate-700">Select a document from the list</p>
+                        </div>
+                    </template>
+                </div>
             </div>
-
         </div>
-
-        <!-- Modal Footer -->
-        <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between">
-            <span class="text-[11px] font-medium text-slate-500">TrabaGo DMDP Enterprise Verification System</span>
-            <button type="button" 
-                    @click="docModalOpen = false" 
-                    class="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors">
-                Close Viewer
-            </button>
-        </div>
-
     </div>
 </div>

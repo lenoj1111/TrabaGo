@@ -271,6 +271,12 @@ class JobseekerPortalController extends Controller
                 ->with('error', "You cannot apply for another job while currently employed at {$company}. You must request a resignation from your employer and have it approved before applying for other positions.");
         }
 
+        $user = Auth::user();
+        if (!$user || !$user->isAccountVerified()) {
+            return redirect()->route('jobseeker.documents')
+                ->with('error', 'Your account is unverified. Please submit your valid documents in your Document Hub and wait for Admin/JPO verification before applying for jobs.');
+        }
+
         // Duplicate check
         $existing = JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)
             ->where('job_id', $jobId)
@@ -310,6 +316,15 @@ class JobseekerPortalController extends Controller
             ];
             $details->training_certificates = array_values($filtered);
             $details->save();
+            $jobseeker->refresh();
+        }
+
+        // Strict Requirement Check: Profile and documents must be completed!
+        $missingRequirements = $jobseeker->getMissingRequirements();
+        if (!empty($missingRequirements)) {
+            $missingList = implode(', ', $missingRequirements);
+            return redirect()->back()
+                ->with('error', "Application blocked: You cannot apply for a job posting until your profile details and required documents are completed. Missing: {$missingList}. Please update your profile and upload your documents in the Document Hub.");
         }
 
         // Create application
@@ -971,8 +986,41 @@ class JobseekerPortalController extends Controller
     {
         $request->validate([
             'category' => 'required|in:resume,valid_id,certificate,certs,pwd_id',
-            'document_file' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
+            'document_file' => 'required|file|max:5120',
         ]);
+
+        $category = $request->input('category');
+        $canonicalCategory = ($category === 'certs') ? 'certificate' : $category;
+        $file = $request->file('document_file');
+
+        // Category-specific allowed formats
+        $allowedExtensions = match($canonicalCategory) {
+            'resume' => ['pdf', 'doc', 'docx'],
+            'valid_id', 'pwd_id' => ['jpg', 'jpeg', 'png', 'pdf'],
+            'certificate' => ['pdf', 'jpg', 'jpeg', 'png'],
+            default => ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+        };
+
+        $extension = strtolower($file->getClientOriginalExtension());
+        if (!in_array($extension, $allowedExtensions)) {
+            $allowedList = strtoupper(implode(', ', $allowedExtensions));
+            return redirect()->back()
+                ->withErrors(['document_file' => "Invalid file format for " . ucfirst(str_replace('_', ' ', $canonicalCategory)) . ". Allowed formats: {$allowedList}."])
+                ->withInput();
+        }
+
+        // Image resolution check for government IDs
+        if (in_array($canonicalCategory, ['valid_id', 'pwd_id']) && in_array($extension, ['jpg', 'jpeg', 'png'])) {
+            $imageInfo = @getimagesize($file->getRealPath());
+            if ($imageInfo) {
+                [$width, $height] = $imageInfo;
+                if ($width < 300 || $height < 200) {
+                    return redirect()->back()
+                        ->withErrors(['document_file' => 'The uploaded ID image is too low-resolution. Please upload a clear photo (at least 300x200 pixels) to ensure legibility.'])
+                        ->withInput();
+                }
+            }
+        }
 
         $jobseeker = $this->getOrCreateJobseeker();
         $details = $jobseeker->details;
@@ -984,14 +1032,10 @@ class JobseekerPortalController extends Controller
             ]);
         }
 
-        $file = $request->file('document_file');
-        $cleanName = preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $file->getClientOriginalName());
-        $fileName = time() . '_' . $cleanName;
+        $cleanName = preg_replace('/[^A-Za-z0-9_\-\.]/', '_', pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
+        $fileName = time() . '_' . $cleanName . '.' . $extension;
         $filePath = $file->storeAs('documents/' . $jobseeker->jobseeker_id, $fileName, 'public');
         $fileUrl = Storage::url($filePath);
-
-        $category = $request->input('category');
-        $canonicalCategory = ($category === 'certs') ? 'certificate' : $category;
 
         $existingDocs = is_array($details->training_certificates) 
             ? $details->training_certificates 
@@ -1014,13 +1058,29 @@ class JobseekerPortalController extends Controller
             'category' => $canonicalCategory,
             'name' => $file->getClientOriginalName(),
             'file_url' => $fileUrl,
+            'url' => $fileUrl,
+            'file_path' => $filePath,
+            'file_size' => $file->getSize(),
+            'mime_type' => $file->getMimeType(),
             'status' => 'under_review',
+            'rejection_reason' => null,
+            'reviewed_by' => null,
+            'reviewed_at' => null,
             'uploaded_at' => now()->toIso8601String(),
         ];
 
         $filtered[] = $newDoc;
         $details->training_certificates = array_values($filtered);
         $details->save();
+
+        // Update user account_status to pending_review if previously unverified
+        $user = Auth::user();
+        if ($user && $user->account_status === 'unverified') {
+            DB::table('users')->where('user_id', $user->user_id)->update([
+                'account_status' => 'pending_review',
+                'updated_at' => now(),
+            ]);
+        }
 
         // Create Notification
         Notification::create([

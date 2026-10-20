@@ -6,10 +6,12 @@ use App\Models\Employer;
 use App\Models\JobApplication;
 use App\Models\JobPosting;
 use App\Models\Jobseeker;
+use App\Models\JobseekerDetail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class JpoWorkflowAndSecurityTest extends TestCase
@@ -302,6 +304,61 @@ class JpoWorkflowAndSecurityTest extends TestCase
         $response->assertSee($this->jobseeker->last_name);
     }
 
+    public function test_jpo_can_view_jobseeker_documents_through_authenticated_route(): void
+    {
+        Storage::fake('public');
+        $resumePath = "documents/resumes/{$this->jobseeker->jobseeker_id}_resume.pdf";
+        $idPath = "documents/{$this->jobseeker->jobseeker_id}/id.pdf";
+        Storage::disk('public')->put($resumePath, 'resume content');
+        Storage::disk('public')->put($idPath, 'id content');
+
+        JobseekerDetail::create([
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'training_certificates' => [
+                [
+                    'category' => 'resume',
+                    'name' => 'resume.pdf',
+                    'file_url' => $resumePath,
+                    'status' => 'under_review',
+                ],
+                [
+                    'category' => 'valid_id',
+                    'name' => 'id.pdf',
+                    'file_url' => '/storage/' . $idPath,
+                    'file_path' => $idPath,
+                    'status' => 'under_review',
+                ],
+            ],
+        ]);
+
+        $jobPosting = JobPosting::create([
+            'employer_id' => $this->employer->employer_id,
+            'title' => 'Software Engineer',
+            'description' => 'Build web applications',
+            'vacancy_count' => 3,
+            'status' => 'approved',
+        ]);
+
+        $application = JobApplication::create([
+            'job_id' => $jobPosting->job_id,
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'status' => 'pending',
+            'referred_by_jpo' => 0,
+        ]);
+
+        $response = $this->actingAs($this->jpoUser)
+            ->get("/jpo/evaluations/jobseekers/{$application->application_id}/documents/0");
+
+        $response->assertOk();
+        $this->assertSame('resume content', $response->streamedContent());
+
+        $idResponse = $this->actingAs($this->jpoUser)
+            ->get("/jpo/evaluations/jobseekers/{$application->application_id}/documents/1");
+
+        $idResponse->assertOk();
+        $this->assertSame('id content', $idResponse->streamedContent());
+    }
+
     public function test_jpo_can_update_profile(): void
     {
         $response = $this->actingAs($this->jpoUser)->post('/jpo/profile/update', [
@@ -458,8 +515,6 @@ class JpoWorkflowAndSecurityTest extends TestCase
         $response->assertSee('Establishment Contact Details');
         $response->assertSee('Documentary Requirements');
         $response->assertSee('APPROVAL');
-        $response->assertSee('JOB VACANCIES AND QUALIFICATION FORM');
-        $response->assertSee('Customer Care Specialist');
-        $response->assertSee('ACCEPTS DISABILITY?');
+        $response->assertDontSee('JOB VACANCIES AND QUALIFICATION FORM');
     }
 }

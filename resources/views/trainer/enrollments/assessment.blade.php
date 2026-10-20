@@ -31,7 +31,10 @@
 
         @if(session('error'))
             <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2">
-                <span>✕</span> {{ session('error') }}
+                <svg class="h-4 w-4 text-rose-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                <span>{{ session('error') }}</span>
             </div>
         @endif
 
@@ -148,7 +151,18 @@
                      :class="finalScore >= passingScore ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-rose-50 border-rose-200 text-rose-950'">
                     <div class="flex items-center justify-between text-xs font-bold">
                         <span class="flex items-center gap-2">
-                            <span class="text-base" x-text="finalScore >= passingScore ? '🎓' : '⚠️'"></span>
+                            <template x-if="finalScore >= passingScore">
+                                <svg class="h-4 w-4 text-emerald-700 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+                                    <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
+                                </svg>
+                            </template>
+                            <template x-if="finalScore < passingScore">
+                                <svg class="h-4 w-4 text-rose-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                            </template>
                             <span>Evaluation Assessment Outcome:</span>
                             <span class="uppercase font-black" x-text="finalScore >= passingScore ? 'PASSED & COMPLETED' : 'FAILED / NEEDS RETAKE'"></span>
                         </span>

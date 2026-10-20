@@ -42,10 +42,13 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'email',
+        'phone_number',
         'password',
         'role',
         'status',
         'is_approved',
+        'is_contact_verified',
+        'account_status',
         'created_at',
         'updated_at',
     ];
@@ -71,8 +74,26 @@ class User extends Authenticatable
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'is_approved' => 'boolean',
+            'is_contact_verified' => 'boolean',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Alias attribute id to user_id for Laravel standard auth interfaces.
+     */
+    public function getIdAttribute(): ?int
+    {
+        return $this->attributes['user_id'] ?? null;
+    }
+
+    /**
+     * Get user display name from UserProfile or Jobseeker.
+     */
+    public function getNameAttribute(): ?string
+    {
+        return $this->profile?->full_name 
+            ?? ($this->jobseeker ? trim($this->jobseeker->first_name . ' ' . $this->jobseeker->last_name) : null);
     }
 
     // =============================================
@@ -213,5 +234,37 @@ class User extends Authenticatable
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    /**
+     * Check if the user's contact information (email or phone) is verified via OTP.
+     */
+    public function isContactVerified(): bool
+    {
+        return (bool) $this->is_contact_verified;
+    }
+
+    /**
+     * Check if the user's account is fully verified.
+     */
+    public function isAccountVerified(): bool
+    {
+        return ($this->account_status === 'verified') || ($this->is_approved && $this->isActive());
+    }
+
+    /**
+     * Check if the user's account is pending review.
+     */
+    public function isPendingReview(): bool
+    {
+        return $this->account_status === 'pending_review' || ($this->status === 'pending' && !$this->is_approved);
+    }
+
+    /**
+     * Check if the user's account is unverified.
+     */
+    public function isUnverified(): bool
+    {
+        return $this->account_status === 'unverified' && !$this->isAccountVerified();
     }
 }

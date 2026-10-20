@@ -354,4 +354,28 @@ class AdminAccreditationAndSecurityTest extends TestCase
             'role' => 'jpo',
         ]);
     }
+
+    public function test_employer_can_view_printable_accreditation_with_inspection_features(): void
+    {
+        // Setup employer accreditation with attached documents
+        \App\Models\EmployerAccreditation::create([
+            'employer_id' => $this->employer->employer_id,
+            'status' => 'pending',
+            'document_status' => 'complete',
+            'documents' => [
+                'bir_2303' => ['path' => 'accreditation_docs/bir.pdf', 'original_name' => 'bir_form_2303.pdf'],
+                'business_permit' => ['path' => 'accreditation_docs/permit.jpg', 'original_name' => 'mayors_permit_2026.jpg'],
+            ],
+        ]);
+
+        $response = $this->actingAs($this->employerUser)->get(route('employer.accreditation.print'));
+        
+        $response->assertStatus(200);
+        $response->assertSee('ESTABLISHMENT REGISTRATION');
+        $response->assertSee('DMDP Document Inspection Hub');
+        $response->assertSee('Preview / Inspect Docs');
+        $response->assertSee('resources/js/app.js');
+        $response->assertSee('no-print');
+        $response->assertSee('bir_2303');
+    }
 }

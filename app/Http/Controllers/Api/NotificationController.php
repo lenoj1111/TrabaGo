@@ -32,7 +32,7 @@ class NotificationController extends Controller
      */
     public function getAll(Request $request)
     {
-        $user = $request->user();
+        $user = $request->user() ?? auth('sanctum')->user();
 
         if (!$user) {
             return response()->json([]);
@@ -53,7 +53,7 @@ class NotificationController extends Controller
      */
     public function markAsRead(Request $request, $id)
     {
-        $user = $request->user();
+        $user = $request->user() ?? auth('sanctum')->user();
         
         $query = Notification::where('notification_id', $id);
         if ($user) {

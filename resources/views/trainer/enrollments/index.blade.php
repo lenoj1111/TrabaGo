@@ -17,7 +17,7 @@
         this.statusModal = true;
     }
 }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-7xl space-y-8">
+    <div class="w-full max-w-[1680px] mx-auto space-y-8">
         
         <!-- Header -->
         <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
@@ -113,7 +113,12 @@
                                     @if($enr->certificate_issued)
                                         <div class="space-y-0.5">
                                             <span class="inline-flex items-center gap-1 rounded-full bg-emerald-600 text-white px-2.5 py-0.5 text-[10px] font-black">
-                                                🎓 {{ $enr->certificate_no }}
+                                                <svg class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+                                                    <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
+                                                </svg>
+                                                <span>{{ $enr->certificate_no }}</span>
                                             </span>
                                             <a href="{{ route('trainer.certificates.preview', $enr->enrollment_id) }}" target="_blank" class="block text-[10px] font-bold text-emerald-700 hover:underline">
                                                 Print Certificate &rarr;
@@ -145,9 +150,12 @@
                                             <form action="{{ route('trainer.enrollments.complete', $enr->enrollment_id) }}" method="POST" class="inline">
                                                 @csrf
                                                 <button type="submit" onclick="return confirm('Mark this enrollment as Completed and award verified skills to the jobseeker?')"
-                                                        class="px-2.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-[11px] font-black transition-colors"
+                                                        class="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black transition-colors inline-flex items-center gap-1"
                                                         title="Mark Completion">
-                                                    ✓ Complete
+                                                    <svg class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                                    </svg>
+                                                    <span>Complete</span>
                                                 </button>
                                             </form>
                                         @endif
@@ -157,9 +165,14 @@
                                             <form action="{{ route('trainer.enrollments.certificate', $enr->enrollment_id) }}" method="POST" class="inline">
                                                 @csrf
                                                 <button type="submit" onclick="return confirm('Generate and issue official skills certificate?')"
-                                                        class="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black shadow-md shadow-emerald-600/20"
+                                                        class="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black shadow-md shadow-emerald-600/20 inline-flex items-center gap-1"
                                                         title="Generate Skills Certificate">
-                                                    🎓 Generate Cert
+                                                    <svg class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+                                                        <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
+                                                    </svg>
+                                                    <span>Generate Cert</span>
                                                 </button>
                                             </form>
                                         @endif

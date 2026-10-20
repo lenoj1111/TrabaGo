@@ -112,7 +112,13 @@ class JobPostingController extends Controller
             'employer_id' => 'nullable|exists:employers,employer_id',
             'title' => 'required|string|max:150',
             'description' => 'required|string',
+            'job_type' => 'nullable|string|max:100',
+            'location' => 'nullable|string|max:255',
+            'salary_range' => 'nullable|string|max:150',
+            'benefits' => 'nullable|string',
+            'other_instructions' => 'nullable|string',
             'qualifications' => 'nullable|string',
+            'skills' => 'nullable|string',
             'vacancy_count' => 'required|integer|min:1',
             'valid_until' => 'required|date|after:today',
             'accepts_disability' => 'boolean',
@@ -144,7 +150,13 @@ class JobPostingController extends Controller
             'admin_id' => $adminProfile->profile_id,  // Using profile_id from user_profiles
             'title' => $request->title,
             'description' => $request->description,
+            'job_type' => $request->job_type,
+            'location' => $request->location,
+            'salary_range' => $request->salary_range,
+            'benefits' => $request->benefits,
+            'other_instructions' => $request->other_instructions,
             'qualifications' => $request->qualifications,
+            'skills' => $request->skills,
             'vacancy_count' => $request->vacancy_count,
             'valid_until' => $request->valid_until,
             'accepts_disability' => $request->accepts_disability ?? 0,
@@ -162,7 +174,7 @@ class JobPostingController extends Controller
     /**
      * Display the specified job posting.
      */
-    public function show($id)
+    public function show(int $id)
     {
         $jobPosting = DB::table('job_postings as jp')
             ->leftJoin('employers as e', 'jp.employer_id', '=', 'e.employer_id')
@@ -203,7 +215,7 @@ class JobPostingController extends Controller
     /**
      * Show the form for editing the specified job posting.
      */
-    public function edit($id)
+    public function edit(int $id)
     {
         $jobPosting = DB::table('job_postings')
             ->where('job_id', $id)
@@ -229,13 +241,19 @@ class JobPostingController extends Controller
     /**
      * Update the specified job posting.
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, int $id)
     {
         $validator = Validator::make($request->all(), [
             'employer_id' => 'nullable|exists:employers,employer_id',
             'title' => 'required|string|max:150',
             'description' => 'required|string',
+            'job_type' => 'nullable|string|max:100',
+            'location' => 'nullable|string|max:255',
+            'salary_range' => 'nullable|string|max:150',
+            'benefits' => 'nullable|string',
+            'other_instructions' => 'nullable|string',
             'qualifications' => 'nullable|string',
+            'skills' => 'nullable|string',
             'vacancy_count' => 'required|integer|min:1',
             'valid_until' => 'required|date|after:today',
             'accepts_disability' => 'boolean',
@@ -262,7 +280,13 @@ class JobPostingController extends Controller
                 'employer_id' => $employerId,
                 'title' => $request->title,
                 'description' => $request->description,
+                'job_type' => $request->job_type,
+                'location' => $request->location,
+                'salary_range' => $request->salary_range,
+                'benefits' => $request->benefits,
+                'other_instructions' => $request->other_instructions,
                 'qualifications' => $request->qualifications,
+                'skills' => $request->skills,
                 'vacancy_count' => $request->vacancy_count,
                 'valid_until' => $request->valid_until,
                 'accepts_disability' => $request->accepts_disability ?? 0,
@@ -276,7 +300,7 @@ class JobPostingController extends Controller
     /**
      * Remove the specified job posting.
      */
-    public function destroy($id)
+    public function destroy(int $id)
     {
         DB::table('job_postings')->where('job_id', $id)->delete();
         
@@ -287,7 +311,7 @@ class JobPostingController extends Controller
     /**
      * Approve a job posting.
      */
-    public function approve($id)
+    public function approve(int $id)
     {
         $jobPosting = DB::table('job_postings')
             ->where('job_id', $id)
@@ -314,17 +338,23 @@ class JobPostingController extends Controller
     /**
      * Reject a job posting.
      */
-    public function reject(Request $request, $id)
+    public function reject(Request $request, int $id)
     {
         $jobPosting = DB::table('job_postings')
             ->where('job_id', $id)
             ->first();
 
         if (!$jobPosting) {
+            if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+                return response()->json(['error' => 'Job posting not found.'], 404);
+            }
             return redirect()->back()->with('error', 'Job posting not found.');
         }
 
         if ($jobPosting->status !== 'pending') {
+            if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+                return response()->json(['error' => 'Job posting is not pending.'], 400);
+            }
             return redirect()->back()->with('error', 'Job posting is not pending.');
         }
 
@@ -334,6 +364,10 @@ class JobPostingController extends Controller
                 'status' => 'rejected',
             ]);
 
+        if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+            return response()->json(['success' => 'Job posting rejected successfully.']);
+        }
+
         return redirect()->route('admin.job-postings')
             ->with('success', 'Job posting rejected successfully.');
     }
@@ -341,7 +375,7 @@ class JobPostingController extends Controller
     /**
      * Close a job posting.
      */
-    public function close($id)
+    public function close(int $id)
     {
         $jobPosting = DB::table('job_postings')
             ->where('job_id', $id)
@@ -384,42 +418,51 @@ class JobPostingController extends Controller
         $count = count($jobIds);
 
         switch ($action) {
-            case 'approve':
-                DB::table('job_postings')
-                    ->whereIn('job_id', $jobIds)
-                    ->where('status', 'pending')
-                    ->update([
-                        'status' => 'approved',
-                        'approved_at' => now()->toDateString(),
-                    ]);
-                $message = "{$count} job postings approved successfully.";
-                break;
+    case 'approve':
+        DB::table('job_postings')
+            ->whereIn('job_id', $jobIds)
+            ->where('status', 'pending')
+            ->update([
+                'status' => 'approved',
+                'approved_at' => now()->toDateString(),
+            ]);
 
-            case 'reject':
-                DB::table('job_postings')
-                    ->whereIn('job_id', $jobIds)
-                    ->where('status', 'pending')
-                    ->update(['status' => 'rejected']);
-                $message = "{$count} job postings rejected successfully.";
-                break;
+        $message = "{$count} job postings approved successfully.";
+        break;
 
-            case 'close':
-                DB::table('job_postings')
-                    ->whereIn('job_id', $jobIds)
-                    ->whereIn('status', ['approved', 'pending'])
-                    ->update(['status' => 'closed']);
-                $message = "{$count} job postings closed successfully.";
-                break;
+    case 'reject':
+        DB::table('job_postings')
+            ->whereIn('job_id', $jobIds)
+            ->where('status', 'pending')
+            ->update(['status' => 'rejected']);
 
-            case 'delete':
-                DB::table('job_postings')
-                    ->whereIn('job_id', $jobIds)
-                    ->delete();
-                $message = "{$count} job postings deleted successfully.";
-                break;
-        }
+        $message = "{$count} job postings rejected successfully.";
+        break;
 
-        return response()->json(['success' => $message]);
+    case 'close':
+        DB::table('job_postings')
+            ->whereIn('job_id', $jobIds)
+            ->whereIn('status', ['approved', 'pending'])
+            ->update(['status' => 'closed']);
+
+        $message = "{$count} job postings closed successfully.";
+        break;
+
+    case 'delete':
+        DB::table('job_postings')
+            ->whereIn('job_id', $jobIds)
+            ->delete();
+
+        $message = "{$count} job postings deleted successfully.";
+        break;
+
+    default:
+        return response()->json([
+            'error' => 'Invalid action.'
+        ], 400);
+}
+
+return response()->json(['success' => $message]);
     }
 
     /**

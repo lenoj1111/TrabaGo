@@ -8,88 +8,58 @@
     if (request('edit_id')) {
         $editJob = $jobs->firstWhere('job_id', request('edit_id')) ?? \App\Models\JobPosting::where('employer_id', $employer->employer_id)->find(request('edit_id'));
     }
-    $oldQualifications = old('qualifications');
-    $newQualificationItems = is_string($oldQualifications) && trim($oldQualifications) !== ''
-        ? preg_split('/\r\n|\r|\n/', $oldQualifications)
-        : [''];
-@endphp
-<div x-data="{ 
-    createModal: {{ request()->has('create') ? 'true' : 'false' }},
-    editModal: {{ $editJob ? 'true' : 'false' }},
-    viewModal: false,
-    deleteModal: false,
-    closeModal: false,
-    newQualificationItems: @js($newQualificationItems),
-    qualificationItems: [''],
-    selectedJob: {!! $editJob ? json_encode([
-        'id' => $editJob->job_id,
-        'title' => $editJob->title,
-        'description' => $editJob->description,
-        'qualifications' => $editJob->qualifications ?? '',
-        'job_type' => $editJob->job_type ?? '',
-        'location' => $editJob->location ?? '',
-        'salary_compensation' => $editJob->salary_compensation ?? '',
-        'benefits_perks' => $editJob->benefits_perks ?? '',
-        'other_instructions' => $editJob->other_instructions ?? '',
-        'vacancy_count' => $editJob->vacancy_count,
-        'valid_until' => $editJob->valid_until ? date('Y-m-d', strtotime($editJob->valid_until)) : '',
-        'valid_until_formatted' => $editJob->valid_until ? date('M d, Y', strtotime($editJob->valid_until)) : 'Continuous',
-        'accepts_disability' => (bool)$editJob->accepts_disability,
-        'disability_type' => $editJob->disability_type ?? '',
-        'status' => $editJob->status,
-        'applications_count' => $editJob->applications_count ?? 0,
-        'created_at' => $editJob->created_at ? date('M d, Y', strtotime($editJob->created_at)) : '',
-    ]) : '{
-        id: null,
-        title: \'\',
-        description: \'\',
-        qualifications: \'\',
-        job_type: \'\',
-        location: \'\',
-        salary_compensation: \'\',
-        benefits_perks: \'\',
-        other_instructions: \'\',
-        vacancy_count: 1,
-        valid_until: \'\',
-        valid_until_formatted: \'\',
-        accepts_disability: false,
-        disability_type: \'\',
-        status: \'\',
-        applications_count: 0,
-        created_at: \'\'
-    }' !!},
-    init() {
-        this.syncQualificationItems();
-    },
-    syncQualificationItems() {
-        this.qualificationItems = (this.selectedJob.qualifications || '').split(/\r?\n/).map(item => item.trim()).filter(Boolean);
-        if (this.qualificationItems.length === 0) this.qualificationItems = [''];
-    },
-    openCreate() {
-        this.newQualificationItems = [''];
-        this.createModal = true;
-    },
-    openView(job) {
-        this.selectedJob = { ...job };
-        this.viewModal = true;
-    },
-    openEdit(job) {
-        this.selectedJob = { ...job };
-        this.syncQualificationItems();
-        this.editModal = true;
-    },
-    openDelete(job) {
-        this.selectedJob = { ...job };
-        this.deleteModal = true;
-    },
-    openClose(job) {
-        this.selectedJob = { ...job };
-        this.closeModal = true;
+
+    $jobsDataMap = [];
+    foreach ($jobs as $j) {
+        $jobsDataMap[$j->job_id] = [
+            'id' => $j->job_id,
+            'title' => $j->title,
+            'description' => $j->description ?? '',
+            'job_type' => $j->job_type ?? 'Full-time',
+            'location' => $j->location ?? 'Cebu City',
+            'salary_range' => $j->salary_range ?? '',
+            'benefits' => $j->benefits ?? '',
+            'other_instructions' => $j->other_instructions ?? '',
+            'qualifications' => $j->qualifications ?? '',
+            'skills' => $j->skills ?? '',
+            'vacancy_count' => (int) $j->vacancy_count,
+            'valid_until' => $j->valid_until ? date('Y-m-d', strtotime($j->valid_until)) : '',
+            'valid_until_formatted' => $j->valid_until ? date('M d, Y', strtotime($j->valid_until)) : 'Continuous',
+            'accepts_disability' => (bool) $j->accepts_disability,
+            'disability_type' => $j->disability_type ?? '',
+            'status' => $j->status,
+            'applications_count' => (int) ($j->applications_count ?? 0),
+            'created_at' => $j->created_at ? date('M d, Y', strtotime($j->created_at)) : 'Today',
+        ];
     }
-}" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-7xl space-y-8">
+    if ($editJob && !isset($jobsDataMap[$editJob->job_id])) {
+        $jobsDataMap[$editJob->job_id] = [
+            'id' => $editJob->job_id,
+            'title' => $editJob->title,
+            'description' => $editJob->description ?? '',
+            'job_type' => $editJob->job_type ?? 'Full-time',
+            'location' => $editJob->location ?? 'Cebu City',
+            'salary_range' => $editJob->salary_range ?? '',
+            'benefits' => $editJob->benefits ?? '',
+            'other_instructions' => $editJob->other_instructions ?? '',
+            'qualifications' => $editJob->qualifications ?? '',
+            'skills' => $editJob->skills ?? '',
+            'vacancy_count' => (int) $editJob->vacancy_count,
+            'valid_until' => $editJob->valid_until ? date('Y-m-d', strtotime($editJob->valid_until)) : '',
+            'valid_until_formatted' => $editJob->valid_until ? date('M d, Y', strtotime($editJob->valid_until)) : 'Continuous',
+            'accepts_disability' => (bool) $editJob->accepts_disability,
+            'disability_type' => $editJob->disability_type ?? '',
+            'status' => $editJob->status,
+            'applications_count' => (int) ($editJob->applications_count ?? 0),
+            'created_at' => $editJob->created_at ? date('M d, Y', strtotime($editJob->created_at)) : 'Today',
+        ];
+    }
+@endphp
+
+<div x-data="jobPostingsManager()" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
+    <div class="w-full max-w-[1680px] mx-auto space-y-8">
         
-        <!-- Header in Emerald Theme -->
+        <!-- Header in green Theme -->
         <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="space-y-2">
                 <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
@@ -115,10 +85,56 @@
             @endif
         </div>
 
+        <!-- Approval / Accreditation Required Notice -->
+        @if(!auth()->user()->isAccountVerified())
+            @if(auth()->user()->account_status === 'unverified')
+                <div class="rounded-2xl bg-amber-50 border border-amber-200 p-5 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+                    <div class="flex items-start gap-3">
+                        <div class="h-10 w-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2.5 py-0.5 rounded-full bg-amber-600 text-white text-[10px] font-black uppercase tracking-wider">Accreditation Required</span>
+                                <span class="text-xs text-amber-800 font-bold">Job Posting Locked</span>
+                            </div>
+                            <p class="text-xs font-semibold text-amber-900 mt-1">
+                                You can configure your company profile and explore the portal freely. To publish job openings, please submit your company accreditation documents (BIR 2303, Mayor's Permit, SEC/DTI) for DMDP/JPO evaluation.
+                            </p>
+                        </div>
+                    </div>
+                    <a href="{{ route('employer.accreditation') }}" class="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shrink-0 transition-colors shadow-sm">
+                        Submit Accreditation Documents &rarr;
+                    </a>
+                </div>
+            @else
+                <div class="rounded-2xl bg-blue-50 border border-blue-200 p-5 text-blue-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+                    <div class="flex items-start gap-3">
+                        <div class="h-10 w-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2.5 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-black uppercase tracking-wider">Under Evaluation</span>
+                                <span class="text-xs text-blue-800 font-bold">Review in Progress</span>
+                            </div>
+                            <p class="text-xs font-semibold text-blue-900 mt-1">
+                                Your accreditation documents have been submitted and are currently being reviewed by DMDP and JPO officers. Job posting will be unlocked immediately upon approval.
+                            </p>
+                        </div>
+                    </div>
+                    <a href="{{ route('employer.accreditation') }}" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shrink-0 transition-colors shadow-sm">
+                        Check Status &rarr;
+                    </a>
+                </div>
+            @endif
+        @endif
+
         <!-- Flash Messages & Validation Alerts -->
         @if(session('success'))
-            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
-                <span>✓</span> {{ session('success') }}
+            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2.5">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                <span>{{ session('success') }}</span>
             </div>
         @endif
         @if(session('info'))
@@ -133,8 +149,11 @@
         @endif
         @if($errors->any())
             <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold space-y-1">
-                <span class="block font-black">Please correct the following errors:</span>
-                <ul class="list-disc list-inside font-medium">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span class="block font-black">Please correct the following errors:</span>
+                </div>
+                <ul class="list-disc list-inside font-medium pl-6">
                     @foreach($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
@@ -212,7 +231,7 @@
         <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <h2 class="text-lg font-black text-slate-900">Your Company Vacancies ({{ $jobs->total() }})</h2>
-                <span class="text-xs font-bold text-slate-500">Full CRUD & DMDP Pipeline Tracking</span>
+                <span class="text-xs font-bold text-slate-500">Pipeline Tracking & Administration</span>
             </div>
 
             <div class="overflow-x-auto">
@@ -229,40 +248,18 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
                         @forelse($jobs as $job)
-                            @php
-                                $jobData = [
-                                    'id' => $job->job_id,
-                                    'title' => $job->title,
-                                    'description' => $job->description,
-                                    'qualifications' => $job->qualifications ?? '',
-                                    'job_type' => $job->job_type ?? '',
-                                    'location' => $job->location ?? '',
-                                    'salary_compensation' => $job->salary_compensation ?? '',
-                                    'benefits_perks' => $job->benefits_perks ?? '',
-                                    'other_instructions' => $job->other_instructions ?? '',
-                                    'vacancy_count' => $job->vacancy_count,
-                                    'valid_until' => $job->valid_until ? date('Y-m-d', strtotime($job->valid_until)) : '',
-                                    'valid_until_formatted' => $job->valid_until ? date('M d, Y', strtotime($job->valid_until)) : 'Continuous',
-                                    'accepts_disability' => (bool)$job->accepts_disability,
-                                    'disability_type' => $job->disability_type ?? '',
-                                    'status' => $job->status,
-                                    'applications_count' => $job->applications_count ?? 0,
-                                    'created_at' => $job->created_at ? date('M d, Y', strtotime($job->created_at)) : 'Today'
-                                ];
-                                $jobJson = json_encode($jobData);
-                            @endphp
                             <tr class="hover:bg-slate-50/80 transition-colors">
                                 <td class="py-4 px-3">
                                     <div class="flex items-center gap-2">
-                                        <button type="button" @click='openView({!! $jobJson !!})' class="text-left group">
+                                        <button type="button" @click="openView({{ $job->job_id }})" class="text-left group focus:outline-none">
                                             <span class="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors block text-sm">{{ $job->title }}</span>
                                             <span class="text-[11px] text-slate-400 line-clamp-1 max-w-sm">{{ $job->description }}</span>
                                         </button>
                                     </div>
                                 </td>
                                 <td class="py-4 px-3 font-bold text-slate-900">
-                                    <span class="inline-flex items-center gap-1">
-                                        {{ $job->vacancy_count }} open
+                                    <span class="inline-flex items-center gap-1.5">
+                                        <span>{{ $job->vacancy_count }} open</span>
                                         @if(($job->applications_count ?? 0) > 0)
                                             <a href="{{ route('employer.referred-jobseekers', ['job_id' => $job->job_id]) }}" class="text-[10px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md hover:underline" title="View applicants">
                                                 ({{ $job->applications_count }} applicants)
@@ -272,8 +269,9 @@
                                 </td>
                                 <td class="py-4 px-3">
                                     @if($job->accepts_disability)
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
-                                            ♿ {{ $job->disability_type ?: 'PWD Inclusive' }}
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                                            <svg class="w-3.5 h-3.5 text-emerald-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                            <span>{{ $job->disability_type ?: 'PWD Inclusive' }}</span>
                                         </span>
                                     @else
                                         <span class="text-slate-400 text-[11px]">Standard</span>
@@ -285,61 +283,67 @@
                                             {{ date('M d, Y', strtotime($job->valid_until)) }}
                                         </span>
                                     @else
-                                        Continuous
+                                        <span>Continuous</span>
                                     @endif
                                 </td>
                                 <td class="py-4 px-3">
                                     @if($job->status === 'approved')
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
-                                            ✓ Live & Approved
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-600"></span>
+                                            <span>Live & Approved</span>
                                         </span>
                                     @elseif($job->status === 'pending')
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-xs font-bold text-amber-800">
-                                            ⏳ Sent to Admin (Pending)
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-amber-600 animate-pulse"></span>
+                                            <span>Pending DMDP Review</span>
                                         </span>
                                     @elseif($job->status === 'rejected')
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-rose-100 border border-rose-300 px-2.5 py-0.5 text-xs font-bold text-rose-800">
-                                            ✕ Needs Revision
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-100 border border-rose-300 px-2.5 py-0.5 text-xs font-bold text-rose-800">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-rose-600"></span>
+                                            <span>Needs Revision</span>
                                         </span>
                                     @elseif($job->status === 'closed')
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-300 px-2.5 py-0.5 text-xs font-bold text-slate-600">
-                                            📁 Closed
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 border border-slate-300 px-2.5 py-0.5 text-xs font-bold text-slate-600">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+                                            <span>Closed</span>
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600">
                                             {{ ucfirst($job->status) }}
                                         </span>
                                     @endif
                                 </td>
                                 <td class="py-4 px-3 text-right">
                                     <div class="inline-flex items-center gap-1.5">
-                                        <!-- View Details -->
-                                        <button type="button" @click='openView({!! $jobJson !!})'
-                                                class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
+                                        <!-- View Details Button -->
+                                        <button type="button" @click="openView({{ $job->job_id }})"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors shadow-xs"
                                                 title="View Job Details">
-                                            👁️ View
+                                            <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <span>View</span>
                                         </button>
 
-                                        <!-- Edit Job -->
-                                        <button type="button" @click='openEdit({!! $jobJson !!})'
-                                                class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200 transition-colors"
+                                        <!-- Edit Job Button -->
+                                        <button type="button" @click="openEdit({{ $job->job_id }})"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200 transition-colors shadow-xs"
                                                 title="Edit Job Vacancy">
-                                            ✏️ Edit
+                                            <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            <span>Edit</span>
                                         </button>
 
                                         <!-- Close or Delete -->
                                         @if($job->status !== 'closed')
-                                            <button type="button" @click='openClose({!! $jobJson !!})'
-                                                    class="p-1 rounded-lg text-slate-400 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                                            <button type="button" @click="openClose({{ $job->job_id }})"
+                                                    class="p-1.5 rounded-xl text-slate-400 hover:text-amber-700 hover:bg-amber-50 transition-colors"
                                                     title="Close Vacancy">
-                                                🔒
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                                             </button>
                                         @endif
 
-                                        <button type="button" @click='openDelete({!! $jobJson !!})'
-                                                class="p-1 rounded-lg text-slate-400 hover:text-rose-700 hover:bg-rose-50 transition-colors"
+                                        <button type="button" @click="openDelete({{ $job->job_id }})"
+                                                class="p-1.5 rounded-xl text-slate-400 hover:text-rose-700 hover:bg-rose-50 transition-colors"
                                                 title="Delete Job">
-                                            🗑️
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         </button>
                                     </div>
                                 </td>
@@ -347,7 +351,7 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="py-12 text-center text-slate-400 italic">
-                                    No job openings found matching the criteria. Click "+ Create New Job Opening" above to post your vacancy.
+                                    No job openings found matching the criteria. Click "Create New Job Opening" above to post your vacancy.
                                 </td>
                             </tr>
                         @endforelse
@@ -362,7 +366,7 @@
 
     </div>
 
-    <!-- 1. Create Job Posting Modal (Past Date Strictly Prevented) -->
+    <!-- 1. Create Job Posting Modal -->
     <div x-show="createModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div @click.away="createModal = false" class="bg-white rounded-3xl max-h-[90vh] overflow-y-auto overscroll-contain max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
             
@@ -390,25 +394,34 @@
                   ">
                 @csrf
 
-                <div class="space-y-1">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Job Title / Role <span class="text-rose-500">*</span></label>
-                    <input type="text" name="title" required value="{{ old('title') }}" placeholder="e.g. Senior PHP / Laravel Developer, Customer Service Associate"
-                           class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="sm:col-span-2 space-y-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Job Title / Role <span class="text-rose-500">*</span></label>
+                        <input type="text" name="title" required value="{{ old('title') }}" placeholder="e.g. Senior PHP / Laravel Developer, Customer Service Associate"
+                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Employment Type <span class="text-rose-500">*</span></label>
+                        <select name="job_type" required class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            <option value="Full-time" {{ old('job_type') == 'Full-time' ? 'selected' : '' }}>Full-time</option>
+                            <option value="Part-time" {{ old('job_type') == 'Part-time' ? 'selected' : '' }}>Part-time</option>
+                            <option value="Contract" {{ old('job_type') == 'Contract' ? 'selected' : '' }}>Contract / Project-based</option>
+                            <option value="Internship" {{ old('job_type') == 'Internship' ? 'selected' : '' }}>Internship / OJT</option>
+                            <option value="Freelance" {{ old('job_type') == 'Freelance' ? 'selected' : '' }}>Freelance</option>
+                            <option value="Temporary" {{ old('job_type') == 'Temporary' ? 'selected' : '' }}>Temporary</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="space-y-1">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Job Type <span class="text-rose-500">*</span></label>
-                        <select name="job_type" required class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                            <option value="">Select job type</option>
-                            @foreach(['Full-time', 'Part-time', 'Contract', 'Temporary', 'Internship', 'Project-based', 'Other'] as $jobType)
-                                <option value="{{ $jobType }}" {{ old('job_type') === $jobType ? 'selected' : '' }}>{{ $jobType }}</option>
-                            @endforeach
-                        </select>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Location / Work Arrangement</label>
+                        <input type="text" name="location" value="{{ old('location', 'Cebu City') }}" placeholder="e.g. Cebu City / Hybrid / On-site"
+                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                     </div>
                     <div class="space-y-1">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Location <span class="text-rose-500">*</span></label>
-                        <input type="text" name="location" required value="{{ old('location') }}" placeholder="City, province, or remote"
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Salary & Compensation</label>
+                        <input type="text" name="salary_range" value="{{ old('salary_range') }}" placeholder="e.g. ₱25,000 - ₱35,000 / month, Negotiable"
                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                     </div>
                 </div>
@@ -444,33 +457,41 @@
                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">{{ old('description') }}</textarea>
                 </div>
 
-                <div class="space-y-2">
-                    <div class="flex items-center justify-between gap-3">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Required Skills & Qualifications</label>
-                        <button type="button" @click="newQualificationItems.push('')" class="text-xs font-bold text-emerald-700 hover:text-emerald-900">+ Add item</button>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                            Required Qualifications
+                            <span class="text-[10px] text-slate-400 lowercase font-normal">(enter 1 per line)</span>
+                        </label>
+                        <textarea name="qualifications" rows="3" placeholder="Bachelor's degree in Computer Science&#10;At least 2 years work experience&#10;Strong communication skills"
+                                  class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">{{ old('qualifications') }}</textarea>
                     </div>
-                    <input type="hidden" name="qualifications" :value="newQualificationItems.map(item => item.trim()).filter(Boolean).join('\n')">
-                    <div class="space-y-2">
-                        <template x-for="(item, index) in newQualificationItems" :key="index">
-                            <div class="flex items-center gap-2">
-                                <span class="text-emerald-700 font-black" aria-hidden="true">&bull;</span>
-                                <input type="text" x-model="newQualificationItems[index]" :aria-label="'Qualification ' + (index + 1)" placeholder="Add a skill or qualification"
-                                       class="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                                <button type="button" @click="newQualificationItems.splice(index, 1)" :aria-label="'Remove qualification ' + (index + 1)" title="Remove item" class="px-2 py-2 text-slate-400 hover:text-rose-700">&times;</button>
-                            </div>
-                        </template>
+
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                            Required Skills
+                            <span class="text-[10px] text-slate-400 lowercase font-normal">(enter 1 per line)</span>
+                        </label>
+                        <textarea name="skills" rows="3" placeholder="PHP / Laravel&#10;MySQL Database Design&#10;RESTful API Development&#10;Git Version Control"
+                                  class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">{{ old('skills') }}</textarea>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="space-y-1">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Benefits & Perks</label>
-                        <textarea name="benefits_perks" rows="3" placeholder="List benefits, one per line"
-                                  class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">{{ old('benefits_perks') }}</textarea>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                            Benefits & Perks
+                            <span class="text-[10px] text-slate-400 lowercase font-normal">(enter 1 per line)</span>
+                        </label>
+                        <textarea name="benefits" rows="2" placeholder="HMO health coverage on day 1&#10;13th & 14th month pay&#10;Flexible working hours"
+                                  class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">{{ old('benefits') }}</textarea>
                     </div>
+
                     <div class="space-y-1">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Other Instructions</label>
-                        <textarea name="other_instructions" rows="3" placeholder="Additional application or work instructions"
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                            Other Application Instructions
+                        </label>
+                        <textarea name="other_instructions" rows="2" placeholder="Bring 2 copies of resume and 1 valid ID during initial interview."
                                   class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">{{ old('other_instructions') }}</textarea>
                     </div>
                 </div>
@@ -501,7 +522,7 @@
         </div>
     </div>
 
-    <!-- 2. Edit Job Posting Modal (Past Date Strictly Prevented) -->
+    <!-- 2. Edit Job Posting Modal -->
     <div x-show="editModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div @click.away="editModal = false" class="bg-white rounded-3xl max-h-[90vh] overflow-y-auto overscroll-contain max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
             
@@ -530,25 +551,34 @@
                 @csrf
                 @method('PUT')
 
-                <div class="space-y-1">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Job Title / Role <span class="text-rose-500">*</span></label>
-                    <input type="text" name="title" x-model="selectedJob.title" required
-                           class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="sm:col-span-2 space-y-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Job Title / Role <span class="text-rose-500">*</span></label>
+                        <input type="text" name="title" x-model="selectedJob.title" required
+                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Employment Type <span class="text-rose-500">*</span></label>
+                        <select name="job_type" x-model="selectedJob.job_type" required class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            <option value="Full-time">Full-time</option>
+                            <option value="Part-time">Part-time</option>
+                            <option value="Contract">Contract / Project-based</option>
+                            <option value="Internship">Internship / OJT</option>
+                            <option value="Freelance">Freelance</option>
+                            <option value="Temporary">Temporary</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="space-y-1">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Job Type <span class="text-rose-500">*</span></label>
-                        <select name="job_type" x-model="selectedJob.job_type" required class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                            <option value="">Select job type</option>
-                            @foreach(['Full-time', 'Part-time', 'Contract', 'Temporary', 'Internship', 'Project-based', 'Other'] as $jobType)
-                                <option value="{{ $jobType }}">{{ $jobType }}</option>
-                            @endforeach
-                        </select>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Location / Work Arrangement</label>
+                        <input type="text" name="location" x-model="selectedJob.location" placeholder="e.g. Cebu City / Hybrid / On-site"
+                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                     </div>
                     <div class="space-y-1">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Location <span class="text-rose-500">*</span></label>
-                        <input type="text" name="location" x-model="selectedJob.location" required placeholder="City, province, or remote"
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Salary & Compensation</label>
+                        <input type="text" name="salary_range" x-model="selectedJob.salary_range" placeholder="e.g. ₱25,000 - ₱35,000 / month, Negotiable"
                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                     </div>
                 </div>
@@ -584,33 +614,41 @@
                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
                 </div>
 
-                <div class="space-y-2">
-                    <div class="flex items-center justify-between gap-3">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Required Skills & Qualifications</label>
-                        <button type="button" @click="qualificationItems.push('')" class="text-xs font-bold text-emerald-700 hover:text-emerald-900">+ Add item</button>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                            Required Qualifications
+                            <span class="text-[10px] text-slate-400 lowercase font-normal">(enter 1 per line)</span>
+                        </label>
+                        <textarea name="qualifications" rows="3" x-model="selectedJob.qualifications" placeholder="One qualification per line..."
+                                  class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
                     </div>
-                    <input type="hidden" name="qualifications" :value="qualificationItems.map(item => item.trim()).filter(Boolean).join('\n')">
-                    <div class="space-y-2">
-                        <template x-for="(item, index) in qualificationItems" :key="index">
-                            <div class="flex items-center gap-2">
-                                <span class="text-emerald-700 font-black" aria-hidden="true">&bull;</span>
-                                <input type="text" x-model="qualificationItems[index]" :aria-label="'Qualification ' + (index + 1)" placeholder="Add a skill or qualification"
-                                       class="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                                <button type="button" @click="qualificationItems.splice(index, 1)" :aria-label="'Remove qualification ' + (index + 1)" title="Remove item" class="px-2 py-2 text-slate-400 hover:text-rose-700">&times;</button>
-                            </div>
-                        </template>
+
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                            Required Skills
+                            <span class="text-[10px] text-slate-400 lowercase font-normal">(enter 1 per line)</span>
+                        </label>
+                        <textarea name="skills" rows="3" x-model="selectedJob.skills" placeholder="One skill per line..."
+                                  class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="space-y-1">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Benefits & Perks</label>
-                        <textarea name="benefits_perks" rows="3" x-model="selectedJob.benefits_perks" placeholder="List benefits, one per line"
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                            Benefits & Perks
+                            <span class="text-[10px] text-slate-400 lowercase font-normal">(enter 1 per line)</span>
+                        </label>
+                        <textarea name="benefits" rows="2" x-model="selectedJob.benefits" placeholder="One benefit per line..."
                                   class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
                     </div>
+
                     <div class="space-y-1">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Other Instructions</label>
-                        <textarea name="other_instructions" rows="3" x-model="selectedJob.other_instructions" placeholder="Additional application or work instructions"
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                            Other Application Instructions
+                        </label>
+                        <textarea name="other_instructions" rows="2" x-model="selectedJob.other_instructions" placeholder="Special interview or document instructions..."
                                   class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
                     </div>
                 </div>
@@ -630,7 +668,10 @@
 
                 <template x-if="selectedJob.status === 'rejected'">
                     <div class="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800 space-y-1">
-                        <span class="font-bold block">💡 Note on Revision:</span>
+                        <div class="flex items-center gap-1.5 font-bold">
+                            <svg class="w-4 h-4 text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>Note on Revision:</span>
+                        </div>
                         <p>Updating this rejected job posting will automatically resubmit it to DMDP Administration for approval review.</p>
                     </div>
                 </template>
@@ -650,7 +691,7 @@
 
     <!-- 3. View Job Posting Details Modal -->
     <div x-show="viewModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div @click.away="viewModal = false" class="bg-white rounded-3xl max-h-[90vh] overflow-y-auto overscroll-contain max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
+        <div @click.away="viewModal = false" class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6 max-h-[90vh] overflow-y-auto">
             
             <div class="flex items-start justify-between border-b border-slate-100 pb-4">
                 <div class="space-y-1">
@@ -662,7 +703,7 @@
             </div>
 
             <!-- Badges Bar -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 <div>
                     <span class="text-slate-400 text-[10px] font-bold uppercase block">Status</span>
                     <span class="font-bold text-slate-900 uppercase" x-text="selectedJob.status"></span>
@@ -676,23 +717,16 @@
                     <span class="font-bold text-slate-700" x-text="selectedJob.valid_until_formatted || 'Continuous'"></span>
                 </div>
                 <div>
-                    <span class="text-slate-400 text-[10px] font-bold uppercase block">Applicants</span>
-                    <a :href="'/employer/referred-jobseekers?job_id=' + selectedJob.id" class="font-bold text-emerald-700 hover:underline" x-text="selectedJob.applications_count + ' Applied'"></a>
+                    <span class="text-slate-400 text-[10px] font-bold uppercase block">Job Type</span>
+                    <span class="font-bold text-slate-900" x-text="selectedJob.job_type || 'Full-time'"></span>
                 </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                <div class="rounded-xl border border-slate-200 bg-white p-3">
-                    <span class="block text-[10px] font-bold uppercase text-slate-400">Job Type</span>
-                    <span class="font-bold text-slate-900" x-text="selectedJob.job_type || 'Not specified'"></span>
+                <div>
+                    <span class="text-slate-400 text-[10px] font-bold uppercase block">Location</span>
+                    <span class="font-bold text-slate-900" x-text="selectedJob.location || 'Cebu City'"></span>
                 </div>
-                <div class="rounded-xl border border-slate-200 bg-white p-3">
-                    <span class="block text-[10px] font-bold uppercase text-slate-400">Location</span>
-                    <span class="font-bold text-slate-900" x-text="selectedJob.location || 'Not specified'"></span>
-                </div>
-                <div class="rounded-xl border border-slate-200 bg-white p-3">
-                    <span class="block text-[10px] font-bold uppercase text-slate-400">Salary & Compensation</span>
-                    <span class="font-bold text-slate-900 whitespace-pre-line" x-text="selectedJob.salary_compensation || 'Not specified'"></span>
+                <div>
+                    <span class="text-slate-400 text-[10px] font-bold uppercase block">Salary & Comp</span>
+                    <span class="font-bold text-emerald-700" x-text="selectedJob.salary_range || 'Competitive / Neg.'"></span>
                 </div>
             </div>
 
@@ -702,36 +736,71 @@
                 <div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 text-slate-700 leading-relaxed whitespace-pre-line" x-text="selectedJob.description"></div>
             </div>
 
-            <!-- Qualifications -->
+            <!-- Required Qualifications in Bullets -->
             <div class="space-y-2 text-xs" x-show="selectedJob.qualifications">
-                <h4 class="font-black uppercase tracking-wider text-slate-800">Skills & Qualifications</h4>
-                <div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 text-slate-700 leading-relaxed whitespace-pre-line" x-text="'• ' + selectedJob.qualifications.split(/\r?\n/).filter(item => item.trim()).join('\n• ')"></div>
+                <h4 class="font-black uppercase tracking-wider text-slate-800">Qualifications & Requirements</h4>
+                <div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 text-slate-700">
+                    <ul class="list-disc list-inside space-y-1.5 leading-relaxed">
+                        <template x-for="(qual, idx) in getBulletList(selectedJob.qualifications)" :key="idx">
+                            <li class="pl-1"><span x-text="qual"></span></li>
+                        </template>
+                    </ul>
+                </div>
             </div>
 
-            <div class="space-y-2 text-xs" x-show="selectedJob.benefits_perks">
+            <!-- Required Skills in Bullets -->
+            <div class="space-y-2 text-xs" x-show="selectedJob.skills">
+                <h4 class="font-black uppercase tracking-wider text-slate-800">Required Skills</h4>
+                <div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 text-slate-700">
+                    <ul class="list-disc list-inside space-y-1.5 leading-relaxed">
+                        <template x-for="(skill, idx) in getBulletList(selectedJob.skills)" :key="idx">
+                            <li class="pl-1"><span x-text="skill"></span></li>
+                        </template>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Benefits & Perks in Bullets -->
+            <div class="space-y-2 text-xs" x-show="selectedJob.benefits">
                 <h4 class="font-black uppercase tracking-wider text-slate-800">Benefits & Perks</h4>
-                <div class="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 text-slate-700 leading-relaxed whitespace-pre-line" x-text="'• ' + selectedJob.benefits_perks.split(/\r?\n/).filter(item => item.trim()).join('\n• ')"></div>
+                <div class="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 text-slate-700">
+                    <ul class="list-disc list-inside space-y-1.5 leading-relaxed">
+                        <template x-for="(benefit, idx) in getBulletList(selectedJob.benefits)" :key="idx">
+                            <li class="pl-1"><span class="text-emerald-950 font-medium" x-text="benefit"></span></li>
+                        </template>
+                    </ul>
+                </div>
             </div>
 
+            <!-- Other Instructions -->
             <div class="space-y-2 text-xs" x-show="selectedJob.other_instructions">
-                <h4 class="font-black uppercase tracking-wider text-slate-800">Other Instructions</h4>
+                <h4 class="font-black uppercase tracking-wider text-slate-800">Application Instructions</h4>
                 <div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 text-slate-700 leading-relaxed whitespace-pre-line" x-text="selectedJob.other_instructions"></div>
             </div>
 
             <!-- PWD Accommodation -->
             <div class="p-3.5 rounded-2xl border text-xs"
                  :class="selectedJob.accepts_disability ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-slate-50 border-slate-200 text-slate-600'">
-                <span class="font-bold block">♿ PWD Inclusivity:</span>
-                <p x-text="selectedJob.accepts_disability ? ('Accommodated: ' + (selectedJob.disability_type || 'Open to PWD candidates')) : 'Standard recruitment process.'"></p>
+                <div class="flex items-center gap-1.5 font-bold">
+                    <svg class="w-4 h-4 text-emerald-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    <span>PWD Inclusivity:</span>
+                </div>
+                <p class="mt-1" x-text="selectedJob.accepts_disability ? ('Accommodated: ' + (selectedJob.disability_type || 'Open to PWD candidates')) : 'Standard recruitment process.'"></p>
             </div>
 
-            <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <button type="button" @click="viewModal = false; openEdit(selectedJob)" class="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 transition-colors">
-                        ✏️ Edit Vacancy
+            <div class="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" @click="viewModal = false; openEdit(selectedJob.id)" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        <span>Edit Vacancy</span>
                     </button>
-                    <a :href="'/employer/referred-jobseekers?job_id=' + selectedJob.id" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors">
-                        👥 View Applicants (<span x-text="selectedJob.applications_count"></span>)
+                    <a :href="'/employer/referred-jobseekers?job_id=' + selectedJob.id" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        <span>View Applicants (<span x-text="selectedJob.applications_count"></span>)</span>
+                    </a>
+                    <a :href="'/employer/job-postings/' + selectedJob.id" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        <span>Full Details Page</span>
                     </a>
                 </div>
                 <button type="button" @click="viewModal = false" class="px-5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
@@ -745,8 +814,8 @@
     <!-- 4. Delete Confirmation Modal -->
     <div x-show="deleteModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div @click.away="deleteModal = false" class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5">
-            <div class="h-12 w-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl font-bold">
-                🗑️
+            <div class="h-12 w-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
             </div>
             <div class="space-y-1">
                 <h3 class="text-lg font-black text-slate-900">Delete Job Posting?</h3>
@@ -770,8 +839,8 @@
     <!-- 5. Close Job Confirmation Modal -->
     <div x-show="closeModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div @click.away="closeModal = false" class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5">
-            <div class="h-12 w-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold">
-                🔒
+            <div class="h-12 w-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
             </div>
             <div class="space-y-1">
                 <h3 class="text-lg font-black text-slate-900">Close Vacancy?</h3>
@@ -792,5 +861,77 @@
     </div>
 
 </div>
-@endsection
 
+<script>
+function jobPostingsManager() {
+    const jobsMap = @json($jobsDataMap);
+    const initialJob = {
+        id: null,
+        title: '',
+        description: '',
+        job_type: 'Full-time',
+        location: 'Cebu City',
+        salary_range: '',
+        benefits: '',
+        other_instructions: '',
+        qualifications: '',
+        skills: '',
+        vacancy_count: 1,
+        valid_until: '',
+        valid_until_formatted: 'Continuous',
+        accepts_disability: false,
+        disability_type: '',
+        status: '',
+        applications_count: 0,
+        created_at: ''
+    };
+
+    return {
+        createModal: {{ (request()->has('create') && auth()->user()->is_approved) ? 'true' : 'false' }},
+        editModal: {{ $editJob ? 'true' : 'false' }},
+        viewModal: false,
+        deleteModal: false,
+        closeModal: false,
+        isApproved: {{ auth()->user()->is_approved ? 'true' : 'false' }},
+        jobsMap: jobsMap,
+        selectedJob: Object.assign({}, initialJob),
+        init() {
+            @if($editJob)
+                if (this.jobsMap[{{ $editJob->job_id }}]) {
+                    this.selectedJob = Object.assign({}, initialJob, this.jobsMap[{{ $editJob->job_id }}]);
+                    this.editModal = true;
+                }
+            @endif
+        },
+        getBulletList(text) {
+            if (!text) return [];
+            return text.split(/\r?\n/).map(s => s.trim().replace(/^[\u2022\-\*]\s*/, '')).filter(s => s.length > 0);
+        },
+        openView(id) {
+            if (this.jobsMap[id]) {
+                this.selectedJob = Object.assign({}, initialJob, this.jobsMap[id]);
+                this.viewModal = true;
+            }
+        },
+        openEdit(id) {
+            if (this.jobsMap[id]) {
+                this.selectedJob = Object.assign({}, initialJob, this.jobsMap[id]);
+                this.editModal = true;
+            }
+        },
+        openDelete(id) {
+            if (this.jobsMap[id]) {
+                this.selectedJob = Object.assign({}, initialJob, this.jobsMap[id]);
+                this.deleteModal = true;
+            }
+        },
+        openClose(id) {
+            if (this.jobsMap[id]) {
+                this.selectedJob = Object.assign({}, initialJob, this.jobsMap[id]);
+                this.closeModal = true;
+            }
+        }
+    };
+}
+</script>
+@endsection

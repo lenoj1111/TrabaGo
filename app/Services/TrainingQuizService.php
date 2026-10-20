@@ -39,30 +39,6 @@ class TrainingQuizService
             }
         }
 
-        // 2. Also check topic questions if custom questions were defined by trainer
-        if ($training->relationLoaded('topics') || $training->topics) {
-            foreach ($training->topics as $topic) {
-                $qData = is_array($topic->questions) ? $topic->questions : json_decode($topic->questions ?? '[]', true);
-                if (is_array($qData) && !empty($qData)) {
-                    foreach ($qData as $q) {
-                        if (is_array($q) && !empty($q['question'])) {
-                            $choices = $q['choices'] ?? ($q['options'] ?? []);
-                            if (is_array($choices) && count($choices) >= 2) {
-                                $questions[] = [
-                                    'question' => $q['question'],
-                                    'choices' => array_values($choices),
-                                    'options' => array_values($choices),
-                                    'answer' => is_numeric($q['answer'] ?? 0) ? (int)$q['answer'] : 0,
-                                    'explanation' => $q['explanation'] ?? '',
-                                    'points' => 1,
-                                ];
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         // Assessments MUST be created by the trainer.
         // It should NOT be built-in or automatically generated.
         return array_values($questions);

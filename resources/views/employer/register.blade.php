@@ -1,538 +1,645 @@
 @extends('layouts.public')
 
-@section('title', 'DMDP Employer Registration - Department of Manpower Development and Placement')
+@section('title', 'Employer Registration - DMDP Cebu City | TrabaGo')
 
 @section('content')
-<div class="bg-gradient-to-b from-brand-50/50 to-white min-h-screen py-8">
-    <div class="max-w-5xl mx-auto px-4">
-        <!-- Breadcrumb -->
-        <div class="bg-white/80 backdrop-blur border border-brand-100 rounded-xl px-5 py-3 mb-6 shadow-sm">
-            <nav class="text-sm">
-                <ol class="flex items-center gap-2 text-brand-600">
-                    <li><a href="{{ route('home') }}" class="hover:text-brand-900 transition-colors">Home</a></li>
-                    <li><span class="text-brand-300">/</span></li>
-                    <li class="text-brand-900 font-semibold">Employer Registration</li>
-                </ol>
-            </nav>
-        </div>
+<div class="min-h-screen bg-gradient-to-b from-slate-50 via-emerald-50/20 to-slate-50 py-8 md:py-14">
+    <div class="max-w-6xl xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <!-- Header -->
-        <div class="relative overflow-hidden rounded-3xl mb-8 shadow-xl" style="background: linear-gradient(135deg, #022c22 0%, #064e3b 50%, #047857 100%);">
-            <div class="relative px-6 py-8 md:px-8 md:py-10">
-                <h1 class="text-2xl md:text-3xl font-black text-white">Employer Registration</h1>
-                <p class="text-emerald-200 text-sm mt-1">Department of Manpower Development and Placement</p>
+        <!-- Top Breadcrumb / Return Link -->
+        <div class="flex items-center justify-between mb-5">
+            <a href="{{ route('register') }}" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-emerald-700 transition-colors py-1 px-2.5 rounded-lg hover:bg-white">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Back to Role Selection</span>
+            </a>
+            <div class="text-xs text-slate-500">
+                Looking for jobs? 
+                <a href="{{ route('jobseeker.register') }}" class="font-semibold text-emerald-600 hover:text-emerald-700 hover:underline">Register as Jobseeker</a>
             </div>
         </div>
 
-        <!-- Display Success/Error Messages -->
+        <!-- Hero Header Card -->
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-950 via-teal-950 to-slate-950 text-white shadow-xl shadow-emerald-950/20 p-6 sm:p-8 md:p-10 mb-8 border border-emerald-800/40">
+            <!-- Background Decorative Accents -->
+            <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-teal-500/10 blur-3xl pointer-events-none"></div>
+            <div class="absolute right-1/4 -bottom-12 w-48 h-48 rounded-full bg-emerald-400/10 blur-2xl pointer-events-none"></div>
+
+            <div class="relative z-10">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-400/20">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        DMDP Employer Accreditation Program
+                    </span>
+                    <span class="text-xs font-medium text-emerald-200/70 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        Official City Hall Partner Status
+                    </span>
+                </div>
+
+                <h1 class="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white">
+                    Employer & Recruitment Partner Registration
+                </h1>
+                <p class="text-emerald-100/80 text-sm sm:text-base mt-2 max-w-3xl leading-relaxed">
+                    Register your company with DMDP Cebu City to post job vacancies, access verified pre-screened talent, participate in local job fairs, and obtain City Hall employer accreditation.
+                </p>
+
+                <!-- Live Progress Bar in Header -->
+                <div class="mt-6 pt-5 border-t border-emerald-800/60">
+                    <div class="flex items-center justify-between text-xs font-semibold text-emerald-200 mb-2">
+                        <span id="headerStepText">Step 1 of 4 · Account Setup</span>
+                        <span id="headerPercentText" class="text-emerald-400">25% Completed</span>
+                    </div>
+                    <div class="w-full bg-emerald-950/60 rounded-full h-2 overflow-hidden border border-emerald-800/40">
+                        <div id="headerProgressBar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-300 rounded-full" style="width: 25%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Alert Messages -->
         @if(session('success'))
-            <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
-                {{ session('success') }}
+            <div class="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm flex items-start gap-3 shadow-sm">
+                <svg class="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>
+                    <p class="font-bold">Success!</p>
+                    <p class="text-emerald-700 mt-0.5">{{ session('success') }}</p>
+                </div>
             </div>
         @endif
 
         @if(session('error'))
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-                {{ session('error') }}
+            <div class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-sm flex items-start gap-3 shadow-sm">
+                <svg class="w-5 h-5 text-rose-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>
+                    <p class="font-bold">Registration Alert</p>
+                    <p class="text-rose-700 mt-0.5">{{ session('error') }}</p>
+                </div>
             </div>
         @endif
 
         @if($errors->any())
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-                <ul>
+            <div class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-sm shadow-sm" id="laravelErrorBox">
+                <div class="flex items-center gap-2 font-bold mb-1 text-rose-800">
+                    <svg class="w-5 h-5 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    Please review the highlighted fields to continue:
+                </div>
+                <ul class="list-disc list-inside space-y-1 text-xs text-rose-700 ml-1">
                     @foreach($errors->all() as $error)
-                        <li>• {{ $error }}</li>
+                        <li>{{ $error }}</li>
                     @endforeach
                 </ul>
             </div>
         @endif
 
-        <!-- Form -->
-        <form method="POST" action="{{ route('employer.register.post') }}" class="bg-white border border-brand-100 rounded-xl shadow-card overflow-hidden" id="registrationForm" enctype="multipart/form-data">
+        <!-- Main Registration Form Container -->
+        <form method="POST" action="{{ route('employer.register.post') }}" class="bg-white border border-slate-200/90 rounded-3xl shadow-sm overflow-hidden" id="registrationForm" enctype="multipart/form-data" novalidate>
             @csrf
+            <input type="hidden" name="role" value="employer">
 
-            <!-- Progress Steps -->
-            <div class="px-6 py-5 border-b border-brand-100" style="background: linear-gradient(135deg, #f5f7fa 0%, #e9edf3 100%);">
-                <div class="flex items-center justify-between max-w-3xl mx-auto">
-                    <div class="flex items-center gap-2" id="stepIndicator">
-                        <div class="step-dot active" data-step="1">
-                            <span class="step-number">1</span>
-                            <span class="step-label">Account</span>
-                        </div>
-                        <div class="step-line"></div>
-                        <div class="step-dot" data-step="2">
-                            <span class="step-number">2</span>
-                            <span class="step-label">Company</span>
-                        </div>
-                        <div class="step-line"></div>
-                        <div class="step-dot" data-step="3">
-                            <span class="step-number">3</span>
-                            <span class="step-label">Contact</span>
-                        </div>
-                        <div class="step-line"></div>
-                        <div class="step-dot" data-step="4">
-                            <span class="step-number">4</span>
-                            <span class="step-label">Documents</span>
-                        </div>
-                    </div>
+            <!-- Stepper Navigation -->
+            <div class="px-4 sm:px-8 py-5 bg-slate-50/80 border-b border-slate-200/70">
+                <div class="flex items-center justify-between max-w-4xl mx-auto gap-2 sm:gap-4" id="stepIndicator">
+                    @php
+                        $employerSteps = [
+                            ['num' => 1, 'name' => 'Account', 'sub' => 'Credentials'],
+                            ['num' => 2, 'name' => 'Company', 'sub' => 'Business Profile'],
+                            ['num' => 3, 'name' => 'Contact', 'sub' => 'HR & Address'],
+                            ['num' => 4, 'name' => 'Documents', 'sub' => 'Accreditation'],
+                        ];
+                    @endphp
+
+                    @foreach($employerSteps as $idx => $step)
+                        <button type="button" class="step-dot flex items-center gap-2.5 group cursor-pointer text-left transition-all py-1.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20" data-step="{{ $step['num'] }}">
+                            <div class="step-number w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs bg-slate-200 text-slate-600 transition-all duration-200 group-hover:scale-105 shadow-xs">
+                                {{ $step['num'] }}
+                            </div>
+                            <div class="step-meta hidden sm:block leading-tight">
+                                <span class="step-title block text-xs font-bold text-slate-700 transition-colors">{{ $step['name'] }}</span>
+                                <span class="step-sub block text-[10px] text-slate-400 font-medium">{{ $step['sub'] }}</span>
+                            </div>
+                        </button>
+                        @if(!$loop->last)
+                            <div class="step-line flex-1 h-0.5 bg-slate-200 rounded-full transition-colors duration-200 min-w-6"></div>
+                        @endif
+                    @endforeach
                 </div>
             </div>
 
-            <!-- Step 1: Account Information -->
+            <!-- STEP 1: Account Credentials -->
             <div class="step-content" data-step="1">
-                <div class="relative overflow-hidden" style="background: linear-gradient(135deg, #f5f7fa 0%, #e9edf3 100%);">
-                    <div class="relative px-6 py-5">
-                        <h2 class="text-lg font-bold text-brand-900">Account Information</h2>
-                        <p class="text-sm text-brand-600">Create your login credentials</p>
+                <div class="px-6 py-5 bg-gradient-to-r from-slate-50 via-white to-slate-50 border-b border-slate-100 flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-extrabold text-base shrink-0 shadow-xs">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Corporate Account Credentials</h2>
+                        <p class="text-xs text-slate-500">Official administrator access to manage vacancies and candidates</p>
                     </div>
                 </div>
 
-                <div class="px-6 py-6">
+                <div class="p-6 sm:p-8 space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">
-                                <span class="text-red-500">*</span> Email Address
-                            </label>
-                            <input type="email" name="email" value="{{ old('email') }}" 
-                                   class="w-full px-4 py-2.5 bg-white border @error('email') border-red-500 @else border-brand-200 @enderror rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
-                            @error('email')
-                                <span class="text-xs text-red-500">{{ $message }}</span>
-                            @enderror
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">
-                                <span class="text-red-500">*</span> Password
-                            </label>
-                            <input type="password" name="password" 
-                                   class="w-full px-4 py-2.5 bg-white border @error('password') border-red-500 @else border-brand-200 @enderror rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
-                            @error('password')
-                                <span class="text-xs text-red-500">{{ $message }}</span>
-                            @enderror
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">
-                                <span class="text-red-500">*</span> Confirm Password
-                            </label>
-                            <input type="password" name="password_confirmation" 
-                                   class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">
-                                <span class="text-red-500">*</span> Role
-                            </label>
-                            <select name="role" class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none">
-                                <option value="employer" selected>Employer</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 2: Company Information -->
-            <div class="step-content" data-step="2" style="display:none;">
-                <div class="relative overflow-hidden" style="background: linear-gradient(135deg, #f5f7fa 0%, #e9edf3 100%);">
-                    <div class="relative px-6 py-5">
-                        <h2 class="text-lg font-bold text-brand-900">Company Information</h2>
-                        <p class="text-sm text-brand-600">Tell us about your company</p>
-                    </div>
-                </div>
-
-                <div class="px-6 py-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <!-- Email -->
                         <div class="md:col-span-2">
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">
-                                <span class="text-red-500">*</span> Company Name
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="email">
+                                Official Company Email Address <span class="text-rose-500">*</span>
                             </label>
-                            <input type="text" name="company_name" value="{{ old('company_name') }}" 
-                                   class="w-full px-4 py-2.5 bg-white border @error('company_name') border-red-500 @else border-brand-200 @enderror rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
-                            @error('company_name')
-                                <span class="text-xs text-red-500">{{ $message }}</span>
-                            @enderror
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                </div>
+                                <input type="email" id="email" name="email" value="{{ old('email') }}" required autocomplete="email" placeholder="hr@yourcompany.com"
+                                       class="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border @error('email') border-rose-400 ring-2 ring-rose-100 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-1">Please use your company or corporate domain email where possible.</p>
+                            @error('email')<span class="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">{{ $message }}</span>@enderror
                         </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">Company Description</label>
-                            <textarea name="company_description" rows="3" 
-                                      class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none"
-                                      placeholder="Brief description of your company">{{ old('company_description') }}</textarea>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">Industry</label>
-                            <select name="industry" class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none">
-                                <option value="">Select Industry...</option>
-                                <option value="Information Technology" {{ old('industry') == 'Information Technology' ? 'selected' : '' }}>Information Technology</option>
-                                <option value="Manufacturing" {{ old('industry') == 'Manufacturing' ? 'selected' : '' }}>Manufacturing</option>
-                                <option value="Retail" {{ old('industry') == 'Retail' ? 'selected' : '' }}>Retail</option>
-                                <option value="Healthcare" {{ old('industry') == 'Healthcare' ? 'selected' : '' }}>Healthcare</option>
-                                <option value="Education" {{ old('industry') == 'Education' ? 'selected' : '' }}>Education</option>
-                                <option value="Construction" {{ old('industry') == 'Construction' ? 'selected' : '' }}>Construction</option>
-                                <option value="Finance" {{ old('industry') == 'Finance' ? 'selected' : '' }}>Finance</option>
-                                <option value="Hospitality" {{ old('industry') == 'Hospitality' ? 'selected' : '' }}>Hospitality</option>
-                                <option value="Transportation" {{ old('industry') == 'Transportation' ? 'selected' : '' }}>Transportation</option>
-                                <option value="Other" {{ old('industry') == 'Other' ? 'selected' : '' }}>Other</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">Company Size</label>
-                            <select name="company_size" class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none">
-                                <option value="">Select Size...</option>
-                                <option value="1-10" {{ old('company_size') == '1-10' ? 'selected' : '' }}>1-10 employees</option>
-                                <option value="11-50" {{ old('company_size') == '11-50' ? 'selected' : '' }}>11-50 employees</option>
-                                <option value="51-200" {{ old('company_size') == '51-200' ? 'selected' : '' }}>51-200 employees</option>
-                                <option value="201-500" {{ old('company_size') == '201-500' ? 'selected' : '' }}>201-500 employees</option>
-                                <option value="501-1000" {{ old('company_size') == '501-1000' ? 'selected' : '' }}>501-1000 employees</option>
-                                <option value="1000+" {{ old('company_size') == '1000+' ? 'selected' : '' }}>1000+ employees</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">Website</label>
-                            <input type="url" name="website" value="{{ old('website') }}" placeholder="https://www.company.com" 
-                                   class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">Company Type</label>
-                            <select name="company_type" class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none">
-                                <option value="">Select Type...</option>
-                                <option value="Private" {{ old('company_type') == 'Private' ? 'selected' : '' }}>Private</option>
-                                <option value="Public" {{ old('company_type') == 'Public' ? 'selected' : '' }}>Public</option>
-                                <option value="Government" {{ old('company_type') == 'Government' ? 'selected' : '' }}>Government</option>
-                                <option value="Non-Profit" {{ old('company_type') == 'Non-Profit' ? 'selected' : '' }}>Non-Profit</option>
-                                <option value="Sole Proprietorship" {{ old('company_type') == 'Sole Proprietorship' ? 'selected' : '' }}>Sole Proprietorship</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Step 3: Contact Information -->
-            <div class="step-content" data-step="3" style="display:none;">
-                <div class="relative overflow-hidden" style="background: linear-gradient(135deg, #f5f7fa 0%, #e9edf3 100%);">
-                    <div class="relative px-6 py-5">
-                        <h2 class="text-lg font-bold text-brand-900">Contact Information</h2>
-                        <p class="text-sm text-brand-600">How can we reach you?</p>
-                    </div>
-                </div>
-
-                <div class="px-6 py-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <!-- Password -->
                         <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">
-                                <span class="text-red-500">*</span> Contact Person
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="password">
+                                Master Password <span class="text-rose-500">*</span>
                             </label>
-                            <input type="text" name="contact_person" value="{{ old('contact_person') }}" 
-                                   class="w-full px-4 py-2.5 bg-white border @error('contact_person') border-red-500 @else border-brand-200 @enderror rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
-                            @error('contact_person')
-                                <span class="text-xs text-red-500">{{ $message }}</span>
-                            @enderror
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                </div>
+                                <input type="password" id="password" name="password" required autocomplete="new-password" placeholder="At least 8 characters"
+                                       class="w-full pl-10 pr-10 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border @error('password') border-rose-400 ring-2 ring-rose-100 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                                <button type="button" class="toggle-password-btn absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600" data-target="password" tabindex="-1">
+                                    <svg class="w-4 h-4 eye-open" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <svg class="w-4 h-4 eye-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+                                </button>
+                            </div>
+
+                            <!-- Password strength meter -->
+                            <div class="mt-2 space-y-1">
+                                <div class="flex gap-1 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                                    <div id="pwdBar1" class="h-full w-1/4 bg-slate-200 transition-colors"></div>
+                                    <div id="pwdBar2" class="h-full w-1/4 bg-slate-200 transition-colors"></div>
+                                    <div id="pwdBar3" class="h-full w-1/4 bg-slate-200 transition-colors"></div>
+                                    <div id="pwdBar4" class="h-full w-1/4 bg-slate-200 transition-colors"></div>
+                                </div>
+                                <span id="pwdStrengthText" class="text-[11px] font-medium text-slate-400">Password strength</span>
+                            </div>
+                            @error('password')<span class="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">{{ $message }}</span>@enderror
                         </div>
+
+                        <!-- Confirm Password -->
                         <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">
-                                <span class="text-red-500">*</span> Contact Position
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="password_confirmation">
+                                Confirm Password <span class="text-rose-500">*</span>
                             </label>
-                            <input type="text" name="contact_position" value="{{ old('contact_position') }}" 
-                                   class="w-full px-4 py-2.5 bg-white border @error('contact_position') border-red-500 @else border-brand-200 @enderror rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
-                            @error('contact_position')
-                                <span class="text-xs text-red-500">{{ $message }}</span>
-                            @enderror
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">
-                                <span class="text-red-500">*</span> Phone Number
-                            </label>
-                            <input type="tel" name="phone" value="{{ old('phone') }}" 
-                                   class="w-full px-4 py-2.5 bg-white border @error('phone') border-red-500 @else border-brand-200 @enderror rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
-                            @error('phone')
-                                <span class="text-xs text-red-500">{{ $message }}</span>
-                            @enderror
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">Mobile Number</label>
-                            <input type="tel" name="mobile" value="{{ old('mobile') }}" 
-                                   class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">Company Address</label>
-                            <input type="text" name="address" value="{{ old('address') }}" placeholder="Street address" 
-                                   class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">City</label>
-                            <input type="text" name="city" value="{{ old('city') }}" 
-                                   class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">Province</label>
-                            <input type="text" name="province" value="{{ old('province') }}" 
-                                   class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">Postal Code</label>
-                            <input type="text" name="postal_code" value="{{ old('postal_code') }}" 
-                                   class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">Country</label>
-                            <input type="text" name="country" value="{{ old('country', 'Philippines') }}" 
-                                   class="w-full px-4 py-2.5 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 4: Documents for Accreditation -->
-            <div class="step-content" data-step="4" style="display:none;">
-                <div class="relative overflow-hidden" style="background: linear-gradient(135deg, #f5f7fa 0%, #e9edf3 100%);">
-                    <div class="relative px-6 py-5">
-                        <h2 class="text-lg font-bold text-brand-900">Accreditation Documents</h2>
-                        <p class="text-sm text-brand-600">Upload required documents for accreditation</p>
-                    </div>
-                </div>
-
-                <div class="px-6 py-6 space-y-5">
-                    <!-- Official Notice Banner -->
-                    <div class="rounded-2xl border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 via-teal-50 to-white p-4 space-y-1">
-                        <div class="flex items-center gap-2">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-700 text-white uppercase tracking-wider">Official Requirements</span>
-                            <span class="text-xs text-emerald-800 font-bold">Cebu City DMDP &bull; DOLE Prescribed Guidelines</span>
-                        </div>
-                        <h3 class="text-sm font-black text-slate-900">Employer Documentary Requirements & Validity Period</h3>
-                        <p class="text-xs text-slate-600 font-medium">Original and other documents, when applicable, should be presented for validation.</p>
-                    </div>
-
-                    <!-- 1. Core Mandatory Documents -->
-                    <div class="space-y-3">
-                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
-                            <span>Mandatory Business Credentials</span>
-                        </h4>
-
-                        <!-- BIR Form 2303 -->
-                        <div>
-                            <div class="flex items-center justify-between mb-1">
-                                <label class="text-xs font-bold text-slate-800">
-                                    BIR Certificate of Registration (Form 2303) <span class="text-emerald-700 font-semibold text-[11px]">&bull; Validity: Current / Valid</span>
-                                </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                </div>
+                                <input type="password" id="password_confirmation" name="password_confirmation" required autocomplete="new-password" placeholder="Repeat your password"
+                                       class="w-full pl-10 pr-10 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                                <button type="button" class="toggle-password-btn absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600" data-target="password_confirmation" tabindex="-1">
+                                    <svg class="w-4 h-4 eye-open" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <svg class="w-4 h-4 eye-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+                                </button>
                             </div>
-                            <input type="file" name="documents[bir_2303]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
-                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100" />
-                        </div>
-
-                        <!-- SEC or DTI Registration -->
-                        <div>
-                            <div class="flex items-center justify-between mb-1">
-                                <label class="text-xs font-bold text-slate-800">
-                                    SEC Registration or DTI Registration <span class="text-emerald-700 font-semibold text-[11px]">&bull; Validity: Perpetual / Registered</span>
-                                </label>
-                            </div>
-                            <input type="file" name="documents[sec_dti]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
-                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100" />
-                        </div>
-
-                        <!-- Mayor's Business Permit -->
-                        <div>
-                            <div class="flex items-center justify-between mb-1">
-                                <label class="text-xs font-bold text-slate-800">
-                                    Mayor’s Business Permit (current year) <span class="text-emerald-700 font-semibold text-[11px]">&bull; Validity: Calendar Year {{ date('Y') }}</span>
-                                </label>
-                            </div>
-                            <input type="file" name="documents[mayors_permit]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
-                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100" />
-                        </div>
-
-                        <!-- PhilJobNet Proof of Registration -->
-                        <div>
-                            <div class="flex items-center justify-between mb-1">
-                                <label class="text-xs font-bold text-slate-800">
-                                    PhilJobNet Proof of Registration <span class="text-emerald-700 font-semibold text-[11px]">&bull; Validity: Active Registration</span>
-                                </label>
-                            </div>
-                            <input type="file" name="documents[philjobnet_proof]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
-                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100" />
-                        </div>
-
-                        <!-- Letter of Intent -->
-                        <div>
-                            <div class="flex items-center justify-between mb-1">
-                                <label class="text-xs font-bold text-slate-800">
-                                    Letter of Intent <span class="text-emerald-700 font-semibold text-[11px]">&bull; For specific services & assistance needed with details</span>
-                                </label>
-                            </div>
-                            <input type="file" name="documents[letter_of_intent]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
-                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition outline-none text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100" />
+                            <span id="pwdMatchNotice" class="text-[11px] font-medium text-slate-400 mt-1 block"></span>
                         </div>
                     </div>
 
-                    <!-- 2. Specialized Agency Credentials (When Applicable) -->
-                    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-3">
-                        <div class="flex items-center justify-between">
+                    <!-- Role Badge Card -->
+                    <div class="p-4 rounded-2xl bg-teal-50/70 border border-teal-100 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-teal-700 text-white flex items-center justify-center font-black text-sm">
+                                EP
+                            </div>
                             <div>
-                                <h4 class="text-xs font-black uppercase tracking-wider text-slate-800">Specialized Agency Documents</h4>
-                                <p class="text-[11px] text-slate-500">Applicable for Recruitment Agencies & Subcontractors only.</p>
+                                <span class="text-xs font-bold text-slate-900 block">Designated Role: Employer / Enterprise Partner</span>
+                                <span class="text-[11px] text-slate-600">Post unlimited vacancies, interview candidates, and receive verified manpower</span>
                             </div>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 uppercase">When Applicable</span>
                         </div>
-
-                        <!-- DOLE License / DO 174 -->
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">
-                                DOLE License / DO 174 <span class="font-normal text-slate-500">(for Licensed Private Recruitment & Placement Agency / Subcontractor)</span>
-                            </label>
-                            <input type="file" name="documents[dole_license]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
-                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700" />
-                        </div>
-
-                        <!-- DMW License -->
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">
-                                DMW License <span class="font-normal text-slate-500">(for Overseas Recruitment & Placement Agency)</span>
-                            </label>
-                            <input type="file" name="documents[dmw_license]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
-                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700" />
-                        </div>
-
-                        <!-- DMW Approved Job Orders -->
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">
-                                DMW Approved and Validated Job Orders <span class="font-normal text-slate-500">(for Overseas Recruitment)</span>
-                            </label>
-                            <input type="file" name="documents[dmw_job_orders]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
-                                   class="w-full px-4 py-2 bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700" />
-                        </div>
+                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-teal-800 bg-teal-200/60 px-2.5 py-1 rounded-full">
+                            Accreditation Track
+                        </span>
                     </div>
+                </div>
+            </div>
 
-                    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-                        <p class="text-xs text-emerald-900 font-medium">
-                            <strong class="font-bold text-emerald-950">Note:</strong> Your submitted documents will be reviewed by JPO and DMDP officers for accreditation. 
-                            You will be notified once your accreditation is approved.
-                        </p>
+            <!-- STEP 2: Company Information -->
+            <div class="step-content hidden" data-step="2">
+                <div class="px-6 py-5 bg-gradient-to-r from-slate-50 via-white to-slate-50 border-b border-slate-100 flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-extrabold text-base shrink-0 shadow-xs">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                     </div>
-                        <div>
-                            <label class="flex items-center gap-2 text-sm text-brand-700 cursor-pointer">
-                                <input type="checkbox" name="terms" value="1" {{ old('terms') ? 'checked' : '' }} 
-                                       class="w-4 h-4 text-brand-600 rounded border-brand-300 focus:ring-brand-500" />
-                                I agree to the terms and conditions and confirm that all information provided is accurate
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Company & Enterprise Profile</h2>
+                        <p class="text-xs text-slate-500">Provide official details as registered with SEC, DTI, or CDA</p>
+                    </div>
+                </div>
+
+                <div class="p-6 sm:p-8 space-y-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Company Name -->
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="company_name">
+                                Registered Company / Business Name <span class="text-rose-500">*</span>
                             </label>
-                            @error('terms')
-                                <span class="text-xs text-red-500">{{ $message }}</span>
-                            @enderror
+                            <input type="text" id="company_name" name="company_name" value="{{ old('company_name') }}" required
+                                   placeholder="e.g. Acme Philippines Technologies Inc."
+                                   class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border @error('company_name') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                            @error('company_name')<span class="text-xs text-rose-600 font-semibold mt-1 block">{{ $message }}</span>@enderror
+                        </div>
+
+                        <!-- Company Description -->
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="company_description">
+                                Brief Company Overview / Business Activity
+                            </label>
+                            <textarea id="company_description" name="company_description" rows="3"
+                                      placeholder="Briefly describe your company's core operations, services, or products..."
+                                      class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition">{{ old('company_description') }}</textarea>
+                        </div>
+
+                        <!-- Industry -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="industry">
+                                Primary Industry Sector
+                            </label>
+                            <select id="industry" name="industry" class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition">
+                                <option value="">Select industry sector...</option>
+                                @foreach(['Information Technology & BPO','Manufacturing & Assembly','Retail, Wholesale & Trading','Healthcare & Pharmaceuticals','Education & Academic Services','Construction & Real Estate','Financial Services & Banking','Hospitality, Tourism & Food Service','Transportation, Logistics & Warehousing','Other Services'] as $ind)
+                                    <option value="{{ $ind }}" {{ old('industry') == $ind ? 'selected' : '' }}>{{ $ind }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Company Size -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="company_size">
+                                Organization Size / Headcount
+                            </label>
+                            <select id="company_size" name="company_size" class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition">
+                                <option value="">Select headcount range...</option>
+                                <option value="1-10" {{ old('company_size') == '1-10' ? 'selected' : '' }}>1-10 employees (Micro)</option>
+                                <option value="11-50" {{ old('company_size') == '11-50' ? 'selected' : '' }}>11-50 employees (Small)</option>
+                                <option value="51-200" {{ old('company_size') == '51-200' ? 'selected' : '' }}>51-200 employees (Medium)</option>
+                                <option value="201-500" {{ old('company_size') == '201-500' ? 'selected' : '' }}>201-500 employees (Large)</option>
+                                <option value="501-1000" {{ old('company_size') == '501-1000' ? 'selected' : '' }}>501-1000 employees (Enterprise)</option>
+                                <option value="1000+" {{ old('company_size') == '1000+' ? 'selected' : '' }}>1000+ employees (Major Corporation)</option>
+                            </select>
+                        </div>
+
+                        <!-- Website URL -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="website">
+                                Official Website or Social Page
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-xs font-medium text-slate-400">https://</span>
+                                <input type="text" id="website" name="website" value="{{ old('website') }}" placeholder="www.yourcompany.com"
+                                       class="w-full pl-16 pr-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                            </div>
+                        </div>
+
+                        <!-- Company Type -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="company_type">
+                                Business Entity Type
+                            </label>
+                            <select id="company_type" name="company_type" class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition">
+                                <option value="">Select legal structure...</option>
+                                <option value="Private" {{ old('company_type') == 'Private' ? 'selected' : '' }}>Private Corporation</option>
+                                <option value="Public" {{ old('company_type') == 'Public' ? 'selected' : '' }}>Publicly Listed Corporation</option>
+                                <option value="Sole Proprietorship" {{ old('company_type') == 'Sole Proprietorship' ? 'selected' : '' }}>Sole Proprietorship</option>
+                                <option value="Partnership" {{ old('company_type') == 'Partnership' ? 'selected' : '' }}>Partnership</option>
+                                <option value="Government" {{ old('company_type') == 'Government' ? 'selected' : '' }}>Government / State Enterprise</option>
+                                <option value="Non-Profit" {{ old('company_type') == 'Non-Profit' ? 'selected' : '' }}>Non-Profit / NGO</option>
+                            </select>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Navigation Buttons -->
-            <div class="px-6 py-5 border-t border-brand-100" style="background: linear-gradient(135deg, #f5f7fa 0%, #e9edf3 100%);">
-                <div class="flex items-center justify-between max-w-3xl mx-auto">
-                    <button type="button" id="prevBtn" class="px-6 py-2.5 text-brand-700 font-semibold rounded-lg border border-brand-300 hover:bg-brand-50 transition flex items-center gap-2" style="display:none;">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                        </svg>
-                        Back
+            <!-- STEP 3: Contact & Headquarters -->
+            <div class="step-content hidden" data-step="3">
+                <div class="px-6 py-5 bg-gradient-to-r from-slate-50 via-white to-slate-50 border-b border-slate-100 flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-extrabold text-base shrink-0 shadow-xs">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Authorized Contact & Office Address</h2>
+                        <p class="text-xs text-slate-500">Designated HR representative and company primary location in Cebu / Region 7</p>
+                    </div>
+                </div>
+
+                <div class="p-6 sm:p-8 space-y-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Contact Person -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="contact_person">
+                                Contact Person (Full Name) <span class="text-rose-500">*</span>
+                            </label>
+                            <input type="text" id="contact_person" name="contact_person" value="{{ old('contact_person') }}" required
+                                   placeholder="e.g. Maria Clara Santos"
+                                   class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border @error('contact_person') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                            @error('contact_person')<span class="text-xs text-rose-600 font-semibold mt-1 block">{{ $message }}</span>@enderror
+                        </div>
+
+                        <!-- Position -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="contact_position">
+                                Official Position / Designation <span class="text-rose-500">*</span>
+                            </label>
+                            <input type="text" id="contact_position" name="contact_position" value="{{ old('contact_position') }}" required
+                                   placeholder="e.g. HR Director / Talent Acquisition Lead"
+                                   class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border @error('contact_position') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                            @error('contact_position')<span class="text-xs text-rose-600 font-semibold mt-1 block">{{ $message }}</span>@enderror
+                        </div>
+
+                        <!-- Phone -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="phone">
+                                Direct Landline / Telephone <span class="text-rose-500">*</span>
+                            </label>
+                            <input type="tel" id="phone" name="phone" value="{{ old('phone') }}" required
+                                   placeholder="(032) 123-4567"
+                                   class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border @error('phone') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                            @error('phone')<span class="text-xs text-rose-600 font-semibold mt-1 block">{{ $message }}</span>@enderror
+                        </div>
+
+                        <!-- Mobile -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="mobile">
+                                Mobile Number
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-xs font-semibold text-slate-500">+63</span>
+                                <input type="tel" id="mobile" name="mobile" value="{{ old('mobile') }}" placeholder="917 123 4567"
+                                       class="w-full pl-12 pr-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                            </div>
+                        </div>
+
+                        <!-- Company Address -->
+                        <div class="md:col-span-2 pt-2 border-t border-slate-100">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="address">
+                                Street Address / Building / Floor No.
+                            </label>
+                            <input type="text" id="address" name="address" value="{{ old('address') }}" placeholder="e.g. 10F Cebu IT Tower, Cardinal Rosales Ave., Cebu Business Park"
+                                   class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                        </div>
+
+                        <!-- City -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="city">
+                                City / Municipality
+                            </label>
+                            <input type="text" id="city" name="city" value="{{ old('city', 'Cebu City') }}"
+                                   class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                        </div>
+
+                        <!-- Province -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="province">
+                                Province
+                            </label>
+                            <input type="text" id="province" name="province" value="{{ old('province', 'Cebu') }}"
+                                   class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                        </div>
+
+                        <!-- Postal Code -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="postal_code">
+                                Postal Code
+                            </label>
+                            <input type="text" id="postal_code" name="postal_code" value="{{ old('postal_code', '6000') }}"
+                                   class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                        </div>
+
+                        <!-- Country -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="country">
+                                Country
+                            </label>
+                            <input type="text" id="country" name="country" value="{{ old('country', 'Philippines') }}" readonly
+                                   class="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-700 font-medium cursor-not-allowed" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 4: Accreditation Documents -->
+            <div class="step-content hidden" data-step="4">
+                <div class="px-6 py-5 bg-gradient-to-r from-slate-50 via-white to-slate-50 border-b border-slate-100 flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-extrabold text-base shrink-0 shadow-xs">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Required Documents and Validity Period</h2>
+                        <p class="text-xs text-slate-500">Official DOLE and DMDP Cebu City requirements for verified hiring (Optional at registration, upload anytime before posting jobs)</p>
+                    </div>
+                </div>
+
+                <div class="p-6 sm:p-8 space-y-6">
+                    <!-- Guidelines Notification Banner -->
+                    <div class="p-4 sm:p-5 rounded-2xl bg-emerald-50/90 border border-emerald-200 flex items-start gap-3.5">
+                        <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 mt-0.5">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div class="text-xs text-emerald-950 leading-relaxed">
+                            <span class="font-bold text-sm block text-emerald-950 mb-1">Optional at Initial Registration &bull; Required to Post Jobs</span>
+                            <p class="text-xs text-emerald-800">
+                                You can finish registration today without uploading documents. You will get immediate access to your company profile setup screen. When you are ready to publish job postings, simply submit your accreditation documents via the Accreditation Hub and await Admin/JPO verification. Original and other documents, when applicable, should be presented for validation. Supported formats: PDF, DOC, DOCX, JPG, PNG (Max 10MB per file).
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Core Documents -->
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700">1. Core Business Credentials <span class="font-normal text-slate-400 lowercase">(optional now, upload anytime)</span></h3>
+                            <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">Standard Employers</span>
+                        </div>
+
+                        @php
+                            $coreDocs = [
+                                [
+                                    'key' => 'bir_2303',
+                                    'title' => 'BIR Certificate of Registration (Form 2303)',
+                                    'desc' => 'Valid and active Bureau of Internal Revenue business registration',
+                                    'badge' => 'Form 2303',
+                                    'badgeColor' => 'bg-emerald-100 text-emerald-800'
+                                ],
+                                [
+                                    'key' => 'sec_dti',
+                                    'title' => 'SEC Registration or DTI Registration',
+                                    'desc' => 'Articles of Incorporation or DTI Certificate of Business Name Registration',
+                                    'badge' => 'SEC / DTI',
+                                    'badgeColor' => 'bg-emerald-100 text-emerald-800'
+                                ],
+                                [
+                                    'key' => 'mayors_permit',
+                                    'title' => "Mayor's Business Permit (" . date('Y') . ")",
+                                    'desc' => 'Current calendar year Cebu City or local government business permit',
+                                    'badge' => 'CY ' . date('Y'),
+                                    'badgeColor' => 'bg-emerald-100 text-emerald-800'
+                                ],
+                                [
+                                    'key' => 'philjobnet_proof',
+                                    'title' => 'PhilJobNet Proof of Registration',
+                                    'desc' => 'Certificate or screenshot of active registration on the national PhilJobNet portal',
+                                    'badge' => 'PhilJobNet',
+                                    'badgeColor' => 'bg-slate-100 text-slate-700'
+                                ],
+                                [
+                                    'key' => 'letter_of_intent',
+                                    'title' => 'Letter of Intent (DMDP Cebu City)',
+                                    'desc' => 'Official letter expressing intent to partner for recruitment and job placement',
+                                    'badge' => 'Partnership',
+                                    'badgeColor' => 'bg-slate-100 text-slate-700'
+                                ],
+                            ];
+                        @endphp
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            @foreach($coreDocs as $doc)
+                                <div class="file-upload-card p-4 rounded-2xl border border-slate-200 bg-white hover:border-emerald-300 transition-colors">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+                                        <div class="flex items-start gap-3">
+                                            <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                            </div>
+                                            <div>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-sm font-bold text-slate-900">{{ $doc['title'] }}</span>
+                                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full {{ $doc['badgeColor'] }}">{{ $doc['badge'] }}</span>
+                                                </div>
+                                                <p class="text-xs text-slate-500 mt-0.5">{{ $doc['desc'] }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-2 flex items-center gap-3">
+                                        <input type="file" name="documents[{{ $doc['key'] }}]" id="doc_{{ $doc['key'] }}" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                               class="doc-file-input block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 file:cursor-pointer transition" />
+                                    </div>
+                                    <div class="file-status-pill text-[11px] font-medium text-emerald-700 mt-1.5 hidden flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                        <span class="file-name truncate"></span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <!-- Specialized Agency Documents (Collapsible/Organized) -->
+                    <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-4">
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700">2. Specialized Agency Licenses <span class="font-normal text-slate-400 lowercase">(if applicable)</span></h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Required only for Private Recruitment Agencies (PRA), Job Contractors (DOLE DO 174), or Overseas Placement Agencies (DMW).</p>
+                        </div>
+
+                        @php
+                            $specialDocs = [
+                                [
+                                    'key' => 'dole_license',
+                                    'title' => 'DOLE License / DO 174 Registration',
+                                    'desc' => 'Mandatory for licensed subcontractors and manpower service contractors'
+                                ],
+                                [
+                                    'key' => 'dmw_license',
+                                    'title' => 'Department of Migrant Workers (DMW) License',
+                                    'desc' => 'For overseas recruitment and placement agencies'
+                                ],
+                                [
+                                    'key' => 'dmw_job_orders',
+                                    'title' => 'Approved DMW Job Orders / Verified Principal Orders',
+                                    'desc' => 'Current validated job orders for overseas hiring campaigns'
+                                ],
+                            ];
+                        @endphp
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                            @foreach($specialDocs as $sDoc)
+                                <div class="p-3.5 rounded-xl border border-slate-200 bg-white">
+                                    <div class="flex items-center justify-between gap-2 mb-1">
+                                        <span class="text-xs font-bold text-slate-800">{{ $sDoc['title'] }}</span>
+                                        <span class="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">As Applicable</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-500 mb-2">{{ $sDoc['desc'] }}</p>
+                                    <input type="file" name="documents[{{ $sDoc['key'] }}]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                           class="doc-file-input block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 file:cursor-pointer transition" />
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <!-- Terms & Conditions Acceptance -->
+                    <div class="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="checkbox" id="terms" name="terms" value="1" {{ old('terms') ? 'checked' : '' }} required class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 border-slate-300" />
+                            <div class="text-xs text-slate-700 leading-relaxed">
+                                <span class="font-bold text-slate-900 block mb-0.5">Accreditation Agreement & Data Privacy Consent <span class="text-rose-500">*</span></span>
+                                We certify that our enterprise complies with Philippine labor standards (Labor Code of the Philippines, DOLE issuances, and Cebu City ordinances). We authorize DMDP Cebu City to verify our business credentials and publish our verified job vacancies to registered jobseekers in accordance with Republic Act No. 10173 (Data Privacy Act of 2012).
+                            </div>
+                        </label>
+                        @error('terms')<span class="text-xs text-rose-600 font-semibold mt-2 block">{{ $message }}</span>@enderror
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sticky Navigation Bar (Previous, Next, Submit) -->
+            <div class="px-6 py-4 bg-slate-50/90 border-t border-slate-200/80 flex items-center justify-between">
+                <button type="button" id="prevBtn" class="px-5 py-2.5 text-slate-700 font-semibold rounded-xl border border-slate-300 bg-white hover:bg-slate-100 active:scale-[0.98] transition-all flex items-center gap-2 text-sm shadow-xs hidden">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    Previous
+                </button>
+
+                <div class="flex items-center gap-2 ml-auto">
+                    <button type="button" id="nextBtn" class="px-7 py-2.5 text-white font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] transition-all flex items-center gap-2 text-sm shadow-lg shadow-emerald-600/20">
+                        Continue
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </button>
-                    <button type="button" id="nextBtn" class="px-8 py-2.5 text-white font-semibold rounded-lg transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400">
-                        Next
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                        </svg>
-                    </button>
-                    <button type="submit" id="submitBtn" class="px-8 py-2.5 text-white font-semibold rounded-lg transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400" 
-                            style="display:none;">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        Register
+
+                    <button type="submit" id="submitBtn" class="px-8 py-2.5 text-white font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] transition-all flex items-center gap-2 text-sm shadow-lg shadow-emerald-600/25 hidden">
+                        <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        Submit Employer Application
                     </button>
                 </div>
             </div>
         </form>
 
-        <!-- Footer -->
-        <div class="mt-8 flex flex-wrap justify-center gap-6 text-xs text-brand-400 border-t border-brand-100 pt-6">
-            <span class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full border border-brand-100 shadow-sm">
-                DMDP Capstone Project
-            </span>
+        <!-- Help / Support Footer -->
+        <div class="mt-8 text-center text-xs text-slate-500 space-y-1">
+            <p>For inquiries regarding enterprise partnerships, contact DMDP Employer Relations at dmdp@cebucity.gov.ph or (032) 888-1234.</p>
+            <p class="text-slate-400">Department of Manpower Development and Placement · Cebu City Government</p>
         </div>
+
     </div>
 </div>
 
+@push('styles')
 <style>
-.step-dot {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 20px;
-    transition: all 0.3s ease;
-}
-
-.step-dot .step-number {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: #e5e7eb;
-    color: #6b7280;
-    font-weight: 600;
-    font-size: 13px;
-    transition: all 0.3s ease;
-}
-
-.step-dot .step-label {
-    font-size: 13px;
-    font-weight: 500;
-    color: #9ca3af;
-    transition: all 0.3s ease;
-}
-
+/* Stepper Active Styles */
 .step-dot.active .step-number {
-    background: linear-gradient(135deg, #022c22 0%, #059669 100%);
-    color: white;
-    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+    background-color: #059669;
+    color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
 }
-
-.step-dot.active .step-label {
-    color: #064e3b;
-    font-weight: 700;
+.step-dot.active .step-title {
+    color: #065f46;
 }
-
 .step-dot.completed .step-number {
-    background: #10b981;
-    color: white;
+    background-color: #10b981;
+    color: #ffffff;
 }
-
-.step-dot.completed .step-label {
-    color: #10b981;
+.step-dot.completed .step-title {
+    color: #047857;
 }
-
-.step-line {
-    flex: 1;
-    height: 2px;
-    background: #e5e7eb;
-    transition: all 0.3s ease;
-    min-width: 20px;
-}
-
 .step-line.completed {
-    background: #10b981;
-}
-
-@media (max-width: 768px) {
-    .step-dot .step-label {
-        display: none;
-    }
-    .step-line {
-        min-width: 10px;
-    }
-    .step-dot .step-number {
-        width: 24px;
-        height: 24px;
-        font-size: 11px;
-    }
+    background-color: #10b981;
 }
 </style>
+@endpush
 
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let currentStep = 1;
@@ -540,78 +647,108 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('registrationForm');
     const stepContents = document.querySelectorAll('.step-content');
     const stepDots = document.querySelectorAll('.step-dot');
+    const stepLines = document.querySelectorAll('.step-line');
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
     const submitBtn = document.getElementById('submitBtn');
+    const headerStepText = document.getElementById('headerStepText');
+    const headerPercentText = document.getElementById('headerPercentText');
+    const headerProgressBar = document.getElementById('headerProgressBar');
 
-    // Debug: Check if elements exist
-    console.log('Form:', form);
-    console.log('Submit Button:', submitBtn);
-    console.log('Next Button:', nextBtn);
+    const stepTitles = [
+        'Account Credentials',
+        'Company Profile',
+        'Authorized Contact & Location',
+        'Accreditation Documents & Terms'
+    ];
 
-    function updateSteps() {
-        // Show/hide step contents
-        stepContents.forEach(content => {
-            const step = parseInt(content.dataset.step);
-            content.style.display = step === currentStep ? 'block' : 'none';
-        });
-
-        // Update step dots
-        stepDots.forEach(dot => {
-            const step = parseInt(dot.dataset.step);
-            dot.classList.remove('active', 'completed');
-            if (step === currentStep) {
-                dot.classList.add('active');
-            } else if (step < currentStep) {
-                dot.classList.add('completed');
-            }
-        });
-
-        // Update step lines
-        document.querySelectorAll('.step-line').forEach((line, index) => {
-            line.classList.toggle('completed', index < currentStep - 1);
-        });
-
-        // Update navigation buttons
-        if (prevBtn) {
-            prevBtn.style.display = currentStep > 1 ? 'inline-flex' : 'none';
-        }
-        if (nextBtn && submitBtn) {
-            if (currentStep === totalSteps) {
-                nextBtn.style.display = 'none';
-                submitBtn.style.display = 'inline-flex';
+    function updateStepUI() {
+        stepContents.forEach(c => {
+            const s = parseInt(c.dataset.step);
+            if (s === currentStep) {
+                c.classList.remove('hidden');
             } else {
-                nextBtn.style.display = 'inline-flex';
-                submitBtn.style.display = 'none';
+                c.classList.add('hidden');
             }
+        });
+
+        stepDots.forEach(d => {
+            const s = parseInt(d.dataset.step);
+            d.classList.remove('active', 'completed');
+            if (s === currentStep) {
+                d.classList.add('active');
+            } else if (s < currentStep) {
+                d.classList.add('completed');
+            }
+        });
+
+        stepLines.forEach((l, idx) => {
+            if (idx < currentStep - 1) {
+                l.classList.add('completed');
+            } else {
+                l.classList.remove('completed');
+            }
+        });
+
+        const percent = Math.round((currentStep / totalSteps) * 100);
+        if (headerStepText) headerStepText.textContent = `Step ${currentStep} of ${totalSteps} · ${stepTitles[currentStep - 1]}`;
+        if (headerPercentText) headerPercentText.textContent = `${percent}% Completed`;
+        if (headerProgressBar) headerProgressBar.style.width = `${percent}%`;
+
+        if (currentStep === 1) {
+            prevBtn.classList.add('hidden');
+        } else {
+            prevBtn.classList.remove('hidden');
+        }
+
+        if (currentStep === totalSteps) {
+            nextBtn.classList.add('hidden');
+            submitBtn.classList.remove('hidden');
+        } else {
+            nextBtn.classList.remove('hidden');
+            submitBtn.classList.add('hidden');
         }
     }
 
     function validateStep(step) {
-        const currentContent = document.querySelector(`.step-content[data-step="${step}"]`);
-        if (!currentContent) return true;
-        
-        const inputs = currentContent.querySelectorAll('input[required], select[required]');
+        const c = document.querySelector(`.step-content[data-step="${step}"]`);
+        if (!c) return true;
+
+        const inputs = c.querySelectorAll('input[required], select[required], textarea[required]');
         let isValid = true;
+        let firstInvalid = null;
 
         inputs.forEach(input => {
-            if (!input.value.trim()) {
-                isValid = false;
-                input.classList.add('border-red-500');
+            let fieldValid = true;
+            if (input.type === 'checkbox') {
+                fieldValid = input.checked;
             } else {
-                input.classList.remove('border-red-500');
+                fieldValid = input.value.trim() !== '';
+            }
+
+            if (!fieldValid) {
+                isValid = false;
+                input.classList.add('border-rose-400', 'ring-2', 'ring-rose-100');
+                if (!firstInvalid) firstInvalid = input;
+            } else {
+                input.classList.remove('border-rose-400', 'ring-2', 'ring-rose-100');
             }
         });
 
-        // Special validation for step 4 (terms checkbox)
-        if (step === 4) {
-            const termsCheckbox = document.querySelector('input[name="terms"]');
-            if (termsCheckbox && !termsCheckbox.checked) {
+        // Specific Step 1 check: password match
+        if (step === 1) {
+            const pwd = document.getElementById('password');
+            const pwdConf = document.getElementById('password_confirmation');
+            if (pwd && pwdConf && pwd.value && pwdConf.value && pwd.value !== pwdConf.value) {
                 isValid = false;
-                termsCheckbox.classList.add('border-red-500');
-            } else if (termsCheckbox) {
-                termsCheckbox.classList.remove('border-red-500');
+                pwdConf.classList.add('border-rose-400', 'ring-2', 'ring-rose-100');
+                if (!firstInvalid) firstInvalid = pwdConf;
             }
+        }
+
+        if (firstInvalid) {
+            firstInvalid.focus();
+            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
         return isValid;
@@ -622,101 +759,175 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         currentStep = step;
-        updateSteps();
-        // Scroll to top of form
+        updateStepUI();
         form.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // Next button
-    if (nextBtn) {
-        nextBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('Next button clicked, step:', currentStep);
-            if (validateStep(currentStep)) {
-                if (currentStep < totalSteps) {
-                    goToStep(currentStep + 1);
-                }
-            } else {
-                alert('Please fill in all required fields before proceeding.');
-            }
-        });
-    }
-
-    // Previous button
-    if (prevBtn) {
-        prevBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (currentStep > 1) {
-                goToStep(currentStep - 1);
-            }
-        });
-    }
-
-    // Submit button - FIXED
-    if (submitBtn) {
-        submitBtn.addEventListener('click', function(e) {
-            console.log('Submit button clicked!');
-            
-            // Validate all steps before submitting
-            let allValid = true;
-            for (let i = 1; i <= totalSteps; i++) {
-                if (!validateStep(i)) {
-                    allValid = false;
-                    // Go to the first invalid step
-                    if (i < currentStep) {
-                        goToStep(i);
-                    }
-                    break;
-                }
-            }
-            
-            if (allValid) {
-                console.log('All valid, submitting form...');
-                // Submit the form
-                form.submit();
-            } else {
-                e.preventDefault();
-                alert('Please fill in all required fields before submitting.');
-            }
-        });
-    }
-
-    // Click on step dots to navigate
-    stepDots.forEach(dot => {
-        dot.addEventListener('click', function() {
-            const step = parseInt(this.dataset.step);
-            if (step < currentStep || validateStep(currentStep)) {
-                goToStep(step);
-            }
-        });
-    });
-
-    // Enter key to go to next step
-    form.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
-            if (currentStep === totalSteps) {
-                return;
-            }
-            e.preventDefault();
-            if (validateStep(currentStep)) {
-                goToStep(currentStep + 1);
-            }
+    nextBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (validateStep(currentStep) && currentStep < totalSteps) {
+            goToStep(currentStep + 1);
         }
     });
 
-    // Initialize
-    updateSteps();
+    prevBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (currentStep > 1) {
+            goToStep(currentStep - 1);
+        }
+    });
 
-    // File input validation - show filename
-    document.querySelectorAll('input[type="file"]').forEach(input => {
-        input.addEventListener('change', function() {
-            if (this.files.length > 0) {
-                console.log('File selected:', this.files[0].name);
+    stepDots.forEach(dot => {
+        dot.addEventListener('click', function() {
+            const targetStep = parseInt(this.dataset.step);
+            if (targetStep < currentStep || validateStep(currentStep)) {
+                goToStep(targetStep);
             }
         });
     });
 
-    console.log('Employer registration form initialized!');
+    // Toggle Password Visibility
+    document.querySelectorAll('.toggle-password-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const targetId = this.dataset.target;
+            const input = document.getElementById(targetId);
+            const eyeOpen = this.querySelector('.eye-open');
+            const eyeClosed = this.querySelector('.eye-closed');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                eyeOpen.classList.add('hidden');
+                eyeClosed.classList.remove('hidden');
+            } else {
+                input.type = 'password';
+                eyeOpen.classList.remove('hidden');
+                eyeClosed.classList.add('hidden');
+            }
+        });
+    });
+
+    // Password strength calculation
+    const pwdInput = document.getElementById('password');
+    const pwdConfInput = document.getElementById('password_confirmation');
+    const pwdStrengthText = document.getElementById('pwdStrengthText');
+    const pwdMatchNotice = document.getElementById('pwdMatchNotice');
+
+    if (pwdInput) {
+        pwdInput.addEventListener('input', function() {
+            const val = this.value;
+            let score = 0;
+            if (val.length >= 8) score++;
+            if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+            if (/[0-9]/.test(val)) score++;
+            if (/[^A-Za-z0-9]/.test(val)) score++;
+
+            const bars = [
+                document.getElementById('pwdBar1'),
+                document.getElementById('pwdBar2'),
+                document.getElementById('pwdBar3'),
+                document.getElementById('pwdBar4')
+            ];
+
+            bars.forEach((b, i) => {
+                b.className = 'h-full w-1/4 transition-colors';
+                if (i < score) {
+                    if (score === 1) b.classList.add('bg-rose-500');
+                    else if (score === 2) b.classList.add('bg-amber-400');
+                    else if (score === 3) b.classList.add('bg-emerald-400');
+                    else b.classList.add('bg-emerald-600');
+                } else {
+                    b.classList.add('bg-slate-200');
+                }
+            });
+
+            const labels = ['Too weak (at least 8 chars)', 'Fair', 'Good', 'Strong'];
+            pwdStrengthText.textContent = val ? labels[score - 1] || 'Too weak' : 'Password strength';
+            if (score <= 1) pwdStrengthText.className = 'text-[11px] font-medium text-rose-500';
+            else if (score === 2) pwdStrengthText.className = 'text-[11px] font-medium text-amber-500';
+            else pwdStrengthText.className = 'text-[11px] font-medium text-emerald-600';
+
+            checkPasswordMatch();
+        });
+    }
+
+    if (pwdConfInput) {
+        pwdConfInput.addEventListener('input', checkPasswordMatch);
+    }
+
+    function checkPasswordMatch() {
+        if (!pwdConfInput || !pwdInput || !pwdConfInput.value) {
+            if (pwdMatchNotice) pwdMatchNotice.textContent = '';
+            return;
+        }
+        if (pwdInput.value === pwdConfInput.value) {
+            pwdMatchNotice.innerHTML = '<span class="inline-flex items-center gap-1"><svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Passwords match</span>';
+            pwdMatchNotice.className = 'text-[11px] font-medium text-emerald-600 mt-1 block';
+            pwdConfInput.classList.remove('border-rose-400');
+        } else {
+            pwdMatchNotice.innerHTML = '<span class="inline-flex items-center gap-1"><svg class="w-3.5 h-3.5 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg> Passwords do not match</span>';
+            pwdMatchNotice.className = 'text-[11px] font-medium text-rose-500 mt-1 block';
+        }
+    }
+
+    // Document file upload feedback pill
+    document.querySelectorAll('.doc-file-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const card = this.closest('.file-upload-card');
+            if (!card) return;
+            const pill = card.querySelector('.file-status-pill');
+            const nameSpan = card.querySelector('.file-name');
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
+                const sizeKb = Math.round(file.size / 1024);
+                if (nameSpan) nameSpan.textContent = `Selected: ${file.name} (${sizeKb} KB)`;
+                if (pill) pill.classList.remove('hidden');
+                card.classList.add('border-emerald-400', 'bg-emerald-50/20');
+            } else {
+                if (pill) pill.classList.add('hidden');
+                card.classList.remove('border-emerald-400', 'bg-emerald-50/20');
+            }
+        });
+    });
+
+    // Form submit handling
+    form.addEventListener('submit', function(e) {
+        const terms = document.getElementById('terms');
+        if (terms && !terms.checked) {
+            e.preventDefault();
+            alert('Please review and check the Accreditation Agreement & Data Privacy Consent checkbox to proceed.');
+            terms.focus();
+            return false;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Submitting Employer Application...
+        `;
+    });
+
+    // Auto-detect Laravel errors and jump to step
+    @if($errors->any())
+        const errorFields = @json($errors->keys());
+        let targetErrorStep = 1;
+
+        if (errorFields.some(f => ['email', 'password', 'role'].includes(f))) {
+            targetErrorStep = 1;
+        } else if (errorFields.some(f => ['company_name', 'company_description', 'industry', 'company_size', 'website', 'company_type'].includes(f))) {
+            targetErrorStep = 2;
+        } else if (errorFields.some(f => ['contact_person', 'contact_position', 'phone', 'mobile', 'address', 'city', 'province', 'postal_code'].includes(f))) {
+            targetErrorStep = 3;
+        } else if (errorFields.some(f => f.startsWith('documents') || f === 'terms')) {
+            targetErrorStep = 4;
+        }
+        currentStep = targetErrorStep;
+    @endif
+
+    updateStepUI();
 });
 </script>
+@endpush
 @endsection

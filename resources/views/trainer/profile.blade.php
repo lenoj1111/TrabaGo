@@ -15,8 +15,12 @@
         <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div class="flex items-center gap-5">
-                    <div class="h-20 w-20 rounded-3xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white text-3xl font-black shadow-lg shadow-emerald-600/30 shrink-0">
-                        🎓
+                    <div class="h-20 w-20 rounded-3xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white shadow-lg shadow-emerald-600/30 shrink-0">
+                        <svg class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+                            <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
+                        </svg>
                     </div>
                     <div class="space-y-1">
                         <div class="flex items-center gap-2">
@@ -45,11 +49,17 @@
 
             <!-- Tab Buttons -->
             <div class="mt-8 pt-6 border-t border-emerald-500/20 flex gap-3">
-                <button @click="activeTab = 'profile'" type="button" :class="activeTab === 'profile' ? 'bg-emerald-500 text-slate-950 shadow-md font-extrabold' : 'text-slate-300 hover:text-white hover:bg-white/10 font-bold'" class="px-4 py-2 rounded-xl text-xs transition-all">
-                    👤 Profile Details
+                <button @click="activeTab = 'profile'" type="button" :class="activeTab === 'profile' ? 'bg-emerald-500 text-slate-950 shadow-md font-extrabold' : 'text-slate-300 hover:text-white hover:bg-white/10 font-bold'" class="px-4 py-2 rounded-xl text-xs transition-all inline-flex items-center gap-1.5">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    <span>Profile Details</span>
                 </button>
-                <button @click="activeTab = 'security'" type="button" :class="activeTab === 'security' ? 'bg-emerald-500 text-slate-950 shadow-md font-extrabold' : 'text-slate-300 hover:text-white hover:bg-white/10 font-bold'" class="px-4 py-2 rounded-xl text-xs transition-all">
-                    🔒 Security & Password
+                <button @click="activeTab = 'security'" type="button" :class="activeTab === 'security' ? 'bg-emerald-500 text-slate-950 shadow-md font-extrabold' : 'text-slate-300 hover:text-white hover:bg-white/10 font-bold'" class="px-4 py-2 rounded-xl text-xs transition-all inline-flex items-center gap-1.5">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                    <span>Security & Password</span>
                 </button>
             </div>
         </div>
@@ -120,9 +130,9 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Current Password <span class="text-rose-500">*</span></label>
                     <div class="relative">
-                        <input :type="showCurrentPassword ? 'text' : 'password'" name="current_password" required placeholder="Enter current password" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 pr-10 text-xs font-medium text-slate-900 focus:border-emerald-500 outline-none">
-                        <button type="button" @click="showCurrentPassword = !showCurrentPassword" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600">
-                            <span x-text="showCurrentPassword ? '🙈' : '👁️'"></span>
+                        <input :type="showCurrentPassword ? 'text' : 'password'" name="current_password" required placeholder="Enter current password" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 pr-12 text-xs font-medium text-slate-900 focus:border-emerald-500 outline-none">
+                        <button type="button" @click="showCurrentPassword = !showCurrentPassword" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 text-xs font-semibold">
+                            <span x-text="showCurrentPassword ? 'Hide' : 'Show'"></span>
                         </button>
                     </div>
                     @error('current_password')
@@ -134,9 +144,9 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">New Password <span class="text-rose-500">*</span></label>
                     <div class="relative">
-                        <input :type="showNewPassword ? 'text' : 'password'" name="password" required minlength="8" placeholder="Minimum 8 characters" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 pr-10 text-xs font-medium text-slate-900 focus:border-emerald-500 outline-none">
-                        <button type="button" @click="showNewPassword = !showNewPassword" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600">
-                            <span x-text="showNewPassword ? '🙈' : '👁️'"></span>
+                        <input :type="showNewPassword ? 'text' : 'password'" name="password" required minlength="8" placeholder="Minimum 8 characters" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 pr-12 text-xs font-medium text-slate-900 focus:border-emerald-500 outline-none">
+                        <button type="button" @click="showNewPassword = !showNewPassword" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 text-xs font-semibold">
+                            <span x-text="showNewPassword ? 'Hide' : 'Show'"></span>
                         </button>
                     </div>
                     @error('password')
@@ -148,9 +158,9 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Confirm New Password <span class="text-rose-500">*</span></label>
                     <div class="relative">
-                        <input :type="showConfirmPassword ? 'text' : 'password'" name="password_confirmation" required minlength="8" placeholder="Re-enter new password" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 pr-10 text-xs font-medium text-slate-900 focus:border-emerald-500 outline-none">
-                        <button type="button" @click="showConfirmPassword = !showConfirmPassword" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600">
-                            <span x-text="showConfirmPassword ? '🙈' : '👁️'"></span>
+                        <input :type="showConfirmPassword ? 'text' : 'password'" name="password_confirmation" required minlength="8" placeholder="Re-enter new password" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 pr-12 text-xs font-medium text-slate-900 focus:border-emerald-500 outline-none">
+                        <button type="button" @click="showConfirmPassword = !showConfirmPassword" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 text-xs font-semibold">
+                            <span x-text="showConfirmPassword ? 'Hide' : 'Show'"></span>
                         </button>
                     </div>
                 </div>

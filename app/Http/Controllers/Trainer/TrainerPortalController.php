@@ -51,11 +51,71 @@ class TrainerPortalController extends Controller
     {
         $profileId = $this->getProfileId();
 
-        $totalEnrollments = DB::table('training_enrollments')->count();
-        $inProgressEnrollments = DB::table('training_enrollments')->where('status', 'in_progress')->count();
-        $completedEnrollments = DB::table('training_enrollments')->where('status', 'completed')->count();
-        $certificatesIssued = DB::table('training_enrollments')->where('certificate_issued', 1)->count();
+        // Enrollment Metrics (Aggregated single query)
+        $enrollmentStats = DB::table('training_enrollments')
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress,
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+                SUM(CASE WHEN certificate_issued = 1 THEN 1 ELSE 0 END) as certificates_issued
+            ")->first();
+        $totalEnrollments = (int) ($enrollmentStats->total ?? 0);
+        $inProgressEnrollments = (int) ($enrollmentStats->in_progress ?? 0);
+        $completedEnrollments = (int) ($enrollmentStats->completed ?? 0);
+        $certificatesIssued = (int) ($enrollmentStats->certificates_issued ?? 0);
         $coursesCount = DB::table('training_programs')->count();
+
+        $completionRate = $totalEnrollments > 0 
+            ? round(($completedEnrollments / $totalEnrollments) * 100, 1) 
+            : 0;
+
+        // Top Courses by Enrollment
+        $topCourses = DB::table('training_programs')
+            ->leftJoin('training_enrollments', 'training_programs.training_id', '=', 'training_enrollments.training_id')
+            ->select('training_programs.training_id', 'training_programs.title', 'training_programs.training_type', DB::raw('COUNT(training_enrollments.enrollment_id) as enrollments_count'))
+            ->groupBy('training_programs.training_id', 'training_programs.title', 'training_programs.training_type')
+            ->orderByDesc('enrollments_count')
+            ->limit(5)
+            ->get();
+
+        // Monthly enrollment trends (cached for 30s)
+        $monthlyTrainingTrends = \Illuminate\Support\Facades\Cache::remember('trainer_monthly_training_trends', 30, function () {
+            $trends = [];
+            for ($i = 5; $i >= 0; $i--) {
+                $monthStart = now()->subMonths($i)->startOfMonth();
+                $monthEnd = now()->subMonths($i)->endOfMonth();
+                $monthLabel = $monthStart->format('M Y');
+                
+                $enrolledCount = DB::table('training_enrollments')
+                    ->where(function ($q) use ($monthStart, $monthEnd, $i) {
+                        $q->whereBetween('start_date', [$monthStart->toDateString(), $monthEnd->toDateString()]);
+                        if ($i === 0) {
+                            $q->orWhereNull('start_date');
+                        }
+                    })
+                    ->count();
+
+                $completedCount = DB::table('training_enrollments')
+                    ->where('status', 'completed')
+                    ->where(function ($q) use ($monthStart, $monthEnd, $i) {
+                        $q->whereBetween('end_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
+                          ->orWhereBetween('certificate_issued_at', [$monthStart, $monthEnd]);
+                        if ($i === 0) {
+                            $q->orWhere(function ($sub) {
+                                $sub->whereNull('end_date')->whereNull('certificate_issued_at');
+                            });
+                        }
+                    })
+                    ->count();
+
+                $trends[] = [
+                    'month' => $monthLabel,
+                    'enrolled' => $enrolledCount,
+                    'completed' => $completedCount,
+                ];
+            }
+            return $trends;
+        });
 
         // Recent enrollments requiring trainer attention
         $recentEnrollments = DB::table('training_enrollments')
@@ -78,7 +138,10 @@ class TrainerPortalController extends Controller
             'inProgressEnrollments',
             'completedEnrollments',
             'certificatesIssued',
+            'completionRate',
             'coursesCount',
+            'topCourses',
+            'monthlyTrainingTrends',
             'recentEnrollments'
         ));
     }

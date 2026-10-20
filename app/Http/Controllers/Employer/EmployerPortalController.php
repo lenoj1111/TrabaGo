@@ -54,16 +54,84 @@ class EmployerPortalController extends Controller
         $employer = $this->getOrCreateEmployer();
         $user = Auth::user();
 
-        // Metrics
-        $totalJobs = JobPosting::where('employer_id', $employer->employer_id)->count();
-        $approvedJobs = JobPosting::where('employer_id', $employer->employer_id)->where('status', 'approved')->count();
-        $pendingJobs = JobPosting::where('employer_id', $employer->employer_id)->where('status', 'pending')->count();
+        // Metrics (Single aggregated query)
+        $jobStats = JobPosting::where('employer_id', $employer->employer_id)
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending
+            ")->first();
+        $totalJobs = (int) ($jobStats->total ?? 0);
+        $approvedJobs = (int) ($jobStats->approved ?? 0);
+        $pendingJobs = (int) ($jobStats->pending ?? 0);
         
         // Job applications & referred applicants from JPO
         $jobIds = JobPosting::where('employer_id', $employer->employer_id)->pluck('job_id');
-        $totalApplicants = JobApplication::whereIn('job_id', $jobIds)->count();
-        $referredCount = JobApplication::whereIn('job_id', $jobIds)->where('referred_by_jpo', 1)->count();
-        $hiredCount = JobApplication::whereIn('job_id', $jobIds)->where('status', 'hired')->count();
+        
+        $totalApplicants = 0;
+        $referredCount = 0;
+        $interviewCount = 0;
+        $hiredCount = 0;
+        $pendingScreeningCount = 0;
+        $monthlyApplicantTrends = [];
+
+        if ($jobIds->isNotEmpty()) {
+            $appStats = JobApplication::whereIn('job_id', $jobIds)
+                ->selectRaw("
+                    COUNT(*) as total,
+                    SUM(CASE WHEN referred_by_jpo = 1 THEN 1 ELSE 0 END) as referred,
+                    SUM(CASE WHEN status = 'interview' THEN 1 ELSE 0 END) as interview,
+                    SUM(CASE WHEN status = 'hired' THEN 1 ELSE 0 END) as hired,
+                    SUM(CASE WHEN status IN ('pending', 'reviewed') THEN 1 ELSE 0 END) as pending_screening
+                ")->first();
+
+            $totalApplicants = (int) ($appStats->total ?? 0);
+            $referredCount = (int) ($appStats->referred ?? 0);
+            $interviewCount = (int) ($appStats->interview ?? 0);
+            $hiredCount = (int) ($appStats->hired ?? 0);
+            $pendingScreeningCount = (int) ($appStats->pending_screening ?? 0);
+
+            // Monthly applicant volume trends (single grouped query instead of 12 sequential queries)
+            $sixMonthsAgo = now()->subMonths(5)->startOfMonth();
+            $trendRows = JobApplication::whereIn('job_id', $jobIds)
+                ->where('created_at', '>=', $sixMonthsAgo)
+                ->selectRaw("
+                    CONVERT(varchar(7), created_at, 120) as yrmo,
+                    COUNT(*) as total_apps,
+                    SUM(CASE WHEN status = 'hired' THEN 1 ELSE 0 END) as hires_count
+                ")
+                ->groupBy(DB::raw("CONVERT(varchar(7), created_at, 120)"))
+                ->get()
+                ->keyBy('yrmo');
+
+            for ($i = 5; $i >= 0; $i--) {
+                $monthDate = now()->subMonths($i);
+                $yrmo = $monthDate->format('Y-m');
+                $label = $monthDate->format('M Y');
+                $row = $trendRows->get($yrmo);
+
+                $monthlyApplicantTrends[] = [
+                    'month' => $label,
+                    'applications' => (int) ($row->total_apps ?? 0),
+                    'hires' => (int) ($row->hires_count ?? 0),
+                ];
+            }
+        } else {
+            for ($i = 5; $i >= 0; $i--) {
+                $monthlyApplicantTrends[] = [
+                    'month' => now()->subMonths($i)->format('M Y'),
+                    'applications' => 0,
+                    'hires' => 0,
+                ];
+            }
+        }
+
+        // Top Job Postings with application distribution
+        $topJobs = JobPosting::where('employer_id', $employer->employer_id)
+            ->withCount('applications')
+            ->orderByDesc('applications_count')
+            ->take(5)
+            ->get();
 
         // Accreditation status
         $accreditation = DB::table('employer_accreditation')->where('employer_id', $employer->employer_id)->first();
@@ -71,18 +139,18 @@ class EmployerPortalController extends Controller
         // Placement reports
         $placementReports = DB::table('placement_reports')->where('employer_id', $employer->employer_id)->get();
 
-        // Recent referred jobseekers
-        $recentReferred = JobApplication::with(['jobseeker', 'jobPosting'])
+        // Recent applicants
+        $recentApplicants = JobApplication::with(['jobseeker', 'jobPosting'])
             ->whereIn('job_id', $jobIds)
-            ->where('referred_by_jpo', 1)
             ->latest()
             ->take(5)
             ->get();
 
         return view('employer.homepage', compact(
             'employer', 'user', 'totalJobs', 'approvedJobs', 'pendingJobs', 
-            'totalApplicants', 'referredCount', 'hiredCount', 'accreditation', 
-            'placementReports', 'recentReferred'
+            'totalApplicants', 'referredCount', 'interviewCount', 'hiredCount', 'pendingScreeningCount',
+            'topJobs', 'monthlyApplicantTrends', 'accreditation', 
+            'placementReports', 'recentApplicants'
         ));
     }
 
@@ -141,6 +209,12 @@ class EmployerPortalController extends Controller
 
     public function storeJobPosting(Request $request)
     {
+        $user = Auth::user();
+        if (!$user || !$user->isAccountVerified()) {
+            return redirect()->route('employer.accreditation')
+                ->with('error', 'Your company is not yet accredited. Please submit your required business documents and wait for Admin/JPO accreditation before posting job openings.');
+        }
+
         $employer = $this->getOrCreateEmployer();
 
         if (Auth::user() && !Auth::user()->is_approved) {
@@ -155,12 +229,13 @@ class EmployerPortalController extends Controller
         $request->validate([
             'title' => 'required|string|max:150',
             'description' => 'required|string',
+            'job_type' => 'nullable|string|max:100',
+            'location' => 'nullable|string|max:255',
+            'salary_range' => 'nullable|string|max:150',
+            'benefits' => 'nullable|string',
+            'other_instructions' => 'nullable|string',
             'qualifications' => 'nullable|string',
-            'job_type' => 'required|string|max:100',
-            'location' => 'required|string|max:255',
-            'salary_compensation' => 'required|string|max:5000',
-            'benefits_perks' => 'nullable|string|max:10000',
-            'other_instructions' => 'nullable|string|max:10000',
+            'skills' => 'nullable|string',
             'vacancy_count' => 'required|integer|min:1',
             'valid_until' => ['nullable', 'date', 'after_or_equal:today'],
             'accepts_disability' => 'nullable|boolean',
@@ -173,12 +248,13 @@ class EmployerPortalController extends Controller
             'employer_id' => $employer->employer_id,
             'title' => $request->input('title'),
             'description' => $request->input('description'),
-            'qualifications' => $request->input('qualifications'),
             'job_type' => $request->input('job_type'),
             'location' => $request->input('location'),
-            'salary_compensation' => $request->input('salary_compensation'),
-            'benefits_perks' => $request->input('benefits_perks'),
+            'salary_range' => $request->input('salary_range'),
+            'benefits' => $request->input('benefits'),
             'other_instructions' => $request->input('other_instructions'),
+            'qualifications' => $request->input('qualifications'),
+            'skills' => $request->input('skills'),
             'vacancy_count' => $request->input('vacancy_count', 1),
             'valid_until' => $request->input('valid_until', now()->addMonths(2)->toDateString()),
             'accepts_disability' => $request->boolean('accepts_disability'),
@@ -238,12 +314,13 @@ class EmployerPortalController extends Controller
         $request->validate([
             'title' => 'required|string|max:150',
             'description' => 'required|string',
+            'job_type' => 'nullable|string|max:100',
+            'location' => 'nullable|string|max:255',
+            'salary_range' => 'nullable|string|max:150',
+            'benefits' => 'nullable|string',
+            'other_instructions' => 'nullable|string',
             'qualifications' => 'nullable|string',
-            'job_type' => 'required|string|max:100',
-            'location' => 'required|string|max:255',
-            'salary_compensation' => 'required|string|max:5000',
-            'benefits_perks' => 'nullable|string|max:10000',
-            'other_instructions' => 'nullable|string|max:10000',
+            'skills' => 'nullable|string',
             'vacancy_count' => 'required|integer|min:1',
             'valid_until' => ['nullable', 'date', 'after_or_equal:today'],
             'accepts_disability' => 'nullable|boolean',
@@ -261,12 +338,13 @@ class EmployerPortalController extends Controller
         $job->update([
             'title' => $request->input('title'),
             'description' => $request->input('description'),
-            'qualifications' => $request->input('qualifications'),
             'job_type' => $request->input('job_type'),
             'location' => $request->input('location'),
-            'salary_compensation' => $request->input('salary_compensation'),
-            'benefits_perks' => $request->input('benefits_perks'),
+            'salary_range' => $request->input('salary_range'),
+            'benefits' => $request->input('benefits'),
             'other_instructions' => $request->input('other_instructions'),
+            'qualifications' => $request->input('qualifications'),
+            'skills' => $request->input('skills'),
             'vacancy_count' => $request->input('vacancy_count'),
             'valid_until' => $request->input('valid_until'),
             'accepts_disability' => $request->boolean('accepts_disability'),
@@ -321,46 +399,92 @@ class EmployerPortalController extends Controller
     {
         $employer = $this->getOrCreateEmployer();
 
-        $request->validate([
-            'bir_2303' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
-            'sec_dti' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
-            'mayors_permit' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
-            'business_permit' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
-            'philjobnet_proof' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
-            'job_vacancies_form' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
-            'dole_license' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
-            'dmw_license' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
-            'dmw_job_orders' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
-            'letter_of_intent' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
-            'company_profile' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
-        ]);
+        try {
+            $request->validate([
+                'bir_2303' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp,bmp|max:25600',
+                'sec_dti' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp,bmp|max:25600',
+                'sec_dti_registration' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp,bmp|max:25600',
+                'mayors_permit' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp,bmp|max:25600',
+                'business_permit' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp,bmp|max:25600',
+                'philjobnet_proof' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp,bmp|max:25600',
+                'job_vacancies_form' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp,bmp|max:25600',
+                'updated_job_vacancies' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp,bmp|max:25600',
+                'dole_license' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp,bmp|max:25600',
+                'dmw_license' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp,bmp|max:25600',
+                'dmw_job_orders' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp,bmp|max:25600',
+                'letter_of_intent' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp,bmp|max:25600',
+                'company_profile' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp,bmp|max:25600',
+                'documents.*' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp,bmp|max:25600',
+            ], [
+                'max' => 'The uploaded file exceeds the allowed 25MB limit. Please upload a smaller file.',
+                'mimes' => 'The document must be a file of type: PDF, DOC, DOCX, JPG, PNG, or WEBP.',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()
+                ->withErrors($e->validator)
+                ->withInput()
+                ->with('error', 'Document upload failed validation: ' . implode(' ', $e->validator->errors()->all()));
+        }
+
+        // Ensure target directory exists on public disk
+        Storage::disk('public')->makeDirectory('accreditation_docs');
 
         $docs = [];
         $files = [
             'bir_2303',
             'sec_dti',
+            'sec_dti_registration',
             'mayors_permit',
             'business_permit',
             'philjobnet_proof',
             'job_vacancies_form',
+            'updated_job_vacancies',
             'dole_license',
             'dmw_license',
             'dmw_job_orders',
             'letter_of_intent',
             'company_profile',
         ];
+
         foreach ($files as $fileKey) {
-            if ($request->hasFile($fileKey)) {
-                $path = $request->file($fileKey)->store('accreditation_docs', 'public');
-                $docs[$fileKey] = [
-                    'original_name' => $request->file($fileKey)->getClientOriginalName(),
-                    'path' => $path,
-                    'uploaded_at' => now()->toIso8601String(),
-                ];
+            $file = $request->file($fileKey) 
+                ?? $request->file("documents.{$fileKey}") 
+                ?? (is_array($request->file('documents')) ? ($request->file('documents')[$fileKey] ?? null) : null);
+
+            if ($file && $file->isValid()) {
+                try {
+                    $path = $file->store('accreditation_docs', 'public');
+                    $docEntry = [
+                        'original_name' => $file->getClientOriginalName(),
+                        'path' => $path,
+                        'uploaded_at' => now()->toIso8601String(),
+                    ];
+                    $docs[$fileKey] = $docEntry;
+
+                    // Mirror synonyms for test and view compatibility
+                    if ($fileKey === 'sec_dti') {
+                        $docs['sec_dti_registration'] = $docEntry;
+                    } elseif ($fileKey === 'sec_dti_registration') {
+                        $docs['sec_dti'] = $docEntry;
+                    } elseif ($fileKey === 'job_vacancies_form') {
+                        $docs['updated_job_vacancies'] = $docEntry;
+                    } elseif ($fileKey === 'updated_job_vacancies') {
+                        $docs['job_vacancies_form'] = $docEntry;
+                    }
+                } catch (\Throwable $err) {
+                    return redirect()->back()
+                        ->with('error', "Could not store file {$file->getClientOriginalName()}: " . $err->getMessage());
+                }
             }
         }
 
         $existing = DB::table('employer_accreditation')->where('employer_id', $employer->employer_id)->first();
+
+        if (empty($docs) && (!$existing || empty($existing->documents) || $existing->documents === '[]')) {
+            return redirect()->back()
+                ->with('error', 'Please choose at least one document to upload before submitting.');
+        }
+
         if ($existing) {
             $prevDocs = is_array($existing->documents) ? $existing->documents : json_decode($existing->documents ?? '[]', true);
             $mergedDocs = array_merge($prevDocs ?: [], $docs);
@@ -368,6 +492,7 @@ class EmployerPortalController extends Controller
             DB::table('employer_accreditation')->where('employer_id', $employer->employer_id)->update([
                 'documents' => json_encode($mergedDocs),
                 'status' => 'submitted_to_jpo',
+                'document_status' => 'pending', // Re-opened for JPO evaluation
                 'jpo_reviewed' => 0,
                 'supervisor_approved' => 0,
                 'admin_approved' => 0,
@@ -378,10 +503,20 @@ class EmployerPortalController extends Controller
                 'employer_id' => $employer->employer_id,
                 'documents' => json_encode($docs),
                 'status' => 'submitted_to_jpo',
+                'document_status' => 'pending',
                 'jpo_reviewed' => 0,
                 'supervisor_approved' => 0,
                 'admin_approved' => 0,
                 'submitted_at' => now()->toDateString(),
+            ]);
+        }
+
+        // Advance user account_status to pending_review if previously unverified
+        $user = Auth::user();
+        if ($user && $user->account_status === 'unverified') {
+            DB::table('users')->where('user_id', $user->user_id)->update([
+                'account_status' => 'pending_review',
+                'updated_at' => now(),
             ]);
         }
 
@@ -390,64 +525,16 @@ class EmployerPortalController extends Controller
         foreach ($jpos as $jpo) {
             Notification::create([
                 'user_id' => $jpo->user_id,
-                'title' => 'Employer Accreditation Submitted',
-                'message' => "Employer '{$employer->company_name}' submitted accreditation documents for your evaluation.",
+                'title' => 'Employer Accreditation Documents Submitted',
+                'message' => "Employer '{$employer->company_name}' submitted/updated accreditation documents for your evaluation.",
                 'type' => 'manual_review',
                 'is_read' => false,
                 'related_id' => $employer->employer_id,
             ]);
         }
 
-        return redirect()->route('employer.accreditation')->with('success', 'Accreditation papers submitted successfully to the Job Placement Officer (JPO) for evaluation.');
-    }
-
-    public function accreditationDocument(Request $request, int $accreditationId, string $documentKey, string $action)
-    {
-        $accreditation = EmployerAccreditation::with('employer')->findOrFail($accreditationId);
-        $user = $request->user();
-
-        if ($user->role === 'employer') {
-            abort_unless((int) $accreditation->employer?->user_id === (int) $user->user_id, 403);
-        } elseif (!in_array($user->role, ['admin', 'jpo'], true)) {
-            abort(403);
-        }
-
-        $document = $accreditation->documents[$documentKey] ?? null;
-        $path = is_array($document) ? ($document['path'] ?? null) : $document;
-
-        if (!is_string($path) || !str_starts_with($path, 'accreditation_docs/') || str_contains($path, '..')) {
-            abort(404);
-        }
-
-        $disk = Storage::disk('public');
-        if (!$disk->exists($path)) {
-            abort(404);
-        }
-
-        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-        $allowedExtensions = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
-        abort_unless(in_array($extension, $allowedExtensions, true), 404);
-
-        $originalName = is_array($document) ? ($document['original_name'] ?? basename($path)) : basename($path);
-        $downloadName = basename(str_replace('\\', '/', $originalName));
-
-        if ($action === 'preview' && in_array($extension, ['jpg', 'jpeg', 'png'], true)) {
-            $mimeType = match ($extension) {
-                'jpg', 'jpeg' => 'image/jpeg',
-                'png' => 'image/png',
-            };
-
-            return response()->file($disk->path($path), [
-                'Content-Type' => $mimeType,
-                'X-Content-Type-Options' => 'nosniff',
-            ]);
-        }
-
-        abort_unless($action === 'download', 404);
-
-        return response()->download($disk->path($path), $downloadName, [
-            'X-Content-Type-Options' => 'nosniff',
-        ]);
+        return redirect()->route('employer.accreditation')
+            ->with('success', 'Accreditation documents uploaded successfully and forwarded to the Job Placement Officer (JPO) for evaluation.');
     }
 
     // =========================================================================

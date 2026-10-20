@@ -51,8 +51,18 @@
                             <div class="flex items-center justify-between text-xs font-bold">
                                 <span class="text-slate-900">Question {{ is_numeric($idx) ? ($idx + 1) : $idx }}</span>
                                 @if(is_array($ans) && isset($ans['is_correct']))
-                                    <span class="{{ $ans['is_correct'] ? 'text-emerald-700' : 'text-rose-600' }}">
-                                        {{ $ans['is_correct'] ? '✓ Auto-Validated Correct' : '✕ Incorrect' }}
+                                    <span class="{{ $ans['is_correct'] ? 'text-emerald-700' : 'text-rose-600' }} inline-flex items-center gap-1">
+                                        @if($ans['is_correct'])
+                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                            <span>Auto-Validated Correct</span>
+                                        @else
+                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                                            </svg>
+                                            <span>Incorrect</span>
+                                        @endif
                                     </span>
                                 @endif
                             </div>
@@ -92,7 +102,12 @@
                     <div class="space-y-1">
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Qualification Outcome</label>
                         <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-950 flex items-center gap-2">
-                            <span>🎓 Scores &ge; 80% mark as Completed & qualify for Certificate.</span>
+                            <svg class="h-4 w-4 text-emerald-700 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+                                <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
+                            </svg>
+                            <span>Scores &ge; 80% mark as Completed & qualify for Certificate.</span>
                         </div>
                     </div>
                 </div>

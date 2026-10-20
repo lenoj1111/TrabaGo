@@ -39,12 +39,13 @@ class JobPosting extends Model
         'admin_id',
         'title',
         'description',
-        'qualifications',
         'job_type',
         'location',
-        'salary_compensation',
-        'benefits_perks',
+        'salary_range',
+        'benefits',
         'other_instructions',
+        'qualifications',
+        'skills',
         'vacancy_count',
         'valid_until',
         'accepts_disability',
@@ -54,6 +55,42 @@ class JobPosting extends Model
         'created_at',
         'approved_at',
     ];
+
+    /**
+     * Helper accessor to get skills formatted as an array of items for bullet points.
+     */
+    public function getSkillsListAttribute(): array
+    {
+        if (empty($this->skills)) {
+            return [];
+        }
+        $lines = preg_split('/[\r\n]+/', (string)$this->skills);
+        return array_values(array_filter(array_map('trim', $lines)));
+    }
+
+    /**
+     * Helper accessor to get qualifications formatted as an array of items for bullet points.
+     */
+    public function getQualificationsListAttribute(): array
+    {
+        if (empty($this->qualifications)) {
+            return [];
+        }
+        $lines = preg_split('/[\r\n]+/', (string)$this->qualifications);
+        return array_values(array_filter(array_map('trim', $lines)));
+    }
+
+    /**
+     * Helper accessor to get benefits formatted as an array of items for bullet points.
+     */
+    public function getBenefitsListAttribute(): array
+    {
+        if (empty($this->benefits)) {
+            return [];
+        }
+        $lines = preg_split('/[\r\n]+/', (string)$this->benefits);
+        return array_values(array_filter(array_map('trim', $lines)));
+    }
 
     /**
      * Get the attributes that should be cast.

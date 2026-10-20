@@ -191,4 +191,122 @@ class Jobseeker extends Model
     {
         return $this->hasMany(TrainingEnrollment::class, 'jobseeker_id', 'jobseeker_id');
     }
+
+    // =============================================
+    // PROFILE & DOCUMENT COMPLETION / VERIFICATION
+    // =============================================
+
+    /**
+     * Get all uploaded documents in the jobseeker's Document Hub.
+     */
+    public function getDocumentsList(): array
+    {
+        $details = $this->details;
+        if (!$details || empty($details->training_certificates)) {
+            return [];
+        }
+        return is_array($details->training_certificates) 
+            ? $details->training_certificates 
+            : (json_decode($details->training_certificates, true) ?: []);
+    }
+
+    /**
+     * Check if a specific document category exists in the Document Hub.
+     */
+    public function hasDocument(string $category): bool
+    {
+        $canonical = ($category === 'certs') ? 'certificate' : $category;
+        foreach ($this->getDocumentsList() as $doc) {
+            $cat = ($doc['category'] ?? '') === 'certs' ? 'certificate' : ($doc['category'] ?? '');
+            if ($cat === $canonical) {
+                // A rejected document must be re-uploaded and cannot fulfill requirements
+                if (($doc['status'] ?? 'under_review') === 'rejected') {
+                    continue;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Get list of missing profile details and required documents.
+     */
+    public function getMissingRequirements(): array
+    {
+        $missing = [];
+
+        // 1. Core Profile Details
+        if (empty(trim($this->first_name ?? '')) || empty(trim($this->last_name ?? ''))) {
+            $missing['name'] = 'Full Name';
+        }
+        if (empty($this->birth_date)) {
+            $missing['birth_date'] = 'Birth Date';
+        }
+        if (empty(trim($this->sex ?? ''))) {
+            $missing['sex'] = 'Sex / Gender';
+        }
+        if (empty(trim($this->civil_status ?? ''))) {
+            $missing['civil_status'] = 'Civil Status';
+        }
+        if (empty(trim($this->mobile_number ?? ''))) {
+            $missing['mobile_number'] = 'Mobile Number';
+        }
+
+        // Residential Address
+        $details = $this->details;
+        $address = [];
+        if ($details && !empty($details->address)) {
+            $address = is_array($details->address) ? $details->address : (json_decode($details->address, true) ?: []);
+        }
+        $brgy = trim($address['barangay'] ?? ($address['present_barangay'] ?? ($this->current_barangay ?? '')));
+        if (empty($brgy)) {
+            $missing['barangay'] = 'Barangay Address';
+        }
+
+        // Educational Background
+        $education = $details ? $details->education : null;
+        $hasEdu = false;
+        if (!empty($education)) {
+            $eduArr = is_array($education) ? $education : (json_decode($education, true) ?: []);
+            if (is_array($eduArr)) {
+                $hasEdu = !empty($eduArr['school']) || !empty($eduArr['course']) || !empty($eduArr['level']) || count($eduArr) > 0;
+            } else {
+                $hasEdu = !empty(trim((string)$education));
+            }
+        }
+        if (!$hasEdu) {
+            $missing['education'] = 'Educational Background';
+        }
+
+        // Skills Check
+        if ($this->skills()->count() === 0) {
+            $missing['skills'] = 'At least 1 Skill listed';
+        }
+
+        // 2. Required Documents (Document Hub)
+        // All documents are optional except for Government-Issued Valid ID
+        if (!$this->hasDocument('valid_id')) {
+            $missing['valid_id'] = 'Government-Issued Valid ID (Upload in Document Hub)';
+        }
+
+        return $missing;
+    }
+
+    /**
+     * Check if profile and documents are 100% complete.
+     */
+    public function isProfileAndDocumentsComplete(): bool
+    {
+        return empty($this->getMissingRequirements());
+    }
+
+    /**
+     * Check if jobseeker is officially tagged as Verified.
+     * Rule: Can ONLY be tagged as verified if profile/document is completed AND approved!
+     */
+    public function isVerified(): bool
+    {
+        return (bool) ($this->user && $this->user->is_approved && $this->isProfileAndDocumentsComplete());
+    }
 }

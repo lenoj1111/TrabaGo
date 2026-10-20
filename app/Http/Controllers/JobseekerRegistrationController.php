@@ -80,7 +80,10 @@ class JobseekerRegistrationController extends Controller
                 'password' => Hash::make($request->password),
                 'role' => 'jobseeker',
                 'status' => 'active',
-                'is_approved' => 0, // Pending admin approval
+                'is_approved' => 0,
+                'phone_number' => $request->mobile_number ?? null,
+                'is_contact_verified' => 1,
+                'account_status' => 'unverified',
                 'created_at' => now(),
             ]);
 
@@ -199,7 +202,7 @@ class JobseekerRegistrationController extends Controller
 
             // Redirect to success page
             return redirect()->route('jobseeker.register.success')
-                ->with('success', 'Registration successful! Please wait for admin approval.');
+                ->with('success', 'Jobseeker registration successful! You can now log in to set up your profile and explore job openings.');
 
         } catch (\Exception $e) {
             // Rollback transaction on error

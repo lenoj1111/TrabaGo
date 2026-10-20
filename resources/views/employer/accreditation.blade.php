@@ -10,21 +10,39 @@
         activeDocList: [],
         selectedDocKey: '',
         currentDoc: {},
-        openDocInspection(company, docs, accreditationId) {
+        openDocInspection(company, docs, initialKey = null) {
             this.activeDocCompany = company;
             this.activeDocList = [];
             const documentRouteTemplate = '{{ route('accreditation.documents', ['accreditationId' => '__ACCREDITATION_ID__', 'documentKey' => '__DOCUMENT_KEY__', 'action' => '__ACTION__']) }}';
             
             for (let [key, val] of Object.entries(docs || {})) {
+                if (!val) continue;
+
                 let label = 'Attached Document';
-                let icon = '📄';
+                let icon = 'document';
                 let issuer = 'Regulatory Authority';
                 let filename = '';
+                let url = '';
+                let pathVal = '';
 
                 if (typeof val === 'object' && val !== null) {
-                    filename = val.original_name || val.path || '';
+                    filename = val.original_name || (val.path ? val.path.split('/').pop() : '');
+                    pathVal = val.file_url || val.url || val.path || '';
                 } else if (typeof val === 'string') {
                     filename = val.split('/').pop() || val;
+                    pathVal = val;
+                }
+
+                if (pathVal) {
+                    if (pathVal.startsWith('http://') || pathVal.startsWith('https://') || pathVal.startsWith('/storage/')) {
+                        url = pathVal;
+                    } else if (pathVal.startsWith('storage/')) {
+                        url = '/' + pathVal;
+                    } else if (pathVal.startsWith('/')) {
+                        url = pathVal;
+                    } else {
+                        url = '/storage/' + pathVal;
+                    }
                 }
 
                 let validity = 'Current / Valid';
@@ -37,57 +55,57 @@
 
                 if (key.includes('bir') || key.includes('2303') || key.includes('tin')) {
                     label = 'BIR Certificate of Registration (Form 2303)';
-                    icon = '📑';
+                    icon = 'tax';
                     issuer = 'Bureau of Internal Revenue (BIR District 080)';
                     validity = 'Current / Valid';
                 } else if (key.includes('sec') || key.includes('dti')) {
                     label = 'SEC Registration or DTI Registration';
-                    icon = '📜';
+                    icon = 'sec';
                     issuer = 'Securities and Exchange Commission (SEC) / DTI';
                     validity = 'Perpetual / Registered';
                 } else if (key.includes('mayor') || key.includes('permit') || key.includes('business')) {
                     label = 'Mayor’s Business Permit (current year)';
-                    icon = '🏢';
+                    icon = 'permit';
                     issuer = 'City Government of Cebu - BPLO';
                     validity = 'Calendar Year ' + new Date().getFullYear();
                 } else if (key.includes('philjobnet')) {
                     label = 'PhilJobNet Proof of Registration';
-                    icon = '🌐';
+                    icon = 'philjobnet';
                     issuer = 'PhilJobNet / DOLE Bureau of Local Employment';
                     validity = 'Active Registration Certificate';
                 } else if (key.includes('vacanc') || key.includes('job_vacanc')) {
-                    label = 'Updated Job Vacancies (prescribed form)';
-                    icon = '💼';
+                    label = 'Updated Job Vacancies (use prescribed form)';
+                    icon = 'vacancies';
                     issuer = 'Cebu City DMDP Prescribed Template';
                     validity = 'Active Hiring Needs';
                 } else if (key.includes('dole')) {
-                    label = 'DOLE License / DO 174';
-                    icon = '🛡️';
+                    label = 'DOLE License/DO 174';
+                    icon = 'dole';
                     issuer = 'Department of Labor and Employment (DOLE RO-7)';
                     validity = 'Valid License (PRPA / Subcontractor)';
                 } else if (key.includes('dmw_license') || (key.includes('dmw') && !key.includes('order'))) {
                     label = 'DMW License (Overseas Agency)';
-                    icon = '✈️';
+                    icon = 'dmw';
                     issuer = 'Department of Migrant Workers (DMW / POEA)';
                     validity = 'Valid DMW License';
                 } else if (key.includes('order') || key.includes('job_order')) {
                     label = 'DMW Approved and Validated Job Orders';
-                    icon = '📋';
+                    icon = 'orders';
                     issuer = 'Department of Migrant Workers (DMW)';
                     validity = 'Verified Job Orders Period';
                 } else if (key.includes('intent') || key.includes('letter')) {
                     label = 'Letter of Intent (Services & Assistance Details)';
-                    icon = '✉️';
+                    icon = 'intent';
                     issuer = 'Corporate Executive / Authorized Signatory';
                     validity = 'Official Signed Request';
                 } else if (key.includes('profile')) {
                     label = 'Company Overview Profile / Org Chart';
-                    icon = '📁';
+                    icon = 'profile';
                     issuer = 'Corporate Executive Board';
                     validity = 'Current Operations Overview';
                 } else {
                     label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    icon = '📄';
+                    icon = 'document';
                     issuer = 'Government Regulatory Agency';
                     validity = 'On File';
                 }
@@ -107,7 +125,12 @@
             }
 
             if (this.activeDocList.length > 0) {
-                this.selectDocument(this.activeDocList[0]);
+                let targetDoc = this.activeDocList[0];
+                if (initialKey) {
+                    let found = this.activeDocList.find(d => d.key === initialKey);
+                    if (found) targetDoc = found;
+                }
+                this.selectDocument(targetDoc);
                 this.docModalOpen = true;
             }
         },
@@ -133,20 +156,29 @@
                 <span class="text-xs font-bold text-emerald-300 uppercase tracking-wider">Accreditation Status</span>
                 <div class="mt-1">
                     @if($employer->is_accredited || ($accreditation && $accreditation->status === 'admin_approved'))
-                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500 text-white px-3 py-1 text-xs font-black">
-                            ✓ Accredited
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500 text-white px-3 py-1 text-xs font-black">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            <span>Accredited</span>
+                        </span>
+                    @elseif($accreditation && ($accreditation->document_status === 'incomplete' || !empty($accreditation->document_incomplete_reason)))
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-600 text-white px-3 py-1 text-xs font-black">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                            <span>Incomplete Papers</span>
                         </span>
                     @elseif($accreditation && $accreditation->status === 'supervisor_approved')
-                        <span class="inline-flex items-center gap-1 rounded-full bg-teal-500/80 text-white px-3 py-1 text-xs font-bold">
-                            🏛️ With Admin
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/80 text-white px-3 py-1 text-xs font-bold">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>
+                            <span>With Admin</span>
                         </span>
                     @elseif($accreditation && $accreditation->status === 'jpo_approved')
-                        <span class="inline-flex items-center gap-1 rounded-full bg-blue-500/80 text-white px-3 py-1 text-xs font-bold">
-                            📋 With Supervisor
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-500/80 text-white px-3 py-1 text-xs font-bold">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                            <span>With Supervisor</span>
                         </span>
                     @elseif($accreditation && $accreditation->status === 'submitted_to_jpo')
-                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-500/80 text-white px-3 py-1 text-xs font-bold">
-                            ⏳ Under JPO Review
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/80 text-white px-3 py-1 text-xs font-bold">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>Under JPO Review</span>
                         </span>
                     @else
                         <span class="inline-flex items-center gap-1 rounded-full bg-slate-500/60 text-white px-3 py-1 text-xs font-bold">
@@ -167,18 +199,68 @@
             </div>
         </div>
 
-        <!-- 3-Stage Progress Pipeline (Figure 9, 8, 11, 10) -->
+        <!-- Incomplete Documents Alert Notice (Requirement 3) -->
+        @if($accreditation && ($accreditation->document_status === 'incomplete' || !empty($accreditation->document_incomplete_reason)))
+            <div class="rounded-3xl border-2 border-rose-300 bg-rose-50/90 p-6 sm:p-8 text-rose-950 shadow-md space-y-3">
+                <div class="flex items-start gap-4">
+                    <div class="h-12 w-12 rounded-2xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <div class="space-y-2 flex-1">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-black bg-rose-600 text-white uppercase tracking-wider">
+                                Documents Marked Incomplete by JPO
+                            </span>
+                            <span class="text-xs text-rose-700 font-bold">Action Required: Re-upload deficient credentials below</span>
+                        </div>
+                        <h3 class="text-lg font-black text-rose-950">Evaluation Findings & Reason:</h3>
+                        <div class="p-4 rounded-2xl bg-white border border-rose-200 text-rose-900 text-sm font-semibold shadow-2xs leading-relaxed">
+                            {{ $accreditation->document_incomplete_reason ?: 'Some attached documents are missing, unreadable, or expired. Please upload updated credentials below.' }}
+                        </div>
+                        <p class="text-xs text-rose-800">
+                            Please use the upload section below to attach the requested or missing documents. Once submitted, your papers will automatically return to the Job Placement Officer (JPO) queue for immediate re-evaluation.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- Session Status Notifications -->
+        @if(session('success'))
+            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-xs">
+                <svg class="w-4 h-4 text-emerald-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>{{ session('success') }}</span>
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2 shadow-xs">
+                <svg class="w-4 h-4 text-rose-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                <span>{{ session('error') }}</span>
+            </div>
+        @endif
+        @if($errors->any())
+            <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold space-y-1 shadow-xs">
+                <span class="block font-black">Upload Failed - Please address the following issues:</span>
+                <ul class="list-disc list-inside font-medium space-y-0.5">
+                    @foreach($errors->all() as $err)
+                        <li>{{ $err }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <!-- 3-Stage Progress Pipeline -->
         <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-4">
-            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Accreditation Routing Stages (Figure 9 &rarr; 8 &rarr; 11 &rarr; 10)</h2>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Accreditation Routing Stages (Employer &rarr; JPO &rarr; Admin)</h2>
             
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                 <!-- Step 1: Employer Submission -->
                 <div class="p-4 rounded-2xl border {{ $accreditation ? 'bg-emerald-50 border-emerald-300 text-emerald-950' : 'bg-slate-50 border-slate-200 text-slate-600' }}">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-black">1. Employer</span>
-                        <span class="text-lg">🏢</span>
+                        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                     </div>
-                    <p class="text-xs font-bold mt-1">Pass Papers to JPO</p>
+                    <p class="text-xs font-bold mt-1">Submit Legal Documents</p>
                     <span class="text-[11px] block mt-0.5 {{ $accreditation ? 'text-emerald-700 font-semibold' : 'text-slate-400' }}">
                         {{ $accreditation ? 'Submitted' : 'Pending Upload' }}
                     </span>
@@ -187,36 +269,24 @@
                 <!-- Step 2: JPO Evaluation -->
                 <div class="p-4 rounded-2xl border {{ ($accreditation && in_array($accreditation->status, ['jpo_approved', 'supervisor_approved', 'admin_approved'])) ? 'bg-emerald-50 border-emerald-300 text-emerald-950' : (($accreditation && $accreditation->status === 'submitted_to_jpo') ? 'bg-amber-50 border-amber-300 text-amber-950' : 'bg-slate-50 border-slate-200 text-slate-400') }}">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-black">2. JPO</span>
-                        <span class="text-lg">📋</span>
+                        <span class="text-xs font-black">2. JPO Evaluation</span>
+                        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                     </div>
-                    <p class="text-xs font-bold mt-1">Evaluate & Forward</p>
+                    <p class="text-xs font-bold mt-1">Verify & Recommend</p>
                     <span class="text-[11px] block mt-0.5 {{ ($accreditation && in_array($accreditation->status, ['jpo_approved', 'supervisor_approved', 'admin_approved'])) ? 'text-emerald-700 font-semibold' : 'text-slate-400' }}">
-                        {{ ($accreditation && in_array($accreditation->status, ['jpo_approved', 'supervisor_approved', 'admin_approved'])) ? 'Recommended' : 'Pending JPO' }}
+                        {{ ($accreditation && in_array($accreditation->status, ['jpo_approved', 'supervisor_approved', 'admin_approved'])) ? 'Recommended to Admin' : 'Pending JPO' }}
                     </span>
                 </div>
 
-                <!-- Step 3: PESD Supervisor Endorsement -->
-                <div class="p-4 rounded-2xl border {{ ($accreditation && in_array($accreditation->status, ['supervisor_approved', 'admin_approved'])) ? 'bg-emerald-50 border-emerald-300 text-emerald-950' : (($accreditation && $accreditation->status === 'jpo_approved') ? 'bg-amber-50 border-amber-300 text-amber-950' : 'bg-slate-50 border-slate-200 text-slate-400') }}">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-black">3. Supervisor</span>
-                        <span class="text-lg">🏛️</span>
-                    </div>
-                    <p class="text-xs font-bold mt-1">PESD Endorsement</p>
-                    <span class="text-[11px] block mt-0.5 {{ ($accreditation && in_array($accreditation->status, ['supervisor_approved', 'admin_approved'])) ? 'text-emerald-700 font-semibold' : 'text-slate-400' }}">
-                        {{ ($accreditation && in_array($accreditation->status, ['supervisor_approved', 'admin_approved'])) ? 'Endorsed' : 'Pending Supervisor' }}
-                    </span>
-                </div>
-
-                <!-- Step 4: Admin Final Authorization -->
+                <!-- Step 3: Admin Final Authorization -->
                 <div class="p-4 rounded-2xl border {{ ($employer->is_accredited || ($accreditation && $accreditation->status === 'admin_approved')) ? 'bg-emerald-600 border-emerald-600 text-white shadow-md' : 'bg-slate-50 border-slate-200 text-slate-400' }}">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-black">4. Admin</span>
-                        <span class="text-lg">👑</span>
+                        <span class="text-xs font-black">3. City Administrator</span>
+                        <svg class="w-5 h-5 {{ ($employer->is_accredited || ($accreditation && $accreditation->status === 'admin_approved')) ? 'text-emerald-200' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                     </div>
                     <p class="text-xs font-bold mt-1">Official Accreditation</p>
                     <span class="text-[11px] block mt-0.5 {{ ($employer->is_accredited || ($accreditation && $accreditation->status === 'admin_approved')) ? 'text-emerald-100 font-bold' : 'text-slate-400' }}">
-                        {{ ($employer->is_accredited || ($accreditation && $accreditation->status === 'admin_approved')) ? 'Authorized' : 'Pending Final' }}
+                        {{ ($employer->is_accredited || ($accreditation && $accreditation->status === 'admin_approved')) ? 'Officially Accredited' : 'Pending Authorization' }}
                     </span>
                 </div>
             </div>
@@ -226,17 +296,17 @@
             $uploadedDocs = $accreditation ? (is_array($accreditation->documents) ? $accreditation->documents : json_decode($accreditation->documents ?? '[]', true)) : [];
             
             $officialDocMeta = [
-                'bir_2303' => ['title' => 'BIR Certificate of Registration (Form 2303)', 'category' => 'Core Mandatory', 'validity' => 'Current / Valid', 'icon' => '📑', 'issuer' => 'Bureau of Internal Revenue (BIR District 080)'],
-                'sec_dti' => ['title' => 'SEC Registration or DTI Registration', 'category' => 'Core Mandatory', 'validity' => 'Perpetual / Registered', 'icon' => '📜', 'issuer' => 'Securities and Exchange Commission (SEC) / DTI'],
-                'mayors_permit' => ['title' => 'Mayor’s Business Permit (current year)', 'category' => 'Core Mandatory', 'validity' => 'Calendar Year ' . date('Y'), 'icon' => '🏢', 'issuer' => 'City Government of Cebu - BPLO'],
-                'business_permit' => ['title' => 'Mayor’s Business Permit (current year)', 'category' => 'Core Mandatory', 'validity' => 'Calendar Year ' . date('Y'), 'icon' => '🏢', 'issuer' => 'City Government of Cebu - BPLO'],
-                'philjobnet_proof' => ['title' => 'PhilJobNet Proof of Registration', 'category' => 'Core Mandatory', 'validity' => 'Active Registration Certificate', 'icon' => '🌐', 'issuer' => 'PhilJobNet / DOLE Bureau of Local Employment'],
-                'job_vacancies_form' => ['title' => 'Updated Job Vacancies (prescribed form)', 'category' => 'Core Mandatory', 'validity' => 'Active Hiring Needs / Attached in Section B', 'icon' => '💼', 'issuer' => 'Cebu City DMDP Prescribed Template'],
-                'letter_of_intent' => ['title' => 'Letter of Intent (Services & Assistance Details)', 'category' => 'Core Mandatory', 'validity' => 'Official Request on Letterhead', 'icon' => '✉️', 'issuer' => 'Corporate Executive / Authorized Signatory'],
-                'dole_license' => ['title' => 'DOLE License / DO 174', 'category' => 'When Applicable', 'validity' => 'Valid License Period', 'icon' => '🛡️', 'issuer' => 'Department of Labor and Employment (DOLE RO-7)'],
-                'dmw_license' => ['title' => 'DMW License', 'category' => 'When Applicable', 'validity' => 'Valid DMW / POEA License', 'icon' => '✈️', 'issuer' => 'Department of Migrant Workers (Overseas Agency)'],
-                'dmw_job_orders' => ['title' => 'DMW Approved and Validated Job Orders', 'category' => 'When Applicable', 'validity' => 'Verified Job Orders Period', 'icon' => '📋', 'issuer' => 'Department of Migrant Workers (DMW)'],
-                'company_profile' => ['title' => 'Company Overview Profile / Org Chart', 'category' => 'Supplemental', 'validity' => 'Current Operations Overview', 'icon' => '📁', 'issuer' => 'Corporate Executive Board'],
+                'bir_2303' => ['title' => 'BIR Certificate of Registration (Form 2303)', 'category' => 'Core Mandatory', 'validity' => 'Current / Valid', 'icon' => 'tax', 'issuer' => 'Bureau of Internal Revenue (BIR District 080)'],
+                'sec_dti' => ['title' => 'SEC Registration or DTI Registration', 'category' => 'Core Mandatory', 'validity' => 'Perpetual / Registered', 'icon' => 'sec', 'issuer' => 'Securities and Exchange Commission (SEC) / DTI'],
+                'mayors_permit' => ['title' => 'Mayor’s Business Permit (current year)', 'category' => 'Core Mandatory', 'validity' => 'Calendar Year ' . date('Y'), 'icon' => 'permit', 'issuer' => 'City Government of Cebu - BPLO'],
+                'business_permit' => ['title' => 'Mayor’s Business Permit (current year)', 'category' => 'Core Mandatory', 'validity' => 'Calendar Year ' . date('Y'), 'icon' => 'permit', 'issuer' => 'City Government of Cebu - BPLO'],
+                'philjobnet_proof' => ['title' => 'PhilJobNet Proof of Registration', 'category' => 'Core Mandatory', 'validity' => 'Active Registration Certificate', 'icon' => 'philjobnet', 'issuer' => 'PhilJobNet / DOLE Bureau of Local Employment'],
+                'job_vacancies_form' => ['title' => 'Updated Job Vacancies (use prescribed form)', 'category' => 'Core Mandatory', 'validity' => 'Active Hiring Needs / Attached in Section B', 'icon' => 'vacancies', 'issuer' => 'Cebu City DMDP Prescribed Template'],
+                'letter_of_intent' => ['title' => 'Letter of Intent', 'category' => 'Core Mandatory', 'validity' => 'Official Request on Letterhead', 'icon' => 'intent', 'issuer' => 'Corporate Executive / Authorized Signatory'],
+                'dole_license' => ['title' => 'DOLE License/DO 174', 'category' => 'When Applicable', 'validity' => 'Valid License Period', 'icon' => 'dole', 'issuer' => 'Department of Labor and Employment (DOLE RO-7)'],
+                'dmw_license' => ['title' => 'DMW License', 'category' => 'When Applicable', 'validity' => 'Valid DMW / POEA License', 'icon' => 'dmw', 'issuer' => 'Department of Migrant Workers (Overseas Agency)'],
+                'dmw_job_orders' => ['title' => 'DMW Approved and Validated Job Orders', 'category' => 'When Applicable', 'validity' => 'Verified Job Orders Period', 'icon' => 'orders', 'issuer' => 'Department of Migrant Workers (DMW)'],
+                'company_profile' => ['title' => 'Company Overview Profile / Org Chart', 'category' => 'Supplemental', 'validity' => 'Current Operations Overview', 'icon' => 'profile', 'issuer' => 'Corporate Executive Board'],
             ];
         @endphp
 
@@ -252,13 +322,15 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <a href="{{ route('employer.accreditation.print') }}" target="_blank"
                            class="px-3.5 py-2 rounded-xl bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-800 text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5">
-                            <span>📑</span> Official Form (PDF)
-                            <span class="text-[9px] text-emerald-600">↗</span>
+                            <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span>Official Form (PDF)</span>
+                            <svg class="w-2.5 h-2.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                         </a>
                         <button type="button" 
                                 @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($uploadedDocs), {{ $accreditation->accreditation_id }})'
                                 class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 self-start sm:self-auto">
-                            <span>👁️</span> Inspect Document Hub ({{ count($uploadedDocs) }} Files)
+                            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            <span>Inspect Document Hub ({{ count($uploadedDocs) }} Files)</span>
                         </button>
                     </div>
                 </div>
@@ -270,16 +342,19 @@
                                 'title' => ucfirst(str_replace('_', ' ', $key)),
                                 'category' => 'Uploaded Document',
                                 'validity' => 'Submitted on file',
-                                'icon' => '📄',
+                                'icon' => 'document',
                                 'issuer' => 'Authorized Entity'
                             ];
                         @endphp
                         <div class="p-4 rounded-2xl bg-white border border-emerald-100 shadow-2xs space-y-3 flex flex-col justify-between hover:border-emerald-300 transition-colors">
                             <div class="space-y-1.5">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-2xl">{{ $meta['icon'] }}</span>
-                                    <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                                        ✓ Uploaded
+                                    <div class="h-9 w-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    </div>
+                                    <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                        <span>Uploaded</span>
                                     </span>
                                 </div>
                                 <div>
@@ -288,13 +363,13 @@
                                         {{ $meta['title'] }}
                                     </h4>
                                     <p class="text-[10px] text-emerald-700 font-semibold mt-0.5 flex items-center gap-1">
-                                        <span>⏱️</span>
+                                        <svg class="w-3 h-3 text-emerald-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         <span>{{ $meta['validity'] }}</span>
                                     </p>
                                 </div>
                             </div>
                             <button type="button" 
-                                    @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($uploadedDocs), {{ $accreditation->accreditation_id }})'
+                                    @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($uploadedDocs), "{{ $key }}")'
                                     class="w-full py-2 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-900 text-slate-700 text-[11px] font-bold border border-slate-200 transition-colors text-center">
                                 Preview / Inspect &rarr;
                             </button>
@@ -305,7 +380,7 @@
         @endif
 
         <!-- Official Documentary Requirements & Validity Period Guidelines -->
-        <div class="rounded-3xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-900 p-6 sm:p-8 text-white shadow-xl space-y-5">
+        <div class="rounded-3xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-950 via-emerald-950 to-slate-900 p-6 sm:p-8 text-white shadow-xl space-y-5">
             <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-white/10 pb-5">
                 <div class="space-y-1">
                     <div class="flex items-center gap-2">
@@ -321,7 +396,8 @@
                 </div>
                 <a href="{{ route('employer.accreditation.print') }}" target="_blank"
                    class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 text-xs font-black shadow-lg transition-all hover:scale-105 shrink-0">
-                    <span>🖨️ Official Pre-filled Form (2 Pages)</span>
+                    <svg class="w-4 h-4 text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    <span>Official Pre-filled Form</span>
                 </a>
             </div>
 
@@ -335,7 +411,7 @@
                     <!-- 1. BIR 2303 -->
                     <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1">
                         <div class="flex items-center justify-between">
-                            <span class="font-bold text-white flex items-center gap-1.5"><span>📑</span> BIR Certificate (Form 2303)</span>
+                            <span class="font-bold text-white flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><span>BIR Certificate (Form 2303)</span></span>
                             <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Mandatory</span>
                         </div>
                         <p class="text-[11px] text-slate-300">Bureau of Internal Revenue Certificate of Registration.</p>
@@ -345,7 +421,7 @@
                     <!-- 2. SEC / DTI -->
                     <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1">
                         <div class="flex items-center justify-between">
-                            <span class="font-bold text-white flex items-center gap-1.5"><span>📜</span> SEC or DTI Registration</span>
+                            <span class="font-bold text-white flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><span>SEC or DTI Registration</span></span>
                             <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Mandatory</span>
                         </div>
                         <p class="text-[11px] text-slate-300">Certificate of Incorporation or Business Name Registration.</p>
@@ -355,7 +431,7 @@
                     <!-- 3. Mayor's Permit -->
                     <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1">
                         <div class="flex items-center justify-between">
-                            <span class="font-bold text-white flex items-center gap-1.5"><span>🏢</span> Mayor’s Business Permit</span>
+                            <span class="font-bold text-white flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg><span>Mayor’s Business Permit</span></span>
                             <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Mandatory</span>
                         </div>
                         <p class="text-[11px] text-slate-300">Current year business license from Cebu City Hall.</p>
@@ -365,7 +441,7 @@
                     <!-- 4. PhilJobNet -->
                     <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1">
                         <div class="flex items-center justify-between">
-                            <span class="font-bold text-white flex items-center gap-1.5"><span>🌐</span> PhilJobNet Proof of Registration</span>
+                            <span class="font-bold text-white flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg><span>PhilJobNet Proof of Registration</span></span>
                             <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Mandatory</span>
                         </div>
                         <p class="text-[11px] text-slate-300">Active national employment database account / certification.</p>
@@ -375,7 +451,7 @@
                     <!-- 5. Updated Job Vacancies -->
                     <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1">
                         <div class="flex items-center justify-between">
-                            <span class="font-bold text-white flex items-center gap-1.5"><span>💼</span> Updated Job Vacancies</span>
+                            <span class="font-bold text-white flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg><span>Updated Job Vacancies</span></span>
                             <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Mandatory</span>
                         </div>
                         <p class="text-[11px] text-slate-300">Prescribed qualification and vacancy declaration form.</p>
@@ -385,7 +461,7 @@
                     <!-- 6. Letter of Intent -->
                     <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1">
                         <div class="flex items-center justify-between">
-                            <span class="font-bold text-white flex items-center gap-1.5"><span>✉️</span> Letter of Intent</span>
+                            <span class="font-bold text-white flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg><span>Letter of Intent</span></span>
                             <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Mandatory</span>
                         </div>
                         <p class="text-[11px] text-slate-300">For specific services and assistance needed with details.</p>
@@ -395,7 +471,7 @@
                     <!-- 7. DOLE License / DO 174 -->
                     <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1">
                         <div class="flex items-center justify-between">
-                            <span class="font-bold text-white flex items-center gap-1.5"><span>🛡️</span> DOLE License / DO 174</span>
+                            <span class="font-bold text-white flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg><span>DOLE License / DO 174</span></span>
                             <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">When Applicable</span>
                         </div>
                         <p class="text-[11px] text-slate-300">For Licensed Private Recruitment & Placement Agencies (PRPA) / Subcontractors.</p>
@@ -405,7 +481,7 @@
                     <!-- 8. DMW License -->
                     <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1">
                         <div class="flex items-center justify-between">
-                            <span class="font-bold text-white flex items-center gap-1.5"><span>✈️</span> DMW License</span>
+                            <span class="font-bold text-white flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg><span>DMW License</span></span>
                             <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">When Applicable</span>
                         </div>
                         <p class="text-[11px] text-slate-300">For Overseas Recruitment & Placement Agencies.</p>
@@ -415,7 +491,7 @@
                     <!-- 9. DMW Approved Job Orders -->
                     <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1">
                         <div class="flex items-center justify-between">
-                            <span class="font-bold text-white flex items-center gap-1.5"><span>📋</span> DMW Job Orders</span>
+                            <span class="font-bold text-white flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span>DMW Job Orders</span></span>
                             <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">When Applicable</span>
                         </div>
                         <p class="text-[11px] text-slate-300">DMW Approved and Validated Job Orders for overseas deployment.</p>

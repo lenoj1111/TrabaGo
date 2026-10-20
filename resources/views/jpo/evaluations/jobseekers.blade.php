@@ -15,7 +15,7 @@
         this.referModal = true;
     }
 }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-7xl space-y-8">
+    <div class="w-full max-w-[1680px] mx-auto space-y-8">
         
         <!-- Header -->
         <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
@@ -55,7 +55,7 @@
                         <!-- Top Header -->
                         <div class="flex items-start justify-between gap-2">
                             <div class="flex items-center gap-3">
-                                <div class="h-11 w-11 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white text-base font-black shrink-0 shadow-sm">
+                                <div class="h-11 w-11 rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white text-base font-black shrink-0 shadow-sm">
                                     {{ strtoupper(substr($jobseeker->first_name ?? 'J', 0, 1)) }}
                                 </div>
                                 <div>
@@ -63,11 +63,29 @@
                                         {{ $jobseeker->first_name }} {{ $jobseeker->last_name }}
                                     </h3>
                                     <p class="text-[11px] text-slate-400">{{ $jobseeker->email }}</p>
+                                     <div class="flex items-center gap-1.5 mt-1">
+                                        @if($jobseeker->isVerified())
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                                <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                                <span>Verified Candidate</span>
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full" title="Incomplete Profile or Documents">
+                                                <svg class="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                                <span>Incomplete Profile/Docs</span>
+                                            </span>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
 
-                            <span class="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase {{ $isReferred ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300' }}">
-                                {{ $isReferred ? '✓ Referred' : 'Pending JPO' }}
+                            <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase {{ $isReferred ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300' }}">
+                                @if($isReferred)
+                                    <svg class="w-3 h-3 text-emerald-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                    <span>Referred</span>
+                                @else
+                                    <span>Pending JPO</span>
+                                @endif
                             </span>
                         </div>
 
@@ -102,28 +120,40 @@
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Applicant Documents:</span>
                             @if(count($uploadedDocs) > 0)
                                 <div class="flex flex-wrap gap-1.5">
-                                    @foreach($uploadedDocs as $doc)
+                                    @foreach($uploadedDocs as $docIndex => $doc)
                                         @php
                                             $cat = $doc['category'] ?? 'document';
-                                            $icon = match($cat) {
-                                                'resume' => '📄',
-                                                'valid_id' => '🪪',
-                                                'certificate', 'certs' => '🎖️',
-                                                'pwd_id' => '♿',
-                                                default => '📎'
-                                            };
                                             $label = ucfirst(str_replace('_', ' ', $cat));
-                                            $url = $doc['file_url'] ?? null;
+                                            $hasFile = !empty($doc['file_url']) || !empty($doc['file_path']) || !empty($doc['path']) || !empty($doc['url']);
+                                            $dStatus = $doc['status'] ?? 'under_review';
+                                            $statusDot = match($dStatus) {
+                                                'approved', 'verified' => 'bg-emerald-500',
+                                                'rejected' => 'bg-rose-500',
+                                                default => 'bg-amber-500'
+                                            };
                                         @endphp
-                                        @if($url)
-                                            <a href="{{ $url }}" target="_blank" class="inline-flex items-center gap-1 rounded-xl bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 border border-slate-200/80 px-2.5 py-1 text-[11px] font-bold text-slate-700 transition-colors shadow-2xs" title="Click to view/download {{ $doc['name'] ?? $label }}">
-                                                <span>{{ $icon }}</span>
+                                        @if($hasFile)
+                                            <a href="{{ route('jpo.evaluations.jobseekers.documents.show', [$app->application_id, $docIndex]) }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 border border-slate-200/80 px-2.5 py-1 text-[11px] font-bold text-slate-700 transition-colors shadow-2xs" title="Click to view/download {{ $doc['name'] ?? $label }} ({{ ucfirst(str_replace('_', ' ', $dStatus)) }})">
+                                                <span class="h-1.5 w-1.5 rounded-full {{ $statusDot }}"></span>
+                                                @if($cat === 'resume')
+                                                    <svg class="w-3.5 h-3.5 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                @elseif($cat === 'valid_id')
+                                                    <svg class="w-3.5 h-3.5 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg>
+                                                @elseif(in_array($cat, ['certificate', 'certs']))
+                                                    <svg class="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+                                                @elseif($cat === 'pwd_id')
+                                                    <svg class="w-3.5 h-3.5 text-purple-600 shrink-0" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="4" r="2"/><path d="M15.5 13.5A4.5 4.5 0 0 1 11 18a4.5 4.5 0 0 1-4.5-4.5A4.5 4.5 0 0 1 11 9c.4 0 .78.06 1.14.16L13.5 6.5C12.7 6.18 11.87 6 11 6a7.5 7.5 0 0 0-7.5 7.5A7.5 7.5 0 0 0 11 21a7.5 7.5 0 0 0 7.42-6.5h-2.92z"/><path d="M19 10h-4.5l-1.3-2.6A2 2 0 0 0 11.4 6.2L8.5 7.6 9.4 9.4l2.1-1 2 4.1V17h2v-4.5l1.6-1.6H19v-2z"/></svg>
+                                                @else
+                                                    <svg class="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                                                @endif
                                                 <span>{{ $label }}</span>
-                                                <span class="text-[9px] text-slate-400">↗</span>
+                                                <svg class="w-2.5 h-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                                             </a>
                                         @else
-                                            <span class="inline-flex items-center gap-1 rounded-xl bg-slate-100 border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                                                <span>{{ $icon }}</span> {{ $label }}
+                                            <span class="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                                <span class="h-1.5 w-1.5 rounded-full {{ $statusDot }}"></span>
+                                                <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                                                <span>{{ $label }}</span>
                                             </span>
                                         @endif
                                     @endforeach
@@ -136,8 +166,9 @@
                         <!-- Social Status Indicators -->
                         <div class="flex flex-wrap gap-1 text-[10px]">
                             @if($jobseeker->socialStatus && $jobseeker->socialStatus->is_pwd)
-                                <span class="rounded-md bg-purple-50 text-purple-700 px-2 py-0.5 font-bold border border-purple-200">
-                                    ♿ {{ $jobseeker->socialStatus->pwd_type ?: 'PWD' }}
+                                <span class="inline-flex items-center gap-1 rounded-md bg-purple-50 text-purple-700 px-2 py-0.5 font-bold border border-purple-200">
+                                    <svg class="w-3 h-3 text-purple-700 shrink-0" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="4" r="2"/><path d="M15.5 13.5A4.5 4.5 0 0 1 11 18a4.5 4.5 0 0 1-4.5-4.5A4.5 4.5 0 0 1 11 9c.4 0 .78.06 1.14.16L13.5 6.5C12.7 6.18 11.87 6 11 6a7.5 7.5 0 0 0-7.5 7.5A7.5 7.5 0 0 0 11 21a7.5 7.5 0 0 0 7.42-6.5h-2.92z"/><path d="M19 10h-4.5l-1.3-2.6A2 2 0 0 0 11.4 6.2L8.5 7.6 9.4 9.4l2.1-1 2 4.1V17h2v-4.5l1.6-1.6H19v-2z"/></svg>
+                                    <span>{{ $jobseeker->socialStatus->pwd_type ?: 'PWD' }}</span>
                                 </span>
                             @endif
                             @if($jobseeker->socialStatus && $jobseeker->socialStatus->is_4ps)
@@ -159,10 +190,11 @@
                     <div class="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
                         <a href="{{ route('jpo.evaluations.jobseekers.nsrp', $app->application_id) }}" 
                            target="_blank"
-                           class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors flex items-center gap-1"
+                           class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors flex items-center gap-1.5"
                            title="Inspect official DOLE NSRP Form 1.REV 3 for this candidate">
-                            <span>📑 NSRP Form 1</span>
-                            <span class="text-[9px] text-slate-400">↗</span>
+                            <svg class="w-3.5 h-3.5 text-slate-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span>NSRP Form 1</span>
+                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                         </a>
 
                         @if(!$isReferred)
@@ -173,7 +205,8 @@
                             </button>
                         @else
                             <span class="text-xs font-bold text-emerald-700 flex items-center gap-1">
-                                ✓ Endorsed
+                                <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                <span>Endorsed</span>
                             </span>
                         @endif
                     </div>
@@ -212,8 +245,9 @@
                     <div class="flex items-center justify-between">
                         <p class="text-emerald-800">Target Role: <span x-text="selectedJob" class="font-semibold"></span></p>
                         <a :href="'/jpo/evaluations/jobseekers/' + selectedAppId + '/nsrp'" target="_blank" class="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1">
-                            <span>📑 Inspect NSRP Form 1</span>
-                            <span>↗</span>
+                            <svg class="w-3.5 h-3.5 text-emerald-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span>Inspect NSRP Form 1</span>
+                            <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                         </a>
                     </div>
                 </div>
@@ -222,9 +256,9 @@
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Evaluation Decision *</label>
                     <select name="recommendation" required
                             class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none">
-                        <option value="refer">✓ Officially Refer & Endorse to Employer</option>
-                        <option value="training">📚 Recommend Upskilling / Training Course</option>
-                        <option value="reject">✕ Mark as Not Qualified for this Role</option>
+                        <option value="refer">Officially Refer & Endorse to Employer</option>
+                        <option value="training">Recommend Upskilling / Training Course</option>
+                        <option value="reject">Mark as Not Qualified for this Role</option>
                     </select>
                 </div>
 

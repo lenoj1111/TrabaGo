@@ -7,7 +7,7 @@
     class="bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8"
     x-data="employersRegistry({
         csrfToken: '{{ csrf_token() }}',
-        documentRouteTemplate: '{{ route('accreditation.documents', ['accreditationId' => '__ACCREDITATION_ID__', 'documentKey' => '__DOCUMENT_KEY__', 'action' => '__ACTION__']) }}'
+        documentRouteTemplate: '{{ route('admin.accreditation.documents', ['accreditationId' => '__ACCREDITATION_ID__', 'documentKey' => '__DOCUMENT_KEY__', 'action' => '__ACTION__']) }}'
     })"
 >
     <div class="w-full space-y-8">
@@ -549,7 +549,8 @@ function employersRegistry(config) {
                     isImage: meta.isImage,
                     previewUrl: meta.isImage ? fileRoute.replace('__ACTION__', 'preview') : '',
                     downloadUrl: fileRoute.replace('__ACTION__', 'download'),
-                    status: 'Verified Valid'
+                    status: 'Verified Valid',
+                    url: meta.isImage ? fileRoute.replace('__ACTION__', 'preview') : fileRoute.replace('__ACTION__', 'download')
                 });
             });
 

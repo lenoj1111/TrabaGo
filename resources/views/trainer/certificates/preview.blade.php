@@ -26,11 +26,14 @@
 
     <!-- Top Action Bar -->
     <div class="no-print w-full max-w-4xl mb-6 flex items-center justify-between">
-        <a href="{{ route('trainer.enrollments.index') }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200">
+        <a href="{{ $backUrl ?? route('trainer.enrollments.index') }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200">
             &larr; Back to Enrollments
         </a>
         <button onclick="window.print()" class="inline-flex items-center gap-2 text-xs font-black text-white bg-emerald-600 hover:bg-emerald-500 px-6 py-2 rounded-xl shadow-lg shadow-emerald-600/30">
-            🖨️ Print / Download PDF
+            <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+            </svg>
+            <span>Print / Download PDF</span>
         </button>
     </div>
 
@@ -39,12 +42,14 @@
         
         <!-- Watermark / Background Accent -->
         <div class="absolute -right-20 -bottom-20 w-96 h-96 rounded-full bg-emerald-50/50 pointer-events-none -z-0"></div>
-        <div class="absolute -left-20 -top-20 w-96 h-96 rounded-full bg-teal-50/50 pointer-events-none -z-0"></div>
+        <div class="absolute -left-20 -top-20 w-96 h-96 rounded-full bg-emerald-50/50 pointer-events-none -z-0"></div>
 
         <!-- Header Seals & Logo -->
         <div class="relative z-10 flex items-center justify-center gap-6">
-            <div class="h-16 w-16 rounded-full bg-gradient-to-tr from-emerald-800 to-teal-600 flex items-center justify-center text-white text-2xl font-black shadow-md">
-                🏛️
+            <div class="h-16 w-16 rounded-full bg-gradient-to-tr from-emerald-800 to-emerald-600 flex items-center justify-center text-white shadow-md">
+                <svg class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
             </div>
             <div>
                 <h3 class="text-xs font-extrabold uppercase tracking-widest text-emerald-800">Republic of the Philippines &bull; City of Cebu</h3>
@@ -92,8 +97,10 @@
 
             <!-- Center: Gold Seal -->
             <div class="flex flex-col items-center justify-center">
-                <div class="h-20 w-20 rounded-full border-4 border-amber-400 bg-amber-50 flex items-center justify-center text-amber-600 text-3xl shadow-inner font-black">
-                    ⭐
+                <div class="h-20 w-20 rounded-full border-4 border-amber-400 bg-amber-50 flex items-center justify-center text-amber-600 shadow-inner">
+                    <svg class="h-10 w-10 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
                 </div>
                 <span class="text-[10px] font-bold uppercase tracking-widest text-amber-700 mt-1">Verified Competency</span>
             </div>

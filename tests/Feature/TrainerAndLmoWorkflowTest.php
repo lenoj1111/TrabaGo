@@ -240,11 +240,10 @@ class TrainerAndLmoWorkflowTest extends TestCase
 
     public function test_lmo_market_insights_analytics(): void
     {
-        // Legacy /lmo/analytics redirects to /admin/analytics
+        // Legacy /lmo/analytics and /admin/analytics redirect to dashboard
         $redirectResponse = $this->actingAs($this->lmoUser)->get('/lmo/analytics');
-        $redirectResponse->assertRedirect('/admin/analytics');
+        $redirectResponse->assertRedirect('/admin/dashboard');
 
-        // Admin handles Labor Market Analytics & Insights
         $adminUser = User::create([
             'email' => 'admin_analytics@trabago.gov.ph',
             'password' => Hash::make('password'),
@@ -253,8 +252,6 @@ class TrainerAndLmoWorkflowTest extends TestCase
             'is_approved' => 1,
         ]);
         $response = $this->actingAs($adminUser)->get('/admin/analytics');
-        $response->assertOk();
-        $response->assertSee('Labor Market Intelligence');
-        $response->assertSee('Top Verified Skills');
+        $response->assertRedirect('/admin/dashboard');
     }
 }

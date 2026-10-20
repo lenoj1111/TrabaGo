@@ -54,6 +54,24 @@
                         @enderror
                     </div>
 
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-700">Employment Type</label>
+                        <input type="text" name="job_type" value="{{ old('job_type') }}" maxlength="100" placeholder="e.g. Full-time, Part-time, Contract"
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none @error('job_type') border-rose-400 @enderror">
+                        @error('job_type')
+                            <p class="text-[11px] font-bold text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-700">Salary Range</label>
+                        <input type="text" name="salary_range" value="{{ old('salary_range') }}" maxlength="150" placeholder="e.g. ₱18,000 - ₱25,000 per month"
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none @error('salary_range') border-rose-400 @enderror">
+                        @error('salary_range')
+                            <p class="text-[11px] font-bold text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <div class="sm:col-span-2 space-y-1.5">
                         <label class="text-xs font-bold text-slate-700">Job Description & Responsibilities <span class="text-rose-500">*</span></label>
                         <textarea name="description" rows="5" required placeholder="Describe the job duties, benefits, and schedule..."
@@ -85,7 +103,10 @@
                         <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 select-none">
                             <input type="checkbox" name="accepts_disability" value="1" x-model="acceptsDisability"
                                    class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4">
-                            <span>♿ Accepts applicants with disabilities (PWD)</span>
+                            <span class="inline-flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                Accepts applicants with disabilities (PWD)
+                            </span>
                         </label>
                         <div x-show="acceptsDisability" style="display: none;" class="pt-1">
                             <input type="text" name="disability_type" value="{{ old('disability_type') }}" placeholder="Specify disability type (e.g. Visual, Hearing, Orthopedic)"
@@ -101,8 +122,9 @@
                         Cancel
                     </a>
                     <button type="submit" 
-                            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-xs shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
-                        ✓ Create & Publish Job
+                            class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        Create & Publish Job
                     </button>
                 </div>
             </form>
