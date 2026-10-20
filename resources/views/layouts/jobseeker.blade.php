@@ -451,12 +451,14 @@
     {{-- ============================================================ --}}
     {{-- SCRIPTS                                                       --}}
     {{-- ============================================================ --}}
-    <script>
+    <script data-applications-active="{{ request()->routeIs('jobseeker.applications*') ? 'true' : 'false' }}">
+        const applicationsRouteActive = document.currentScript.dataset.applicationsActive === 'true';
+
         function jobseekerSidebar() {
             return {
                 collapsed: false,
                 openGroups: {
-                    applications: {{ request()->routeIs('jobseeker.applications*') ? 'true' : 'false' }},
+                    applications: applicationsRouteActive,
                 },
 
                 init() {
@@ -474,7 +476,7 @@
                     this.collapsed = !this.collapsed;
 
                     if (!this.collapsed) {
-                        if ({{ request()->routeIs('jobseeker.applications*') ? 'true' : 'false' }}) {
+                        if (applicationsRouteActive) {
                             this.openGroups.applications = true;
                         }
                     }

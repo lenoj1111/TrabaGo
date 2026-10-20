@@ -3,127 +3,6 @@
 @section('title', 'Employers Registry')
 
 @section('content')
-<<<<<<< Updated upstream
-<div class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8"
-     x-data="{
-        docModalOpen: false,
-        employerDetailsOpen: false,
-        selectedEmployerDetails: {},
-        openEmployerDetails(employer) {
-            this.selectedEmployerDetails = employer;
-            this.employerDetailsOpen = true;
-        },
-        activeDocCompany: '',
-        activeDocList: [],
-        selectedDocKey: '',
-        currentDoc: {},
-        openDocInspection(company, docs, accreditationId) {
-            this.activeDocCompany = company;
-            this.activeDocList = [];
-            const documentRouteTemplate = '{{ route('accreditation.documents', ['accreditationId' => '__ACCREDITATION_ID__', 'documentKey' => '__DOCUMENT_KEY__', 'action' => '__ACTION__']) }}';
-            
-            for (let [key, val] of Object.entries(docs || {})) {
-                let label = 'Attached Document';
-                let icon = '📄';
-                let issuer = 'Regulatory Authority';
-                let filename = '';
-
-                if (typeof val === 'object' && val !== null) {
-                    filename = val.original_name || val.path || '';
-                } else if (typeof val === 'string') {
-                    filename = val.split('/').pop() || val;
-                }
-
-                let validity = 'Current / Valid';
-
-                if (key.includes('bir') || key.includes('2303') || key.includes('tin')) {
-                    label = 'BIR Certificate of Registration (Form 2303)';
-                    icon = '📑';
-                    issuer = 'Bureau of Internal Revenue (BIR District 080)';
-                    validity = 'Current / Valid';
-                } else if (key.includes('sec') || key.includes('dti')) {
-                    label = 'SEC Registration or DTI Registration';
-                    icon = '📜';
-                    issuer = 'Securities and Exchange Commission (SEC) / DTI';
-                    validity = 'Perpetual / Registered';
-                } else if (key.includes('mayor') || key.includes('permit') || key.includes('business')) {
-                    label = 'Mayor’s Business Permit (current year)';
-                    icon = '🏢';
-                    issuer = 'City Government of Cebu - BPLO';
-                    validity = 'Calendar Year ' + new Date().getFullYear();
-                } else if (key.includes('philjobnet')) {
-                    label = 'PhilJobNet Proof of Registration';
-                    icon = '🌐';
-                    issuer = 'PhilJobNet / DOLE Bureau of Local Employment';
-                    validity = 'Active Registration Certificate';
-                } else if (key.includes('vacanc') || key.includes('job_vacanc')) {
-                    label = 'Updated Job Vacancies (prescribed form)';
-                    icon = '💼';
-                    issuer = 'Cebu City DMDP Prescribed Template';
-                    validity = 'Active Hiring Needs';
-                } else if (key.includes('dole')) {
-                    label = 'DOLE License / DO 174';
-                    icon = '🛡️';
-                    issuer = 'Department of Labor and Employment (DOLE RO-7)';
-                    validity = 'Valid License (PRPA / Subcontractor)';
-                } else if (key.includes('dmw_license') || (key.includes('dmw') && !key.includes('order'))) {
-                    label = 'DMW License (Overseas Agency)';
-                    icon = '✈️';
-                    issuer = 'Department of Migrant Workers (DMW / POEA)';
-                    validity = 'Valid DMW License';
-                } else if (key.includes('order') || key.includes('job_order')) {
-                    label = 'DMW Approved and Validated Job Orders';
-                    icon = '📋';
-                    issuer = 'Department of Migrant Workers (DMW)';
-                    validity = 'Verified Job Orders Period';
-                } else if (key.includes('intent') || key.includes('letter')) {
-                    label = 'Letter of Intent (Services & Assistance Details)';
-                    icon = '✉️';
-                    issuer = 'Corporate Executive / Authorized Signatory';
-                    validity = 'Official Signed Request';
-                } else if (key.includes('profile')) {
-                    label = 'Company Overview Profile / Org Chart';
-                    icon = '📁';
-                    issuer = 'Corporate Executive Board';
-                    validity = 'Corporate Registry Reference';
-                } else {
-                    label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    validity = 'Supporting Verification Document';
-                }
-
-                const extensionSource = typeof val === 'object' && val !== null ? (val.path || filename) : val;
-                const extension = String(extensionSource || '').split('.').pop().toLowerCase();
-                const isImage = ['jpg', 'jpeg', 'png'].includes(extension);
-                const fileRoute = documentRouteTemplate
-                    .replace('__ACCREDITATION_ID__', encodeURIComponent(accreditationId))
-                    .replace('__DOCUMENT_KEY__', encodeURIComponent(key));
-
-                this.activeDocList.push({
-                    key: key,
-                    label: label,
-                    icon: icon,
-                    issuer: issuer,
-                    filename: filename,
-                    isImage: isImage,
-                    previewUrl: isImage ? fileRoute.replace('__ACTION__', 'preview') : '',
-                    downloadUrl: fileRoute.replace('__ACTION__', 'download'),
-                    status: 'Verified Valid',
-                    validity: validity
-                });
-            }
-
-            if (this.activeDocList.length > 0) {
-                this.selectDocument(this.activeDocList[0]);
-                this.docModalOpen = true;
-            }
-        },
-        selectDocument(doc) {
-            this.selectedDocKey = doc.key;
-            this.currentDoc = doc;
-        }
-     }">
-    <div class="mx-auto max-w-7xl space-y-8">
-=======
 <div
     class="bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8"
     x-data="employersRegistry({
@@ -132,7 +11,6 @@
     })"
 >
     <div class="w-full space-y-8">
->>>>>>> Stashed changes
 
         {{-- ============================================================ --}}
         {{-- HEADER                                                        --}}
@@ -285,23 +163,6 @@
                                 </td>
                                 <td class="py-4 px-6">
                                     @if(is_array($docs) && count($docs) > 0)
-<<<<<<< Updated upstream
-                                        <div class="space-y-1">
-                                            <div class="flex flex-wrap gap-1">
-                                                @foreach($docs as $k => $d)
-                                                    <button type="button" 
-                                                            data-company="{{ $employer->company_name }}"
-                                                            data-documents="{{ json_encode($docs) }}"
-                                                            data-accreditation-id="{{ $employer->accreditation_id }}"
-                                                            @click="openDocInspection($el.dataset.company, JSON.parse($el.dataset.documents), $el.dataset.accreditationId)"
-                                                            class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-emerald-100 hover:text-emerald-900 text-slate-700 text-[10px] font-bold border border-slate-200 transition-colors cursor-pointer"
-                                                            title="Click to inspect this document">
-                                                        <span>📄 {{ ucfirst(str_replace('_', ' ', $k)) }}</span>
-                                                        <span class="text-[9px] text-emerald-600">↗</span>
-                                                    </button>
-                                                @endforeach
-                                            </div>
-=======
                                         <div class="flex flex-wrap gap-1">
                                             @foreach($docs as $k => $d)
                                                 <button type="button"
@@ -316,7 +177,6 @@
                                                     <span class="text-[9px] text-emerald-600">↗</span>
                                                 </button>
                                             @endforeach
->>>>>>> Stashed changes
                                         </div>
                                     @else
                                         <span class="text-[11px] text-slate-400 italic">No files on record</span>
@@ -348,11 +208,6 @@
                                 </td>
                                 <td class="py-4 px-6 text-right">
                                     <div class="inline-flex items-center gap-1.5">
-<<<<<<< Updated upstream
-                                        @if(is_array($docs) && count($docs) > 0)
-                                            <button type="button" 
-                                                    @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($docs))'
-=======
                                         <button type="button"
                                                 @click="openEmployerDetails(@js([
                                                     'id' => $employer->employer_id,
@@ -381,7 +236,6 @@
                                                         @js($docs),
                                                         @js($employer->accreditation_id)
                                                     )"
->>>>>>> Stashed changes
                                                     class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors"
                                                     title="View Legal Documents">
                                                 👁️ Docs
@@ -402,17 +256,12 @@
 
                                         {{-- 2. Employer Accreditation (Gated by JPO Recommending Approval) --}}
                                         @if(!$employer->is_accredited)
-<<<<<<< Updated upstream
-                                            <button onclick="accreditEmployer({{ $employer->employer_id }}, {{ $isJpoRecommended ? 'true' : 'false' }})" 
-                                                    class="px-3 py-1.5 rounded-lg {{ $isJpoRecommended ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm' : 'bg-slate-100 text-slate-400 border border-slate-200 hover:bg-slate-200' }} font-bold text-xs transition-colors" 
-=======
                                             <button type="button"
                                                     @click="accreditEmployer({{ $employer->employer_id }}, {{ $isJpoRecommended ? 'true' : 'false' }})"
                                                     class="px-3 py-1.5 rounded-lg font-bold text-xs transition-colors
                                                            {{ $isJpoRecommended
                                                               ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
                                                               : 'bg-slate-100 text-slate-400 border border-slate-200 hover:bg-slate-200' }}"
->>>>>>> Stashed changes
                                                     title="{{ $isJpoRecommended ? 'Accredit Company' : 'JPO Recommending Approval is required first' }}">
                                                 🛡️ Accredit
                                             </button>
@@ -444,13 +293,6 @@
 
     </div>
 
-<<<<<<< Updated upstream
-    <!-- Reusable Employer Document Viewer Modal -->
-    @include('partials.employer-document-viewer-modal')
-
-</div>
-
-=======
     {{-- ============================================================ --}}
     {{-- EMPLOYER DETAILS MODAL                                        --}}
     {{-- ============================================================ --}}
@@ -654,7 +496,6 @@
 {{-- ALPINE COMPONENT DEFINITION                                    --}}
 {{-- ============================================================ --}}
 @push('scripts')
->>>>>>> Stashed changes
 <script>
 function employersRegistry(config) {
     return {
@@ -861,8 +702,5 @@ function employersRegistry(config) {
     };
 }
 </script>
-<<<<<<< Updated upstream
-=======
 @endpush
->>>>>>> Stashed changes
 @endsection
