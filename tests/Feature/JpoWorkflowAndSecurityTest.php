@@ -352,6 +352,12 @@ class JpoWorkflowAndSecurityTest extends TestCase
         $response->assertOk();
         $this->assertSame('resume content', $response->streamedContent());
 
+        $employerResponse = $this->actingAs($this->employerUser)
+            ->get("/employer/applicants/{$application->application_id}/documents/0");
+
+        $employerResponse->assertOk();
+        $this->assertSame('resume content', $employerResponse->streamedContent());
+
         $idResponse = $this->actingAs($this->jpoUser)
             ->get("/jpo/evaluations/jobseekers/{$application->application_id}/documents/1");
 

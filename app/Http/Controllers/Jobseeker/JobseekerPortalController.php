@@ -982,6 +982,77 @@ class JobseekerPortalController extends Controller
         return view('jobseeker.documents.index', compact('documents', 'certificatesList', 'jobseeker', 'details'));
     }
 
+    public function previewDocument(string $category)
+    {
+        abort_unless(in_array($category, ['resume', 'valid_id', 'certificate', 'certs', 'pwd_id'], true), 404);
+
+        $jobseeker = $this->getOrCreateJobseeker();
+        $details = $jobseeker->details;
+        abort_unless($details && !empty($details->training_certificates), 404);
+
+        $documents = is_array($details->training_certificates)
+            ? $details->training_certificates
+            : (json_decode($details->training_certificates, true) ?: []);
+        $category = $category === 'certs' ? 'certificate' : $category;
+        $document = null;
+
+        foreach ($documents as $candidateDocument) {
+            if (!is_array($candidateDocument)) {
+                continue;
+            }
+
+            $documentCategory = ($candidateDocument['category'] ?? '') === 'certs'
+                ? 'certificate'
+                : ($candidateDocument['category'] ?? '');
+            if ($documentCategory === $category) {
+                $document = $candidateDocument;
+            }
+        }
+
+        abort_unless($document, 404);
+
+        if ($category === 'certificate' && !empty($document['enrollment_id'])) {
+            return redirect()->route('jobseeker.certificates.preview', $document['enrollment_id']);
+        }
+
+        $disk = Storage::disk('public');
+        foreach (['file_path', 'path', 'file_url', 'url'] as $pathKey) {
+            $candidate = $document[$pathKey] ?? null;
+            if (!is_string($candidate) || trim($candidate) === '') {
+                continue;
+            }
+
+            $urlPath = parse_url($candidate, PHP_URL_PATH);
+            $path = is_string($urlPath) && $urlPath !== '' ? $urlPath : $candidate;
+            $path = rawurldecode(str_replace('\\', '/', $path));
+            if (($storagePosition = strrpos($path, '/storage/')) !== false) {
+                $path = substr($path, $storagePosition + strlen('/storage/'));
+            }
+            $path = ltrim($path, '/');
+            foreach (['storage/app/public/', 'app/public/', 'storage/', 'public/'] as $prefix) {
+                if (str_starts_with($path, $prefix)) {
+                    $path = substr($path, strlen($prefix));
+                    break;
+                }
+            }
+
+            $segments = explode('/', $path);
+            $isApplicantDocument = str_starts_with($path, 'documents/');
+            $isResume = str_starts_with($path, 'resumes/');
+            $isLegacyId = str_starts_with($path, 'ids/') || str_starts_with($path, 'valid_ids/');
+            if (
+                ($isApplicantDocument || $isResume || $isLegacyId)
+                && !in_array('..', $segments, true)
+                && !in_array('.', $segments, true)
+                && $disk->exists($path)
+            ) {
+                return $disk->response($path, $document['name'] ?? basename($path), [], 'inline');
+            }
+        }
+
+        abort(404, 'Document file not found on storage.');
+    }
+
     public function uploadDocument(Request $request)
     {
         $request->validate([

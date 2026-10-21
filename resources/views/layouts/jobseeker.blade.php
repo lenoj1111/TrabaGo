@@ -285,8 +285,8 @@
                 Communication
             </p>
 
-            <a href="#"
-               class="nav-item"
+            <a href="{{ route('jobseeker.notifications') }}"
+               class="nav-item {{ request()->routeIs('jobseeker.notifications*') ? 'nav-item-active' : '' }}"
                :title="collapsed ? 'Notifications' : ''">
                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -372,7 +372,10 @@
                         {{ now()->format('D, M d, Y') }}
                     </span>
 
-                    <a href="#" class="relative p-2 rounded-xl text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors" title="Notifications">
+                    <a href="{{ route('jobseeker.notifications') }}"
+                       class="relative p-2 rounded-xl text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors {{ request()->routeIs('jobseeker.notifications*') ? 'text-emerald-700 bg-emerald-50' : '' }}"
+                       title="Notifications"
+                       aria-label="Notifications">
                         <i class="bi bi-bell text-lg"></i>
                         @if($jobseekerUnreadCount > 0)
                             <span class="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[10px] font-black text-white ring-2 ring-white">

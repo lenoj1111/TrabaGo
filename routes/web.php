@@ -173,6 +173,7 @@ Route::prefix('jobseeker')->name('jobseeker.')->group(function () {
 
         // Document Hub & Verification
         Route::get('/documents', [JobseekerPortalController::class, 'documents'])->name('documents');
+        Route::get('/documents/{category}/preview', [JobseekerPortalController::class, 'previewDocument'])->name('documents.preview');
         Route::post('/documents/upload', [JobseekerPortalController::class, 'uploadDocument'])->name('documents.upload');
         Route::delete('/documents/{category}', [JobseekerPortalController::class, 'deleteDocument'])->name('documents.delete');
 
@@ -229,6 +230,7 @@ Route::prefix('employer')->name('employer.')->group(function () {
         // 3. Review Referred Jobseekers (From JPO) & Schedule Interview / Hire / Mark Not Qualified
         Route::get('/referred-jobseekers', [EmployerPortalController::class, 'referredJobseekers'])->name('referred-jobseekers');
         Route::get('/applications', [EmployerPortalController::class, 'referredJobseekers'])->name('applications');
+        Route::get('/applicants/{id}/documents/{documentIndex}', [EmployerPortalController::class, 'viewApplicantDocument'])->name('applicants.documents.show');
         Route::post('/applicants/{id}/status', [EmployerPortalController::class, 'updateApplicantStatus'])->name('applicants.update_status');
         Route::post('/applicants/{id}/resignation', [EmployerPortalController::class, 'respondResignation'])->name('applicants.resignation');
 

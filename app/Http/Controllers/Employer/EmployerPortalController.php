@@ -678,6 +678,84 @@ class EmployerPortalController extends Controller
         return view('employer.referred-jobseekers', compact('employer', 'referredApplicants', 'stats', 'employerJobs'));
     }
 
+    public function viewApplicantDocument(int $id, int $documentIndex)
+    {
+        $employer = $this->getOrCreateEmployer();
+        $application = JobApplication::with('jobseeker.details')
+            ->whereHas('jobPosting', fn ($query) => $query->where('employer_id', $employer->employer_id))
+            ->findOrFail($id);
+
+        $jobseeker = $application->jobseeker;
+        abort_unless($jobseeker && $jobseeker->details, 404);
+
+        $documents = $jobseeker->details->training_certificates;
+        if (!is_array($documents)) {
+            $documents = json_decode($documents ?? '[]', true) ?: [];
+        }
+        abort_unless(isset($documents[$documentIndex]) && is_array($documents[$documentIndex]), 404);
+
+        $document = $documents[$documentIndex];
+        if (($document['category'] ?? null) === 'certificate' && !empty($document['enrollment_id'])) {
+            $enrollment = DB::table('training_enrollments')
+                ->join('jobseekers', 'training_enrollments.jobseeker_id', '=', 'jobseekers.jobseeker_id')
+                ->join('training_programs', 'training_enrollments.training_id', '=', 'training_programs.training_id')
+                ->where('training_enrollments.enrollment_id', $document['enrollment_id'])
+                ->where('training_enrollments.jobseeker_id', $jobseeker->jobseeker_id)
+                ->where('training_enrollments.certificate_issued', 1)
+                ->select(
+                    'training_enrollments.*',
+                    'jobseekers.first_name',
+                    'jobseekers.last_name',
+                    'training_programs.title as course_title'
+                )
+                ->first();
+
+            abort_unless($enrollment, 404, 'Certificate not found or not yet issued.');
+
+            return view('trainer.certificates.preview', [
+                'enrollment' => $enrollment,
+                'backUrl' => route('employer.referred-jobseekers'),
+            ]);
+        }
+
+        $disk = Storage::disk('public');
+        foreach (['file_path', 'path', 'file_url', 'url'] as $pathKey) {
+            $candidate = $document[$pathKey] ?? null;
+            if (!is_string($candidate) || trim($candidate) === '') {
+                continue;
+            }
+
+            $urlPath = parse_url($candidate, PHP_URL_PATH);
+            $path = is_string($urlPath) && $urlPath !== '' ? $urlPath : $candidate;
+            $path = rawurldecode(str_replace('\\', '/', $path));
+            if (($storagePosition = strrpos($path, '/storage/')) !== false) {
+                $path = substr($path, $storagePosition + strlen('/storage/'));
+            }
+            $path = ltrim($path, '/');
+            foreach (['storage/app/public/', 'app/public/', 'storage/', 'public/'] as $prefix) {
+                if (str_starts_with($path, $prefix)) {
+                    $path = substr($path, strlen($prefix));
+                    break;
+                }
+            }
+
+            $segments = explode('/', $path);
+            $isApplicantDocument = str_starts_with($path, 'documents/');
+            $isResume = str_starts_with($path, 'resumes/');
+            $isLegacyId = str_starts_with($path, 'ids/') || str_starts_with($path, 'valid_ids/');
+            if (
+                ($isApplicantDocument || $isResume || $isLegacyId)
+                && !in_array('..', $segments, true)
+                && !in_array('.', $segments, true)
+                && $disk->exists($path)
+            ) {
+                return $disk->response($path, $document['name'] ?? basename($path), [], 'inline');
+            }
+        }
+
+        abort(404, 'Document file not found on storage.');
+    }
+
     public function updateApplicantStatus(Request $request, int $id)
     {
         $employer = $this->getOrCreateEmployer();

@@ -84,7 +84,13 @@
                                          class="w-full rounded-lg border border-slate-100"
                                          loading="lazy">
                                 </template>
-                                <template x-if="!currentDoc.isImage || !currentDoc.previewUrl">
+                                <template x-if="!currentDoc.isImage && currentDoc.canPreview && currentDoc.previewUrl">
+                                    <iframe :src="currentDoc.previewUrl"
+                                            :title="currentDoc.label"
+                                            class="w-full h-[60vh] rounded-lg border border-slate-100"
+                                            loading="lazy"></iframe>
+                                </template>
+                                <template x-if="!currentDoc.canPreview || !currentDoc.previewUrl">
                                     <div class="flex flex-col items-center justify-center py-12 text-center">
                                         <div class="text-5xl mb-3" x-text="currentDoc.icon || '📄'"></div>
                                         <p class="text-xs font-bold text-slate-700">Preview not available</p>

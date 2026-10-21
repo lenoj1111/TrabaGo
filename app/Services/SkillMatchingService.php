@@ -14,6 +14,7 @@ class SkillMatchingService
     public function normalizeSkill(string $skill): string
     {
         $normalized = mb_strtolower(trim($skill));
+        $normalized = str_replace('highschool', 'high school', $normalized);
         $normalized = preg_replace('/[^\p{L}\p{N}+#]+/u', ' ', $normalized);
 
         return trim(preg_replace('/\s+/u', ' ', $normalized) ?? $normalized);
@@ -126,6 +127,22 @@ class SkillMatchingService
                         }
                     }
                 }
+            }
+        }
+
+        if ($jobseeker->details && !empty($jobseeker->details->education)) {
+            $education = is_array($jobseeker->details->education)
+                ? $jobseeker->details->education
+                : json_decode($jobseeker->details->education, true);
+            $educationLevel = is_array($education)
+                ? trim((string) ($education['level'] ?? $education['educational_level'] ?? ''))
+                : '';
+
+            if ($educationLevel !== '') {
+                $normalizedEducationLevel = $this->normalizeSkill($educationLevel);
+                $skills[] = $normalizedEducationLevel === 'senior high school'
+                    ? 'Senior High School Graduate'
+                    : $educationLevel;
             }
         }
 

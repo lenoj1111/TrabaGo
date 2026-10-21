@@ -3,6 +3,8 @@
 namespace Tests\Unit;
 
 use App\Models\JobPosting;
+use App\Models\Jobseeker;
+use App\Models\JobseekerDetail;
 use App\Services\SkillMatchingService;
 use PHPUnit\Framework\TestCase;
 
@@ -88,5 +90,22 @@ class SkillMatchingServiceTest extends TestCase
 
         $this->assertEmpty($result['matchedSkills']);
         $this->assertSame(['NoSQL'], $result['missingSkills']);
+    }
+
+    public function test_senior_high_school_education_matches_highschool_graduate_requirement()
+    {
+        $service = new SkillMatchingService();
+        $jobseeker = new Jobseeker();
+        $jobseeker->setRelation('skills', collect());
+        $jobseeker->setRelation('details', new JobseekerDetail([
+            'education' => ['level' => 'Senior High School'],
+        ]));
+
+        $userSkills = $service->getJobseekerSkills($jobseeker);
+        $result = $service->calculateMatch($userSkills, ['Highschool Graduate']);
+
+        $this->assertContains('Senior High School Graduate', $userSkills);
+        $this->assertSame(['Highschool Graduate'], $result['matchedSkills']);
+        $this->assertEmpty($result['missingSkills']);
     }
 }

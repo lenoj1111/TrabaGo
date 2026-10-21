@@ -135,7 +135,6 @@
                 @php
                     $isUploaded = !empty($card['doc']);
                     $docData = $card['doc'] ?? [];
-                    $fileUrl = $docData['file_url'] ?? ($docData['url'] ?? null);
                     $fileName = $docData['name'] ?? null;
                     $docStatus = $docData['status'] ?? 'under_review';
                     $uploadDate = isset($docData['uploaded_at']) ? date('M d, Y', strtotime($docData['uploaded_at'])) : null;
@@ -223,9 +222,9 @@
                                         <p class="text-[11px] {{ $docStatus === 'rejected' ? 'text-rose-700' : 'text-emerald-700' }} font-medium mt-0.5">Uploaded on {{ $uploadDate }}</p>
                                     @endif
                                 </div>
-                                @if($fileUrl)
+                                @if($docData)
                                     <div class="flex items-center gap-2 shrink-0">
-                                        <a href="{{ $fileUrl }}" target="_blank" class="px-3 py-1.5 rounded-xl {{ $docStatus === 'rejected' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700' }} text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
+                                        <a href="{{ route('jobseeker.documents.preview', $card['type']) }}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl {{ $docStatus === 'rejected' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700' }} text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
                                             <span>Preview / View</span>
                                             <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
                                         </a>

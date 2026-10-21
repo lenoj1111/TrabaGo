@@ -27,6 +27,11 @@ class ApprovalsController extends Controller
             ->first();
         abort_unless($accreditation, 404);
 
+        if (Auth::user()?->role === 'employer') {
+            $employer = Employer::where('user_id', Auth::id())->first();
+            abort_unless($employer && (int) $accreditation->employer_id === (int) $employer->employer_id, 404);
+        }
+
         $documents = json_decode($accreditation->documents ?? '[]', true);
         abort_unless(is_array($documents) && array_key_exists($documentKey, $documents), 404);
 

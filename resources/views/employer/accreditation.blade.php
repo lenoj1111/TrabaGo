@@ -10,7 +10,7 @@
         activeDocList: [],
         selectedDocKey: '',
         currentDoc: {},
-        openDocInspection(company, docs, initialKey = null) {
+        openDocInspection(company, docs, accreditationId, initialKey = null) {
             this.activeDocCompany = company;
             this.activeDocList = [];
             const documentRouteTemplate = '{{ route('accreditation.documents', ['accreditationId' => '__ACCREDITATION_ID__', 'documentKey' => '__DOCUMENT_KEY__', 'action' => '__ACTION__']) }}';
@@ -22,33 +22,19 @@
                 let icon = 'document';
                 let issuer = 'Regulatory Authority';
                 let filename = '';
-                let url = '';
-                let pathVal = '';
 
                 if (typeof val === 'object' && val !== null) {
-                    filename = val.original_name || (val.path ? val.path.split('/').pop() : '');
-                    pathVal = val.file_url || val.url || val.path || '';
+                    const storedPath = val.path || val.file_path || val.file_url || val.url || '';
+                    filename = val.original_name || storedPath.split('/').pop();
                 } else if (typeof val === 'string') {
                     filename = val.split('/').pop() || val;
-                    pathVal = val;
-                }
-
-                if (pathVal) {
-                    if (pathVal.startsWith('http://') || pathVal.startsWith('https://') || pathVal.startsWith('/storage/')) {
-                        url = pathVal;
-                    } else if (pathVal.startsWith('storage/')) {
-                        url = '/' + pathVal;
-                    } else if (pathVal.startsWith('/')) {
-                        url = pathVal;
-                    } else {
-                        url = '/storage/' + pathVal;
-                    }
                 }
 
                 let validity = 'Current / Valid';
                 const extensionSource = typeof val === 'object' && val !== null ? (val.path || filename) : val;
                 const extension = String(extensionSource || '').split('.').pop().toLowerCase();
                 const isImage = ['jpg', 'jpeg', 'png'].includes(extension);
+                const canPreview = isImage || extension === 'pdf';
                 const fileRoute = documentRouteTemplate
                     .replace('__ACCREDITATION_ID__', encodeURIComponent(accreditationId))
                     .replace('__DOCUMENT_KEY__', encodeURIComponent(key));
@@ -118,7 +104,8 @@
                     validity: validity,
                     filename: filename,
                     isImage: isImage,
-                    previewUrl: isImage ? fileRoute.replace('__ACTION__', 'preview') : '',
+                    canPreview: canPreview,
+                    previewUrl: canPreview ? fileRoute.replace('__ACTION__', 'preview') : '',
                     downloadUrl: fileRoute.replace('__ACTION__', 'download'),
                     status: 'Verified Valid'
                 });
@@ -369,7 +356,7 @@
                                 </div>
                             </div>
                             <button type="button" 
-                                    @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($uploadedDocs), "{{ $key }}")'
+                                    @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($uploadedDocs), {{ $accreditation->accreditation_id }}, "{{ $key }}")'
                                     class="w-full py-2 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-900 text-slate-700 text-[11px] font-bold border border-slate-200 transition-colors text-center">
                                 Preview / Inspect &rarr;
                             </button>
@@ -673,4 +660,3 @@
 
 </div>
 @endsection
-
