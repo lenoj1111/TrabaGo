@@ -69,6 +69,7 @@
                             <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
                             {{ $job->location ?? 'Cebu City, Philippines' }}
                         </span>
+                        @endif
                         <span>&bull;</span>
                         <span class="font-bold text-slate-900">{{ $job->salary_range ?: 'Salary not specified' }}</span>
                         <span>&bull;</span>

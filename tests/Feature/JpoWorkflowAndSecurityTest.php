@@ -325,7 +325,7 @@ class JpoWorkflowAndSecurityTest extends TestCase
                     'category' => 'valid_id',
                     'name' => 'id.pdf',
                     'file_url' => '/storage/' . $idPath,
-                    'file_path' => $idPath,
+                    'file_path' => 'documents/missing/id.pdf',
                     'status' => 'under_review',
                 ],
             ],

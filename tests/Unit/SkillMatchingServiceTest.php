@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\JobPosting;
 use App\Services\SkillMatchingService;
 use PHPUnit\Framework\TestCase;
 
@@ -51,5 +52,41 @@ class SkillMatchingServiceTest extends TestCase
         $this->assertEquals(0, $result['percentage']);
         $this->assertEquals('Low Match', $result['tier']);
         $this->assertCount(2, $result['missingSkills']);
+    }
+
+    public function test_job_required_skills_are_included_even_when_qualifications_are_present()
+    {
+        $service = new SkillMatchingService();
+        $job = new JobPosting([
+            'title' => 'Automotive Technician',
+            'skills' => "Oil Change\nVehicle Inspection",
+            'qualifications' => "High school diploma\nOil Change",
+        ]);
+
+        $this->assertSame(
+            ['Oil Change', 'Vehicle Inspection', 'High school diploma'],
+            $service->getJobSkills($job)
+        );
+    }
+
+    public function test_skill_matrix_matches_skill_phrases_in_job_description_when_requirements_are_omitted()
+    {
+        $service = new SkillMatchingService();
+        $job = new JobPosting([
+            'title' => 'Oil Changer',
+            'description' => 'Taga Oil Change',
+        ]);
+
+        $this->assertSame(['Oil Change'], $service->getJobSkills($job, ['Oil Change', 'Customer Service']));
+    }
+
+    public function test_partial_skill_names_do_not_match_inside_unrelated_words()
+    {
+        $service = new SkillMatchingService();
+
+        $result = $service->calculateMatch(['SQL'], ['NoSQL']);
+
+        $this->assertEmpty($result['matchedSkills']);
+        $this->assertSame(['NoSQL'], $result['missingSkills']);
     }
 }

@@ -36,7 +36,13 @@ class JobController extends Controller
             $reqs = array_values(array_filter(array_map('trim', $lines)));
         }
 
-        $jobSkills = $this->matchingService->getJobSkills($job);
+        $requiredSkills = [];
+        if (!empty($job->skills)) {
+            $lines = preg_split('/[\r\n,;]+/', $job->skills);
+            $requiredSkills = array_values(array_filter(array_map('trim', $lines ?: [])));
+        }
+
+        $jobSkills = $this->matchingService->getJobSkills($job, $userSkills);
         $match = null;
         $matchPercentage = null;
         $matchedSkills = [];
@@ -69,7 +75,10 @@ class JobController extends Controller
             'description' => $job->description ?? 'No description provided.',
             'qualifications' => $job->qualifications ?? '',
             'requirements' => $reqs,
+            'required_skills' => $requiredSkills,
             'skills' => $jobSkills,
+            'benefits' => $job->benefits ?? '',
+            'other_instructions' => $job->other_instructions ?? '',
             'vacancy_count' => $job->vacancy_count ?? 1,
             'vacancyCount' => $job->vacancy_count ?? 1,
             'valid_until' => $job->valid_until ? $job->valid_until->format('Y-m-d') : null,
@@ -158,7 +167,7 @@ class JobController extends Controller
 
         $jobseeker = $this->resolveJobseeker($request);
         $userSkills = $jobseeker ? $this->matchingService->getJobseekerSkills($jobseeker) : [];
-        $jobSkills = $this->matchingService->getJobSkills($job);
+        $jobSkills = $this->matchingService->getJobSkills($job, $userSkills);
         $match = $this->matchingService->calculateMatch($userSkills, $jobSkills);
 
         $hasApplied = false;

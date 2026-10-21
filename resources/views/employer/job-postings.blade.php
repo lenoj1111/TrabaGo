@@ -74,7 +74,7 @@
                 <button @click="openCreate()" 
                         class="shrink-0 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-6 py-3.5 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                    + Create New Job Posting
+                    Create New Job Posting
                 </button>
             @else
                 <a href="{{ route('employer.accreditation') }}" 
@@ -902,6 +902,9 @@ function jobPostingsManager() {
                     this.editModal = true;
                 }
             @endif
+        },
+        openCreate() {
+            this.createModal = true;
         },
         getBulletList(text) {
             if (!text) return [];

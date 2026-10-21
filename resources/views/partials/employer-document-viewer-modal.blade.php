@@ -38,6 +38,14 @@
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
                                                     ✓ <span x-text="doc.status"></span>
                                                 </span>
+                                                <span x-show="doc.revisionStatus === 'new'"
+                                                      class="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200">
+                                                    New
+                                                </span>
+                                                <span x-show="doc.revisionStatus === 'previous'"
+                                                      class="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold border border-slate-200">
+                                                    Previous version
+                                                </span>
                                             </div>
                                             <p class="text-[10px] text-slate-400 mt-1" x-text="doc.validity"></p>
                                         </div>

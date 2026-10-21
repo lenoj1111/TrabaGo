@@ -32,12 +32,45 @@
         this.selectedJobseekerDocName = docName || 'Government-Issued Valid ID';
         this.jsDocModalOpen = true;
     },
-    openDocInspection(company, docs) {
+    openDocInspection(company, docs, accreditationId) {
         this.activeDocCompany = company;
         this.activeDocList = [];
         const documentRouteTemplate = '{{ route('accreditation.documents', ['accreditationId' => '__ACCREDITATION_ID__', 'documentKey' => '__DOCUMENT_KEY__', 'action' => '__ACTION__']) }}';
+        const seenPaths = new Set();
+        const aliases = {
+            sec_dti_registration: 'sec_dti',
+            updated_job_vacancies: 'job_vacancies_form',
+            business_permit: 'mayors_permit'
+        };
+        const versionGroups = new Map();
+        for (const [key, val] of Object.entries(docs || {})) {
+            if (!val || key.includes('_previous_')) continue;
+            const canonicalKey = aliases[key] || key;
+            const path = typeof val === 'object' && val !== null ? val.path : val;
+            if (!versionGroups.has(canonicalKey)) versionGroups.set(canonicalKey, []);
+            versionGroups.get(canonicalKey).push({ key, val, path });
+        }
+        const inferredPreviousKeys = new Set();
+        for (const candidates of versionGroups.values()) {
+            const distinctPaths = new Set(candidates.map(item => item.path).filter(Boolean));
+            if (distinctPaths.size < 2) continue;
+            const explicitCurrent = candidates.find(item => item.val?.revision_status === 'new');
+            const current = explicitCurrent || [...candidates].sort((a, b) => {
+                const aDate = Date.parse(a.val?.uploaded_at || '') || 0;
+                const bDate = Date.parse(b.val?.uploaded_at || '') || 0;
+                return bDate - aDate;
+            })[0];
+            for (const candidate of candidates) {
+                if (candidate !== current) inferredPreviousKeys.add(candidate.key);
+            }
+        }
         
         for (let [key, val] of Object.entries(docs || {})) {
+            const documentPath = typeof val === 'object' && val !== null ? val.path : val;
+            const normalizedPath = typeof documentPath === 'string' ? documentPath.replace(/\\/g, '/') : '';
+            if (normalizedPath && seenPaths.has(normalizedPath)) continue;
+            if (normalizedPath) seenPaths.add(normalizedPath);
+
             let label = 'Attached Document';
             let icon = 'document';
             let issuer = 'Regulatory Authority';
@@ -112,6 +145,11 @@
             const fileRoute = documentRouteTemplate
                 .replace('__ACCREDITATION_ID__', encodeURIComponent(accreditationId))
                 .replace('__DOCUMENT_KEY__', encodeURIComponent(key));
+            const revisionStatus = (typeof val === 'object' && val !== null && val.revision_status)
+                || (key.includes('_previous_') || inferredPreviousKeys.has(key) ? 'previous' : '');
+            const status = revisionStatus === 'new'
+                ? 'New upload'
+                : (revisionStatus === 'previous' ? 'Previous version' : 'Verified Valid');
 
             this.activeDocList.push({
                 key: key,
@@ -122,7 +160,8 @@
                 isImage: isImage,
                 previewUrl: isImage ? fileRoute.replace('__ACTION__', 'preview') : '',
                 downloadUrl: fileRoute.replace('__ACTION__', 'download'),
-                status: 'Verified Valid',
+                status: status,
+                revisionStatus: revisionStatus,
                 validity: validity
             });
         }
@@ -461,6 +500,19 @@
                             @forelse($pendingAccreditations as $acc)
                                 @php
                                     $docs = is_array($acc->documents) ? $acc->documents : json_decode($acc->documents ?? '[]', true);
+                                    $displayDocs = [];
+                                    $seenDocumentPaths = [];
+                                    foreach ($docs ?: [] as $docKey => $document) {
+                                        $documentPath = is_array($document) ? ($document['path'] ?? null) : $document;
+                                        $normalizedPath = is_string($documentPath) ? str_replace('\\', '/', $documentPath) : '';
+                                        if ($normalizedPath !== '' && isset($seenDocumentPaths[$normalizedPath])) {
+                                            continue;
+                                        }
+                                        if ($normalizedPath !== '') {
+                                            $seenDocumentPaths[$normalizedPath] = true;
+                                        }
+                                        $displayDocs[$docKey] = $document;
+                                    }
                                     $docStatus = $acc->document_status ?? 'pending';
                                     $isDocsComplete = ($docStatus === 'complete');
                                 @endphp
@@ -473,9 +525,9 @@
                                         <div class="space-y-1.5">
                                             <div class="flex flex-wrap gap-1">
                                                 @if(is_array($docs) && count($docs) > 0)
-                                                    @foreach($docs as $k => $d)
+                                                    @foreach($displayDocs as $k => $d)
                                                         <button type="button" 
-                                                                @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs))'
+                                                                @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs), {{ $acc->accreditation_id }})'
                                                                 class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-emerald-100 hover:text-emerald-900 text-slate-700 text-[10px] font-bold border border-slate-200 transition-colors cursor-pointer"
                                                                 title="Click to inspect this document">
                                                             <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -542,7 +594,7 @@
 
                                             @if(is_array($docs) && count($docs) > 0)
                                                 <button type="button" 
-                                                        @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs))'
+                                                        @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs), {{ $acc->accreditation_id }})'
                                                         class="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors">
                                                     <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                                     View Docs

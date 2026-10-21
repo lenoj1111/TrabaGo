@@ -19,6 +19,85 @@ use Illuminate\Support\Facades\Storage;
 
 class EmployerPortalController extends Controller
 {
+    private function canonicalAccreditationDocumentKey(string $key): string
+    {
+        $key = preg_replace('/_previous_.+$/', '', $key) ?? $key;
+
+        return match ($key) {
+            'sec_dti_registration' => 'sec_dti',
+            'updated_job_vacancies' => 'job_vacancies_form',
+            'business_permit' => 'mayors_permit',
+            default => $key,
+        };
+    }
+
+    private function mergeAccreditationDocuments(array $previous, array $incoming): array
+    {
+        $incomingByType = [];
+        foreach ($incoming as $key => $document) {
+            $canonicalKey = $this->canonicalAccreditationDocumentKey((string) $key);
+            if (!isset($incomingByType[$canonicalKey]) || $key === $canonicalKey) {
+                $incomingByType[$canonicalKey] = $document;
+            }
+        }
+
+        foreach ($incomingByType as $canonicalKey => $document) {
+            $newPath = is_array($document) ? ($document['path'] ?? null) : $document;
+            $oldDocuments = [];
+
+            foreach ($previous as $key => $oldDocument) {
+                if (
+                    $this->canonicalAccreditationDocumentKey((string) $key) === $canonicalKey
+                    && !str_contains((string) $key, '_previous_')
+                ) {
+                    $oldDocuments[(string) $key] = $oldDocument;
+                }
+            }
+
+            $seenPaths = [];
+            foreach ($oldDocuments as $key => $oldDocument) {
+                $oldPath = is_array($oldDocument) ? ($oldDocument['path'] ?? null) : $oldDocument;
+                if (!is_string($oldPath) || $oldPath === $newPath || isset($seenPaths[$oldPath])) {
+                    unset($previous[$key]);
+                    continue;
+                }
+
+                $seenPaths[$oldPath] = true;
+                $historyKey = $canonicalKey . '_previous_' . now()->format('YmdHis');
+                while (array_key_exists($historyKey, $previous)) {
+                    $historyKey .= '_old';
+                }
+
+                $previous[$historyKey] = is_array($oldDocument)
+                    ? array_merge($oldDocument, [
+                        'revision_status' => 'previous',
+                        'replaced_at' => now()->toIso8601String(),
+                    ])
+                    : [
+                        'path' => $oldDocument,
+                        'revision_status' => 'previous',
+                        'replaced_at' => now()->toIso8601String(),
+                    ];
+                unset($previous[$key]);
+            }
+
+            $document = is_array($document)
+                ? array_merge($document, ['revision_status' => 'new'])
+                : ['path' => $document, 'revision_status' => 'new'];
+            $previous[$canonicalKey] = $document;
+
+            foreach ([
+                'sec_dti' => ['sec_dti_registration'],
+                'job_vacancies_form' => ['updated_job_vacancies'],
+                'mayors_permit' => ['business_permit'],
+            ][$canonicalKey] ?? [] as $alias) {
+                $previous[$alias] = $document;
+            }
+        }
+
+        return $previous;
+    }
+
     private function getOrCreateEmployer(): Employer
     {
         $user = Auth::user();
@@ -458,10 +537,11 @@ class EmployerPortalController extends Controller
                         'original_name' => $file->getClientOriginalName(),
                         'path' => $path,
                         'uploaded_at' => now()->toIso8601String(),
+                        'revision_status' => 'new',
                     ];
                     $docs[$fileKey] = $docEntry;
 
-                    // Mirror synonyms for test and view compatibility
+                    // Preserve legacy form keys while making the viewer collapse aliases.
                     if ($fileKey === 'sec_dti') {
                         $docs['sec_dti_registration'] = $docEntry;
                     } elseif ($fileKey === 'sec_dti_registration') {
@@ -487,7 +567,7 @@ class EmployerPortalController extends Controller
 
         if ($existing) {
             $prevDocs = is_array($existing->documents) ? $existing->documents : json_decode($existing->documents ?? '[]', true);
-            $mergedDocs = array_merge($prevDocs ?: [], $docs);
+            $mergedDocs = $this->mergeAccreditationDocuments($prevDocs ?: [], $docs);
 
             DB::table('employer_accreditation')->where('employer_id', $employer->employer_id)->update([
                 'documents' => json_encode($mergedDocs),
@@ -499,6 +579,7 @@ class EmployerPortalController extends Controller
                 'submitted_at' => now()->toDateString(),
             ]);
         } else {
+            $docs = $this->mergeAccreditationDocuments([], $docs);
             DB::table('employer_accreditation')->insert([
                 'employer_id' => $employer->employer_id,
                 'documents' => json_encode($docs),

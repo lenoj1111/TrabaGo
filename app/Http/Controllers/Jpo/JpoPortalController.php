@@ -279,7 +279,7 @@ class JpoPortalController extends Controller
             ]);
         }
 
-        $path = null;
+        $disk = Storage::disk('public');
         foreach (['file_path', 'path', 'file_url', 'url'] as $pathKey) {
             $candidate = $document[$pathKey] ?? null;
             if (!is_string($candidate) || trim($candidate) === '') {
@@ -288,36 +288,33 @@ class JpoPortalController extends Controller
 
             $urlPath = parse_url($candidate, PHP_URL_PATH);
             $path = is_string($urlPath) && $urlPath !== '' ? $urlPath : $candidate;
-            break;
-        }
+            $path = rawurldecode(str_replace('\\', '/', $path));
+            if (($storagePosition = strrpos($path, '/storage/')) !== false) {
+                $path = substr($path, $storagePosition + strlen('/storage/'));
+            }
+            $path = ltrim($path, '/');
+            foreach (['storage/app/public/', 'app/public/', 'storage/', 'public/'] as $prefix) {
+                if (str_starts_with($path, $prefix)) {
+                    $path = substr($path, strlen($prefix));
+                    break;
+                }
+            }
 
-        abort_unless(is_string($path) && $path !== '', 404, 'Document file not found.');
-        $path = str_replace('\\', '/', $path);
-        if (($storagePosition = strrpos($path, '/storage/')) !== false) {
-            $path = substr($path, $storagePosition + strlen('/storage/'));
-        }
-        $path = ltrim($path, '/');
-        foreach (['storage/app/public/', 'app/public/', 'storage/'] as $prefix) {
-            if (str_starts_with($path, $prefix)) {
-                $path = substr($path, strlen($prefix));
-                break;
+            $segments = explode('/', $path);
+            $isApplicantDocument = str_starts_with($path, 'documents/');
+            $isResume = str_starts_with($path, 'resumes/');
+            $isLegacyId = str_starts_with($path, 'ids/') || str_starts_with($path, 'valid_ids/');
+            if (
+                ($isApplicantDocument || $isResume || $isLegacyId)
+                && !in_array('..', $segments, true)
+                && !in_array('.', $segments, true)
+                && $disk->exists($path)
+            ) {
+                return $disk->response($path, $document['name'] ?? basename($path), [], 'inline');
             }
         }
-        $segments = explode('/', $path);
-        $isApplicantDocument = str_starts_with($path, 'documents/');
-        $isResume = str_starts_with($path, 'resumes/');
-        $isLegacyId = str_starts_with($path, 'ids/') || str_starts_with($path, 'valid_ids/');
-        abort_unless(
-            ($isApplicantDocument || $isResume || $isLegacyId)
-                && !in_array('..', $segments, true)
-                && !in_array('.', $segments, true),
-            404
-        );
 
-        $disk = Storage::disk('public');
-        abort_unless($disk->exists($path), 404, 'Document file not found on storage.');
-
-        return $disk->response($path, basename($path), [], 'inline');
+        abort(404, 'Document file not found on storage.');
     }
 
     // =========================================================================

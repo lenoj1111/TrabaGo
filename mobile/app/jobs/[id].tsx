@@ -119,6 +119,15 @@ export default function JobDetailsScreen() {
   const requirementsList = Array.isArray(job.requirements) && job.requirements.length > 0
     ? job.requirements
     : (job.qualifications ? job.qualifications.split('\n').filter(Boolean) : []);
+  const requiredSkills = Array.isArray(job.required_skills) && job.required_skills.length > 0
+    ? job.required_skills
+    : (Array.isArray(job.skills) ? job.skills : []);
+  const matchDetails = job.match_details;
+  const matchedSkills = matchDetails?.matchedSkills ?? job.matched_skills ?? [];
+  const missingSkills = matchDetails?.missingSkills ?? job.missing_skills ?? [];
+  const benefitsList = Array.isArray(job.benefits)
+    ? job.benefits
+    : (job.benefits ? job.benefits.split(/[\r\n,;]+/).map((item) => item.trim()).filter(Boolean) : []);
 
   const companyName = job.company || job.company_name || 'DMDP Partner Employer';
   const companyInitial = companyName.charAt(0).toUpperCase();
@@ -229,6 +238,85 @@ export default function JobDetailsScreen() {
                 <Text style={styles.reqText}>{req}</Text>
               </View>
             ))}
+          </View>
+        )}
+
+        {requiredSkills.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="construct-outline" size={18} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Required Skills</Text>
+            </View>
+            <View style={styles.skillChips}>
+              {requiredSkills.map((skill, index) => (
+                <View key={`${skill}-${index}`} style={styles.requiredSkillChip}>
+                  <Text style={styles.requiredSkillText}>{skill}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {matchDetails && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="analytics-outline" size={18} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Skill Compatibility Breakdown</Text>
+            </View>
+            <View style={styles.matchSummary}>
+              <Text style={styles.matchPercentage}>{matchDetails.percentage}%</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.matchTier}>{matchDetails.tier}</Text>
+                <Text style={styles.matchCaption}>
+                  {matchDetails.matchedCount} of {matchDetails.totalRequired} required skills matched
+                </Text>
+              </View>
+            </View>
+            <View style={styles.matchLists}>
+              <View style={styles.matchListColumn}>
+                <Text style={styles.matchListTitle}>Your matching skills</Text>
+                {matchedSkills.length > 0 ? matchedSkills.map((skill, index) => (
+                  <View key={`matched-${skill}-${index}`} style={styles.matchSkillRow}>
+                    <Ionicons name="checkmark-circle" size={16} color={COLORS.emerald700} />
+                    <Text style={styles.matchSkillText}>{skill}</Text>
+                  </View>
+                )) : <Text style={styles.emptyMatchText}>No required skills matched yet.</Text>}
+              </View>
+              <View style={styles.matchListColumn}>
+                <Text style={styles.matchListTitle}>Skills to develop</Text>
+                {missingSkills.length > 0 ? missingSkills.map((skill, index) => (
+                  <View key={`missing-${skill}-${index}`} style={styles.matchSkillRow}>
+                    <Ionicons name="add-circle-outline" size={16} color={COLORS.slate500} />
+                    <Text style={styles.matchSkillText}>{skill}</Text>
+                  </View>
+                )) : <Text style={styles.emptyMatchText}>You meet all listed skills.</Text>}
+              </View>
+            </View>
+          </View>
+        )}
+
+        {benefitsList.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="gift-outline" size={18} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Benefits & Perks</Text>
+            </View>
+            {benefitsList.map((benefit, index) => (
+              <View key={`benefit-${index}`} style={styles.reqRow}>
+                <Ionicons name="checkmark-circle-outline" size={18} color={COLORS.emerald700} />
+                <Text style={styles.reqText}>{benefit}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {!!job.other_instructions?.trim() && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="chatbox-ellipses-outline" size={18} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Application Instructions</Text>
+            </View>
+            <Text style={styles.bodyText}>{job.other_instructions}</Text>
           </View>
         )}
 
@@ -482,6 +570,78 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textSecondary,
     lineHeight: 20,
+  },
+  skillChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+  },
+  requiredSkillChip: {
+    backgroundColor: COLORS.emerald50,
+    borderColor: COLORS.emerald200,
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  requiredSkillText: {
+    color: COLORS.emerald800,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  matchSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    backgroundColor: COLORS.emerald50,
+    borderColor: COLORS.emerald200,
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+  },
+  matchPercentage: {
+    color: COLORS.emerald700,
+    fontSize: 24,
+    fontWeight: '800',
+  },
+  matchTier: {
+    color: COLORS.navy,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  matchCaption: {
+    color: COLORS.slate600,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  matchLists: {
+    gap: SPACING.md,
+    marginTop: SPACING.md,
+  },
+  matchListColumn: {
+    gap: SPACING.xs,
+  },
+  matchListTitle: {
+    color: COLORS.slate600,
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  matchSkillRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  matchSkillText: {
+    color: COLORS.textSecondary,
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  emptyMatchText: {
+    color: COLORS.slate500,
+    fontSize: 12,
+    fontStyle: 'italic',
   },
   bottomBar: {
     position: 'absolute',

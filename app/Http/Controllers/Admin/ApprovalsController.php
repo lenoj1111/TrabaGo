@@ -31,20 +31,45 @@ class ApprovalsController extends Controller
         abort_unless(is_array($documents) && array_key_exists($documentKey, $documents), 404);
 
         $document = $documents[$documentKey];
-        $path = is_array($document) ? ($document['path'] ?? null) : $document;
-        abort_unless(is_string($path), 404);
-
-        $path = str_replace('\\', '/', $path);
-        $segments = explode('/', $path);
-        abort_unless(
-            (str_starts_with($path, 'accreditation_docs/') || str_starts_with($path, 'employer_documents/'))
-                && !in_array('..', $segments, true)
-                && !in_array('.', $segments, true),
-            404
-        );
-
         $disk = Storage::disk('public');
-        abort_unless($disk->exists($path), 404);
+        $candidates = is_array($document)
+            ? array_map(fn ($key) => $document[$key] ?? null, ['file_path', 'path', 'file_url', 'url'])
+            : [$document];
+        $path = null;
+
+        foreach ($candidates as $candidate) {
+            if (!is_string($candidate) || trim($candidate) === '') {
+                continue;
+            }
+
+            $urlPath = parse_url($candidate, PHP_URL_PATH);
+            $candidatePath = is_string($urlPath) && $urlPath !== '' ? $urlPath : $candidate;
+            $candidatePath = rawurldecode(str_replace('\\', '/', $candidatePath));
+            if (($storagePosition = strrpos($candidatePath, '/storage/')) !== false) {
+                $candidatePath = substr($candidatePath, $storagePosition + strlen('/storage/'));
+            }
+            $candidatePath = ltrim($candidatePath, '/');
+            foreach (['storage/app/public/', 'app/public/', 'storage/', 'public/'] as $prefix) {
+                if (str_starts_with($candidatePath, $prefix)) {
+                    $candidatePath = substr($candidatePath, strlen($prefix));
+                    break;
+                }
+            }
+
+            $segments = explode('/', $candidatePath);
+            $isAccreditationDocument = str_starts_with($candidatePath, 'accreditation_docs/')
+                || str_starts_with($candidatePath, 'employer_documents/');
+            if (
+                $isAccreditationDocument
+                && !in_array('..', $segments, true)
+                && !in_array('.', $segments, true)
+                && $disk->exists($candidatePath)
+            ) {
+                $path = $candidatePath;
+                break;
+            }
+        }
+        abort_unless(is_string($path), 404);
 
         $filename = is_array($document) && !empty($document['original_name'])
             ? $document['original_name']

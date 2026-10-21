@@ -47,9 +47,41 @@
         this.currentDoc = {};
 
         const entries = Object.entries(docs || {});
+        const seenPaths = new Set();
+        const aliases = {
+            sec_dti_registration: 'sec_dti',
+            updated_job_vacancies: 'job_vacancies_form',
+            business_permit: 'mayors_permit'
+        };
+        const versionGroups = new Map();
+        entries.forEach(([key, val]) => {
+            if (!val || key.includes('_previous_')) return;
+            const canonicalKey = aliases[key] || key;
+            const path = typeof val === 'object' && val !== null ? val.path : val;
+            if (!versionGroups.has(canonicalKey)) versionGroups.set(canonicalKey, []);
+            versionGroups.get(canonicalKey).push({ key, val, path });
+        });
+        const inferredPreviousKeys = new Set();
+        for (const candidates of versionGroups.values()) {
+            const distinctPaths = new Set(candidates.map(item => item.path).filter(Boolean));
+            if (distinctPaths.size < 2) continue;
+            const explicitCurrent = candidates.find(item => item.val?.revision_status === 'new');
+            const current = explicitCurrent || [...candidates].sort((a, b) => {
+                const aDate = Date.parse(a.val?.uploaded_at || '') || 0;
+                const bDate = Date.parse(b.val?.uploaded_at || '') || 0;
+                return bDate - aDate;
+            })[0];
+            candidates.forEach(candidate => {
+                if (candidate !== current) inferredPreviousKeys.add(candidate.key);
+            });
+        }
 
         entries.forEach(([key, val]) => {
             if (!val) return;
+            const documentPath = typeof val === 'object' && val !== null ? val.path : val;
+            const normalizedPath = typeof documentPath === 'string' ? documentPath.replace(/\\/g, '/') : '';
+            if (normalizedPath && seenPaths.has(normalizedPath)) return;
+            if (normalizedPath) seenPaths.add(normalizedPath);
 
             const meta = this.describeDocument(key, val);
             const fileRoute = this.documentRouteTemplate
@@ -68,7 +100,10 @@
                 isImage: meta.isImage,
                 previewUrl: previewUrl,
                 downloadUrl: downloadUrl,
-                status: 'Attached for Review',
+                status: meta.revisionStatus === 'new'
+                    ? 'New upload'
+                    : (meta.revisionStatus === 'previous' || inferredPreviousKeys.has(key) ? 'Previous version' : 'Attached for Review'),
+                revisionStatus: meta.revisionStatus || (inferredPreviousKeys.has(key) ? 'previous' : ''),
                 url: previewUrl || downloadUrl || ''
             });
         });
@@ -105,6 +140,8 @@
 
         let validity = 'Current / Valid';
         const normalizedKey = String(key || '').toLowerCase();
+        const revisionStatus = (typeof val === 'object' && val !== null && val.revision_status)
+            || (normalizedKey.includes('_previous_') ? 'previous' : '');
 
         if (normalizedKey.includes('bir') || normalizedKey.includes('2303') || normalizedKey.includes('tin')) {
             label = 'BIR Certificate of Registration (Form 2303)';
@@ -156,7 +193,7 @@
         const extension = String(extensionSource || '').split('.').pop().toLowerCase();
         const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extension);
 
-        return { label, issuer, validity, filename, isImage };
+        return { label, issuer, validity, filename, isImage, revisionStatus };
     }
 }" class="min-h-screen bg-slate-50/80 px-4 py-6 sm:px-6 lg:px-8">
     <div class="space-y-6 max-w-[1680px] mx-auto">
@@ -251,6 +288,19 @@
                         @forelse($accreditations as $acc)
                             @php
                                 $docs = is_array($acc->documents) ? $acc->documents : json_decode($acc->documents ?? '[]', true);
+                                $displayDocs = [];
+                                $seenDocumentPaths = [];
+                                foreach ($docs ?: [] as $docKey => $document) {
+                                    $documentPath = is_array($document) ? ($document['path'] ?? null) : $document;
+                                    $normalizedPath = is_string($documentPath) ? str_replace('\\', '/', $documentPath) : '';
+                                    if ($normalizedPath !== '' && isset($seenDocumentPaths[$normalizedPath])) {
+                                        continue;
+                                    }
+                                    if ($normalizedPath !== '') {
+                                        $seenDocumentPaths[$normalizedPath] = true;
+                                    }
+                                    $displayDocs[$docKey] = $document;
+                                }
                                 $docStatus = $acc->document_status ?? 'pending';
                                 $isComplete = ($docStatus === 'complete');
                                 $isIncomplete = ($docStatus === 'incomplete');
@@ -278,7 +328,7 @@
                                     <div class="space-y-1.5">
                                         <div class="flex flex-wrap gap-1.5">
                                             @if(is_array($docs) && count($docs) > 0)
-                                                @foreach($docs as $key => $doc)
+                                                @foreach($displayDocs as $key => $doc)
                                                     <button type="button" 
                                                             @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs), {{ $acc->accreditation_id }}, "{{ $key }}")'
                                                             class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-900 hover:border-emerald-300 border border-slate-200/80 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors cursor-pointer group"
