@@ -259,13 +259,13 @@
                         </p>
                     </div>
                 @elseif(auth()->user()->account_status !== 'verified' || !auth()->user()->is_approved)
-                    @if(auth()->user()->account_status === 'unverified' || !$jobseeker->hasDocument('resume') || !$jobseeker->hasDocument('valid_id'))
+                    @if(auth()->user()->account_status === 'unverified' || !$jobseeker->isProfileAndDocumentsComplete())
                         @php
                             $missing = $jobseeker->getMissingRequirements();
                         @endphp
                         <div class="space-y-2 text-right max-w-md ml-auto">
                             <button type="button" 
-                                    onclick="alert('You cannot apply for this job yet. Please submit your required documents (Resume, Valid ID) in the Document Hub and wait for Admin/JPO verification before applying.\n\nMissing requirements:\n- {{ implode('\n- ', $missing) }}')"
+                                    onclick="alert('You cannot apply for this job yet. Please complete your profile and submit the required documents in the Document Hub, then wait for Admin/JPO verification before applying.\n\nMissing requirements:\n- {{ implode('\n- ', $missing) }}')"
                                     class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 px-8 py-3.5 text-sm font-bold shadow-xs transition-colors">
                                 <svg class="w-4 h-4 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                                 <span>Verification Required to Apply</span>
@@ -280,7 +280,7 @@
                                 </p>
                                 <div class="pt-1.5 flex items-center gap-3 font-black text-emerald-800 text-xs border-t border-amber-200">
                                     <a href="{{ route('jobseeker.documents') }}" class="underline hover:text-emerald-950">Upload in Document Hub &rarr;</a>
-                                    <a href="{{ route('jobseeker.profile', ['tab' => 'profile']) }}" class="underline hover:text-emerald-950">Update Profile &rarr;</a>
+                                    <a href="{{ route('jobseeker.profile', ['tab' => 'edit']) }}" class="underline hover:text-emerald-950">Update Profile &rarr;</a>
                                 </div>
                             </div>
                         </div>

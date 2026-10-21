@@ -257,15 +257,28 @@
                 Profile
             </p>
 
-            <a href="{{ route('jobseeker.profile') }}"
-               class="nav-item {{ request()->routeIs('jobseeker.profile*') ? 'nav-item-active' : '' }}"
-               :title="collapsed ? 'Skills Matrix & Profile' : ''">
-                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                </svg>
-                <span class="js-sidebar-label flex-1">Skills Matrix & Profile</span>
-            </a>
+            @php
+                $profileActive = request()->routeIs('jobseeker.profile*');
+                $documentsActive = request()->routeIs('jobseeker.documents*');
+            @endphp
+            <div>
+                <a href="{{ route('jobseeker.profile') }}"
+                   class="nav-item {{ $profileActive || $documentsActive ? 'nav-item-active' : '' }}"
+                   :title="collapsed ? 'Skills Matrix & Profile' : ''">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    <span class="js-sidebar-label flex-1">Skills Matrix & Profile</span>
+                </a>
+
+                <div class="js-submenu js-sidebar-label pl-11 pr-2 space-y-0.5">
+                    <a href="{{ route('jobseeker.documents') }}"
+                       class="subnav-item {{ $documentsActive ? 'subnav-item-active' : '' }}">
+                        Documents
+                    </a>
+                </div>
+            </div>
 
             {{-- ============ COMMUNICATION ============ --}}
             <p class="js-sidebar-label px-3 pt-5 pb-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">

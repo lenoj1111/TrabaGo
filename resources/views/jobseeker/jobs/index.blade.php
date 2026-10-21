@@ -370,7 +370,7 @@
                                     </div>
                                 @elseif(!$jobseeker->isProfileAndDocumentsComplete())
                                     <div class="text-right space-y-1">
-                                        <button type="button" onclick="alert('You cannot apply for this job yet. Please complete your profile and upload required documents (Resume, Valid ID) in the Document Hub.\n\nMissing: {{ implode(', ', $jobseeker->getMissingRequirements()) }}')"
+                                        <button type="button" onclick="alert('You cannot apply for this job yet. Please complete your profile and upload the required documents in the Document Hub.\n\nMissing: {{ implode(', ', $jobseeker->getMissingRequirements()) }}')"
                                                 class="inline-flex items-center gap-1.5 rounded-xl bg-amber-100 border border-amber-300 px-5 py-2.5 text-xs font-bold text-amber-900 cursor-not-allowed">
                                             <svg class="w-3.5 h-3.5 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                                             <span>Incomplete Requirements</span>
