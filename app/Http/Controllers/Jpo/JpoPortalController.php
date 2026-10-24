@@ -84,15 +84,21 @@ class JpoPortalController extends Controller
             ];
         }
 
-        $conversionRate = $totalReferredJobseekers > 0 
-            ? round(($totalHiredReferred / $totalReferredJobseekers) * 100, 1) 
+        $conversionRate = $totalReferredJobseekers > 0
+            ? round(($totalHiredReferred / $totalReferredJobseekers) * 100, 1)
             : 0;
 
         return view('jpo.dashboard', compact(
-            'user', 'pendingJobseekers', 'pendingAccreditations', 
-            'pendingPlacementReports', 'totalReferredJobseekers', 
-            'totalHiredReferred', 'conversionRate', 'monthlyReferralTrends',
-            'recentApplicants', 'recentAccreditations'
+            'user',
+            'pendingJobseekers',
+            'pendingAccreditations',
+            'pendingPlacementReports',
+            'totalReferredJobseekers',
+            'totalHiredReferred',
+            'conversionRate',
+            'monthlyReferralTrends',
+            'recentApplicants',
+            'recentAccreditations'
         ));
     }
 
@@ -105,9 +111,10 @@ class JpoPortalController extends Controller
         $query = JobApplication::with(['jobseeker.skills', 'jobseeker.details', 'jobseeker.socialStatus', 'jobPosting.employer'])
             ->latest();
 
+        // Default: fetch everything for the JPO
         if ($request->has('status') && $request->status !== '') {
             if ($request->status === 'pending') {
-                $query->where('referred_by_jpo', 0);
+                $query->whereIn('status', ['jpo_pending', 'pending', 'reviewed']);
             } elseif ($request->status === 'referred') {
                 $query->where('referred_by_jpo', 1);
             }
@@ -117,8 +124,8 @@ class JpoPortalController extends Controller
             $s = $request->search;
             $query->whereHas('jobseeker', function ($q) use ($s) {
                 $q->where('first_name', 'like', "%{$s}%")
-                  ->orWhere('last_name', 'like', "%{$s}%")
-                  ->orWhere('email', 'like', "%{$s}%");
+                    ->orWhere('last_name', 'like', "%{$s}%")
+                    ->orWhere('email', 'like', "%{$s}%");
             });
         }
 
@@ -129,7 +136,7 @@ class JpoPortalController extends Controller
 
     public function referJobseeker(Request $request, int $id)
     {
-        $application = JobApplication::with(['jobseeker', 'jobPosting.employer.user'])->findOrFail($id);
+        $application = JobApplication::with(['jobseeker.user', 'jobPosting.employer.user'])->findOrFail($id);
 
         $request->validate([
             'recommendation' => 'required|in:refer,training,reject',
@@ -137,17 +144,18 @@ class JpoPortalController extends Controller
         ]);
 
         $recommendation = $request->input('recommendation');
-        $remarks = $request->input('remarks', 'Evaluated and officially endorsed by DMDP Job Placement Officer (JPO).');
+        $remarks = $request->input('remarks', 'Evaluated by DMDP Job Placement Officer (JPO).');
+        $jobseekerUser = $application->jobseeker->user ?? null;
+        $jobTitle = $application->jobPosting->title ?? 'the position';
 
         if ($recommendation === 'refer') {
             $application->update([
                 'referred_by_jpo' => 1,
-                'status' => 'reviewed',
+                'status' => 'pending',
                 'jpo_notes' => $remarks,
                 'jpo_evaluated_at' => now(),
             ]);
 
-            // Create or update jpo_assessments
             $jpoProfile = DB::table('user_profiles')->where('user_id', Auth::id())->first();
             $jpoProfileId = $jpoProfile ? $jpoProfile->profile_id : 1;
 
@@ -162,66 +170,73 @@ class JpoPortalController extends Controller
                 ]
             );
 
-            // Notify Employer that a qualified jobseeker was referred
-            $employerUser = $application->jobPosting->employer->user ?? null;
-            if ($employerUser) {
+            if ($employerUser = $application->jobPosting->employer->user ?? null) {
                 Notification::create([
                     'user_id' => $employerUser->user_id,
                     'title' => 'Qualified Jobseeker Referred by JPO',
-                    'message' => "Job Placement Officer referred applicant '{$application->jobseeker->first_name} {$application->jobseeker->last_name}' for position '{$application->jobPosting->title}'.",
+                    'message' => "Job Placement Officer referred applicant '{$application->jobseeker->first_name} {$application->jobseeker->last_name}' for position '{$jobTitle}'.",
                     'type' => 'manual_review',
                     'is_read' => false,
                     'related_id' => $application->application_id,
                 ]);
             }
 
-            // Notify Jobseeker
-            $jobseekerUser = $application->jobseeker->user ?? null;
             if ($jobseekerUser) {
                 Notification::create([
                     'user_id' => $jobseekerUser->user_id,
                     'title' => 'Application Endorsed by JPO!',
-                    'message' => "Great news! DMDP Job Placement Officer has reviewed and officially endorsed your application for '{$application->jobPosting->title}' to the employer.",
+                    'message' => "Great news! DMDP JPO reviewed your application for '{$jobTitle}' and officially endorsed you to the employer.",
                     'type' => 'approval',
                     'is_read' => false,
                     'related_id' => $application->application_id,
                 ]);
             }
 
-            return redirect()->back()->with('success', "Applicant '{$application->jobseeker->first_name} {$application->jobseeker->last_name}' successfully evaluated and referred to Employer.");
-        } elseif ($recommendation === 'training') {
+            return redirect()->back()->with('success', "Applicant successfully referred to Employer.");
+        }
+
+        if ($recommendation === 'training') {
             $application->update([
-                'jpo_notes' => 'Recommended for upskilling/training modules: ' . $remarks,
+                'status' => 'training_recommended',
+                'referred_by_jpo' => 0,
+                'jpo_notes' => $remarks,
                 'jpo_evaluated_at' => now(),
             ]);
 
-            return redirect()->back()->with('info', 'Applicant recommended for training modules.');
-        } else {
-            $rejectionReason = $request->filled('remarks') 
-                ? $request->input('remarks') 
-                : 'Does not meet the minimum qualification requirements specified for this position based on JPO assessment.';
-
-            $application->update([
-                'status' => 'rejected',
-                'jpo_notes' => $rejectionReason,
-                'jpo_evaluated_at' => now(),
-            ]);
-
-            // Notify Jobseeker
-            $jobseekerUser = $application->jobseeker->user ?? null;
             if ($jobseekerUser) {
                 Notification::create([
                     'user_id' => $jobseekerUser->user_id,
-                    'title' => 'Application Status: Not Qualified',
-                    'message' => "Your application for '{$application->jobPosting->title}' was evaluated by JPO and marked as Not Qualified. Reason: {$rejectionReason}",
-                    'type' => 'manual_review',
+                    'title' => 'Training Recommended by JPO',
+                    'message' => "The JPO has reviewed your application for '{$jobTitle}' and recommended you for upskilling/training. Remarks: {$remarks}",
+                    'type' => 'training',
                     'is_read' => false,
                     'related_id' => $application->application_id,
                 ]);
             }
 
-            return redirect()->back()->with('info', 'Application marked as not qualified for referral.');
+            return redirect()->back()->with('info', 'Applicant recommended for training. Notification sent to jobseeker.');
         }
+
+        // Reject
+        $application->update([
+            'status' => 'rejected',
+            'referred_by_jpo' => 0,
+            'jpo_notes' => $remarks,
+            'jpo_evaluated_at' => now(),
+        ]);
+
+        if ($jobseekerUser) {
+            Notification::create([
+                'user_id' => $jobseekerUser->user_id,
+                'title' => 'Application Status: Not Qualified',
+                'message' => "Your application for '{$jobTitle}' was evaluated by JPO and marked as Not Qualified. Reason: {$remarks}",
+                'type' => 'rejection',
+                'is_read' => false,
+                'related_id' => $application->application_id,
+            ]);
+        }
+
+        return redirect()->back()->with('info', 'Application marked as Not Qualified.');
     }
 
     public function showNsrpForm(int $id)
@@ -397,7 +412,7 @@ class JpoPortalController extends Controller
             }
         }
 
-        $message = match($docStatus) {
+        $message = match ($docStatus) {
             'complete' => "Documents verified and marked as Complete. You may now recommend this employer to Admin.",
             'incomplete' => "Documents marked as Incomplete with reason recorded. Employer has been notified to rectify.",
             default => "Document status set to Pending Review."
@@ -415,8 +430,8 @@ class JpoPortalController extends Controller
 
         // STRICT GUARD: JPO cannot recommend if documents are marked as incomplete
         if (($accreditation->document_status ?? 'pending') === 'incomplete') {
-            $reason = !empty($accreditation->document_incomplete_reason) 
-                ? " (Reason: {$accreditation->document_incomplete_reason})" 
+            $reason = !empty($accreditation->document_incomplete_reason)
+                ? " (Reason: {$accreditation->document_incomplete_reason})"
                 : "";
             return redirect()->back()
                 ->withErrors(['error' => "Cannot recommend employer accreditation to Admin: Required legal documents are marked as Incomplete{$reason}. The employer must rectify documents first."])
@@ -570,7 +585,11 @@ class JpoPortalController extends Controller
         $totalPlacementReportsAudited = DB::table('placement_reports')->where('jpo_evaluated', 1)->count();
 
         return view('jpo.profile', compact(
-            'user', 'profile', 'totalReferrals', 'totalAccreditationsReviewed', 'totalPlacementReportsAudited'
+            'user',
+            'profile',
+            'totalReferrals',
+            'totalAccreditationsReviewed',
+            'totalPlacementReportsAudited'
         ));
     }
 
@@ -688,10 +707,10 @@ class JpoPortalController extends Controller
 
         $details = $jobseeker->details;
         if ($details && !empty($details->training_certificates)) {
-            $docs = is_array($details->training_certificates) 
-                ? $details->training_certificates 
+            $docs = is_array($details->training_certificates)
+                ? $details->training_certificates
                 : (json_decode($details->training_certificates, true) ?: []);
-            
+
             foreach ($docs as &$doc) {
                 if (in_array($doc['category'] ?? '', ['valid_id', 'resume', 'certificate', 'pwd_id'])) {
                     $doc['status'] = 'approved';
@@ -736,10 +755,10 @@ class JpoPortalController extends Controller
 
         $details = $jobseeker->details;
         if ($details && !empty($details->training_certificates)) {
-            $docs = is_array($details->training_certificates) 
-                ? $details->training_certificates 
+            $docs = is_array($details->training_certificates)
+                ? $details->training_certificates
                 : (json_decode($details->training_certificates, true) ?: []);
-            
+
             foreach ($docs as &$doc) {
                 if (($doc['category'] ?? '') === 'valid_id') {
                     $doc['status'] = 'rejected';

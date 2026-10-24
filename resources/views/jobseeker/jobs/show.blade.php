@@ -84,7 +84,7 @@
                     </div>
                 </div>
 
-                <!-- Match Score Badge in green Theme -->
+                <!-- Match Score Badge -->
                 <div class="shrink-0 rounded-2xl bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 text-white p-5 text-center min-w-[140px] shadow-lg border border-emerald-500/30">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-300">AI Skill Match</span>
                     <p class="text-4xl font-black text-emerald-400 mt-1">{{ $match['percentage'] ?? 0 }}%</p>
@@ -102,7 +102,6 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
-                    <!-- Matched Skills -->
                     <div class="space-y-2">
                         <span class="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
                             <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
@@ -119,7 +118,6 @@
                         </div>
                     </div>
 
-                    <!-- Missing Skills -->
                     <div class="space-y-2">
                         <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                             <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
@@ -146,7 +144,6 @@
                 </p>
             </div>
 
-            <!-- Qualifications & Requirements in Bullets -->
             @if(!empty($job->qualifications_list))
                 <div class="space-y-3">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700">Qualifications & Requirements</h3>
@@ -167,7 +164,6 @@
                 </div>
             @endif
 
-            <!-- Required Skills in Bullets -->
             @if(!empty($job->skills_list))
                 <div class="space-y-3">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700">Required Skills</h3>
@@ -181,7 +177,6 @@
                 </div>
             @endif
 
-            <!-- Benefits & Perks in Bullets -->
             @if(!empty($job->benefits_list))
                 <div class="space-y-3">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-900">Benefits & Perks</h3>
@@ -195,7 +190,6 @@
                 </div>
             @endif
 
-            <!-- Other Application Instructions -->
             @if($job->other_instructions)
                 <div class="space-y-3">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700">Application Instructions</h3>
@@ -205,7 +199,6 @@
                 </div>
             @endif
 
-            <!-- Suggested Training Modules -->
             @if(!empty($recommendedTrainings) && count($recommendedTrainings) > 0)
                 <div class="rounded-2xl bg-emerald-50/70 p-5 border border-emerald-200 space-y-3">
                     <div class="flex items-center justify-between">
@@ -247,17 +240,6 @@
                         <span>⚠️</span>
                         Approval Required to Apply
                     </button>
-                @elseif($jobseeker->isEmployed())
-                    <div class="space-y-1.5 text-right">
-                        <div class="inline-flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-300 px-6 py-3.5 text-xs font-bold text-amber-900 shadow-xs">
-                            <svg class="w-4 h-4 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                            <span>Currently Employed at {{ $jobseeker->hired_company ?: 'Partner Employer' }}</span>
-                        </div>
-                        <p class="text-[11px] text-slate-500 max-w-sm ml-auto">
-                            Employed candidates cannot apply for another job. You must request a resignation from your employer and receive approval before applying for other positions.
-                            <a href="{{ route('jobseeker.applications') }}" class="text-emerald-700 font-bold underline">Manage Resignation &rarr;</a>
-                        </p>
-                    </div>
                 @elseif(auth()->user()->account_status !== 'verified' || !auth()->user()->is_approved)
                     @if(auth()->user()->account_status === 'unverified' || !$jobseeker->isProfileAndDocumentsComplete())
                         @php
@@ -285,7 +267,6 @@
                             </div>
                         </div>
                     @else
-                        {{-- Pending Review --}}
                         <div class="space-y-1.5 text-right">
                             <button type="button" 
                                     onclick="alert('Your documents have been submitted and are currently under review by DMDP / JPO officers. You will be able to apply as soon as your account is verified.')"

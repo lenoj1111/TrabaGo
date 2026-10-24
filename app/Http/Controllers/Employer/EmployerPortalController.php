@@ -16,7 +16,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
-
 class EmployerPortalController extends Controller
 {
     private function canonicalAccreditationDocumentKey(string $key): string
@@ -86,11 +85,13 @@ class EmployerPortalController extends Controller
                 : ['path' => $document, 'revision_status' => 'new'];
             $previous[$canonicalKey] = $document;
 
-            foreach ([
-                'sec_dti' => ['sec_dti_registration'],
-                'job_vacancies_form' => ['updated_job_vacancies'],
-                'mayors_permit' => ['business_permit'],
-            ][$canonicalKey] ?? [] as $alias) {
+            foreach (
+                [
+                    'sec_dti' => ['sec_dti_registration'],
+                    'job_vacancies_form' => ['updated_job_vacancies'],
+                    'mayors_permit' => ['business_permit'],
+                ][$canonicalKey] ?? [] as $alias
+            ) {
                 $previous[$alias] = $document;
             }
         }
@@ -133,7 +134,6 @@ class EmployerPortalController extends Controller
         $employer = $this->getOrCreateEmployer();
         $user = Auth::user();
 
-        // Metrics (Single aggregated query)
         $jobStats = JobPosting::where('employer_id', $employer->employer_id)
             ->selectRaw("
                 COUNT(*) as total,
@@ -143,10 +143,9 @@ class EmployerPortalController extends Controller
         $totalJobs = (int) ($jobStats->total ?? 0);
         $approvedJobs = (int) ($jobStats->approved ?? 0);
         $pendingJobs = (int) ($jobStats->pending ?? 0);
-        
-        // Job applications & referred applicants from JPO
+
         $jobIds = JobPosting::where('employer_id', $employer->employer_id)->pluck('job_id');
-        
+
         $totalApplicants = 0;
         $referredCount = 0;
         $interviewCount = 0;
@@ -156,6 +155,7 @@ class EmployerPortalController extends Controller
 
         if ($jobIds->isNotEmpty()) {
             $appStats = JobApplication::whereIn('job_id', $jobIds)
+                ->where('status', '!=', 'jpo_pending') // <-- ADDED THIS LINE
                 ->selectRaw("
                     COUNT(*) as total,
                     SUM(CASE WHEN referred_by_jpo = 1 THEN 1 ELSE 0 END) as referred,
@@ -170,7 +170,6 @@ class EmployerPortalController extends Controller
             $hiredCount = (int) ($appStats->hired ?? 0);
             $pendingScreeningCount = (int) ($appStats->pending_screening ?? 0);
 
-            // Monthly applicant volume trends (single grouped query instead of 12 sequential queries)
             $sixMonthsAgo = now()->subMonths(5)->startOfMonth();
             $trendRows = JobApplication::whereIn('job_id', $jobIds)
                 ->where('created_at', '>=', $sixMonthsAgo)
@@ -205,36 +204,44 @@ class EmployerPortalController extends Controller
             }
         }
 
-        // Top Job Postings with application distribution
         $topJobs = JobPosting::where('employer_id', $employer->employer_id)
-            ->withCount('applications')
+            ->withCount(['applications' => function ($q) {
+                $q->where('status', '!=', 'jpo_pending'); // <-- ADD THIS
+            }])
             ->orderByDesc('applications_count')
             ->take(5)
             ->get();
-
-        // Accreditation status
         $accreditation = DB::table('employer_accreditation')->where('employer_id', $employer->employer_id)->first();
-
-        // Placement reports
         $placementReports = DB::table('placement_reports')->where('employer_id', $employer->employer_id)->get();
 
-        // Recent applicants
         $recentApplicants = JobApplication::with(['jobseeker', 'jobPosting'])
             ->whereIn('job_id', $jobIds)
+            ->where('status', '!=', 'jpo_pending') // <-- ADD THIS
             ->latest()
             ->take(5)
             ->get();
 
         return view('employer.homepage', compact(
-            'employer', 'user', 'totalJobs', 'approvedJobs', 'pendingJobs', 
-            'totalApplicants', 'referredCount', 'interviewCount', 'hiredCount', 'pendingScreeningCount',
-            'topJobs', 'monthlyApplicantTrends', 'accreditation', 
-            'placementReports', 'recentApplicants'
+            'employer',
+            'user',
+            'totalJobs',
+            'approvedJobs',
+            'pendingJobs',
+            'totalApplicants',
+            'referredCount',
+            'interviewCount',
+            'hiredCount',
+            'pendingScreeningCount',
+            'topJobs',
+            'monthlyApplicantTrends',
+            'accreditation',
+            'placementReports',
+            'recentApplicants'
         ));
     }
 
     // =========================================================================
-    // 1. MANAGE JOB POSTINGS (FULL CRUD & APPROVAL PIPELINE)
+    // 1. MANAGE JOB POSTINGS
     // =========================================================================
 
     public function jobPostings(Request $request)
@@ -248,8 +255,8 @@ class EmployerPortalController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('qualifications', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('qualifications', 'like', "%{$search}%");
             });
         }
 
@@ -257,16 +264,18 @@ class EmployerPortalController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        $jobs = $query->withCount('applications')->latest('job_id')->paginate(10)->withQueryString();
-
+        $jobs = $query->withCount(['applications' => function ($q) {
+            $q->where('status', '!=', 'jpo_pending'); // <-- ADD THIS
+        }])->latest('job_id')->paginate(10)->withQueryString();
         $stats = [
-            'total' => JobPosting::where('employer_id', $employer->employer_id)->count(),
-            'approved' => JobPosting::where('employer_id', $employer->employer_id)->where('status', 'approved')->count(),
-            'pending' => JobPosting::where('employer_id', $employer->employer_id)->where('status', 'pending')->count(),
-            'rejected' => JobPosting::where('employer_id', $employer->employer_id)->where('status', 'rejected')->count(),
-            'closed' => JobPosting::where('employer_id', $employer->employer_id)->where('status', 'closed')->count(),
+            'total' => JobApplication::whereIn('job_id', $jobIds)->where('status', '!=', 'jpo_pending')->count(),
+            'pending' => JobApplication::whereIn('job_id', $jobIds)->whereIn('status', ['pending', 'reviewed'])->count(),
+            'interview' => JobApplication::whereIn('job_id', $jobIds)->where('status', 'interview')->count(),
+            'offered' => JobApplication::whereIn('job_id', $jobIds)->where('status', 'offered')->count(),
+            'hired' => JobApplication::whereIn('job_id', $jobIds)->where('status', 'hired')->count(),
+            'not_qualified' => JobApplication::whereIn('job_id', $jobIds)->where('status', 'rejected')->count(),
+            'resignation_requested' => JobApplication::whereIn('job_id', $jobIds)->where('resignation_status', 'requested')->count(),
         ];
-
         return view('employer.job-postings', compact('employer', 'jobs', 'stats', 'accreditation'));
     }
 
@@ -338,12 +347,11 @@ class EmployerPortalController extends Controller
             'valid_until' => $request->input('valid_until', now()->addMonths(2)->toDateString()),
             'accepts_disability' => $request->boolean('accepts_disability'),
             'disability_type' => $request->input('disability_type'),
-            'status' => 'pending', // Sent to Admin for review & approval
+            'status' => 'pending',
             'created_by' => 'employer',
             'created_at' => now()->toDateString(),
         ]);
 
-        // Notify Admins of new job posting requiring approval
         $admins = User::where('role', 'admin')->get();
         foreach ($admins as $admin) {
             Notification::create([
@@ -362,7 +370,15 @@ class EmployerPortalController extends Controller
     public function showJobPosting(int $id)
     {
         $employer = $this->getOrCreateEmployer();
-        $job = JobPosting::with(['applications.jobseeker', 'applications.jobseeker.skills'])
+
+        $job = JobPosting::with([
+            'applications' => function ($query) {
+                // Hide unreferred JPO candidates from the employer
+                $query->where('status', '!=', 'jpo_pending');
+            },
+            'applications.jobseeker',
+            'applications.jobseeker.skills'
+        ])
             ->where('employer_id', $employer->employer_id)
             ->findOrFail($id);
 
@@ -409,7 +425,6 @@ class EmployerPortalController extends Controller
         ]);
 
         $status = $job->status;
-        // If the job posting was previously rejected, re-submitting moves it to pending for re-review
         if ($job->status === 'rejected') {
             $status = 'pending';
         }
@@ -439,7 +454,6 @@ class EmployerPortalController extends Controller
         $employer = $this->getOrCreateEmployer();
         $job = JobPosting::where('employer_id', $employer->employer_id)->findOrFail($id);
 
-        // Check if there are applications
         $applicationsCount = JobApplication::where('job_id', $job->job_id)->count();
         if ($applicationsCount > 0) {
             $job->update(['status' => 'closed']);
@@ -463,7 +477,7 @@ class EmployerPortalController extends Controller
     }
 
     // =========================================================================
-    // 2. PASS ACCREDITATION PAPERS (SEND TO JPO)
+    // 2. ACCREDITATION
     // =========================================================================
 
     public function accreditation()
@@ -505,7 +519,6 @@ class EmployerPortalController extends Controller
                 ->with('error', 'Document upload failed validation: ' . implode(' ', $e->validator->errors()->all()));
         }
 
-        // Ensure target directory exists on public disk
         Storage::disk('public')->makeDirectory('accreditation_docs');
 
         $docs = [];
@@ -526,8 +539,8 @@ class EmployerPortalController extends Controller
         ];
 
         foreach ($files as $fileKey) {
-            $file = $request->file($fileKey) 
-                ?? $request->file("documents.{$fileKey}") 
+            $file = $request->file($fileKey)
+                ?? $request->file("documents.{$fileKey}")
                 ?? (is_array($request->file('documents')) ? ($request->file('documents')[$fileKey] ?? null) : null);
 
             if ($file && $file->isValid()) {
@@ -541,7 +554,6 @@ class EmployerPortalController extends Controller
                     ];
                     $docs[$fileKey] = $docEntry;
 
-                    // Preserve legacy form keys while making the viewer collapse aliases.
                     if ($fileKey === 'sec_dti') {
                         $docs['sec_dti_registration'] = $docEntry;
                     } elseif ($fileKey === 'sec_dti_registration') {
@@ -572,7 +584,7 @@ class EmployerPortalController extends Controller
             DB::table('employer_accreditation')->where('employer_id', $employer->employer_id)->update([
                 'documents' => json_encode($mergedDocs),
                 'status' => 'submitted_to_jpo',
-                'document_status' => 'pending', // Re-opened for JPO evaluation
+                'document_status' => 'pending',
                 'jpo_reviewed' => 0,
                 'supervisor_approved' => 0,
                 'admin_approved' => 0,
@@ -592,7 +604,6 @@ class EmployerPortalController extends Controller
             ]);
         }
 
-        // Advance user account_status to pending_review if previously unverified
         $user = Auth::user();
         if ($user && $user->account_status === 'unverified') {
             DB::table('users')->where('user_id', $user->user_id)->update([
@@ -601,7 +612,6 @@ class EmployerPortalController extends Controller
             ]);
         }
 
-        // Notify all Job Placement Officers (JPO)
         $jpos = User::where('role', 'jpo')->get();
         foreach ($jpos as $jpo) {
             Notification::create([
@@ -619,7 +629,7 @@ class EmployerPortalController extends Controller
     }
 
     // =========================================================================
-    // 3. REVIEW REFERRED JOBSEEKERS (FROM JPO)
+    // 3. REFERRED JOBSEEKERS
     // =========================================================================
 
     public function referredJobseekers(Request $request)
@@ -627,34 +637,36 @@ class EmployerPortalController extends Controller
         $employer = $this->getOrCreateEmployer();
         $jobIds = JobPosting::where('employer_id', $employer->employer_id)->pluck('job_id');
 
+        // 1. Start query and HIDE jpo_pending, rejected, and training_recommended
         $query = JobApplication::with(['jobseeker.skills', 'jobseeker.details', 'jobPosting'])
-            ->whereIn('job_id', $jobIds);
+            ->whereIn('job_id', $jobIds)
+            ->whereNotIn('status', ['jpo_pending', 'rejected', 'training_recommended']);
 
-        // Filter by specific job if requested
         if ($request->filled('job_id')) {
             $query->where('job_id', $request->input('job_id'));
         }
 
-        // Filter by status tab
+        // 2. Filter logic
         if ($request->filled('status') && $request->input('status') !== 'all') {
             $status = $request->input('status');
             if ($status === 'not_qualified') {
                 $query->where('status', 'rejected');
             } elseif ($status === 'resignation_requested') {
                 $query->where('resignation_status', 'requested');
+            } elseif ($status === 'pending') {
+                $query->whereIn('status', ['pending', 'reviewed']); // Ensure it explicitly grabs these
             } else {
                 $query->where('status', $status);
             }
         }
 
-        // Search by candidate name or job title
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->whereHas('jobseeker', function ($jq) use ($search) {
                     $jq->where('first_name', 'like', "%{$search}%")
-                       ->orWhere('last_name', 'like', "%{$search}%")
-                       ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
                 })->orWhereHas('jobPosting', function ($jq) use ($search) {
                     $jq->where('title', 'like', "%{$search}%");
                 });
@@ -664,12 +676,17 @@ class EmployerPortalController extends Controller
         $referredApplicants = $query->latest('application_id')->paginate(15)->withQueryString();
 
         $stats = [
-            'total' => JobApplication::whereIn('job_id', $jobIds)->count(),
+            'total' => JobApplication::whereIn('job_id', $jobIds)
+                ->whereNotIn('status', ['jpo_pending', 'rejected', 'training_recommended'])
+                ->count(),
             'pending' => JobApplication::whereIn('job_id', $jobIds)->whereIn('status', ['pending', 'reviewed'])->count(),
             'interview' => JobApplication::whereIn('job_id', $jobIds)->where('status', 'interview')->count(),
             'offered' => JobApplication::whereIn('job_id', $jobIds)->where('status', 'offered')->count(),
             'hired' => JobApplication::whereIn('job_id', $jobIds)->where('status', 'hired')->count(),
-            'not_qualified' => JobApplication::whereIn('job_id', $jobIds)->where('status', 'rejected')->count(),
+
+            // REMOVED: not_qualified count since it's a JPO decision
+            'not_qualified' => 0,
+
             'resignation_requested' => JobApplication::whereIn('job_id', $jobIds)->where('resignation_status', 'requested')->count(),
         ];
 
@@ -682,7 +699,7 @@ class EmployerPortalController extends Controller
     {
         $employer = $this->getOrCreateEmployer();
         $application = JobApplication::with('jobseeker.details')
-            ->whereHas('jobPosting', fn ($query) => $query->where('employer_id', $employer->employer_id))
+            ->whereHas('jobPosting', fn($query) => $query->where('employer_id', $employer->employer_id))
             ->findOrFail($id);
 
         $jobseeker = $application->jobseeker;
@@ -756,6 +773,14 @@ class EmployerPortalController extends Controller
         abort(404, 'Document file not found on storage.');
     }
 
+    /**
+     * Update applicant status.
+     *
+     * IMPORTANT: The 'hire' action is intentionally NOT supported here.
+     * Hiring can ONLY be finalized when the jobseeker accepts a formal job offer
+     * from their own dashboard (JobseekerPortalController::acceptOffer).
+     * Employers may only: schedule interviews, send offers, or mark not qualified.
+     */
     public function updateApplicantStatus(Request $request, int $id)
     {
         $employer = $this->getOrCreateEmployer();
@@ -764,6 +789,7 @@ class EmployerPortalController extends Controller
         $application = JobApplication::whereIn('job_id', $jobIds)->findOrFail($id);
 
         $action = $request->input('action');
+
         if ($action === 'interview') {
             $request->validate([
                 'interview_schedule' => 'required|date',
@@ -780,7 +806,6 @@ class EmployerPortalController extends Controller
                 'jobseeker_response' => 'pending',
             ]);
 
-            // Notify jobseeker
             $jobseekerUser = $application->jobseeker->user ?? null;
             if ($jobseekerUser) {
                 Notification::create([
@@ -794,7 +819,9 @@ class EmployerPortalController extends Controller
             }
 
             return redirect()->back()->with('success', 'Interview scheduled and invitation sent to applicant.');
-        } elseif ($action === 'offer') {
+        }
+
+        if ($action === 'offer') {
             $request->validate([
                 'offer_salary' => 'nullable|numeric|min:0',
                 'offer_start_date' => 'nullable|date',
@@ -809,7 +836,6 @@ class EmployerPortalController extends Controller
                 'offer_notes' => $request->input('offer_notes'),
             ]);
 
-            // Notify jobseeker
             $jobseekerUser = $application->jobseeker->user ?? null;
             if ($jobseekerUser) {
                 $salaryTxt = $request->filled('offer_salary') ? ' with an offered salary of ₱' . number_format($request->input('offer_salary'), 2) : '';
@@ -824,34 +850,9 @@ class EmployerPortalController extends Controller
             }
 
             return redirect()->back()->with('success', "Formal job offer sent to {$application->jobseeker->first_name} {$application->jobseeker->last_name}!");
-        } elseif ($action === 'hire') {
-            $application->update([
-                'status' => 'hired',
-                'hired_date' => now()->toDateString(),
-            ]);
+        }
 
-            // Automatically tag jobseeker profile as Employed and record hiring company
-            if ($application->jobseeker) {
-                $application->jobseeker->update([
-                    'employment_status' => 'Employed',
-                    'hired_company' => $employer->company_name,
-                ]);
-            }
-
-            $jobseekerUser = $application->jobseeker->user ?? null;
-            if ($jobseekerUser) {
-                Notification::create([
-                    'user_id' => $jobseekerUser->user_id,
-                    'title' => 'Congratulations! You Have Been Hired!',
-                    'message' => "Congratulations! {$employer->company_name} has officially hired you for the '{$application->jobPosting->title}' position.",
-                    'type' => 'approval',
-                    'is_read' => false,
-                    'related_id' => $application->application_id,
-                ]);
-            }
-
-            return redirect()->back()->with('success', "Candidate '{$application->jobseeker->first_name} {$application->jobseeker->last_name}' status updated to Hired!");
-        } elseif ($action === 'not_qualified' || $action === 'reject') {
+        if ($action === 'not_qualified' || $action === 'reject') {
             $remarks = $request->input('remarks') ?: ($request->input('notes') ?: 'Candidate does not meet the specified qualifications for this role.');
 
             $application->update([
@@ -874,7 +875,8 @@ class EmployerPortalController extends Controller
             return redirect()->back()->with('info', "Candidate '{$application->jobseeker->first_name} {$application->jobseeker->last_name}' marked as Not Qualified.");
         }
 
-        return redirect()->back();
+        // Legacy or unauthorized actions (including 'hire') are rejected outright.
+        return redirect()->back()->with('error', 'Invalid action. Hires are only finalized when the candidate accepts a formal job offer.');
     }
 
     public function respondResignation(Request $request, int $id)
@@ -901,7 +903,6 @@ class EmployerPortalController extends Controller
                 'resignation_remarks' => $remarks,
             ]);
 
-            // Untag jobseeker profile: set to Unemployed and clear hired_company
             if ($application->jobseeker) {
                 $application->jobseeker->update([
                     'employment_status' => 'Unemployed',
@@ -909,7 +910,6 @@ class EmployerPortalController extends Controller
                 ]);
             }
 
-            // Notify jobseeker
             $jobseekerUser = $application->jobseeker?->user;
             if ($jobseekerUser) {
                 Notification::create([
@@ -929,7 +929,6 @@ class EmployerPortalController extends Controller
                 'resignation_remarks' => $remarks,
             ]);
 
-            // Notify jobseeker
             $jobseekerUser = $application->jobseeker?->user;
             if ($jobseekerUser) {
                 Notification::create([
@@ -947,7 +946,7 @@ class EmployerPortalController extends Controller
     }
 
     // =========================================================================
-    // 4. GENERATE PLACEMENT REPORT (SEND TO JPO)
+    // 4. PLACEMENT REPORTS
     // =========================================================================
 
     public function placementReports()
@@ -991,7 +990,6 @@ class EmployerPortalController extends Controller
             'submitted_at' => now()->toIso8601String(),
         ];
 
-        // Find or assign first JPO
         $jpo = DB::table('user_profiles')->join('users', 'user_profiles.user_id', '=', 'users.user_id')->where('users.role', 'jpo')->first();
         $jpoProfileId = $jpo ? $jpo->profile_id : 1;
 
@@ -1027,7 +1025,6 @@ class EmployerPortalController extends Controller
             }
         }
 
-        // Notify JPOs
         $jpos = User::where('role', 'jpo')->get();
         foreach ($jpos as $jUser) {
             Notification::create([
@@ -1147,7 +1144,7 @@ class EmployerPortalController extends Controller
     }
 
     // =========================================================================
-    // 6. NOTIFICATION CENTER
+    // 6. NOTIFICATIONS
     // =========================================================================
 
     public function notifications()

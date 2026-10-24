@@ -204,22 +204,13 @@
                 <!-- Quick Action -->
                 <a href="{{ route('employer.referred-jobseekers', ['job_id' => $job->job_id]) }}" class="inline-flex items-center justify-center gap-2 w-full text-center rounded-2xl bg-slate-900 hover:bg-emerald-600 text-white p-4 font-bold text-xs shadow-md transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                    <span>View All in Candidates Portal &rarr;</span>
+                    <span>Manage Candidates &amp; Send Offers &rarr;</span>
                 </a>
             </div>
         </div>
 
         <!-- Candidate Applications Roster Section -->
-        <div x-data="{ 
-            notQualifiedModal: false, 
-            selectedAppId: null, 
-            selectedName: '',
-            openNotQualified(id, name) {
-                this.selectedAppId = id;
-                this.selectedName = name;
-                this.notQualifiedModal = true;
-            }
-        }" class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
+        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                 <div>
                     <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Candidate Pipeline</span>
@@ -286,6 +277,16 @@
                                                 <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                                 <span>Interview</span>
                                             </span>
+                                        @elseif($app->status === 'offered')
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-blue-100 text-blue-800 border border-blue-300">
+                                                <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V4a2 2 0 114 0v4m-4-4a2 2 0 10-4 0v4m-5 5h18m-18 4h18M5 9h14a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2v-9a2 2 0 012-2z"/></svg>
+                                                <span>Offer Pending</span>
+                                            </span>
+                                        @elseif($app->status === 'declined')
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-slate-100 text-slate-700 border border-slate-300">
+                                                <span class="h-1.5 w-1.5 rounded-full bg-slate-500"></span>
+                                                <span>Offer Declined</span>
+                                            </span>
                                         @else
                                             <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-100 text-amber-800 border border-amber-300">
                                                 <span class="h-1.5 w-1.5 rounded-full bg-amber-600 animate-pulse"></span>
@@ -301,32 +302,26 @@
                                                     <span>Hired</span>
                                                 </span>
                                             @elseif($app->status === 'rejected')
-                                                <form action="{{ route('employer.applicants.update_status', $app->application_id) }}" method="POST" class="inline">
-                                                    @csrf
-                                                    <input type="hidden" name="action" value="hire">
-                                                    <button type="submit" onclick="return confirm('Confirm reconsidering and hiring {{ addslashes($candName) }}?')"
-                                                            class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-bold border border-emerald-200">
-                                                        Reconsider & Hire
-                                                    </button>
-                                                </form>
+                                                <span class="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                    <span>Not Qualified</span>
+                                                </span>
+                                            @elseif($app->status === 'offered')
+                                                <span class="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    <span>Awaiting Acceptance</span>
+                                                </span>
+                                            @elseif($app->status === 'declined')
+                                                <span class="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                    <span>Declined</span>
+                                                </span>
                                             @else
-                                                <!-- Mark as Not Qualified Button -->
-                                                <button type="button" 
-                                                        @click="openNotQualified({{ $app->application_id }}, '{{ addslashes($candName) }}')"
-                                                        class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] border border-rose-200 transition-colors">
-                                                    Not Qualified
-                                                </button>
-
-                                                <!-- Mark as Hired Button -->
-                                                <form action="{{ route('employer.applicants.update_status', $app->application_id) }}" method="POST" class="inline">
-                                                    @csrf
-                                                    <input type="hidden" name="action" value="hire">
-                                                    <button type="submit" onclick="return confirm('Confirm officially hiring {{ addslashes($candName) }} for this position?')"
-                                                            class="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] shadow-sm transition-transform hover:scale-105">
-                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                                        <span>Mark as Hired</span>
-                                                    </button>
-                                                </form>
+                                                <a href="{{ route('employer.referred-jobseekers', ['job_id' => $job->job_id]) }}"
+                                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-[11px] border border-emerald-200 transition-colors">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V4a2 2 0 114 0v4m-4-4a2 2 0 10-4 0v4m-5 5h18m-18 4h18M5 9h14a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2v-9a2 2 0 012-2z"/></svg>
+                                                    <span>Manage &amp; Send Offer &rarr;</span>
+                                                </a>
                                             @endif
                                         </div>
                                     </td>
@@ -336,43 +331,6 @@
                     </table>
                 </div>
             @endif
-
-            <!-- Not Qualified Modal -->
-            <div x-show="notQualifiedModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-                <div @click.away="notQualifiedModal = false" class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-                        <div>
-                            <span class="text-xs font-bold text-rose-600 uppercase tracking-wider">Candidate Evaluation</span>
-                            <h3 class="text-xl font-black text-slate-900 mt-0.5">Mark as Not Qualified</h3>
-                        </div>
-                        <button @click="notQualifiedModal = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
-                    </div>
-
-                    <p class="text-xs text-slate-600">
-                        You are marking <strong class="text-slate-900" x-text="selectedName"></strong> as not meeting the required qualifications for this position.
-                    </p>
-
-                    <form :action="'/employer/applicants/' + selectedAppId + '/status'" method="POST" class="space-y-4">
-                        @csrf
-                        <input type="hidden" name="action" value="not_qualified">
-
-                        <div class="space-y-1">
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Reason / Evaluation Notes (Optional)</label>
-                            <textarea name="remarks" rows="3" placeholder="e.g. Lacks specific technical certification, minimum years of experience not met..."
-                                      class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-400"></textarea>
-                        </div>
-
-                        <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
-                            <button type="button" @click="notQualifiedModal = false" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
-                                Cancel
-                            </button>
-                            <button type="submit" class="px-7 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black shadow-lg shadow-rose-600/30">
-                                Confirm & Mark Not Qualified
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
         </div>
 
     </div>
