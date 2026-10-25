@@ -237,17 +237,6 @@
                     {{ $pendingTrainers->count() }}
                 </span>
             </button>
-
-            <button @click="tab = 'jobseekers'" 
-                    :class="tab === 'jobseekers' ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-300 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-50'"
-                    class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs transition-all">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                <span>Jobseeker Approvals</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-black" 
-                      :class="tab === 'jobseekers' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'">
-                    {{ $pendingJobseekers->count() }}
-                </span>
-            </button>
         </div>
 
         <!-- =================================================================== -->

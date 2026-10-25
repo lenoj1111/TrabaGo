@@ -368,7 +368,7 @@
                                         </button>
                                         <p class="text-[10px] text-amber-700 font-semibold">Account undergoing DMDP verification.</p>
                                     </div>
-                                @elseif(!$jobseeker->isProfileAndDocumentsComplete())
+                                @elseif(!$isApproved && !$jobseeker->isProfileAndDocumentsComplete())
                                     <div class="text-right space-y-1">
                                         <button type="button" onclick="alert('You cannot apply for this job yet. Please complete your profile and upload the required documents in the Document Hub.\n\nMissing: {{ implode(', ', $jobseeker->getMissingRequirements()) }}')"
                                                 class="inline-flex items-center gap-1.5 rounded-xl bg-amber-100 border border-amber-300 px-5 py-2.5 text-xs font-bold text-amber-900 cursor-not-allowed">

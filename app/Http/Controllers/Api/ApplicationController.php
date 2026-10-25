@@ -166,17 +166,6 @@ class ApplicationController extends Controller
             ], 403);
         }
 
-        // Profile and Documents Completeness Check (Enforced on Mobile & Web)
-        $missingRequirements = $jobseeker->getMissingRequirements();
-        if (!empty($missingRequirements)) {
-            $missingList = implode(', ', $missingRequirements);
-            return response()->json([
-                'success' => false,
-                'message' => "Application blocked: You cannot apply for a job posting until your profile details and required documents are completed. Missing: {$missingList}. Please complete your profile and upload required documents in the Document Vault.",
-                'missing_requirements' => array_values($missingRequirements),
-            ], 422);
-        }
-
         // Check if already applied
         $existing = JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)
             ->where('job_id', $jobId)
@@ -222,7 +211,7 @@ class ApplicationController extends Controller
     /**
      * Accept a job offer.
      */
-    public function acceptOffer(Request $request, $id)
+    public function acceptOffer(Request $request, int $id)
     {
         $user = $this->resolveUser($request);
         $jobseeker = $this->resolveJobseeker($request, false);
@@ -297,7 +286,7 @@ class ApplicationController extends Controller
     /**
      * Decline a job offer.
      */
-    public function declineOffer(Request $request, $id)
+    public function declineOffer(Request $request, int $id)
     {
         $jobseeker = $this->resolveJobseeker($request, false);
         if (!$jobseeker) {
@@ -390,7 +379,7 @@ class ApplicationController extends Controller
     /**
      * Withdraw an application.
      */
-    public function withdraw(Request $request, $id)
+    public function withdraw(Request $request, int $id)
     {
         $jobseeker = $this->resolveJobseeker($request, false);
 

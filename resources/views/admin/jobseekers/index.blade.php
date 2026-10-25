@@ -130,7 +130,7 @@
                         <tr>
                             <th class="py-4 px-6">Candidate Name</th>
                             <th class="py-4 px-6">Contact & Email</th>
-                            <th class="py-4 px-6">Demographics</th>
+                            <th class="py-4 px-6">Account Created</th>
                             <th class="py-4 px-6 text-center">Trainings & Certs</th>
                             <th class="py-4 px-6 text-center">Applications</th>
                             <th class="py-4 px-6 text-center">JPO Referrals</th>
@@ -165,9 +165,12 @@
                                     'applications_count' => $js->applications_count ?? 0,
                                     'jpo_referrals_count' => $js->jpo_referrals_count ?? 0,
                                     'hired_count' => $js->hired_count ?? 0,
-                                    'created_at' => !empty($js->created_at) ? date('M d, Y', strtotime($js->created_at)) : 'N/A',
+                                    'created_at' => !empty($js->registered_at) ? date('M d, Y', strtotime($js->registered_at)) : 'N/A',
                                     'is_verified' => (bool)($js->is_verified ?? false),
                                     'is_approved' => (bool)($js->user_is_approved ?? false),
+                                    'valid_id_url' => $js->valid_id_url,
+                                    'valid_id_name' => $js->valid_id_name,
+                                    'valid_id_is_image' => (bool) $js->valid_id_is_image,
                                     'missing_requirements' => $js->missing_requirements ?? []
                                 ];
                             @endphp
@@ -180,7 +183,7 @@
                                         <div>
                                             <div class="font-black text-slate-900 text-sm flex items-center gap-1.5 flex-wrap">
                                                 <span>{{ $js->first_name }} {{ $js->last_name }}</span>
-                                                @if(!empty($js->is_verified))
+                                                @if(!empty($js->user_is_approved))
                                                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black border border-emerald-300">
                                                         <svg class="w-3 h-3 text-emerald-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                                                         <span>Verified</span>
@@ -200,23 +203,8 @@
                                     <div class="font-bold text-slate-900">{{ $js->user_email }}</div>
                                     <div class="text-[11px] text-slate-500">{{ $js->mobile_number ?: 'No phone provided' }}</div>
                                 </td>
-                                <td class="py-4 px-6">
-                                    <div class="flex flex-wrap gap-1">
-                                        @if($js->is_pwd)
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 text-blue-800 text-[10px] font-bold border border-blue-200">
-                                                <svg class="w-3 h-3 text-blue-700 shrink-0" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="4" r="2"/><path d="M15.5 13.5A4.5 4.5 0 0 1 11 18a4.5 4.5 0 0 1-4.5-4.5A4.5 4.5 0 0 1 11 9c.4 0 .78.06 1.14.16L13.5 6.5C12.7 6.18 11.87 6 11 6a7.5 7.5 0 0 0-7.5 7.5A7.5 7.5 0 0 0 11 21a7.5 7.5 0 0 0 7.42-6.5h-2.92z"/><path d="M19 10h-4.5l-1.3-2.6A2 2 0 0 0 11.4 6.2L8.5 7.6 9.4 9.4l2.1-1 2 4.1V17h2v-4.5l1.6-1.6H19v-2z"/></svg>
-                                                <span>{{ $js->pwd_type ?: 'PWD' }}</span>
-                                            </span>
-                                        @endif
-                                        @if($js->is_4ps)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200">
-                                                4Ps
-                                            </span>
-                                        @endif
-                                        @if(!$js->is_pwd && !$js->is_4ps)
-                                            <span class="text-slate-400 font-medium">General</span>
-                                        @endif
-                                    </div>
+                                <td class="py-4 px-6 text-slate-600 text-[11px]">
+                                    {{ $js->registered_at ? date('M d, Y', strtotime($js->registered_at)) : 'N/A' }}
                                 </td>
                                 <td class="py-4 px-6 text-center">
                                     <div class="space-y-0.5">
@@ -258,15 +246,19 @@
                                 </td>
                                 <td class="py-4 px-6 text-right">
                                     <div class="flex items-center justify-end gap-1.5">
-                                        @if(empty($js->user_is_approved) || !$js->is_verified)
-                                            <form method="POST" action="{{ route('admin.approvals.jobseekers.approve', $js->user_id) }}" class="inline" onsubmit="return confirm('Approve this jobseeker candidate and authorize full job application privileges?')">
-                                                @csrf
-                                                <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all" title="Approve Candidate">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                                    <span>Approve</span>
-                                                </button>
-                                            </form>
-                                        @endif
+                                        <button type="button"
+                                                data-action="approve-user"
+                                                data-approve-url="{{ route('admin.approvals.jobseekers.approve', $js->jobseeker_id) }}"
+                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all" title="Approve Candidate">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                            <span>Approve</span>
+                                        </button>
+                                        <button type="button"
+                                                data-action="disapprove-user"
+                                                data-approve-url="{{ route('admin.approvals.jobseekers.disapprove', $js->jobseeker_id) }}"
+                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-all" title="Disapprove Candidate">
+                                            <span>Disapprove</span>
+                                        </button>
                                         <button type="button" @click='openView(@json($jsData))'
                                                 class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors" title="View Full Profile">
                                             <svg class="w-3.5 h-3.5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
@@ -387,6 +379,24 @@
                     </div>
                 </div>
 
+                <template x-if="selectedJobseeker.valid_id_url">
+                    <div class="space-y-2 text-xs">
+                        <h4 class="font-black uppercase tracking-wider text-slate-800">Uploaded Valid ID</h4>
+                        <div class="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                            <p class="font-semibold text-slate-600" x-text="selectedJobseeker.valid_id_name || 'Government-issued ID'"></p>
+                            <template x-if="selectedJobseeker.valid_id_is_image">
+                                <img :src="selectedJobseeker.valid_id_url" :alt="selectedJobseeker.valid_id_name || 'Uploaded valid ID'" class="max-h-[60vh] w-full rounded-xl border border-slate-200 bg-white object-contain">
+                            </template>
+                            <template x-if="!selectedJobseeker.valid_id_is_image">
+                                <iframe :src="selectedJobseeker.valid_id_url" :title="selectedJobseeker.valid_id_name || 'Uploaded valid ID'" class="h-[60vh] w-full rounded-xl border border-slate-200 bg-white"></iframe>
+                            </template>
+                            <a :href="selectedJobseeker.valid_id_url" target="_blank" rel="noopener" class="inline-flex items-center gap-1 font-bold text-emerald-700 hover:text-emerald-900">
+                                Open ID in a new tab
+                            </a>
+                        </div>
+                    </div>
+                </template>
+
                 <!-- Inclusivity & Demographics -->
                 <div class="grid grid-cols-2 gap-3 text-xs">
                     <div class="p-3.5 rounded-2xl border"
@@ -409,15 +419,21 @@
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
                     <div>
-                        <template x-if="!selectedJobseeker.is_approved || !selectedJobseeker.is_verified">
-                            <form :action="'{{ url('/admin/approvals/jobseekers') }}/' + selectedJobseeker.user_id + '/approve'" method="POST" onsubmit="return confirm('Authorize and approve this jobseeker candidate?')">
-                                @csrf
-                                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                    <span>Approve Candidate Now</span>
-                                </button>
-                            </form>
-                        </template>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button"
+                                    data-action="approve-user"
+                                    :data-approve-url="'{{ url('/admin/approvals/jobseekers') }}/' + selectedJobseeker.id + '/approve'"
+                                    class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-emerald-700">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                <span>Approve Candidate</span>
+                            </button>
+                            <button type="button"
+                                    data-action="disapprove-user"
+                                    :data-approve-url="'{{ url('/admin/approvals/jobseekers') }}/' + selectedJobseeker.id + '/disapprove'"
+                                    class="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 transition-all hover:bg-rose-100">
+                                <span>Disapprove Candidate</span>
+                            </button>
+                        </div>
                     </div>
                     <button type="button" @click="viewModal = false" class="px-5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
                         Close
@@ -428,4 +444,67 @@
 
     </div>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('click', function (event) {
+            const button = event.target.closest('[data-action="approve-user"], [data-action="disapprove-user"]');
+            if (!button) return;
+            const isDisapproval = button.dataset.action === 'disapprove-user';
+
+            const confirmation = {
+                title: isDisapproval ? 'Disapprove Jobseeker Account?' : 'Approve User Account?',
+                text: isDisapproval
+                    ? 'This will revoke application access and return the account to pending review.'
+                    : 'This will authorize the user account to log in and access system functions.',
+                icon: isDisapproval ? 'warning' : 'question',
+                showCancelButton: true,
+                confirmButtonColor: isDisapproval ? '#e11d48' : '#059669',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: isDisapproval ? 'Yes, disapprove' : 'Yes, approve'
+            };
+
+            if (isDisapproval) {
+                confirmation.input = 'textarea';
+                confirmation.inputLabel = 'Remarks for the jobseeker';
+                confirmation.inputPlaceholder = 'Explain why the account is being disapproved...';
+                confirmation.inputAttributes = { 'aria-label': 'Disapproval remarks' };
+                confirmation.inputValidator = (value) => {
+                    if (!value || !value.trim()) return 'Please enter remarks for the jobseeker.';
+                    if (value.trim().length > 1000) return 'Remarks must be 1000 characters or fewer.';
+                };
+            }
+
+            Swal.fire(confirmation).then((result) => {
+                if (!result.isConfirmed) return;
+
+                const headers = {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                };
+                const request = { method: 'POST', headers };
+                if (isDisapproval) {
+                    headers['Content-Type'] = 'application/json';
+                    request.body = JSON.stringify({ remarks: result.value });
+                }
+
+                fetch(button.dataset.approveUrl, request)
+                .then(async response => {
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok) {
+                        throw new Error(data.message || data.error || 'Unable to update this account.');
+                    }
+                    return data;
+                })
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire(isDisapproval ? 'Disapproved!' : 'Approved!', data.success, 'success').then(() => location.reload());
+                    } else {
+                        Swal.fire('Action Failed', data.error || 'Unable to update this account.', 'error');
+                    }
+                })
+                .catch(error => Swal.fire('Action Failed', error.message || 'Network error occurred.', 'error'));
+            });
+        });
+    });
+</script>
 @endsection

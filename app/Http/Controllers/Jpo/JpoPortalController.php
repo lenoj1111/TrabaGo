@@ -317,6 +317,57 @@ class JpoPortalController extends Controller
         abort(404, 'Document file not found on storage.');
     }
 
+    public function viewJobseekerValidId(int $id)
+    {
+        $jobseeker = Jobseeker::with('details')->findOrFail($id);
+        $documents = $jobseeker->details?->training_certificates ?? [];
+        if (is_string($documents)) {
+            $documents = json_decode($documents, true) ?: [];
+        }
+
+        abort_unless(is_array($documents), 404);
+        $document = collect($documents)->first(
+            fn ($item) => is_array($item) && ($item['category'] ?? null) === 'valid_id'
+        );
+        abort_unless($document, 404);
+
+        $disk = Storage::disk('public');
+        foreach (['file_path', 'path', 'file_url', 'url'] as $key) {
+            $candidate = $document[$key] ?? null;
+            if (!is_string($candidate) || trim($candidate) === '') {
+                continue;
+            }
+
+            $urlPath = parse_url($candidate, PHP_URL_PATH);
+            $path = rawurldecode(str_replace('\\', '/', is_string($urlPath) && $urlPath !== '' ? $urlPath : $candidate));
+            if (($storagePosition = strrpos($path, '/storage/')) !== false) {
+                $path = substr($path, $storagePosition + strlen('/storage/'));
+            }
+            $path = ltrim($path, '/');
+            foreach (['storage/app/public/', 'app/public/', 'storage/', 'public/'] as $prefix) {
+                if (str_starts_with($path, $prefix)) {
+                    $path = substr($path, strlen($prefix));
+                    break;
+                }
+            }
+
+            $segments = explode('/', $path);
+            $isJobseekerDocument = str_starts_with($path, "documents/{$jobseeker->jobseeker_id}/")
+                || str_starts_with($path, 'ids/')
+                || str_starts_with($path, 'valid_ids/');
+            if (
+                $isJobseekerDocument
+                && !in_array('..', $segments, true)
+                && !in_array('.', $segments, true)
+                && $disk->exists($path)
+            ) {
+                return $disk->response($path, $document['name'] ?? basename($path), [], 'inline');
+            }
+        }
+
+        abort(404, 'Valid ID file not found on storage.');
+    }
+
     // =========================================================================
     // 2. EVALUATE ACCREDITATION PAPERS (RECOMMEND TO ADMIN)
     // =========================================================================
@@ -670,7 +721,7 @@ class JpoPortalController extends Controller
         return redirect()->back()->with('success', 'All notifications marked as read.');
     }
 
-    public function approveJobseeker(Request $request, $id)
+        public function approveJobseeker(Request $request, int $id)
     {
         $jobseeker = Jobseeker::with('user', 'details')->find($id);
         if (!$jobseeker) {
@@ -714,22 +765,34 @@ class JpoPortalController extends Controller
             ]);
         }
 
+        // 🔥 Return JSON for Fetch requests, otherwise redirect back
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' verified and approved successfully."
+            ]);
+        }
+
         return redirect()->back()->with('success', "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' verified and approved successfully.");
     }
 
-    public function rejectJobseeker(Request $request, $id)
+    public function rejectJobseeker(Request $request, int $id)
     {
+        $validated = $request->validate([
+            'remarks' => 'required|string|max:1000',
+        ]);
+
         $jobseeker = Jobseeker::with('user', 'details')->find($id);
         if (!$jobseeker) {
             $jobseeker = Jobseeker::with('user', 'details')->where('user_id', $id)->firstOrFail();
         }
 
-        $reason = $request->input('remarks') ?: 'Your submitted government ID does not meet PESO/DMDP criteria. Please upload a clear, legible ID in your Document Hub.';
+        $reason = trim($validated['remarks']);
 
         $user = $jobseeker->user;
         if ($user) {
             $user->update([
-                'account_status' => 'unverified',
+                'status' => 'pending',
+                'account_status' => 'pending_review',
                 'is_approved' => 0,
             ]);
         }
@@ -763,6 +826,135 @@ class JpoPortalController extends Controller
             ]);
         }
 
+        // 🔥 Return JSON for Fetch requests, otherwise redirect back
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' returned for ID revision."
+            ]);
+        }
+
         return redirect()->back()->with('info', "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' returned for ID revision.");
+    }
+
+    public function jobseekers(Request $request)
+    {
+        $query = DB::table('jobseekers')
+            ->leftJoin('users', 'jobseekers.user_id', '=', 'users.user_id')
+            ->leftJoin('social_status', 'jobseekers.jobseeker_id', '=', 'social_status.jobseeker_id')
+            ->select(
+                'jobseekers.*', 
+                'users.user_id',
+                'users.email as user_email', 
+                'users.status as account_status',
+                'users.is_approved as user_is_approved',
+                'users.created_at as registered_at',
+                'social_status.is_pwd',
+                'social_status.pwd_type',
+                'social_status.is_4ps'
+            )
+            ->selectRaw('(SELECT COUNT(*) FROM jobseeker_skills WHERE jobseeker_id = jobseekers.jobseeker_id) as skills_count')
+            ->selectRaw("NULL as skills_text")
+            ->selectRaw('(SELECT COUNT(*) FROM job_applications WHERE jobseeker_id = jobseekers.jobseeker_id) as applications_count')
+            ->selectRaw('(SELECT COUNT(*) FROM training_enrollments WHERE jobseeker_id = jobseekers.jobseeker_id) as trainings_count')
+            ->selectRaw('(SELECT COUNT(*) FROM training_enrollments WHERE jobseeker_id = jobseekers.jobseeker_id AND certificate_issued = 1) as certs_count')
+            ->selectRaw('(SELECT COUNT(*) FROM job_applications WHERE jobseeker_id = jobseekers.jobseeker_id AND referred_by_jpo = 1) as jpo_referrals_count')
+            ->selectRaw("(SELECT COUNT(*) FROM job_applications WHERE jobseeker_id = jobseekers.jobseeker_id AND status = 'hired') as hired_count");
+
+        if ($request->has('search') && $request->search !== '') {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('jobseekers.first_name', 'like', "%{$s}%")
+                ->orWhere('jobseekers.last_name', 'like', "%{$s}%")
+                ->orWhere('users.email', 'like', "%{$s}%");
+            });
+        }
+
+        if ($request->has('employment_status') && $request->employment_status !== '') {
+            $query->where('jobseekers.employment_status', $request->employment_status);
+        }
+
+        if ($request->filled('stage')) {
+            $stage = $request->stage;
+            if ($stage === 'in_training') {
+                $query->whereRaw("(SELECT COUNT(*) FROM training_enrollments WHERE jobseeker_id = jobseekers.jobseeker_id AND status = 'in_progress') > 0");
+            } elseif ($stage === 'certified') {
+                $query->whereRaw('(SELECT COUNT(*) FROM training_enrollments WHERE jobseeker_id = jobseekers.jobseeker_id AND certificate_issued = 1) > 0');
+            } elseif ($stage === 'applied') {
+                $query->whereRaw('(SELECT COUNT(*) FROM job_applications WHERE jobseeker_id = jobseekers.jobseeker_id) > 0');
+            } elseif ($stage === 'jpo_referred') {
+                $query->whereRaw('(SELECT COUNT(*) FROM job_applications WHERE jobseeker_id = jobseekers.jobseeker_id AND referred_by_jpo = 1) > 0');
+            } elseif ($stage === 'hired') {
+                $query->whereRaw("(SELECT COUNT(*) FROM job_applications WHERE jobseeker_id = jobseekers.jobseeker_id AND status = 'hired') > 0");
+            }
+        }
+
+        if ($request->has('pwd_only') && $request->pwd_only == 1) {
+            $query->where('social_status.is_pwd', 1);
+        }
+
+        $jobseekers = $query->orderBy('jobseekers.jobseeker_id', 'desc')->paginate(15)->withQueryString();
+
+        $jobseekerIds = collect($jobseekers->items())->pluck('jobseeker_id');
+        $models = \App\Models\Jobseeker::with(['user', 'details', 'socialStatus', 'skills'])
+            ->whereIn('jobseeker_id', $jobseekerIds)
+            ->get()
+            ->keyBy('jobseeker_id');
+
+        foreach ($jobseekers->items() as $item) {
+            $model = $models->get($item->jobseeker_id);
+            $item->is_verified = $model ? $model->isVerified() : false;
+            $item->missing_requirements = $model ? array_values($model->getMissingRequirements()) : [];
+            $item->skills_text = $model && $model->skills ? $model->skills->pluck('skill_name')->implode(', ') : '';
+
+            $documents = $model && $model->details ? $model->details->training_certificates : [];
+            if (is_string($documents)) {
+                $documents = json_decode($documents, true) ?: [];
+            }
+            $validIdDocument = collect(is_array($documents) ? $documents : [])->first(
+                fn ($document) => is_array($document) && ($document['category'] ?? null) === 'valid_id'
+            );
+            
+            // 🔥 CRITICAL FIX: Use the JPO route instead of the Admin route
+            $item->valid_id_url = $validIdDocument
+                ? route('jpo.jobseekers.valid-id', $item->jobseeker_id)
+                : null;
+                
+            $item->valid_id_name = $validIdDocument['name'] ?? null;
+            $validIdSource = (string) ($validIdDocument['file_path'] ?? $validIdDocument['path'] ?? $validIdDocument['name'] ?? '');
+            $validIdPath = parse_url($validIdSource, PHP_URL_PATH);
+            $item->valid_id_is_image = in_array(
+                strtolower(pathinfo(is_string($validIdPath) ? $validIdPath : $validIdSource, PATHINFO_EXTENSION)),
+                ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+                true
+            );
+
+            $address = $model && $model->details ? ($model->details->address ?? []) : [];
+            $education = $model && $model->details ? ($model->details->education ?? []) : [];
+
+            $barangay = is_array($address) ? ($address['barangay'] ?? '') : '';
+            $city = is_array($address) ? ($address['city'] ?? '') : '';
+            $province = is_array($address) ? ($address['province'] ?? 'Cebu') : 'Cebu';
+            $loc = trim("{$barangay}, {$city}, {$province}", " ,");
+            $item->location_text = !empty($loc) ? $loc : 'Cebu City';
+
+            $eduLevel = is_array($education) ? ($education['level'] ?? ($education['educational_level'] ?? '')) : '';
+            $eduCourse = is_array($education) ? ($education['course'] ?? ($education['course_degree'] ?? '')) : '';
+            $item->education_text = !empty($eduLevel) ? ($eduLevel . (!empty($eduCourse) ? " ({$eduCourse})" : '')) : 'N/A';
+        }
+
+        $totalJobseekers = DB::table('jobseekers')->count();
+        $pwdJobseekers = DB::table('social_status')->where('is_pwd', 1)->count();
+        $employedJobseekers = DB::table('job_applications')->where('status', 'hired')->distinct('jobseeker_id')->count();
+        $inTrainingJobseekers = DB::table('training_enrollments')->where('status', 'in_progress')->distinct('jobseeker_id')->count();
+        $certifiedJobseekers = DB::table('training_enrollments')->where('certificate_issued', 1)->distinct('jobseeker_id')->count();
+
+        return view('jpo.index', compact(
+            'jobseekers', 
+            'totalJobseekers', 
+            'pwdJobseekers', 
+            'employedJobseekers',
+            'inTrainingJobseekers',
+            'certifiedJobseekers'
+        ));
     }
 }

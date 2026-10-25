@@ -471,6 +471,8 @@ class ApprovalsController extends Controller
                 'users.user_id',
                 'users.email as user_email', 
                 'users.status as account_status',
+                'users.is_approved as user_is_approved',
+                'users.created_at as registered_at',
                 'social_status.is_pwd',
                 'social_status.pwd_type',
                 'social_status.is_4ps'
@@ -530,6 +532,25 @@ class ApprovalsController extends Controller
             $item->missing_requirements = $model ? array_values($model->getMissingRequirements()) : [];
             $item->skills_text = $model && $model->skills ? $model->skills->pluck('skill_name')->implode(', ') : '';
 
+            $documents = $model && $model->details ? $model->details->training_certificates : [];
+            if (is_string($documents)) {
+                $documents = json_decode($documents, true) ?: [];
+            }
+            $validIdDocument = collect(is_array($documents) ? $documents : [])->first(
+                fn ($document) => is_array($document) && ($document['category'] ?? null) === 'valid_id'
+            );
+            $item->valid_id_url = $validIdDocument
+                ? route('admin.jobseekers.valid-id', $item->jobseeker_id)
+                : null;
+            $item->valid_id_name = $validIdDocument['name'] ?? null;
+            $validIdSource = (string) ($validIdDocument['file_path'] ?? $validIdDocument['path'] ?? $validIdDocument['name'] ?? '');
+            $validIdPath = parse_url($validIdSource, PHP_URL_PATH);
+            $item->valid_id_is_image = in_array(
+                strtolower(pathinfo(is_string($validIdPath) ? $validIdPath : $validIdSource, PATHINFO_EXTENSION)),
+                ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+                true
+            );
+
             $address = $model && $model->details ? ($model->details->address ?? []) : [];
             $education = $model && $model->details ? ($model->details->education ?? []) : [];
 
@@ -558,6 +579,114 @@ class ApprovalsController extends Controller
             'inTrainingJobseekers',
             'certifiedJobseekers'
         ));
+    }
+
+    public function viewJobseekerValidId(int $id)
+    {
+        $jobseeker = Jobseeker::with('details')->findOrFail($id);
+        $documents = $jobseeker->details?->training_certificates ?? [];
+        if (is_string($documents)) {
+            $documents = json_decode($documents, true) ?: [];
+        }
+
+        abort_unless(is_array($documents), 404);
+        $document = collect($documents)->first(
+            fn ($item) => is_array($item) && ($item['category'] ?? null) === 'valid_id'
+        );
+        abort_unless($document, 404);
+
+        $disk = Storage::disk('public');
+        foreach (['file_path', 'path', 'file_url', 'url'] as $key) {
+            $candidate = $document[$key] ?? null;
+            if (!is_string($candidate) || trim($candidate) === '') {
+                continue;
+            }
+
+            $urlPath = parse_url($candidate, PHP_URL_PATH);
+            $path = rawurldecode(str_replace('\\', '/', is_string($urlPath) && $urlPath !== '' ? $urlPath : $candidate));
+            if (($storagePosition = strrpos($path, '/storage/')) !== false) {
+                $path = substr($path, $storagePosition + strlen('/storage/'));
+            }
+            $path = ltrim($path, '/');
+            foreach (['storage/app/public/', 'app/public/', 'storage/', 'public/'] as $prefix) {
+                if (str_starts_with($path, $prefix)) {
+                    $path = substr($path, strlen($prefix));
+                    break;
+                }
+            }
+
+            $segments = explode('/', $path);
+            $isJobseekerDocument = str_starts_with($path, "documents/{$jobseeker->jobseeker_id}/")
+                || str_starts_with($path, 'ids/')
+                || str_starts_with($path, 'valid_ids/');
+            if (
+                $isJobseekerDocument
+                && !in_array('..', $segments, true)
+                && !in_array('.', $segments, true)
+                && $disk->exists($path)
+            ) {
+                return $disk->response($path, $document['name'] ?? basename($path), [], 'inline');
+            }
+        }
+
+        abort(404, 'Valid ID file not found on storage.');
+    }
+
+    public function disapproveJobseeker(Request $request, int $id)
+    {
+        $validated = $request->validate([
+            'remarks' => 'required|string|max:1000',
+        ]);
+
+        $jobseeker = Jobseeker::with('user', 'details')->findOrFail($id);
+
+        $user = $jobseeker->user;
+        abort_unless($user, 404);
+        $remarks = trim($validated['remarks']);
+
+        DB::transaction(function () use ($jobseeker, $user, $remarks) {
+            $user->update([
+                'is_approved' => 0,
+                'account_status' => 'unverified',
+            ]);
+
+            $details = $jobseeker->details;
+            if ($details && !empty($details->training_certificates)) {
+                $documents = is_array($details->training_certificates)
+                    ? $details->training_certificates
+                    : (json_decode($details->training_certificates, true) ?: []);
+
+                foreach ($documents as &$document) {
+                    if (is_array($document) && ($document['category'] ?? null) === 'valid_id') {
+                        $document['status'] = 'rejected';
+                        $document['rejection_reason'] = $remarks;
+                        $document['reviewed_by'] = Auth::id();
+                        $document['reviewed_at'] = now()->toIso8601String();
+                    }
+                }
+                unset($document);
+
+                $details->training_certificates = array_values($documents);
+                $details->save();
+            }
+
+            Notification::create([
+                'user_id' => $user->user_id,
+                'title' => 'Jobseeker Account Requires Revision',
+                'message' => "Your account approval was revoked. Admin remarks: {$remarks}",
+                'type' => 'rejection',
+                'is_read' => false,
+                'related_id' => $jobseeker->jobseeker_id,
+            ]);
+        });
+
+        $message = "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' has been disapproved. The remarks were sent to the jobseeker.";
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => $message]);
+        }
+
+        return redirect()->back()->with('success', $message);
     }
 
     // =========================================================================
@@ -654,7 +783,13 @@ class ApprovalsController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('success', "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' has been approved and verified successfully.");
+        $message = "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' has been approved and verified successfully.";
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => $message]);
+        }
+
+        return redirect()->back()->with('success', $message);
     }
 
     public function rejectJobseeker(Request $request, int $id)

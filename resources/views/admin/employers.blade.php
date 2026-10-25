@@ -244,14 +244,13 @@
 
                                         {{-- 1. Employer Account Approval (Independent from Accreditation) --}}
                                         @if(!$isAccountApproved && !empty($employer->user_id))
-                                            <form action="{{ route('admin.users.approve', $employer->user_id) }}" method="POST" class="inline">
-                                                @csrf
-                                                <button type="submit"
-                                                        class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-colors shadow-sm"
-                                                        title="Approve Employer Account">
-                                                    ✓ Approve Account
-                                                </button>
-                                            </form>
+                                            <button type="button"
+                                                    data-action="approve-user"
+                                                    data-approve-url="{{ route('admin.users.approve', $employer->user_id) }}"
+                                                    class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-colors shadow-sm"
+                                                    title="Approve Employer Account">
+                                                ✓ Approve Account
+                                            </button>
                                         @endif
 
                                         {{-- 2. Employer Accreditation (Gated by JPO Recommending Approval) --}}
@@ -702,6 +701,42 @@ function employersRegistry(config) {
         }
     };
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('click', function (event) {
+        const button = event.target.closest('[data-action="approve-user"]');
+        if (!button) return;
+
+        Swal.fire({
+            title: 'Approve User Account?',
+            text: 'This will authorize the user account to log in and access system functions.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#059669',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, approve'
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+
+            fetch(button.dataset.approveUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Approved!', data.success, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Approval Failed', data.error || 'Unable to approve this account.', 'error');
+                }
+            })
+            .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));
+        });
+    });
+});
 </script>
 @endpush
 @endsection
