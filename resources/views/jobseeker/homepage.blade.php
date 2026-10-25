@@ -7,30 +7,39 @@
     <div class="w-full max-w-[1680px] mx-auto space-y-6">
         
         @if($jobseeker->isEmployed())
-            <!-- Employment Placement Success Banner -->
-            <div class="rounded-3xl bg-white p-6 text-slate-900 border border-emerald-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-4">
-                    <div class="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0 border border-emerald-200/60 shadow-xs">
-                        <svg class="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <!-- Bold & Highly Noticeable Employment Banner -->
+            <div class="rounded-3xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 p-6 sm:p-8 text-white shadow-xl border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 relative overflow-hidden">
+                <!-- Decorative background icon -->
+                <div class="absolute -right-8 -top-8 opacity-10 pointer-events-none">
+                    <svg class="w-48 h-48" fill="currentColor" viewBox="0 0 24 24"><path d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </div>
+
+                <div class="flex items-center gap-5 relative z-10">
+                    <div class="h-16 w-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-emerald-300 flex items-center justify-center shrink-0 shadow-inner">
+                        <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
                     </div>
                     <div>
-                        <div class="flex items-center gap-2">
-                            <span class="rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px] px-3 py-0.5 border border-emerald-200/60">
-                                Verified Employed
-                            </span>
-                            <span class="text-xs text-slate-500 font-medium">Official DMDP Placement</span>
-                        </div>
-                        <h2 class="text-base font-bold text-slate-900 mt-1">Profile Tagged as Employed</h2>
-                        @if($jobseeker->hired_company)
-                            <p class="text-xs text-slate-600 mt-0.5">
-                                Hired by: <strong class="text-slate-900 font-bold">{{ $jobseeker->hired_company }}</strong>
-                            </p>
-                        @endif
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-[11px] font-black text-emerald-300 uppercase tracking-widest border border-emerald-400/30 mb-2">
+                            <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            Active Placement
+                        </span>
+                        <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight">
+                            Currently Hired at <span class="text-emerald-300">{{ $jobseeker->hired_company ?: 'Partner Employer' }}</span>
+                        </h1>
+                        <p class="text-sm text-emerald-100/80 font-medium mt-1">
+                            Position: <span class="text-white font-bold">{{ $activeHiredApp->jobPosting->title ?? 'Verified Role' }}</span>
+                        </p>
                     </div>
                 </div>
-                <a href="{{ route('jobseeker.profile') }}" class="shrink-0 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-xs font-bold transition-all shadow-sm active:scale-95">
-                    View Employment Record &rarr;
-                </a>
+
+                <div class="relative z-10 shrink-0">
+                    <a href="{{ route('jobseeker.applications') }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-white text-emerald-900 px-5 py-3 text-xs font-black shadow-lg transition-all hover:scale-105 hover:bg-emerald-50">
+                        <span>Manage Employment</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </a>
+                </div>
             </div>
         @endif
 
@@ -70,7 +79,6 @@
                             {{ $topJob->description ?: 'Explore this top-recommended position specifically matched to your verified skillset profile.' }}
                         </p>
 
-                        <!-- Matched Skills Preview Badges -->
                         <div class="pt-2 flex flex-wrap items-center gap-1.5">
                             <span class="text-xs text-slate-400 font-medium">Matched skills:</span>
                             @foreach (array_slice($topMatch['matchedSkills'] ?? [], 0, 3) as $mSkill)
@@ -85,7 +93,6 @@
                         </div>
                     </div>
 
-                    <!-- Right Match Percentage Card & Actions -->
                     <div class="flex flex-col sm:flex-row lg:flex-col items-center lg:items-end justify-between gap-4 shrink-0 bg-slate-50 rounded-2xl p-6 border border-slate-200 shadow-inner">
                         <div class="text-center lg:text-right">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Compatibility Score</span>
@@ -199,7 +206,6 @@
                                     @endif
                                 </p>
 
-                                <!-- Matched Skills Chips -->
                                 <div class="flex flex-wrap gap-1 pt-1">
                                     @foreach (array_slice($match['matchedSkills'] ?? [], 0, 3) as $skill)
                                         <span class="inline-flex items-center gap-1 rounded-md bg-slate-100 text-slate-700 px-2 py-0.5 text-[11px] font-medium border border-slate-200/50">
@@ -228,7 +234,6 @@
             <!-- Right Column: Profile Strength & Recommended Training -->
             <div class="space-y-6">
                 
-                <!-- Profile Strength Meter -->
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Profile Readiness</h3>
@@ -243,7 +248,6 @@
                         Add certified skills and complete your profile to maximize matching accuracy with employers.
                     </p>
 
-                    <!-- Skills Matrix -->
                     <div class="pt-4 border-t border-slate-100 space-y-2.5">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-bold text-slate-900">Verified Skills Matrix</span>
@@ -261,7 +265,6 @@
                     </div>
                 </div>
 
-                <!-- Skill Certifications -->
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Skill Certifications</h3>

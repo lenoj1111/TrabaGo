@@ -34,9 +34,6 @@ class JobseekerPortalController extends Controller
         $this->quizService = $quizService;
     }
 
-    /**
-     * Ensure the authenticated user has an associated Jobseeker profile.
-     */
     private function getOrCreateJobseeker(): Jobseeker
     {
         /** @var \App\Models\User $user */
@@ -59,7 +56,7 @@ class JobseekerPortalController extends Controller
     }
 
     // =========================================================================
-    // 1. DASHBOARD / HOME
+    // 1. DASHBOARD
     // =========================================================================
 
     public function index()
@@ -68,27 +65,23 @@ class JobseekerPortalController extends Controller
         $jobseeker = $this->getOrCreateJobseeker();
         $userSkills = $this->matchingService->getJobseekerSkills($jobseeker);
 
-        // Fetch all active/approved and non-expired jobs
+        $activeHiredApp = $jobseeker->activeHiredApplication;
+
         $allJobs = JobPosting::with('employer')
             ->availableForJobseekers()
             ->orderByDesc('job_id')
             ->get();
 
-        // Calculate AI Cosine Similarity rankings
         $rankedJobs = $this->matchingService->rankJobsForJobseeker($allJobs, $jobseeker);
-
-        // Best match job (Hero banner)
         $bestMatch = !empty($rankedJobs) ? $rankedJobs[0] : null;
 
-        // Statistics
         $availableJobsCount = $allJobs->count();
         $activeApplicationsCount = JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)
             ->whereIn('status', ['pending', 'reviewed', 'interview'])
             ->count();
         $availableTrainingsCount = TrainingProgram::count();
 
-        // Calculate Profile Strength percentage
-        $profileStrength = 30; // base score for account creation
+        $profileStrength = 30;
         if (!empty($jobseeker->first_name) && !empty($jobseeker->last_name)) $profileStrength += 15;
         if (!empty($jobseeker->mobile_number)) $profileStrength += 15;
         if (count($userSkills) >= 3) $profileStrength += 20;
@@ -96,10 +89,8 @@ class JobseekerPortalController extends Controller
         if ($jobseeker->details && (!empty($jobseeker->details->education) || !empty($jobseeker->details->work_experience))) $profileStrength += 20;
         $profileStrength = min(100, $profileStrength);
 
-        // Recommended trainings
         $trainings = TrainingProgram::with('topics')->take(3)->get();
 
-        // Recent applications
         $recentApplications = JobApplication::with(['jobPosting.employer'])
             ->where('jobseeker_id', $jobseeker->jobseeker_id)
             ->orderByDesc('application_id')
@@ -117,12 +108,14 @@ class JobseekerPortalController extends Controller
             'availableTrainingsCount',
             'profileStrength',
             'trainings',
-            'recentApplications'
+            'recentApplications',
+            'activeHiredApp'
+
         ));
     }
 
     // =========================================================================
-    // 2. JOB SEARCH & EXPLORER
+    // 2. JOB SEARCH
     // =========================================================================
 
     public function jobs(Request $request)
@@ -133,27 +126,24 @@ class JobseekerPortalController extends Controller
 
         $query = JobPosting::with('employer')->availableForJobseekers();
 
-        // Search by keyword
         if ($search = $request->input('q')) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'LIKE', "%{$search}%")
-                  ->orWhere('description', 'LIKE', "%{$search}%")
-                  ->orWhere('qualifications', 'LIKE', "%{$search}%")
-                  ->orWhereHas('employer', function ($empQ) use ($search) {
-                      $empQ->where('company_name', 'LIKE', "%{$search}%");
-                  });
+                    ->orWhere('description', 'LIKE', "%{$search}%")
+                    ->orWhere('qualifications', 'LIKE', "%{$search}%")
+                    ->orWhereHas('employer', function ($empQ) use ($search) {
+                        $empQ->where('company_name', 'LIKE', "%{$search}%");
+                    });
             });
         }
 
-        // Filter by location
         if ($location = $request->input('location')) {
             $query->where(function ($q) use ($location) {
                 $q->where('description', 'LIKE', "%{$location}%")
-                  ->orWhere('qualifications', 'LIKE', "%{$location}%");
+                    ->orWhere('qualifications', 'LIKE', "%{$location}%");
             });
         }
 
-        // Filter: PWD Inclusive
         if ($request->boolean('pwd_only') || $request->input('filter') === 'pwd') {
             $query->where('accepts_disability', true);
         }
@@ -161,18 +151,20 @@ class JobseekerPortalController extends Controller
         $allJobs = $query->get();
         $rankedJobs = $this->matchingService->rankJobsForJobseeker($allJobs, $jobseeker);
 
-        // Sorting
         $sort = $request->input('sort', 'match');
         if ($sort === 'latest') {
             usort($rankedJobs, fn($a, $b) => $b['job']->job_id <=> $a['job']->job_id);
         }
 
-        // Get applied job IDs for quick badge indication
-        $appliedJobIds = JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)
-            ->pluck('job_id')
-            ->toArray();
+        // 1. Get all applications
+        $userApplications = JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->get();
 
-        // Selected job for right-hand preview panel
+        // 2. Filter using PHP logic (proven to work in Tinker)
+        $appliedJobIds = $userApplications->filter(function ($app) {
+            if (in_array($app->status, ['withdrawn', 'rejected'])) return false;
+            if ($app->status === 'hired' && $app->resignation_status === 'approved') return false;
+            return true;
+        })->pluck('job_id')->toArray();
         $selectedJobId = $request->input('selected_job', !empty($rankedJobs) ? $rankedJobs[0]['job_id'] : null);
         $selectedItem = null;
         if ($selectedJobId) {
@@ -187,8 +179,7 @@ class JobseekerPortalController extends Controller
             $selectedItem = $rankedJobs[0];
         }
 
-        // Check if user has uploaded resumes for application modal
-        $savedDocuments = $jobseeker->details && $jobseeker->details->training_certificates 
+        $savedDocuments = $jobseeker->details && $jobseeker->details->training_certificates
             ? (is_array($jobseeker->details->training_certificates) ? $jobseeker->details->training_certificates : json_decode($jobseeker->details->training_certificates, true))
             : [];
 
@@ -206,7 +197,6 @@ class JobseekerPortalController extends Controller
     {
         $job = JobPosting::with('employer')->findOrFail($id);
 
-        // Expired or unapproved jobs cannot be viewed by jobseekers
         if ($job->status !== 'approved' || $job->isExpired()) {
             return redirect()->route('jobseeker.jobs')
                 ->with('error', 'This job posting has expired or is no longer available.');
@@ -217,17 +207,28 @@ class JobseekerPortalController extends Controller
         $jobSkills = $this->matchingService->getJobSkills($job);
         $match = $this->matchingService->calculateMatch($userSkills, $jobSkills);
 
-        $hasApplied = JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)
+        // THE FIX: Check the application and ignore if it's a resigned hire
+        $app = JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)
             ->where('job_id', $job->job_id)
             ->first();
 
-        // Suggested training for missing skills
+        $hasApplied = false;
+        if ($app) {
+            if ($app->status === 'hired') {
+                if ($app->resignation_status !== 'approved') {
+                    $hasApplied = true;
+                }
+            } elseif (!in_array($app->status, ['withdrawn', 'rejected'])) {
+                $hasApplied = true;
+            }
+        }
+
         $recommendedTrainings = [];
         if (!empty($match['missingSkills'])) {
             $recommendedTrainings = TrainingProgram::where(function ($q) use ($match) {
                 foreach ($match['missingSkills'] as $missing) {
                     $q->orWhere('title', 'LIKE', "%{$missing}%")
-                      ->orWhere('description', 'LIKE', "%{$missing}%");
+                        ->orWhere('description', 'LIKE', "%{$missing}%");
                 }
             })->take(2)->get();
         }
@@ -244,9 +245,17 @@ class JobseekerPortalController extends Controller
     }
 
     // =========================================================================
-    // 3. APPLICATION LIFECYCLE MANAGEMENT
+    // 3. APPLICATIONS
     // =========================================================================
 
+    /**
+     * Submit a job application.
+     *
+     * NOTE: Employment status is intentionally NOT checked here.
+     * Jobseekers may apply to unlimited jobs even while currently employed.
+     * The only restriction is that they cannot ACCEPT a new offer while
+     * already employed (see acceptOffer()).
+     */
     public function apply(Request $request, int $jobId)
     {
         $jobseeker = $this->getOrCreateJobseeker();
@@ -258,41 +267,41 @@ class JobseekerPortalController extends Controller
                 ->with('error', 'Your account is pending approval. You must be approved before you can apply for a job.');
         }
 
-        // Expired or unapproved jobs cannot be applied to
         if ($job->status !== 'approved' || $job->isExpired()) {
             return redirect()->route('jobseeker.jobs')
                 ->with('error', 'This job posting has expired or is no longer accepting applications.');
         }
 
-        // Employed check: cannot apply for another job while currently hired/employed
-        if ($jobseeker->isEmployed()) {
-            $company = $jobseeker->hired_company ?: 'your current employer';
-            return redirect()->route('jobseeker.jobs')
-                ->with('error', "You cannot apply for another job while currently employed at {$company}. You must request a resignation from your employer and have it approved before applying for other positions.");
-        }
-
-        $user = Auth::user();
-        if (!$user || !$user->isAccountVerified()) {
+        if (!$user->isAccountVerified()) {
             return redirect()->route('jobseeker.documents')
                 ->with('error', 'Your account is unverified. Please submit your valid documents in your Document Hub and wait for Admin/JPO verification before applying for jobs.');
         }
 
-        // Duplicate check
+        // Check if the user has an ACTIVE application for this job
         $existing = JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)
             ->where('job_id', $jobId)
+            ->whereNotIn('status', ['withdrawn', 'rejected'])
+            ->where(function ($query) {
+                $query->where('status', '!=', 'hired')
+                    ->orWhere(function ($q) {
+                        $q->where('status', 'hired')
+                            ->where(function ($sq) {
+                                $sq->whereNull('resignation_status')
+                                    ->orWhere('resignation_status', '!=', 'approved');
+                            });
+                    });
+            })
             ->first();
 
         if ($existing) {
-            return redirect()->back()->with('warning', 'You have already submitted an application for this position.');
+            return redirect()->back()->with('warning', 'You already have an active application for this position.');
         }
-
         // Handle resume file upload if provided
         $resumeUrl = null;
         if ($request->hasFile('resume')) {
             $path = $request->file('resume')->store('resumes', 'public');
             $resumeUrl = Storage::url($path);
 
-            // Sync resume to jobseeker document vault (training_certificates)
             $details = $jobseeker->details;
             if (!$details) {
                 $details = JobseekerDetail::create([
@@ -319,7 +328,7 @@ class JobseekerPortalController extends Controller
             $jobseeker->refresh();
         }
 
-        // Strict Requirement Check: Profile and documents must be completed!
+        // Profile and documents must be complete before applying
         $missingRequirements = $jobseeker->getMissingRequirements();
         if (!empty($missingRequirements)) {
             $missingList = implode(', ', $missingRequirements);
@@ -327,15 +336,13 @@ class JobseekerPortalController extends Controller
                 ->with('error', "Application blocked: You cannot apply for a job posting until your profile details and required documents are completed. Missing: {$missingList}. Please update your profile and upload your documents in the Document Hub.");
         }
 
-        // Create application
         $application = JobApplication::create([
             'job_id' => $jobId,
             'jobseeker_id' => $jobseeker->jobseeker_id,
-            'status' => 'pending',
+            'status' => 'jpo_pending',
             'referred_by_jpo' => false,
         ]);
 
-        // Create notification
         Notification::create([
             'user_id' => Auth::id(),
             'title' => 'Application Submitted',
@@ -359,31 +366,66 @@ class JobseekerPortalController extends Controller
         $query = JobApplication::with(['jobPosting.employer', 'jobPosting'])
             ->where('jobseeker_id', $jobseeker->jobseeker_id);
 
+        // Handle the filter logic for the tabs
         if ($filter !== 'all') {
-            $query->where('status', $filter);
+            if ($filter === 'pending') {
+                // Group JPO Pending, Training, and Employer Pending
+                $query->whereIn('status', ['jpo_pending', 'pending', 'reviewed', 'training_recommended']);
+            } elseif ($filter === 'hired') {
+                // Only show ACTIVE hires (where resignation is not approved)
+                $query->where('status', 'hired')
+                    ->where(function ($q) {
+                        $q->whereNull('resignation_status')
+                            ->orWhere('resignation_status', '!=', 'approved');
+                    });
+            } elseif ($filter === 'rejected') {
+                // Group Rejected
+                $query->where('status', 'rejected');
+            } else {
+                $query->where('status', $filter);
+            }
         }
 
-        $applications = $query->orderByDesc('application_id')->get()->map(function ($app) use ($userSkills) {
+        // Paginate the applications and map the match data
+        $applications = $query->orderByDesc('application_id')->paginate(12)->through(function ($app) use ($userSkills) {
             $jobSkills = $app->jobPosting ? $this->matchingService->getJobSkills($app->jobPosting) : [];
             $match = $this->matchingService->calculateMatch($userSkills, $jobSkills);
             $app->match_details = $match;
             return $app;
         });
 
-        // Counts by status
+        // THE FIX: Accurate Counts
+        $allApps = JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->get();
+
         $counts = [
-            'all' => JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->count(),
-            'offered' => JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->where('status', 'offered')->count(),
-            'pending' => JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->where('status', 'pending')->count(),
-            'reviewed' => JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->where('status', 'reviewed')->count(),
-            'interview' => JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->where('status', 'interview')->count(),
-            'hired' => JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->where('status', 'hired')->count(),
-            'rejected' => JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->where('status', 'rejected')->count(),
+            'all' => $allApps->count(),
+
+            'offered' => $allApps->where('status', 'offered')->count(),
+
+            // Combine JPO Pending, Training, and Employer Pending into "Pending"
+            'pending' => $allApps->whereIn('status', ['jpo_pending', 'pending', 'reviewed', 'training_recommended'])->count(),
+
+            'interview' => $allApps->where('status', 'interview')->count(),
+
+            // Only count ACTIVE hires (resignation not approved)
+            'hired' => $allApps->filter(function ($app) {
+                return $app->status === 'hired' && $app->resignation_status !== 'approved';
+            })->count(),
+
+            // Count rejected
+            'rejected' => $allApps->where('status', 'rejected')->count(),
         ];
 
         return view('jobseeker.applications.index', compact('applications', 'counts', 'filter', 'jobseeker'));
     }
 
+    /**
+     * Accept a job offer.
+     *
+     * This is the ONLY place employment status is enforced. A jobseeker
+     * cannot accept a new offer while already employed — they must first
+     * resign from their current employer and have it approved.
+     */
     public function acceptOffer(int $id)
     {
         $jobseeker = $this->getOrCreateJobseeker();
@@ -395,23 +437,26 @@ class JobseekerPortalController extends Controller
             return redirect()->back()->with('error', 'This application does not have an active job offer to accept.');
         }
 
+        // The only employment restriction in the whole flow.
+        if ($jobseeker->isEmployed()) {
+            $company = $jobseeker->hired_company ?: 'your current employer';
+            return redirect()->back()->with('error', "You are already employed at {$company}. You must resign from your current company before accepting another job offer.");
+        }
+
         $jobTitle = $application->jobPosting?->title ?? 'Position';
         $employer = $application->jobPosting?->employer;
         $companyName = $employer?->company_name ?? 'Company';
 
-        // 1. Mark this application as hired
         $application->update([
             'status' => 'hired',
             'hired_date' => now()->toDateString(),
         ]);
 
-        // 2. Automatically update jobseeker profile to Employed
         $jobseeker->update([
             'employment_status' => 'Employed',
             'hired_company' => $companyName,
         ]);
 
-        // 3. Notify the hiring employer
         if ($employer?->user) {
             Notification::create([
                 'user_id' => $employer->user->user_id,
@@ -423,7 +468,7 @@ class JobseekerPortalController extends Controller
             ]);
         }
 
-        // 4. Auto-withdraw all other active applications
+        // Auto-withdraw other active applications (candidate is now committed to this job).
         $otherActiveApps = JobApplication::with(['jobPosting.employer.user'])
             ->where('jobseeker_id', $jobseeker->jobseeker_id)
             ->where('application_id', '!=', $application->application_id)
@@ -431,11 +476,8 @@ class JobseekerPortalController extends Controller
             ->get();
 
         foreach ($otherActiveApps as $otherApp) {
-            $otherApp->update([
-                'status' => 'withdrawn',
-            ]);
+            $otherApp->update(['status' => 'withdrawn']);
 
-            // Notify other employers
             $otherEmployerUser = $otherApp->jobPosting?->employer?->user;
             if ($otherEmployerUser) {
                 Notification::create([
@@ -449,7 +491,6 @@ class JobseekerPortalController extends Controller
             }
         }
 
-        // 5. Notify the jobseeker
         Notification::create([
             'user_id' => Auth::id(),
             'title' => 'Congratulations on Your New Job!',
@@ -493,7 +534,6 @@ class JobseekerPortalController extends Controller
             'decline_reason' => $reason,
         ]);
 
-        // Notify employer
         if ($employer?->user) {
             Notification::create([
                 'user_id' => $employer->user->user_id,
@@ -508,20 +548,43 @@ class JobseekerPortalController extends Controller
         return redirect()->route('jobseeker.applications')->with('info', "You have declined the job offer for '{$jobTitle}'. Your other applications remain active.");
     }
 
+    /**
+     * Withdraw an application — HARD DELETE.
+     *
+     * Deletes dependent jpo_assessments rows first to satisfy the FK, then
+     * hard-deletes the application so it disappears from the employer's queue.
+     * Re-applying to the same company/position is possible afterward.
+     */
     public function withdrawApplication(int $id)
     {
         $jobseeker = $this->getOrCreateJobseeker();
         $app = JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->findOrFail($id);
 
-        $app->delete();
+        if (in_array($app->status, ['hired', 'declined', 'withdrawn'], true)) {
+            return redirect()->back()->with('error', 'This application can no longer be withdrawn.');
+        }
 
-        return redirect()->back()->with('info', 'Your application has been withdrawn.');
+        $jobTitle = $app->jobPosting?->title ?? 'this position';
+
+        try {
+            DB::transaction(function () use ($app) {
+                DB::table('jpo_assessments')->where('application_id', $app->application_id)->delete();
+                $app->delete();
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            return redirect()->back()->with(
+                'error',
+                'This application could not be withdrawn because it has linked records. Please contact DMDP support.'
+            );
+        }
+
+        return redirect()->back()->with('info', "Your application for '{$jobTitle}' has been withdrawn.");
     }
 
     public function requestResignation(Request $request)
     {
         $jobseeker = $this->getOrCreateJobseeker();
-        
+
         $hiredApplication = $jobseeker->activeHiredApplication;
         if (!$hiredApplication) {
             $hiredApplication = $jobseeker->applications()
@@ -546,7 +609,6 @@ class JobseekerPortalController extends Controller
             'resignation_requested_at' => now(),
         ]);
 
-        // Notify employer
         $employerUser = $hiredApplication->jobPosting?->employer?->user;
         if ($employerUser) {
             Notification::create([
@@ -563,7 +625,7 @@ class JobseekerPortalController extends Controller
     }
 
     // =========================================================================
-    // 4. TRAINING PROGRAMS & QUIZZES
+    // 4. TRAINING
     // =========================================================================
 
     public function trainingIndex(Request $request)
@@ -606,10 +668,8 @@ class JobseekerPortalController extends Controller
             $trainings = $allTrainings;
         }
 
-        // Identify earned vs available skills
         $allTrainingSkills = [];
         foreach ($allTrainings as $t) {
-            // Extract keywords or predefined skills
             $words = array_filter(explode(' ', $t->title), fn($w) => strlen($w) > 3);
             $allTrainingSkills[$t->training_id] = array_values($words);
         }
@@ -617,9 +677,6 @@ class JobseekerPortalController extends Controller
         return view('jobseeker.training.index', compact('trainings', 'userSkills', 'allTrainingSkills', 'jobseeker', 'filter', 'counts'));
     }
 
-    /**
-     * View Training Skills catalog and pathways.
-     */
     public function trainingSkills(Request $request)
     {
         $jobseeker = $this->getOrCreateJobseeker();
@@ -673,9 +730,6 @@ class JobseekerPortalController extends Controller
         return view('jobseeker.training.skills', compact('skillsCatalog', 'userSkills', 'jobseeker'));
     }
 
-    /**
-     * View Training Enrollments dashboard (My Enrollments).
-     */
     public function trainingEnrollments(Request $request)
     {
         $jobseeker = $this->getOrCreateJobseeker();
@@ -781,17 +835,14 @@ class JobseekerPortalController extends Controller
             $enrollment->end_date = now()->toDateString();
             $enrollment->status = 'completed';
 
-            // Check if trainer enabled automatic certificate generation
             $autoGenCert = (bool) ($training->auto_generate_certificate ?? true);
 
             if ($autoGenCert) {
-                // Automatically generate certificate
                 $certNo = 'DMDP-CERT-' . date('Y') . '-' . strtoupper(Str::random(6));
                 $enrollment->certificate_no = $certNo;
                 $enrollment->certificate_issued = 1;
                 $enrollment->certificate_issued_at = now();
 
-                // Store certificate in jobseeker Document Hub vault (training_certificates)
                 $jobseekerDetail = JobseekerDetail::where('jobseeker_id', $jobseeker->jobseeker_id)->first();
                 $existingCerts = [];
                 if ($jobseekerDetail && !empty($jobseekerDetail->training_certificates)) {
@@ -800,7 +851,6 @@ class JobseekerPortalController extends Controller
                         : (json_decode($jobseekerDetail->training_certificates, true) ?: []);
                 }
 
-                // Filter out previous entry if any
                 $existingCerts = array_values(array_filter($existingCerts, fn($c) => ($c['enrollment_id'] ?? null) != $enrollment->enrollment_id));
                 $certUrl = route('jobseeker.certificates.preview', $enrollment->enrollment_id ?: $id);
 
@@ -821,7 +871,6 @@ class JobseekerPortalController extends Controller
                     ['training_certificates' => json_encode($existingCerts)]
                 );
 
-                // Automatically grant skill tag to jobseeker's profile
                 $skillName = trim($training->title);
                 $exists = JobseekerSkill::where('jobseeker_id', $jobseeker->jobseeker_id)
                     ->where('skill_name', $skillName)
@@ -835,7 +884,6 @@ class JobseekerPortalController extends Controller
                     ]);
                 }
 
-                // Celebratory achievement notification
                 Notification::create([
                     'user_id' => Auth::id(),
                     'title' => '🎓 Official Certificate Issued!',
@@ -845,7 +893,6 @@ class JobseekerPortalController extends Controller
                     'related_id' => $training->training_id,
                 ]);
             } else {
-                // Trainer chose manual certificate review/assessment
                 $enrollment->certificate_issued = 0;
 
                 Notification::create([
@@ -874,7 +921,6 @@ class JobseekerPortalController extends Controller
 
         $enrollment->save();
 
-        // If enrollment_id was newly generated, sync with certificate if auto-generated
         if ($passed && ($training->auto_generate_certificate ?? true) && !empty($enrollment->certificate_no)) {
             $jobseekerDetail = JobseekerDetail::where('jobseeker_id', $jobseeker->jobseeker_id)->first();
             if ($jobseekerDetail && !empty($jobseekerDetail->training_certificates)) {
@@ -897,25 +943,22 @@ class JobseekerPortalController extends Controller
                 'passed' => $passed,
                 'score' => $score,
                 'certificate_issued' => $enrollment->certificate_issued ?? 0,
-                'message' => $passed 
-                    ? (($training->auto_generate_certificate ?? true) 
-                        ? "Congratulations! Certificate generated and awarded for '{$training->title}'." 
+                'message' => $passed
+                    ? (($training->auto_generate_certificate ?? true)
+                        ? "Congratulations! Certificate generated and awarded for '{$training->title}'."
                         : "Assessment submitted! Score recorded. Trainer will review before issuing certificate.")
                     : "Quiz completed with score {$score}%. Review the course materials and try again!",
             ]);
         }
 
         return redirect()->route('jobseeker.training.show', $id)
-            ->with($passed ? 'success' : 'info', $passed 
-                ? (($training->auto_generate_certificate ?? true) 
-                    ? "Congratulations! You scored {$score}% and your official certificate has been issued." 
+            ->with($passed ? 'success' : 'info', $passed
+                ? (($training->auto_generate_certificate ?? true)
+                    ? "Congratulations! You scored {$score}% and your official certificate has been issued."
                     : "You scored {$score}%. Your submission has been sent to your trainer for evaluation.")
                 : "You scored {$score}%. Review the lessons and try again to earn your certificate!");
     }
 
-    /**
-     * Preview and print/download Certificate of Completion for Jobseeker.
-     */
     public function previewCertificate(int $id)
     {
         $jobseeker = $this->getOrCreateJobseeker();
@@ -941,7 +984,7 @@ class JobseekerPortalController extends Controller
     }
 
     // =========================================================================
-    // 5. DOCUMENT HUB & VERIFICATION
+    // 5. DOCUMENTS
     // =========================================================================
 
     public function documents()
@@ -959,8 +1002,8 @@ class JobseekerPortalController extends Controller
         $certificatesList = [];
 
         if ($details && !empty($details->training_certificates)) {
-            $docs = is_array($details->training_certificates) 
-                ? $details->training_certificates 
+            $docs = is_array($details->training_certificates)
+                ? $details->training_certificates
                 : json_decode($details->training_certificates, true);
 
             if (is_array($docs)) {
@@ -1064,8 +1107,7 @@ class JobseekerPortalController extends Controller
         $canonicalCategory = ($category === 'certs') ? 'certificate' : $category;
         $file = $request->file('document_file');
 
-        // Category-specific allowed formats
-        $allowedExtensions = match($canonicalCategory) {
+        $allowedExtensions = match ($canonicalCategory) {
             'resume' => ['pdf', 'doc', 'docx'],
             'valid_id', 'pwd_id' => ['jpg', 'jpeg', 'png', 'pdf'],
             'certificate' => ['pdf', 'jpg', 'jpeg', 'png'],
@@ -1080,7 +1122,6 @@ class JobseekerPortalController extends Controller
                 ->withInput();
         }
 
-        // Image resolution check for government IDs
         if (in_array($canonicalCategory, ['valid_id', 'pwd_id']) && in_array($extension, ['jpg', 'jpeg', 'png'])) {
             $imageInfo = @getimagesize($file->getRealPath());
             if ($imageInfo) {
@@ -1108,18 +1149,17 @@ class JobseekerPortalController extends Controller
         $filePath = $file->storeAs('documents/' . $jobseeker->jobseeker_id, $fileName, 'public');
         $fileUrl = Storage::url($filePath);
 
-        $existingDocs = is_array($details->training_certificates) 
-            ? $details->training_certificates 
+        $existingDocs = is_array($details->training_certificates)
+            ? $details->training_certificates
             : (json_decode($details->training_certificates ?? '[]', true) ?: []);
 
-        // Filter out existing single-item category (unless it's an issued certificate from an enrollment)
         $filtered = array_filter($existingDocs, function ($d) use ($canonicalCategory) {
             $cat = ($d['category'] ?? '') === 'certs' ? 'certificate' : ($d['category'] ?? '');
             if ($cat !== $canonicalCategory) {
                 return true;
             }
             if ($canonicalCategory === 'certificate' && !empty($d['enrollment_id'])) {
-                return true; // Keep official issued course certificates
+                return true;
             }
             return false;
         });
@@ -1144,7 +1184,6 @@ class JobseekerPortalController extends Controller
         $details->training_certificates = array_values($filtered);
         $details->save();
 
-        // Update user account_status to pending_review if previously unverified
         $user = Auth::user();
         if ($user && $user->account_status === 'unverified') {
             DB::table('users')->where('user_id', $user->user_id)->update([
@@ -1153,7 +1192,6 @@ class JobseekerPortalController extends Controller
             ]);
         }
 
-        // Create Notification
         Notification::create([
             'user_id' => Auth::id(),
             'title' => 'Document Uploaded',
@@ -1175,8 +1213,8 @@ class JobseekerPortalController extends Controller
         $docId = $request->input('doc_id');
 
         if ($details && !empty($details->training_certificates)) {
-            $existingDocs = is_array($details->training_certificates) 
-                ? $details->training_certificates 
+            $existingDocs = is_array($details->training_certificates)
+                ? $details->training_certificates
                 : (json_decode($details->training_certificates ?? '[]', true) ?: []);
 
             $filtered = array_filter($existingDocs, function ($d) use ($canonicalCategory, $docId) {
@@ -1198,7 +1236,7 @@ class JobseekerPortalController extends Controller
     }
 
     // =========================================================================
-    // 6. NOTIFICATION CENTER
+    // 6. NOTIFICATIONS
     // =========================================================================
 
     public function notifications(Request $request)
@@ -1247,7 +1285,7 @@ class JobseekerPortalController extends Controller
     }
 
     // =========================================================================
-    // 7. PROFILE & SKILLS MATRIX
+    // 7. PROFILE & SKILLS
     // =========================================================================
 
     public function profile()
@@ -1275,13 +1313,13 @@ class JobseekerPortalController extends Controller
             ->get();
 
         return view('jobseeker.profile', compact(
-            'user', 
-            'jobseeker', 
-            'skills', 
-            'details', 
-            'preferences', 
-            'socialStatus', 
-            'profileStrength', 
+            'user',
+            'jobseeker',
+            'skills',
+            'details',
+            'preferences',
+            'socialStatus',
+            'profileStrength',
             'certificates'
         ));
     }
@@ -1303,15 +1341,21 @@ class JobseekerPortalController extends Controller
             'hired_company' => 'nullable|string|max:150',
         ]);
 
-        // 1. Update Core Jobseeker Info
         $jobseeker->update($request->only([
-            'first_name', 'last_name', 'middle_name', 'mobile_number',
-            'civil_status', 'sex', 'citizenship', 'employment_status', 'hired_company', 'birth_date'
+            'first_name',
+            'last_name',
+            'middle_name',
+            'mobile_number',
+            'civil_status',
+            'sex',
+            'citizenship',
+            'employment_status',
+            'hired_company',
+            'birth_date'
         ]));
 
-        // 2. Update Details (Address, Education, Work Experience, Eligibility, Language, Bio)
         $details = $jobseeker->details ?: new JobseekerDetail(['jobseeker_id' => $jobseeker->jobseeker_id]);
-        
+
         $currentAddress = is_array($details->address) ? $details->address : (json_decode($details->address ?? '', true) ?: []);
         $currentAddress['street'] = $request->input('address_street', $currentAddress['street'] ?? '');
         $currentAddress['barangay'] = $request->input('address_barangay', $currentAddress['barangay'] ?? '');
@@ -1355,7 +1399,6 @@ class JobseekerPortalController extends Controller
         $details->language_proficiency = is_array($languages) ? array_values(array_filter($languages)) : [];
         $details->save();
 
-        // 3. Update Preferences
         $preferences = $jobseeker->preferences ?: new JobPreference(['jobseeker_id' => $jobseeker->jobseeker_id]);
         $preferences->occupation1 = $request->input('occupation1', $preferences->occupation1);
         $preferences->occupation2 = $request->input('occupation2', $preferences->occupation2);
@@ -1364,7 +1407,6 @@ class JobseekerPortalController extends Controller
         $preferences->salary_expectation = $request->input('salary_expectation', $preferences->salary_expectation);
         $preferences->save();
 
-        // 4. Update Social Status (PWD, 4Ps, OFW)
         $social = $jobseeker->socialStatus ?: new SocialStatus(['jobseeker_id' => $jobseeker->jobseeker_id]);
         $social->is_pwd = $request->boolean('is_pwd');
         $social->pwd_type = $request->boolean('is_pwd') ? $request->input('pwd_type', '') : null;
@@ -1381,14 +1423,12 @@ class JobseekerPortalController extends Controller
         $jobseeker = $this->getOrCreateJobseeker();
         $submittedSkills = $request->input('skills', []);
 
-        // Delete existing skills
         JobseekerSkill::where('jobseeker_id', $jobseeker->jobseeker_id)->delete();
 
-        // Insert new unique valid skills
         $uniqueSkills = array_values(array_unique(array_filter(array_map('trim', $submittedSkills), function ($s) {
             return !empty($s) && $s !== '[object Object]' && $s !== 'object Object';
         })));
-        
+
         foreach ($uniqueSkills as $skill) {
             JobseekerSkill::create([
                 'jobseeker_id' => $jobseeker->jobseeker_id,
@@ -1451,11 +1491,11 @@ class JobseekerPortalController extends Controller
         $strength = 30;
         if (!empty($jobseeker->first_name) && !empty($jobseeker->last_name)) $strength += 15;
         if (!empty($jobseeker->mobile_number)) $strength += 15;
-        
+
         $skillsCount = $jobseeker->skills ? $jobseeker->skills->count() : 0;
         if ($skillsCount >= 3) $strength += 20;
         elseif ($skillsCount >= 1) $strength += 10;
-        
+
         if ($jobseeker->details && (!empty($jobseeker->details->education) || !empty($jobseeker->details->work_experience) || !empty($jobseeker->details->resume_path))) {
             $strength += 20;
         }
