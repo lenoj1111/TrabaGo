@@ -265,17 +265,17 @@ class EmployerPortalController extends Controller
         }
 
         $jobs = $query->withCount(['applications' => function ($q) {
-            $q->where('status', '!=', 'jpo_pending'); // <-- ADD THIS
+            $q->where('status', '!=', 'jpo_pending'); // Hides JPO pending count from employer
         }])->latest('job_id')->paginate(10)->withQueryString();
+
         $stats = [
-            'total' => JobApplication::whereIn('job_id', $jobIds)->where('status', '!=', 'jpo_pending')->count(),
-            'pending' => JobApplication::whereIn('job_id', $jobIds)->whereIn('status', ['pending', 'reviewed'])->count(),
-            'interview' => JobApplication::whereIn('job_id', $jobIds)->where('status', 'interview')->count(),
-            'offered' => JobApplication::whereIn('job_id', $jobIds)->where('status', 'offered')->count(),
-            'hired' => JobApplication::whereIn('job_id', $jobIds)->where('status', 'hired')->count(),
-            'not_qualified' => JobApplication::whereIn('job_id', $jobIds)->where('status', 'rejected')->count(),
-            'resignation_requested' => JobApplication::whereIn('job_id', $jobIds)->where('resignation_status', 'requested')->count(),
+            'total' => JobPosting::where('employer_id', $employer->employer_id)->count(),
+            'approved' => JobPosting::where('employer_id', $employer->employer_id)->where('status', 'approved')->count(),
+            'pending' => JobPosting::where('employer_id', $employer->employer_id)->where('status', 'pending')->count(),
+            'rejected' => JobPosting::where('employer_id', $employer->employer_id)->where('status', 'rejected')->count(),
+            'closed' => JobPosting::where('employer_id', $employer->employer_id)->where('status', 'closed')->count(),
         ];
+
         return view('employer.job-postings', compact('employer', 'jobs', 'stats', 'accreditation'));
     }
 

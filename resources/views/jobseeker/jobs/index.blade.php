@@ -8,11 +8,12 @@ $currentUser = Auth::user();
 $isApproved = (bool) ($currentUser->is_approved ?? false);
 @endphp
 <div x-data="{ 
-    selectedJobId: '{{ $selectedItem ? $selectedItem['job_id'] : '' }}',
+    selectedJobId: null,
+    previewOpen: false,
     applyModalOpen: false,
     approvalWarningOpen: false,
-    selectedJobTitle: '{{ $selectedItem ? addslashes($selectedItem['job']->title) : '' }}',
-    selectedJobCompany: '{{ $selectedItem ? addslashes($selectedItem['job']->employer->company_name ?? 'Partner Employer') : '' }}'
+    selectedJobTitle: '',
+    selectedJobCompany: ''
 }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
     <div class="w-full max-w-[1680px] mx-auto space-y-6">
 
@@ -85,341 +86,270 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
         </div>
 
         <!-- =================================================================== -->
-        <!-- 2-COLUMN JOB EXPLORER -->
+        <!-- FULL-SCREEN GRID JOB LISTINGS -->
         <!-- =================================================================== -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-            <!-- Left Column: Job Cards List -->
-            <div class="lg:col-span-5 space-y-4">
-                <div class="flex items-center justify-between px-1">
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        {{ count($rankedJobs) }} Positions Found
-                    </p>
-                    <span class="text-xs text-emerald-700 font-bold">Sorted by Skill Match %</span>
-                </div>
-
-                <div class="space-y-3">
-                    @forelse ($rankedJobs as $item)
-                    @php
-                    $job = $item['job'];
-                    $match = $item['match'];
-                    $company = $job->employer->company_name ?? 'Partner Employer';
-
-                    // Strictly rely on the Controller Array
-                    $hasApplied = in_array($job->job_id, $appliedJobIds);
-                    @endphp
-                    <div @click="selectedJobId = '{{ $job->job_id }}'; selectedJobTitle = '{{ addslashes($job->title) }}'; selectedJobCompany = '{{ addslashes($company) }}'"
-                        class="cursor-pointer rounded-2xl border bg-white p-5 shadow-sm transition-all relative overflow-hidden"
-                        :class="selectedJobId === '{{ $job->job_id }}' ? 'border-emerald-500 ring-2 ring-emerald-400/30 bg-emerald-50/20 shadow-md' : 'border-slate-200 hover:border-emerald-200 hover:shadow-md'">
-
-                        @if($hasApplied)
-                        <span class="absolute top-0 right-0 rounded-bl-xl bg-emerald-700 text-white text-[10px] font-black px-2.5 py-0.5 shadow-xs">
-                            APPLIED
-                        </span>
-                        @endif
-
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <h3 class="text-base font-bold text-slate-900 leading-snug group-hover:text-emerald-700">
-                                    {{ $job->title }}
-                                </h3>
-                                <p class="text-xs text-slate-500 font-medium mt-0.5">
-                                    {{ $company }}
-                                </p>
-                            </div>
-                            <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-extrabold border shrink-0 {{ $match['badgeClass'] ?? 'bg-emerald-50 text-emerald-700 border-emerald-200' }}">
-                                <span class="h-1.5 w-1.5 rounded-full {{ $match['dotColor'] ?? 'bg-emerald-500' }}"></span>
-                                {{ $match['percentage'] ?? 0 }}%
-                            </span>
-                        </div>
-
-                        <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                            <span class="inline-flex items-center gap-1 text-slate-500">
-                                <svg class="h-3.5 w-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                </svg>
-                                Cebu City
-                            </span>
-                            <span>&bull;</span>
-                            <span class="font-bold text-slate-800">{{ $job->salary_range ?: 'Salary not specified' }}</span>
-                            @if ($job->accepts_disability)
-                            <span>&bull;</span>
-                            <span class="text-emerald-700 font-bold inline-flex items-center gap-1">
-                                <svg class="w-3 h-3 text-emerald-700" fill="currentColor" viewBox="0 0 24 24">
-                                    <circle cx="12" cy="4" r="2" />
-                                    <path d="M15.5 13.5A4.5 4.5 0 0 1 11 18a4.5 4.5 0 0 1-4.5-4.5A4.5 4.5 0 0 1 11 9c.4 0 .78.06 1.14.16L13.5 6.5C12.7 6.18 11.87 6 11 6a7.5 7.5 0 0 0-7.5 7.5A7.5 7.5 0 0 0 11 21a7.5 7.5 0 0 0 7.42-6.5h-2.92z" />
-                                    <path d="M19 10h-4.5l-1.3-2.6A2 2 0 0 0 11.4 6.2L8.5 7.6 9.4 9.4l2.1-1 2 4.1V17h2v-4.5l1.6-1.6H19v-2z" />
-                                </svg>
-                                <span>PWD</span>
-                            </span>
-                            @endif
-                            @if ($job->valid_until)
-                            <span>&bull;</span>
-                            <span class="inline-flex items-center gap-1 font-medium {{ $job->valid_until->isPast() ? 'text-rose-600 font-bold' : ($job->valid_until->diffInDays(now()) <= 7 ? 'text-amber-700 font-bold' : 'text-slate-500') }}">
-                                <svg class="h-3.5 w-3.5 {{ $job->valid_until->isPast() ? 'text-rose-500' : 'text-emerald-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                Until {{ $job->valid_until->format('M d, Y') }}
-                                @if(!$job->valid_until->isPast() && $job->valid_until->diffInDays(now()) <= 7)
-                                    <span class="rounded bg-amber-100 text-amber-800 text-[9px] px-1 font-extrabold">Soon</span>
-                            @elseif($job->valid_until->isPast())
-                            <span class="rounded bg-rose-100 text-rose-800 text-[9px] px-1 font-extrabold">Expired</span>
-                            @endif
-                            </span>
-                            @endif
-                        </div>
-
-                        <!-- Skills preview pills -->
-                        <div class="mt-3 flex flex-wrap gap-1">
-                            @foreach (array_slice($match['matchedSkills'] ?? [], 0, 2) as $s)
-                            <span class="rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold inline-flex items-center gap-1">
-                                <svg class="w-2.5 h-2.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>{{ $s }}</span>
-                            </span>
-                            @endforeach
-                            @if(count($match['missingSkills'] ?? []) > 0)
-                            <span class="rounded-lg bg-slate-100 text-slate-600 px-2 py-0.5 text-[10px]">
-                                +{{ count($match['missingSkills']) }} missing
-                            </span>
-                            @endif
-                        </div>
-                    </div>
-                    @empty
-                    <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
-                        No jobs matched your filter criteria.
-                    </div>
-                    @endforelse
-                </div>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between px-1">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    {{ count($rankedJobs) }} Positions Available
+                </p>
+                <span class="text-xs text-emerald-700 font-bold">Click any box to inspect details & apply</span>
             </div>
 
-            <!-- Right Column: Sticky Selected Job Details Preview -->
-            <div class="lg:col-span-7 sticky top-20">
-                @if ($selectedItem)
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                @forelse ($rankedJobs as $item)
+                @php
+                $job = $item['job'];
+                $match = $item['match'];
+                $company = $job->employer->company_name ?? 'Partner Employer';
+                $hasApplied = in_array($job->job_id, $appliedJobIds);
+                @endphp
+                <div @click="selectedJobId = '{{ $job->job_id }}'; selectedJobTitle = '{{ addslashes($job->title) }}'; selectedJobCompany = '{{ addslashes($company) }}'; previewOpen = true;"
+                    class="cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-emerald-400 transition-all relative overflow-hidden flex flex-col justify-between group">
+
+                    @if($hasApplied)
+                    <span class="absolute top-0 right-0 rounded-bl-xl bg-emerald-700 text-white text-[9px] font-black px-2.5 py-1 shadow-xs">
+                        APPLIED
+                    </span>
+                    @endif
+
+                    <div>
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0 pr-2">
+                                <span class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">{{ $company }}</span>
+                                <h3 class="text-base font-black text-slate-900 group-hover:text-emerald-700 transition-colors leading-snug mt-0.5">
+                                    {{ $job->title }}
+                                </h3>
+                            </div>
+                            <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black border shrink-0 {{ $match['badgeClass'] ?? 'bg-emerald-50 text-emerald-700 border-emerald-200' }}">
+                                {{ $match['percentage'] ?? 0 }}% Match
+                            </span>
+                        </div>
+
+                        <p class="text-xs text-slate-500 mt-2 flex items-center gap-2">
+                            <span>{{ $job->location ?: 'Location not specified' }}</span>
+                            <span>&bull;</span>
+                            <span>{{ $job->salary_range ?: 'Salary not specified' }}</span>
+                        </p>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                        @if ($job->accepts_disability)
+                        <span class="text-emerald-600 font-bold inline-flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                                <circle cx="12" cy="4" r="2" />
+                                <path d="M15.5 13.5A4.5 4.5 0 0 1 11 18a4.5 4.5 0 0 1-4.5-4.5A4.5 4.5 0 0 1 11 9c.4 0 .78.06 1.14.16L13.5 6.5C12.7 6.18 11.87 6 11 6a7.5 7.5 0 0 0-7.5 7.5A7.5 7.5 0 0 0 11 21a7.5 7.5 0 0 0 7.42-6.5h-2.92z" />
+                                <path d="M19 10h-4.5l-1.3-2.6A2 2 0 0 0 11.4 6.2L8.5 7.6 9.4 9.4l2.1-1 2 4.1V17h2v-4.5l1.6-1.6H19v-2z" />
+                            </svg>
+                            PWD Inclusive
+                        </span>
+                        @else
+                        <span class="text-slate-400">Standard Opening</span>
+                        @endif
+                        <span class="font-bold text-emerald-600 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                            View Details &rarr;
+                        </span>
+                    </div>
+                </div>
+                @empty
+                <div class="col-span-full rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center text-slate-500">
+                    No jobs matched your filter criteria.
+                </div>
+                @endforelse
+            </div>
+        </div>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE-OVER DRAWER WITH SMOOTH TRANSITIONS & FADE SWITCHING -->
+    <!-- =================================================================== -->
+    <div x-show="previewOpen" x-cloak
+        class="fixed inset-0 z-50 overflow-hidden bg-slate-950/40 backdrop-blur-xs"
+        x-transition:enter="transition-opacity ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition-opacity ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0">
+
+        <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
+            <div @click.away="previewOpen = false"
+                class="w-screen max-w-xl bg-white shadow-2xl flex flex-col h-full border-l border-slate-200"
+                x-transition:enter="transform transition ease-out duration-300"
+                x-transition:enter-start="translate-x-full"
+                x-transition:enter-end="translate-x-0"
+                x-transition:leave="transform transition ease-in duration-200"
+                x-transition:leave-start="translate-x-0"
+                x-transition:leave-end="translate-x-full">
+
+                @if ($rankedJobs && count($rankedJobs) > 0)
                 @foreach ($rankedJobs as $item)
                 @php
                 $job = $item['job'];
                 $match = $item['match'];
                 $company = $job->employer->company_name ?? 'Partner Employer';
-
-                // Strictly rely on the Controller Array
                 $hasApplied = in_array($job->job_id, $appliedJobIds);
                 @endphp
-                <div x-show="selectedJobId === '{{ $job->job_id }}'" class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
 
-                    <!-- Header & Match Meter -->
-                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-6 border-b border-slate-100">
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">{{ $company }}</span>
-                                @if ($job->accepts_disability)
-                                <span class="rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold inline-flex items-center gap-1">
-                                    <svg class="w-3 h-3 text-emerald-700" fill="currentColor" viewBox="0 0 24 24">
-                                        <circle cx="12" cy="4" r="2" />
-                                        <path d="M15.5 13.5A4.5 4.5 0 0 1 11 18a4.5 4.5 0 0 1-4.5-4.5A4.5 4.5 0 0 1 11 9c.4 0 .78.06 1.14.16L13.5 6.5C12.7 6.18 11.87 6 11 6a7.5 7.5 0 0 0-7.5 7.5A7.5 7.5 0 0 0 11 21a7.5 7.5 0 0 0 7.42-6.5h-2.92z" />
-                                        <path d="M19 10h-4.5l-1.3-2.6A2 2 0 0 0 11.4 6.2L8.5 7.6 9.4 9.4l2.1-1 2 4.1V17h2v-4.5l1.6-1.6H19v-2z" />
-                                    </svg>
-                                    <span>PWD Inclusive</span>
-                                </span>
-                                @endif
+                <!-- Individual Job View inside Drawer with Snappy Fade/Scale Transition -->
+                <div x-show="selectedJobId === '{{ $job->job_id }}'"
+                    x-transition:enter="transition ease-out duration-200 delay-75"
+                    x-transition:enter-start="opacity-0 scale-98"
+                    x-transition:enter-end="opacity-100 scale-100"
+                    class="flex flex-col h-full overflow-hidden">
+
+                    <!-- Scrollable Content Body -->
+                    <div class="p-6 sm:p-7 space-y-6 flex-1 overflow-y-auto">
+
+                        <!-- Drawer Header -->
+                        <div class="flex items-start justify-between pb-5 border-b border-slate-100">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">{{ $company }}</span>
+                                    @if ($job->accepts_disability)
+                                    <span class="rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold inline-flex items-center gap-1">
+                                        <span>PWD Inclusive</span>
+                                    </span>
+                                    @endif
+                                </div>
+                                <h2 class="text-xl sm:text-2xl font-black text-slate-900 mt-1">{{ $job->title }}</h2>
+                                <p class="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
+                                    <span>{{ $job->location ?: 'Location not specified' }} &bull; {{ $job->job_type ?: 'Job type not specified' }} &bull; {{ $job->salary_range ?: 'Salary not specified' }}</span>
+                                </p>
                             </div>
-                            <h2 class="text-2xl font-black text-slate-900 mt-1">{{ $job->title }}</h2>
-                            <p class="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
-                                <span>{{ $job->location ?: 'Location not specified' }} &bull; {{ $job->job_type ?: 'Job type not specified' }} &bull; {{ $job->salary_range ?: 'Salary not specified' }}</span>
-                                @if ($job->valid_until)
-                                <span>&bull;</span>
-                                <span class="inline-flex items-center gap-1 font-bold {{ $job->valid_until->isPast() ? 'text-rose-600' : 'text-emerald-700' }}">
-                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    Available until: {{ $job->valid_until->format('F d, Y') }} ({{ $job->valid_until->isPast() ? 'Expired' : $job->valid_until->diffForHumans() }})
-                                </span>
-                                @endif
+                            <button @click="previewOpen = false" class="rounded-full bg-slate-100 p-2 text-slate-500 hover:bg-slate-200 font-bold text-lg leading-none">&times;</button>
+                        </div>
+
+                        <!-- Match Score Banner -->
+                        <div class="bg-emerald-50/70 rounded-2xl p-4 border border-emerald-100 flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">AI Skill Match Rating</span>
+                                <p class="text-xs font-extrabold text-emerald-800">{{ $match['tier'] ?? 'Match Calculated' }}</p>
+                            </div>
+                            <span class="text-3xl font-black text-emerald-700">{{ $match['percentage'] ?? 0 }}%</span>
+                        </div>
+
+                        <!-- Skills Compatibility Analysis -->
+                        <div class="space-y-3 bg-emerald-50/40 rounded-2xl p-4 border border-emerald-100">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">Skill Compatibility Analysis</h4>
+                            <div class="space-y-2">
+                                <span class="text-xs font-bold text-slate-800">Required Skills</span>
+                                <div class="flex flex-wrap gap-2">
+                                    @php
+                                    $requiredSkillsList = array_filter(array_map('trim', explode(',', $job->skills ?? '')));
+                                    if (empty($requiredSkillsList)) {
+                                    $requiredSkillsList = array_merge($match['matchedSkills'] ?? [], $match['missingSkills'] ?? []);
+                                    }
+                                    @endphp
+
+                                    @forelse($requiredSkillsList as $reqSkill)
+                                    @php
+                                    $hasSkill = in_array(strtolower($reqSkill), array_map('strtolower', $userSkills));
+                                    @endphp
+                                    @if($hasSkill)
+                                    <span class="inline-flex items-center gap-1 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 px-2.5 py-1 text-xs font-bold shadow-sm">
+                                        ✓ {{ $reqSkill }}
+                                    </span>
+                                    @else
+                                    <span class="inline-flex items-center gap-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-1 text-xs font-bold shadow-sm">
+                                        ✕ {{ $reqSkill }}
+                                    </span>
+                                    @endif
+                                    @empty
+                                    <span class="text-xs text-slate-400 italic">No specific skills required.</span>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Position Overview -->
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Position Overview</h4>
+                            <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                                {{ $job->description ?: 'No detailed description provided.' }}
                             </p>
                         </div>
 
-                        <div class="shrink-0 flex sm:flex-col items-center sm:items-end justify-between bg-emerald-50/70 rounded-2xl p-4 border border-emerald-100">
-                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">AI Skill Match</span>
-                            <div class="flex items-baseline gap-1 mt-0.5">
-                                <span class="text-3xl font-black text-emerald-700">{{ $match['percentage'] ?? 0 }}%</span>
-                            </div>
-                            <span class="text-xs font-extrabold text-emerald-800">
-                                {{ $match['tier'] ?? 'Match Calculated' }}
-                            </span>
+                        <!-- Qualifications -->
+                        @if($job->qualifications)
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Required Qualifications</h4>
+                            <ul class="list-disc pl-5 rounded-2xl bg-slate-50 p-4 text-xs text-slate-700 leading-relaxed border border-slate-100 space-y-1">
+                                @foreach(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $job->qualifications))) as $qualification)
+                                <li>{{ $qualification }}</li>
+                                @endforeach
+                            </ul>
                         </div>
-                    </div>
+                        @endif
 
-                    <!-- Skills Match Breakdown -->
-                    <div class="space-y-3 bg-emerald-50/40 rounded-2xl p-5 border border-emerald-100">
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">Skill Compatibility Analysis</h4>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div class="space-y-2">
-                                <span class="text-xs font-bold text-emerald-800 flex items-center gap-1">
-                                    <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    Skills You Have ({{ count($match['matchedSkills'] ?? []) }})
-                                </span>
-                                <div class="flex flex-wrap gap-1.5">
-                                    @forelse($match['matchedSkills'] ?? [] as $ms)
-                                    <span class="rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 px-2.5 py-1 text-xs font-bold">
-                                        {{ $ms }}
-                                    </span>
-                                    @empty
-                                    <span class="text-xs text-slate-400 italic">No matching skills detected.</span>
-                                    @endforelse
-                                </div>
-                            </div>
-
-                            <div class="space-y-2">
-                                <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
-                                    <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                    </svg>
-                                    Missing Requirements ({{ count($match['missingSkills'] ?? []) }})
-                                </span>
-                                <div class="flex flex-wrap gap-1.5">
-                                    @forelse($match['missingSkills'] ?? [] as $miss)
-                                    <span class="rounded-lg bg-slate-100 text-slate-800 border border-slate-200 px-2.5 py-1 text-xs font-bold">
-                                        {{ $miss }}
-                                    </span>
-                                    @empty
-                                    <span class="text-xs text-emerald-700 font-extrabold">You meet 100% of the requirements!</span>
-                                    @endforelse
-                                </div>
-                            </div>
+                        @if($job->benefits_perks)
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Benefits & Perks</h4>
+                            <ul class="list-disc pl-5 rounded-2xl bg-emerald-50/50 p-4 text-xs text-slate-700 leading-relaxed border border-emerald-100 space-y-1">
+                                @foreach(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $job->benefits_perks))) as $benefit)
+                                <li>{{ $benefit }}</li>
+                                @endforeach
+                            </ul>
                         </div>
+                        @endif
 
-                        @if(count($match['missingSkills'] ?? []) > 0)
-                        <div class="pt-2 flex items-center justify-between border-t border-emerald-100">
-                            <p class="text-[11px] text-slate-500">Want to improve your match score for this job?</p>
-                            <a href="{{ route('jobseeker.training') }}" class="text-xs font-bold text-emerald-700 hover:underline">
-                                Take Skill Courses &rarr;
-                            </a>
+                        @if($job->other_instructions)
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Other Instructions</h4>
+                            <p class="rounded-2xl bg-slate-50 p-4 text-xs text-slate-700 leading-relaxed whitespace-pre-line border border-slate-100">{{ $job->other_instructions }}</p>
                         </div>
                         @endif
                     </div>
 
-                    <!-- Description -->
-                    <div class="space-y-3">
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Position Overview</h4>
-                        <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
-                            {{ $job->description ?: 'No detailed description provided for this opening.' }}
-                        </p>
-                    </div>
-
-                    <!-- Qualifications -->
-                    @if($job->qualifications)
-                    <div class="space-y-3">
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Required Qualifications</h4>
-                        <ul class="list-disc pl-5 rounded-2xl bg-slate-50 p-4 text-xs text-slate-700 leading-relaxed border border-slate-100 space-y-1">
-                            @foreach(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $job->qualifications))) as $qualification)
-                            <li>{{ $qualification }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                    @endif
-
-                    @if($job->benefits_perks)
-                    <div class="space-y-3">
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Benefits & Perks</h4>
-                        <ul class="list-disc pl-5 rounded-2xl bg-emerald-50/50 p-4 text-xs text-slate-700 leading-relaxed border border-emerald-100 space-y-1">
-                            @foreach(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $job->benefits_perks))) as $benefit)
-                            <li>{{ $benefit }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                    @endif
-
-                    @if($job->other_instructions)
-                    <div class="space-y-3">
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Other Instructions</h4>
-                        <p class="rounded-2xl bg-slate-50 p-4 text-xs text-slate-700 leading-relaxed whitespace-pre-line border border-slate-100">{{ $job->other_instructions }}</p>
-                    </div>
-                    @endif
-
-                    <!-- Action Bar -->
-                    <div class="pt-6 border-t border-slate-100 flex items-center justify-between gap-4">
+                    <!-- Pinned Sticky Footer Action Bar -->
+                    <div class="px-6 py-4 border-t border-slate-200 bg-white/95 backdrop-blur-sm flex items-center justify-between gap-4 shrink-0 shadow-lg">
                         <a href="{{ route('jobseeker.jobs.show', $job->job_id) }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-800">
-                            Full Page View &rarr;
+                            Full Page &rarr;
                         </a>
 
                         @if($hasApplied)
-                        <button disabled class="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-6 py-3 text-sm font-bold text-white opacity-90 cursor-not-allowed">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                            </svg>
-                            Application Submitted
+                        <button disabled class="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-5 py-2.5 text-xs font-bold text-white opacity-90 cursor-not-allowed">
+                            Applied
                         </button>
                         @elseif($job->isExpired())
-                        <button disabled class="inline-flex items-center gap-2 rounded-xl bg-slate-200 px-6 py-3 text-sm font-bold text-slate-600 cursor-not-allowed">
-                            <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Position Expired
+                        <button disabled class="inline-flex items-center gap-2 rounded-xl bg-slate-200 px-5 py-2.5 text-xs font-bold text-slate-600 cursor-not-allowed">
+                            Expired
                         </button>
                         @elseif(!$isApproved)
-                        <button type="button" @click="approvalWarningOpen = true" class="inline-flex items-center gap-2 rounded-xl bg-amber-100 border border-amber-300 px-6 py-3 text-sm font-black text-amber-900 shadow-sm transition-all hover:bg-amber-200">
-                            <span>⚠️</span>
-                            Approval Required to Apply
+                        <button type="button" @click="approvalWarningOpen = true" class="inline-flex items-center gap-2 rounded-xl bg-amber-100 border border-amber-300 px-5 py-2.5 text-xs font-black text-amber-900">
+                            <span>⚠️</span> Approval Required
                         </button>
                         @elseif(!auth()->user()->is_approved)
-                        <div class="text-right space-y-1">
-                            <button type="button" onclick="alert('Your jobseeker account is pending approval by DMDP. You cannot apply for jobs until approved.')"
-                                class="inline-flex items-center gap-1.5 rounded-xl bg-slate-200 border border-slate-300 px-5 py-2.5 text-xs font-bold text-slate-600 cursor-not-allowed">
-                                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                                <span>Pending Approval</span>
-                            </button>
-                            <p class="text-[10px] text-amber-700 font-semibold">Account undergoing DMDP verification.</p>
-                        </div>
+                        <button type="button" onclick="alert('Your jobseeker account is pending approval by DMDP.')"
+                            class="inline-flex items-center gap-1.5 rounded-xl bg-slate-200 px-4 py-2 text-xs font-bold text-slate-600 cursor-not-allowed">
+                            Pending Approval
+                        </button>
                         @elseif(!$jobseeker->isProfileAndDocumentsComplete())
-                        <div class="text-right space-y-1">
-                            <button type="button" onclick="alert('You cannot apply for this job yet. Please complete your profile and upload the required documents in the Document Hub.\n\nMissing: {{ implode(', ', $jobseeker->getMissingRequirements()) }}')"
-                                class="inline-flex items-center gap-1.5 rounded-xl bg-amber-100 border border-amber-300 px-5 py-2.5 text-xs font-bold text-amber-900 cursor-not-allowed">
-                                <svg class="w-3.5 h-3.5 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                                <span>Incomplete Requirements</span>
-                            </button>
-                            <p class="text-[10px] text-amber-800 font-medium">
-                                <a href="{{ route('jobseeker.documents') }}" class="underline font-bold text-emerald-700">Upload Docs</a> or <a href="{{ route('jobseeker.profile') }}" class="underline font-bold text-emerald-700">Complete Profile</a>
-                            </p>
-                        </div>
+                        <button type="button" onclick="alert('Please complete your profile and upload required documents.')"
+                            class="inline-flex items-center gap-1.5 rounded-xl bg-amber-100 px-4 py-2 text-xs font-bold text-amber-900">
+                            Incomplete
+                        </button>
                         @else
-                        <button @click="applyModalOpen = true" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-8 py-3 text-sm font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
+                        <button @click="applyModalOpen = true" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-6 py-3 text-xs font-black text-white shadow-md transition-all">
                             Apply for Position
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                            </svg>
                         </button>
                         @endif
                     </div>
 
                 </div>
                 @endforeach
-                @else
-                <div class="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center text-slate-400">
-                    Select a job from the list to preview details and skill match analysis.
-                </div>
                 @endif
+
             </div>
-
         </div>
-
     </div>
 
     <!-- APPLICATION SUBMISSION MODAL -->
     <div x-show="applyModalOpen" x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+        class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
 
         <div @click.away="applyModalOpen = false"
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="transform opacity-0 scale-95"
-            x-transition:enter-end="transform opacity-100 scale-100"
             class="w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
 
             <div class="flex items-start justify-between">
@@ -448,14 +378,13 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
                     </div>
                     <input type="file" name="resume" accept=".pdf,.doc,.docx"
                         class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100">
-                    <p class="text-[11px] text-slate-400">Accepted formats: PDF, DOC, DOCX (Max 5MB). If omitted, the employer will evaluate your application using your verified TrabaGo profile details and skills matrix.</p>
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
                     <button type="button" @click="applyModalOpen = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
                         Cancel
                     </button>
-                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md transition-colors">
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md">
                         Confirm & Submit Application
                     </button>
                 </div>
@@ -464,7 +393,8 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
         </div>
     </div>
 
-    <div x-show="approvalWarningOpen" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+    <!-- APPROVAL WARNING MODAL -->
+    <div x-show="approvalWarningOpen" x-cloak class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
         <div @click.away="approvalWarningOpen = false" class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-amber-200 space-y-5">
             <div class="flex items-start gap-3">
                 <div class="h-12 w-12 rounded-2xl bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center text-2xl shrink-0">⚠️</div>
@@ -473,15 +403,9 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
                     <h3 class="text-xl font-black text-slate-900 mt-1">Approval Needed Before You Can Apply</h3>
                 </div>
             </div>
-
             <p class="text-sm text-slate-600 leading-relaxed">
                 Your jobseeker account is still pending admin approval. Please wait for approval before you can submit any job application.
             </p>
-
-            <div class="rounded-2xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 font-semibold">
-                You can still browse job listings and training modules while waiting for approval.
-            </div>
-
             <div class="flex justify-end">
                 <button type="button" @click="approvalWarningOpen = false" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-black">
                     OK
