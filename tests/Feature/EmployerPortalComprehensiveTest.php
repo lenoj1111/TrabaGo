@@ -306,6 +306,17 @@ class EmployerPortalComprehensiveTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
+        // Offer is extended
+        $this->assertDatabaseHas('job_applications', [
+            'application_id' => $application->application_id,
+            'status' => 'offered',
+        ]);
+
+        // Jobseeker accepts offer (Rule 2: Offer Acceptance -> Hired)
+        $acceptResponse = $this->actingAs($this->jobseekerUser)
+            ->post(route('jobseeker.applications.accept_offer', $application->application_id));
+        $acceptResponse->assertRedirect();
+
         $this->assertDatabaseHas('job_applications', [
             'application_id' => $application->application_id,
             'status' => 'hired',
@@ -321,7 +332,7 @@ class EmployerPortalComprehensiveTest extends TestCase
         // Verify notification sent to jobseeker
         $this->assertDatabaseHas('notifications', [
             'user_id' => $this->jobseekerUser->user_id,
-            'title' => 'Congratulations! You Have Been Hired!',
+            'title' => 'Congratulations on Your New Job!',
         ]);
 
         // Verify jobseeker profile displays Employed and the company they applied to

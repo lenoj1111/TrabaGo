@@ -157,14 +157,7 @@ class ApplicationController extends Controller
 
         $jobseeker = $this->resolveJobseeker($request, true);
 
-        // Employed check: cannot apply for another job while currently hired/employed (identical to web)
-        if ($jobseeker->isEmployed()) {
-            $company = $jobseeker->hired_company ?: 'your current employer';
-            return response()->json([
-                'success' => false,
-                'message' => "You cannot apply for another job while currently employed at {$company}. You must request a resignation and have it approved before applying for other positions.",
-            ], 403);
-        }
+        // Employment Flexibility: Jobseekers remain "Open to all" for opportunities even if currently employed.
 
         // Check if already applied
         $existing = JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)

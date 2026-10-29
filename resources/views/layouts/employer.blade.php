@@ -103,6 +103,25 @@
       x-data="employerSidebar()"
       x-init="init()">
 
+    @if(session()->has('admin_impersonator_id'))
+        <!-- Admin Impersonation Notice Bar -->
+        <div class="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 px-4 py-2 font-bold text-xs flex items-center justify-between shadow-md relative z-50 border-b border-amber-600">
+            <div class="flex items-center gap-2">
+                <span class="p-1 rounded-md bg-amber-600 text-white">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                </span>
+                <span>Administrator Direct Account Control: Operating as <strong>{{ Auth::user()->email }}</strong></span>
+            </div>
+            <form method="POST" action="{{ route('impersonate.leave') }}">
+                @csrf
+                <button type="submit" class="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-black shadow-sm transition-colors flex items-center gap-1">
+                    <span>Return to Admin Portal</span>
+                    <span>&rarr;</span>
+                </button>
+            </form>
+        </div>
+    @endif
+
     {{-- ============================================================ --}}
     {{-- MOBILE BACKDROP                                               --}}
     {{-- ============================================================ --}}
@@ -123,8 +142,8 @@
         <div class="flex items-center justify-between gap-3 px-4 h-16 border-b border-slate-800 shrink-0">
             <a href="{{ route('employer.dashboard') }}" class="flex items-center gap-3 min-w-0">
                 <div class="h-10 w-10 rounded-2xl bg-gradient-to-tr from-teal-900 via-emerald-800 to-teal-600
-                            flex items-center justify-center text-white text-xl shadow-md shadow-emerald-900/30 shrink-0">
-                    🏢
+                            flex items-center justify-center text-white text-base font-black shadow-md shadow-emerald-900/30 shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                 </div>
                 <div class="flex flex-col leading-tight min-w-0 emp-sidebar-label">
                     <span class="font-black text-base text-white tracking-tight">
@@ -267,7 +286,8 @@
                       text-slate-300 hover:bg-slate-800 hover:text-white transition-colors
                       {{ request()->routeIs('employer.profile*') ? 'bg-slate-800 text-white' : '' }}"
                :title="collapsed ? 'Company Profile' : ''">
-                <span class="emp-sidebar-label">🏢 Company Profile</span>
+                <svg class="w-4 h-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                <span class="emp-sidebar-label">Company Profile</span>
             </a>
 
             <form method="POST" action="{{ route('logout') }}" class="mt-1">
@@ -310,7 +330,9 @@
                     {{-- Mobile brand --}}
                     <a href="{{ route('employer.dashboard') }}" class="lg:hidden flex items-center gap-2 group shrink-0">
                         <div class="h-8 w-8 rounded-xl bg-gradient-to-tr from-teal-900 via-emerald-800 to-teal-600
-                                    flex items-center justify-center text-white text-base shadow-sm">🏢</div>
+                                    flex items-center justify-center text-white text-xs font-black shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        </div>
                         <span class="font-black text-base text-slate-900 tracking-tight">
                             Traba<span class="text-emerald-600">Go</span>
                         </span>

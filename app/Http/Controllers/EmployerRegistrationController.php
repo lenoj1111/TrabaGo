@@ -38,9 +38,11 @@ class EmployerRegistrationController extends Controller
             'website' => 'nullable|url|max:255',
             'company_type' => 'nullable|string|max:100',
 
-            // Step 3: Contact Information
+            // Step 3: Dual Email & Contact Information
             'contact_person' => 'required|string|max:150',
             'contact_position' => 'required|string|max:100',
+            'primary_email' => 'nullable|email|max:150',
+            'secondary_email' => 'nullable|email|max:150',
             'phone' => 'required|string|max:50',
             'mobile' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:255',
@@ -96,6 +98,19 @@ class EmployerRegistrationController extends Controller
             $hasDocs = count($documents) > 0;
             $accountStatus = $hasDocs ? 'pending_review' : 'unverified';
 
+            $primaryEmail = !empty($validated['primary_email']) ? $validated['primary_email'] : $validated['email'];
+            $secondaryEmail = !empty($validated['secondary_email']) ? $validated['secondary_email'] : null;
+            $contactPhone = $validated['phone'] ?? ($validated['mobile'] ?? null);
+
+            $addressParts = array_filter([
+                $validated['address'] ?? null,
+                $validated['city'] ?? null,
+                $validated['province'] ?? null,
+                $validated['postal_code'] ?? null,
+                $validated['country'] ?? null,
+            ]);
+            $fullAddress = implode(', ', $addressParts);
+
             // 1. Create user account
             $user = DB::table('users')->insertGetId([
                 'email' => $validated['email'],
@@ -103,26 +118,46 @@ class EmployerRegistrationController extends Controller
                 'role' => 'employer',
                 'status' => 'active',
                 'is_approved' => 0,
-                'phone_number' => $validated['phone'] ?? null,
+                'phone_number' => $contactPhone,
                 'is_contact_verified' => 1,
                 'account_status' => $accountStatus,
                 'created_at' => Carbon::now(),
             ]);
 
-            // 2. Create employer profile
-            $employerId = DB::table('employers')->insertGetId([
+            // 2. Create employer profile with Dual Email & Contact Management
+            $employerData = [
                 'user_id' => $user,
                 'company_name' => $validated['company_name'],
+                'contact_person' => $validated['contact_person'],
+                'primary_email' => $primaryEmail,
+                'secondary_email' => $secondaryEmail,
+                'contact_phone' => $contactPhone,
+                'company_address' => $fullAddress ?: null,
                 'is_accredited' => 0,
                 'accredited_at' => null,
-            ]);
+            ];
+
+            if (\Illuminate\Support\Facades\Schema::hasColumn('employers', 'business_nature')) {
+                $employerData['business_nature'] = $validated['industry'] ?? ($validated['company_type'] ?? null);
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('employers', 'region')) {
+                $employerData['region'] = 'Region VII - Central Visayas';
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('employers', 'created_at')) {
+                $employerData['created_at'] = Carbon::now();
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('employers', 'updated_at')) {
+                $employerData['updated_at'] = Carbon::now();
+            }
+
+            $employerId = DB::table('employers')->insertGetId($employerData);
 
             // 3. Create accreditation record
             DB::table('employer_accreditation')->insert([
                 'employer_id' => $employerId,
                 'documents' => json_encode($documents),
                 'submitted_at' => Carbon::now(),
-                'ocr_validation_status' => $hasDocs ? 'pending' : 'not_submitted',
+                'ocr_validation_status' => 'pending',
             ]);
 
             // 4. Create user profile (for contact information)
@@ -130,7 +165,11 @@ class EmployerRegistrationController extends Controller
                 'user_id' => $user,
                 'full_name' => $validated['contact_person'],
                 'position' => $validated['contact_position'],
-                'phone' => $validated['phone'],
+                'phone' => $contactPhone,
+                'office' => $validated['company_name'],
+                'department' => 'Human Resources / Recruitment',
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
             ]);
 
             DB::commit();

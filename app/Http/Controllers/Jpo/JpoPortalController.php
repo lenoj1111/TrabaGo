@@ -151,7 +151,7 @@ class JpoPortalController extends Controller
         if ($recommendation === 'refer') {
             $application->update([
                 'referred_by_jpo' => 1,
-                'status' => 'pending',
+                'status' => 'reviewed',
                 'jpo_notes' => $remarks,
                 'jpo_evaluated_at' => now(),
             ]);
@@ -543,6 +543,134 @@ class JpoPortalController extends Controller
         $jobPostings = $employer->jobPostings ?? collect();
 
         return view('reports.establishment-registration-printable', compact('accreditation', 'employer', 'jobPostings'));
+    }
+
+    public function accreditEmployer(Request $request, $id)
+    {
+        $accreditation = DB::table('employer_accreditation')->where('accreditation_id', $id)->first();
+        if (!$accreditation) {
+            $employer = DB::table('employers')->where('employer_id', $id)->first();
+            if (!$employer) {
+                return redirect()->back()->withErrors(['error' => 'Accreditation or Employer record not found.']);
+            }
+            $employerId = $employer->employer_id;
+        } else {
+            $employerId = $accreditation->employer_id;
+        }
+
+        $certNo = ($accreditation && !empty($accreditation->certificate_no))
+            ? $accreditation->certificate_no
+            : ('DMDP-EMP-' . date('Y') . '-' . str_pad($employerId, 5, '0', STR_PAD_LEFT));
+
+        DB::table('employers')->where('employer_id', $employerId)->update([
+            'is_accredited' => 1,
+            'accredited_at' => now()->toDateString(),
+        ]);
+
+        if ($accreditation) {
+            DB::table('employer_accreditation')->where('accreditation_id', $accreditation->accreditation_id)->update([
+                'status' => 'admin_approved',
+                'admin_approved' => 1,
+                'jpo_reviewed' => 1,
+                'jpo_reviewed_at' => now(),
+                'document_status' => 'complete',
+                'approved_at' => now()->toDateString(),
+                'certificate_no' => $certNo,
+                'certificate_issued_at' => now(),
+                'certificate_issued_by' => Auth::id(),
+                'admin_rejection_remarks' => null,
+            ]);
+        } else {
+            DB::table('employer_accreditation')->insert([
+                'employer_id' => $employerId,
+                'status' => 'admin_approved',
+                'admin_approved' => 1,
+                'jpo_reviewed' => 1,
+                'document_status' => 'complete',
+                'approved_at' => now()->toDateString(),
+                'certificate_no' => $certNo,
+                'certificate_issued_at' => now(),
+                'certificate_issued_by' => Auth::id(),
+                'documents' => json_encode([]),
+                'submitted_at' => now(),
+            ]);
+        }
+
+        $employer = Employer::with('user')->find($employerId);
+        if ($employer && $employer->user) {
+            DB::table('users')->where('user_id', $employer->user->user_id)->update([
+                'account_status' => 'verified',
+                'is_approved' => 1,
+                'updated_at' => now(),
+            ]);
+
+            Notification::create([
+                'user_id' => $employer->user->user_id,
+                'title' => 'Official Accreditation Granted & Certificate Issued!',
+                'message' => "Congratulations! {$employer->company_name} is now officially accredited with DMDP Cebu City (Certificate No: {$certNo}).",
+                'type' => 'approval',
+                'is_read' => false,
+                'related_id' => $employerId,
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Employer '{$employer->company_name}' successfully accredited. Certificate {$certNo} issued.");
+    }
+
+    public function disaccreditEmployer(Request $request, $id)
+    {
+        $accreditation = DB::table('employer_accreditation')->where('accreditation_id', $id)->first();
+        $employerId = $accreditation ? $accreditation->employer_id : $id;
+        $employer = Employer::with('user')->find($employerId);
+        if (!$employer) {
+            return redirect()->back()->withErrors(['error' => 'Employer record not found.']);
+        }
+
+        $employer->update(['is_accredited' => 0]);
+
+        DB::table('employer_accreditation')->where('employer_id', $employerId)->update([
+            'status' => 'disaccredited',
+            'admin_approved' => 0,
+        ]);
+
+        if ($employer->user) {
+            Notification::create([
+                'user_id' => $employer->user->user_id,
+                'title' => 'Employer Accreditation Revoked',
+                'message' => 'Your official accreditation has been revoked by the Job Placement Office (DMDP). Please contact the DMDP office for further details.',
+                'type' => 'rejection',
+                'is_read' => false,
+                'related_id' => $employer->employer_id,
+            ]);
+        }
+
+        return redirect()->back()->with('info', "Employer '{$employer->company_name}' has been disaccredited.");
+    }
+
+    public function certificate($id)
+    {
+        $accreditation = DB::table('employer_accreditation')->where('accreditation_id', $id)->first();
+        $employerId = $accreditation ? $accreditation->employer_id : $id;
+        $employer = DB::table('employers')->where('employer_id', $employerId)->first();
+        if (!$employer) abort(404, 'Employer not found');
+        return view('reports.employer-certificate', compact('employer', 'accreditation'));
+    }
+
+    public function createUser()
+    {
+        $roles = ['employer', 'jobseeker'];
+        return view('jpo.users.create', compact('roles'));
+    }
+
+    public function storeUser(Request $request)
+    {
+        $role = $request->input('role');
+        if (!in_array($role, ['employer', 'jobseeker'])) {
+            return redirect()->back()->withErrors(['role' => 'JPO can only provision Employer or Jobseeker accounts.'])->withInput();
+        }
+
+        $userController = new \App\Http\Controllers\Admin\UserManagementController();
+        return $userController->store($request, true);
     }
 
     // =========================================================================

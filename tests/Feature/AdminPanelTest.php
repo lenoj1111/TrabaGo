@@ -113,7 +113,7 @@ class AdminPanelTest extends TestCase
         $response = $this->actingAs($admin)->get("/admin/users/{$jobseekerUser}/edit");
         $response->assertStatus(200);
         $response->assertSee('Maria Santos');
-        $response->assertSee("action=\"http://localhost/admin/users/{$jobseekerUser}\"", false);
+        $response->assertSee(route('admin.users.update', $jobseekerUser), false);
 
         // 2. Admin submits update
         $updateResponse = $this->actingAs($admin)->put("/admin/users/{$jobseekerUser}", [

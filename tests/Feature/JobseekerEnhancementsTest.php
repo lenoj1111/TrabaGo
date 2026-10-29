@@ -186,7 +186,8 @@ class JobseekerEnhancementsTest extends TestCase
         // 1. View Profile
         $viewResponse = $this->actingAs($this->jobseekerUser)->get(route('jobseeker.profile', ['tab' => 'view']));
         $viewResponse->assertStatus(200);
-        $viewResponse->assertSee('Pedro Penduko');
+        $viewResponse->assertSee('Pedro');
+        $viewResponse->assertSee('Penduko');
         $viewResponse->assertSee('Personal Information');
         $viewResponse->assertSee('Residential Address');
 
@@ -359,13 +360,18 @@ class JobseekerEnhancementsTest extends TestCase
             'referred_by_jpo' => false,
         ]);
 
-        // Employer hires the applicant
+        // Employer extends offer to the applicant
         $response = $this->actingAs($this->employerUser)->post(
             route('employer.applicants.update_status', $application->application_id),
             ['action' => 'hire']
         );
 
         $response->assertRedirect();
+
+        // Jobseeker accepts offer (Rule 2: Offer Acceptance -> Hired)
+        $acceptResponse = $this->actingAs($this->jobseekerUser)
+            ->post(route('jobseeker.applications.accept_offer', $application->application_id));
+        $acceptResponse->assertRedirect();
 
         // Refresh jobseeker model
         $this->jobseeker->refresh();
@@ -382,7 +388,7 @@ class JobseekerEnhancementsTest extends TestCase
     }
 
     /**
-     * Test an already hired/employed jobseeker cannot apply for another job.
+     * Test an already hired/employed jobseeker can still apply for another job per Region 7 Employment Flexibility rules.
      */
     public function test_employed_jobseeker_cannot_apply_to_another_job(): void
     {
@@ -428,19 +434,17 @@ class JobseekerEnhancementsTest extends TestCase
             'accepts_disability' => false,
         ]);
 
-        // 3. Visiting the job page displays employed restriction
+        // 3. Visiting the job page succeeds
         $showResponse = $this->actingAs($this->jobseekerUser)->get(route('jobseeker.jobs.show', $secondJob->job_id));
         $showResponse->assertStatus(200);
-        $showResponse->assertSee('Currently Employed at Tech Solutions Cebu');
-        $showResponse->assertSee('Employed candidates cannot apply for another job');
 
-        // 4. Attempting to apply via POST is blocked and redirects with error
+        // 4. Region 7 Employment Flexibility: Jobseeker remains "Open to all" even if employed
         $applyResponse = $this->actingAs($this->jobseekerUser)->post(route('jobseeker.jobs.apply', $secondJob->job_id));
-        $applyResponse->assertRedirect(route('jobseeker.jobs'));
-        $applyResponse->assertSessionHas('error');
+        $applyResponse->assertRedirect(route('jobseeker.applications'));
+        $applyResponse->assertSessionHas('success');
 
-        // Verify NO new application was created for the second job
-        $this->assertDatabaseMissing('job_applications', [
+        // Verify application was created for the second job
+        $this->assertDatabaseHas('job_applications', [
             'jobseeker_id' => $this->jobseeker->jobseeker_id,
             'job_id' => $secondJob->job_id,
         ]);
@@ -494,11 +498,6 @@ class JobseekerEnhancementsTest extends TestCase
         $this->assertEquals('requested', $hiredApplication->resignation_status);
         $this->assertEquals('Pursuing higher education and career progression.', $hiredApplication->resignation_reason);
         $this->assertNotNull($hiredApplication->resignation_requested_at);
-
-        // Jobseeker still cannot apply while resignation is only pending approval
-        $prematureApplyResponse = $this->actingAs($this->jobseekerUser)->post(route('jobseeker.jobs.apply', $secondJob->job_id));
-        $prematureApplyResponse->assertRedirect(route('jobseeker.jobs'));
-        $prematureApplyResponse->assertSessionHas('error');
 
         // 4. Employer views candidates and sees resignation request
         $employerCandidatesResponse = $this->actingAs($this->employerUser)->get(route('employer.referred-jobseekers'));

@@ -7,7 +7,7 @@
 
             <div class="flex items-start justify-between gap-4 border-b border-slate-100 bg-slate-50/60 p-6">
                 <div>
-                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Document Inspection</span>
+                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">DMDP Document Inspection Hub</span>
                     <h2 class="mt-1 text-lg font-black text-slate-900" x-text="activeDocCompany"></h2>
                     <p class="text-xs text-slate-500">
                         <span x-text="activeDocList.length"></span> document(s) on record

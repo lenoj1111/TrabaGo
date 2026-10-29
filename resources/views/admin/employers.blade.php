@@ -253,19 +253,64 @@
                                             </button>
                                         @endif
 
-                                        {{-- 2. Employer Accreditation (Gated by JPO Recommending Approval) --}}
+                                        {{-- 2. Employer Accreditation & Control Actions --}}
                                         @if(!$employer->is_accredited)
+                                        {{-- 2. Employer Accreditation & Control Actions --}}
+                                        @if(!$employer->is_accredited)
+                                            {{-- Accredit Button (Direct Accredit with warning or JPO Recommended) --}}
                                             <button type="button"
-                                                    @click="accreditEmployer({{ $employer->employer_id }}, {{ $isJpoRecommended ? 'true' : 'false' }})"
-                                                    class="px-3 py-1.5 rounded-lg font-bold text-xs transition-colors
-                                                           {{ $isJpoRecommended
-                                                              ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
-                                                              : 'bg-slate-100 text-slate-400 border border-slate-200 hover:bg-slate-200' }}"
-                                                    title="{{ $isJpoRecommended ? 'Accredit Company' : 'JPO Recommending Approval is required first' }}">
-                                                🛡️ Accredit
+                                                    @click="accreditEmployer({{ $employer->employer_id }}, {{ $isJpoRecommended ? 'true' : 'false' }})" 
+                                                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg {{ $isJpoRecommended ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm' : 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm' }} font-bold text-xs transition-colors" 
+                                                    title="{{ $isJpoRecommended ? 'Grant DMDP Accreditation' : 'Direct Accredit without JPO Recommendation (with Warning)' }}">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                                <span>{{ $isJpoRecommended ? 'Accredit' : 'Direct Accredit' }}</span>
+                                            </button>
+
+                                            {{-- Reject / Return to JPO with remarks --}}
+                                            <button type="button"
+                                                    @click="rejectAccreditationAdmin({{ $employer->employer_id }})" 
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-colors" 
+                                                    title="Reject & Return Application to JPO with Mandatory Remarks">
+                                                <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                <span>Reject</span>
                                             </button>
                                         @else
-                                            <span class="text-[11px] font-bold text-emerald-700">✓ Accredited</span>
+                                            {{-- Print / Save Certificate --}}
+                                            <a href="{{ route('admin.employers.certificate', $employer->employer_id) }}" target="_blank"
+                                               class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs transition-colors"
+                                               title="View & Print Official Certificate of Accreditation">
+                                                <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                <span>Certificate</span>
+                                            </a>
+
+                                            {{-- Disaccredit Button --}}
+                                            <button type="button"
+                                                    @click="disaccreditEmployer({{ $employer->employer_id }})" 
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-colors" 
+                                                    title="Disaccredit Employer & Revoke Status">
+                                                <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                                <span>Disaccredit</span>
+                                            </button>
+                                        @endif
+                                        @endif
+
+                                        {{-- 3. Update Email or Password (HR Turnover / Resignation Recovery) --}}
+                                        @if($employer->user_id)
+                                            <button type="button"
+                                                    @click="openCredentialsModal({{ json_encode([
+                                                        'employer_id' => $employer->employer_id,
+                                                        'user_id' => $employer->user_id,
+                                                        'company_name' => $employer->company_name,
+                                                        'email' => $employer->email ?? $employer->primary_email ?? '',
+                                                        'secondary_email' => $employer->secondary_email ?? '',
+                                                        'contact_person' => $employer->contact_person ?? '',
+                                                        'contact_phone' => $employer->contact_number ?? $employer->contact_phone ?? '',
+                                                    ]) }})"
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs transition-colors"
+                                                    title="Update Email or Password (e.g. Assigned HR resigned without leaving credentials)">
+                                                <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                                                <span>Update Email/Pass</span>
+                                            </button>
                                         @endif
                                     </div>
                                 </td>
@@ -360,6 +405,46 @@
                         </template>
                     </section>
                 </template>
+
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <template x-if="!selectedEmployerDetails.accredited">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <button type="button" @click="employerDetailsOpen = false; accreditEmployer(selectedEmployerDetails.id, selectedEmployerDetails.jpo_reviewed)"
+                                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white font-bold text-xs shadow-sm transition-colors"
+                                        :class="selectedEmployerDetails.jpo_reviewed ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-amber-600 hover:bg-amber-500'">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                    <span x-text="selectedEmployerDetails.jpo_reviewed ? 'Grant DMDP Accreditation' : 'Direct Accredit (Override)'"></span>
+                                </button>
+
+                                <button type="button" @click="employerDetailsOpen = false; rejectAccreditationAdmin(selectedEmployerDetails.id)"
+                                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    <span>Reject & Return to JPO</span>
+                                </button>
+                            </div>
+                        </template>
+
+                        <template x-if="selectedEmployerDetails.accredited">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <a :href="'/admin/employers/' + selectedEmployerDetails.id + '/certificate'" target="_blank"
+                                   class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs transition-colors">
+                                    <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <span>View Certificate of Accreditation</span>
+                                </a>
+
+                                <button type="button" @click="employerDetailsOpen = false; disaccreditEmployer(selectedEmployerDetails.id)"
+                                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                    <span>Disaccredit Employer</span>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                    <button type="button" @click="employerDetailsOpen = false" class="px-5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
+                        Close
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -489,6 +574,9 @@
         </div>
     </div>
 
+    {{-- Reusable Employer Credentials Modal --}}
+    @include('partials.employer-credentials-modal')
+
 </div>
 
 {{-- ============================================================ --}}
@@ -498,6 +586,8 @@
 <script>
 function employersRegistry(config) {
     return {
+        ...(window.employerCredentialsHandler ? window.employerCredentialsHandler(config.csrfToken) : {}),
+
         // Config
         csrfToken: config.csrfToken,
         documentRouteTemplate: config.documentRouteTemplate,
@@ -654,49 +744,139 @@ function employersRegistry(config) {
         },
 
         // ---------------------------------------------
-        // Accreditation
+        // Accreditation Actions
         // ---------------------------------------------
+        executeAccreditation(id, isDirectOverride) {
+            fetch(`/admin/employers/${id}/accredit`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': this.csrfToken,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ direct_override: isDirectOverride })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Accreditation Granted!',
+                        html: `<p class="text-xs text-slate-700">${data.success}</p>${data.certificate_no ? `<p class="mt-2 text-xs font-mono font-bold text-emerald-800">Certificate No: ${data.certificate_no}</p>` : ''}`,
+                        icon: 'success',
+                        confirmButtonColor: '#059669',
+                        confirmButtonText: 'View Registry'
+                    }).then(() => location.reload());
+                } else {
+                    Swal.fire('Cannot Accredit', data.error || 'Something went wrong.', 'error');
+                }
+            })
+            .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));
+        },
+
         accreditEmployer(id, isJpoRecommended) {
             if (!isJpoRecommended) {
                 Swal.fire({
-                    title: 'JPO Recommendation Required',
-                    text: 'Admin cannot accredit an employer without the recommending approval of the JPO. Please wait for the JPO to complete document evaluation.',
+                    title: '⚠️ Direct Accreditation Override',
+                    html: '<div class="text-left text-xs space-y-2 text-slate-700 bg-amber-50 p-4 rounded-xl border border-amber-200"><p class="font-bold text-amber-900">WARNING: No JPO Recommendation Recorded</p><p>This employer has not yet received a recommendation from the Job Placement Office (JPO).</p><p>As DMDP Administrator, you are directly bypassing JPO recommendation to officially accredit this employer and generate their official Certificate.</p><p class="font-bold text-amber-900">Are you sure you want to proceed?</p></div>',
                     icon: 'warning',
-                    confirmButtonColor: '#059669',
-                    confirmButtonText: 'Understood'
+                    showCancelButton: true,
+                    confirmButtonColor: '#d97706',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, Grant Direct Accreditation',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        this.executeAccreditation(id, true);
+                    }
                 });
                 return;
             }
 
             Swal.fire({
                 title: 'Grant Official Employer Accreditation?',
-                text: 'JPO has recommended this company. This will officially accredit the employer and authorize applicant referrals.',
+                text: 'JPO has recommended this company. This will officially accredit the employer and generate their official Certificate of Accreditation.',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#059669',
                 cancelButtonColor: '#64748b',
-                confirmButtonText: 'Yes, accredit company'
+                confirmButtonText: 'Yes, Accredit Company'
             }).then((result) => {
-                if (!result.isConfirmed) return;
+                if (result.isConfirmed) {
+                    this.executeAccreditation(id, false);
+                }
+            });
+        },
 
-                fetch(`/admin/employers/${id}/accredit`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': this.csrfToken,
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
+        disaccreditEmployer(id) {
+            Swal.fire({
+                title: '⚠️ Revoke Employer Accreditation?',
+                html: '<div class="text-left text-xs space-y-2 text-slate-700 bg-rose-50 p-4 rounded-xl border border-rose-200"><p class="font-bold text-rose-900">WARNING: Accreditation Disaccreditation</p><p>This will immediately revoke official DMDP accreditation for this employer, invalidate their Certificate of Accreditation, and pause jobseeker referral processing.</p><p class="font-bold text-rose-900">Are you sure you want to proceed?</p></div>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Yes, Disaccredit Employer',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/admin/employers/${id}/disaccredit`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': this.csrfToken,
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('Disaccredited', data.success, 'success').then(() => location.reload());
+                        } else {
+                            Swal.fire('Error', data.error || 'Failed to disaccredit employer.', 'error');
+                        }
+                    })
+                    .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));
+                }
+            });
+        },
+
+        rejectAccreditationAdmin(id) {
+            Swal.fire({
+                title: 'Return Accreditation Application to JPO',
+                text: 'Mandatory administrative remarks are required to explain why this employer application is rejected and returned to the JPO queue.',
+                input: 'textarea',
+                inputPlaceholder: 'Enter mandatory administrative remarks explaining the reason for rejection (min 5 characters)...',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Reject & Return to JPO',
+                cancelButtonText: 'Cancel',
+                inputValidator: (value) => {
+                    if (!value || value.trim().length < 5) {
+                        return 'Mandatory remarks are required (minimum 5 characters).';
                     }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire('Success!', data.success, 'success')
-                            .then(() => location.reload());
-                    } else {
-                        Swal.fire('Cannot Accredit', data.error || 'Something went wrong.', 'error');
-                    }
-                })
-                .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/admin/employers/${id}/reject`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': this.csrfToken,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ remarks: result.value })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('Returned to JPO', data.success, 'info').then(() => location.reload());
+                        } else {
+                            Swal.fire('Error', data.error || 'Failed to reject accreditation.', 'error');
+                        }
+                    })
+                    .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));
+                }
             });
         }
     };

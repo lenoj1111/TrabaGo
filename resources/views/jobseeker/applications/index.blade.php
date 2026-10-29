@@ -193,7 +193,10 @@
                     @elseif($app->status === 'interview')
                     <span class="inline-flex items-center rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">Interview Stage</span>
                     @elseif($app->status === 'offered')
-                    <span class="inline-flex items-center rounded-md bg-blue-600 text-white px-2 py-0.5 text-[9px] font-black uppercase tracking-wide shadow-sm">Offer Received</span>
+                    <span class="inline-flex items-center rounded-md bg-blue-600 text-white px-2 py-0.5 text-[9px] font-black uppercase tracking-wide shadow-sm">Formal Job Offer from {{ $company }}</span>
+                    @if($app->offer_salary)
+                    <p class="text-[10px] font-bold text-blue-900 mt-1">₱{{ number_format((float)$app->offer_salary, 2) }}</p>
+                    @endif
                     @elseif($app->status === 'declined')
                     <span class="inline-flex items-center rounded-md bg-slate-100 text-slate-700 border border-slate-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">Offer Declined</span>
                     @elseif($app->status === 'withdrawn')
@@ -203,8 +206,12 @@
                     <span class="inline-flex items-center rounded-md bg-amber-50 text-amber-900 border border-amber-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide animate-pulse">Resignation Pending</span>
                     @elseif($app->resignation_status === 'approved')
                     <span class="inline-flex items-center rounded-md bg-slate-100 text-slate-700 border border-slate-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">Resigned / Released</span>
+                    <p class="text-[9px] text-slate-500 mt-0.5 truncate">Resignation Approved by {{ $company }}</p>
                     @elseif($app->resignation_status === 'rejected')
-                    <span class="inline-flex items-center rounded-md bg-rose-50 text-rose-900 border border-rose-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">Resignation Declined</span>
+                    <span class="inline-flex items-center rounded-md bg-rose-50 text-rose-900 border border-rose-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">Resignation Request Declined</span>
+                    @if($app->resignation_remarks)
+                    <p class="text-[9px] text-rose-700 mt-0.5 line-clamp-1" title="{{ $app->resignation_remarks }}">{{ $app->resignation_remarks }}</p>
+                    @endif
                     @else
                     <span class="inline-flex items-center rounded-md bg-emerald-600 text-white px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide shadow-sm">Hired & Employed</span>
                     @endif
@@ -230,9 +237,12 @@
                         <form action="{{ route('jobseeker.applications.accept_offer', $app->application_id) }}" method="POST" class="inline">
                             @csrf
                             <button type="submit" onclick="return confirm('Are you sure you want to ACCEPT this job offer?')" class="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black shadow-sm transition-colors">
-                                Accept
+                                Accept Job Offer
                             </button>
                         </form>
+                        <button type="button" @click="openDecline({{ $app->application_id }}, '{{ addslashes($job ? $job->title : 'Job') }}', '{{ addslashes($company) }}')" class="px-2 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 text-[10px] font-bold transition-colors">
+                            Decline Offer
+                        </button>
                         @elseif($app->status === 'hired' && $app->resignation_status !== 'requested' && $app->resignation_status !== 'approved')
                         <button type="button" @click="activeCompany = '{{ addslashes($company) }}'; resignationModal = true" class="px-2 py-1 rounded-lg bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-800 text-[10px] font-bold transition-colors">
                             Resign
@@ -396,6 +406,12 @@
                                     <p><span class="font-bold">Employer Remarks:</span> <span x-text="selectedApp.resignation_remarks"></span></p>
                                 </div>
                             </template>
+                            <template x-if="selectedApp.resignation_status === 'rejected'">
+                                <div class="mt-2 text-xs text-rose-700 bg-rose-50/80 p-2.5 rounded-xl border border-rose-200">
+                                    <p class="font-bold">Resignation Request Declined</p>
+                                    <p x-show="selectedApp.resignation_remarks" class="mt-1"><span class="font-bold">Employer Remarks:</span> <span x-text="selectedApp.resignation_remarks"></span></p>
+                                </div>
+                            </template>
                         </div>
                     </template>
                     <template x-if="selectedApp.status === 'training_recommended'">
@@ -515,6 +531,51 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Decline Job Offer Modal -->
+    <div x-show="declineModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div @click.away="declineModal = false" class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
+            
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                    <span class="text-xs font-bold text-rose-700 uppercase tracking-wider">Decline Offer</span>
+                    <h3 class="text-xl font-black text-slate-900 mt-0.5">Decline Job Offer</h3>
+                    <p class="text-xs text-slate-500" x-text="declineJobTitle + ' at ' + declineCompany"></p>
+                </div>
+                <button @click="declineModal = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
+            </div>
+
+            <form :action="'/jobseeker/applications/' + declineAppId + '/decline-offer'" method="POST" class="space-y-4">
+                @csrf
+                
+                <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-950 space-y-1">
+                    <p class="font-extrabold flex items-center gap-1 text-rose-900">
+                        <span>⚠️</span> Are you sure you want to decline this offer?
+                    </p>
+                    <p class="leading-relaxed">
+                        Declining will close this specific application and notify <strong x-text="declineCompany"></strong>. Your profile will remain <strong>Unemployed</strong> and all your other active applications will stay safe and intact.
+                    </p>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Reason for Declining (Optional)</label>
+                    <textarea name="decline_reason" rows="3" placeholder="e.g., Accepted an offer elsewhere, salary expectations, schedule conflict, location..."
+                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-400"></textarea>
+                    <span class="text-[10px] text-slate-400">Giving constructive feedback helps employers understand your decision.</span>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                    <button type="button" @click="declineModal = false" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
+                        Keep Offer
+                    </button>
+                    <button type="submit" class="px-7 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black shadow-lg shadow-rose-600/30 transition-all">
+                        Confirm: Decline Offer &rarr;
+                    </button>
+                </div>
+            </form>
+
         </div>
     </div>
 

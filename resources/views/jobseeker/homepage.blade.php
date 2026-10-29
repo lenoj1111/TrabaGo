@@ -23,7 +23,7 @@
                     <div>
                         <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-[11px] font-black text-emerald-300 uppercase tracking-widest border border-emerald-400/30 mb-2">
                             <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                            Active Placement
+                            Active Placement &bull; Profile Tagged as Employed
                         </span>
                         <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight">
                             Currently Hired at <span class="text-emerald-300">{{ $jobseeker->hired_company ?: 'Partner Employer' }}</span>

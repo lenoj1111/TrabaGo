@@ -100,6 +100,8 @@ class MultiRoleProgramFlowTest extends TestCase
 
     public function test_employer_creates_job_posting_sent_to_admin_and_admin_approves(): void
     {
+        $this->employer->update(['is_accredited' => 1]);
+
         // 1. Employer creates job posting (Figure 9)
         $createResponse = $this->actingAs($this->employerUser)->post('/employer/job-postings', [
             'title' => 'Software Quality Analyst',
@@ -232,11 +234,20 @@ class MultiRoleProgramFlowTest extends TestCase
             'interview_mode' => 'online',
         ]);
 
-        // 3. Employer marks candidate as Hired (Figure 9)
+        // 3. Employer extends job offer to candidate (Figure 9 & Rule 2)
         $hireResponse = $this->actingAs($this->employerUser)->post("/employer/applicants/{$app->application_id}/status", [
             'action' => 'hire',
         ]);
         $hireResponse->assertRedirect();
+
+        $this->assertDatabaseHas('job_applications', [
+            'application_id' => $app->application_id,
+            'status' => 'offered',
+        ]);
+
+        // 4. Candidate accepts the job offer to finalize Hired status
+        $acceptResponse = $this->actingAs($this->jobseekerUser)->post("/jobseeker/applications/{$app->application_id}/accept-offer");
+        $acceptResponse->assertRedirect();
 
         $this->assertDatabaseHas('job_applications', [
             'application_id' => $app->application_id,

@@ -297,6 +297,11 @@ class EmployerPortalController extends Controller
 
     public function storeJobPosting(Request $request)
     {
+        if (Auth::user() && !Auth::user()->is_approved) {
+            return redirect()->route('employer.job-postings')
+                ->with('error', 'Your employer account is pending approval. You must be approved before creating a job posting.');
+        }
+
         $user = Auth::user();
         if (!$user || !$user->isAccountVerified()) {
             return redirect()->route('employer.accreditation')
@@ -304,11 +309,6 @@ class EmployerPortalController extends Controller
         }
 
         $employer = $this->getOrCreateEmployer();
-
-        if (Auth::user() && !Auth::user()->is_approved) {
-            return redirect()->route('employer.job-postings')
-                ->with('error', 'Your employer account is pending approval. You must be approved before creating a job posting.');
-        }
 
         if (!$this->employerIsAccredited($employer)) {
             return redirect()->route('employer.accreditation')->with('error', 'You must be accredited before creating a job posting.');
@@ -850,9 +850,35 @@ class EmployerPortalController extends Controller
             }
 
             return redirect()->back()->with('success', "Formal job offer sent to {$application->jobseeker->first_name} {$application->jobseeker->last_name}!");
-        }
+        } elseif ($action === 'hire') {
+            // Initiate formal hiring offer awaiting candidate acceptance
+            $salary = $request->input('offer_salary') ?: $request->input('salary');
+            $startDate = $request->input('offer_start_date') ?: $request->input('start_date');
+            $notes = $request->input('offer_notes') ?: $request->input('notes') ?: 'Job offer extended by employer. Awaiting candidate acceptance.';
 
-        if ($action === 'not_qualified' || $action === 'reject') {
+            $application->update([
+                'status' => 'offered',
+                'offered_at' => now(),
+                'offer_salary' => $salary,
+                'offer_start_date' => $startDate,
+                'offer_notes' => $notes,
+            ]);
+
+            $jobseekerUser = $application->jobseeker->user ?? null;
+            if ($jobseekerUser) {
+                $salaryTxt = !empty($salary) ? ' with an offered salary of ₱' . number_format($salary, 2) : '';
+                Notification::create([
+                    'user_id' => $jobseekerUser->user_id,
+                    'title' => 'Formal Job Offer Received!',
+                    'message' => "Congratulations! {$employer->company_name} has selected you for hire and extended a formal Job Offer for '{$application->jobPosting->title}'{$salaryTxt}. Please review and click Accept in your Applications tab to confirm your hiring.",
+                    'type' => 'approval',
+                    'is_read' => false,
+                    'related_id' => $application->application_id,
+                ]);
+            }
+
+            return redirect()->back()->with('success', "Formal job offer extended to {$application->jobseeker->first_name} {$application->jobseeker->last_name}! The applicant must accept the offer to finalize status to Hired.");
+        } elseif ($action === 'not_qualified' || $action === 'reject') {
             $remarks = $request->input('remarks') ?: ($request->input('notes') ?: 'Candidate does not meet the specified qualifications for this role.');
 
             $application->update([
@@ -1087,7 +1113,10 @@ class EmployerPortalController extends Controller
 
         $request->validate([
             'company_name' => 'required|string|max:150',
+            'contact_person' => 'nullable|string|max:150',
             'full_name' => 'nullable|string|max:150',
+            'primary_email' => 'nullable|email|max:150',
+            'secondary_email' => 'nullable|email|max:150',
             'phone' => 'nullable|string|max:50',
             'position' => 'nullable|string|max:100',
             'department' => 'nullable|string|max:150',
@@ -1095,18 +1124,60 @@ class EmployerPortalController extends Controller
             'specialization' => 'nullable|string|max:150',
         ]);
 
-        $employer->update(['company_name' => $request->input('company_name')]);
+        $contactPerson = $request->input('contact_person') ?: $request->input('full_name', $employer->contact_person);
+        $primaryEmail = $request->input('primary_email') ?: ($employer->primary_email ?: $user->email);
+        $secondaryEmail = $request->input('secondary_email', $employer->secondary_email);
+        $phone = $request->input('phone', $employer->contact_phone);
+        $office = $request->input('office', $employer->company_address);
+
+        // Store update request audit trail
+        $pendingUpdates = $employer->pending_updates ?: [];
+        $pendingUpdates[] = [
+            'updated_at' => now()->toIso8601String(),
+            'fields' => [
+                'company_name' => $request->input('company_name'),
+                'contact_person' => $contactPerson,
+                'primary_email' => $primaryEmail,
+                'secondary_email' => $secondaryEmail,
+                'contact_phone' => $phone,
+                'company_address' => $office,
+            ],
+            'status' => 'applied'
+        ];
+
+        $employer->update([
+            'company_name' => $request->input('company_name'),
+            'contact_person' => $contactPerson,
+            'primary_email' => $primaryEmail,
+            'secondary_email' => $secondaryEmail,
+            'contact_phone' => $phone,
+            'company_address' => $office,
+            'pending_updates' => $pendingUpdates,
+        ]);
 
         $profile = $user->profile ?: new UserProfile(['user_id' => $user->user_id]);
-        $profile->full_name = $request->input('full_name', $profile->full_name);
-        $profile->phone = $request->input('phone', $profile->phone);
+        $profile->full_name = $contactPerson;
+        $profile->phone = $phone;
         $profile->position = $request->input('position', $profile->position);
         $profile->department = $request->input('department', $profile->department);
-        $profile->office = $request->input('office', $profile->office);
+        $profile->office = $office;
         $profile->specialization = $request->input('specialization', $profile->specialization);
         $profile->save();
 
-        return redirect()->route('employer.profile')->with('success', 'Company and representative profile updated successfully.');
+        // Notify JPO / Admin about account details update
+        $jpos = User::whereIn('role', ['admin', 'jpo'])->get();
+        foreach ($jpos as $officer) {
+            Notification::create([
+                'user_id' => $officer->user_id,
+                'title' => 'Employer Profile Details Updated',
+                'message' => "Employer '{$employer->company_name}' has updated their account and authorized contact information.",
+                'type' => 'manual_review',
+                'is_read' => false,
+                'related_id' => $employer->employer_id,
+            ]);
+        }
+
+        return redirect()->route('employer.profile')->with('success', 'Company profile, authorized contact person, and dual email addresses updated successfully.');
     }
 
     public function resetPassword(Request $request)
@@ -1177,5 +1248,15 @@ class EmployerPortalController extends Controller
             ->update(['is_read' => true]);
 
         return redirect()->back()->with('success', 'All notifications marked as read.');
+    }
+
+    public function certificate()
+    {
+        $employer = $this->getOrCreateEmployer();
+        $accreditation = DB::table('employer_accreditation')->where('employer_id', $employer->employer_id)->first();
+        if (!$employer->is_accredited) {
+            return redirect()->route('employer.accreditation')->with('error', 'Your company does not currently have an approved accreditation certificate.');
+        }
+        return view('reports.employer-certificate', compact('employer', 'accreditation'));
     }
 }

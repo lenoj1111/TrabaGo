@@ -3,7 +3,7 @@
 @section('title', 'Employee Accounts & User Management')
 
 @section('content')
-<div x-data="{ viewModal: false, selectedUser: null, openView(u) { this.selectedUser = u; this.viewModal = true; } }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
+<div x-data="manageUsersComponent()" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
     <div class="w-full max-w-[1680px] mx-auto space-y-8">
 
         <!-- Header -->
@@ -184,21 +184,36 @@
                                     </span>
                                 </td>
                                 <td class="py-4 px-6 text-center">
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold border {{ $user->is_approved ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200' }}">
-                                        @if($user->is_approved)
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                            Approved
-                                        @else
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                            Pending
+                                    <div class="flex flex-col items-center gap-1">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold border {{ $user->is_approved ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200' }}">
+                                            @if($user->is_approved)
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                                Approved
+                                            @else
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                Pending
+                                            @endif
+                                        </span>
+                                        @if(!$user->is_approved)
+                                            @if($user->role === 'employer')
+                                                <a href="{{ route('admin.employers') }}" class="text-[10px] font-bold text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-0.5">
+                                                    <span>Review in Employers</span>
+                                                    <span>&rarr;</span>
+                                                </a>
+                                            @elseif($user->role === 'jobseeker')
+                                                <a href="{{ route('admin.jobseekers.index') }}" class="text-[10px] font-bold text-emerald-600 hover:text-emerald-800 hover:underline inline-flex items-center gap-0.5">
+                                                    <span>Review in Jobseekers</span>
+                                                    <span>&rarr;</span>
+                                                </a>
+                                            @endif
                                         @endif
-                                    </span>
+                                    </div>
                                 </td>
                                 <td class="py-4 px-6 text-slate-500 text-[11px]">
                                     {{ $user->created_at ? date('M d, Y', strtotime($user->created_at)) : 'N/A' }}
                                 </td>
                                 <td class="py-4 px-6 text-right">
-                                    <div class="inline-flex items-center justify-end gap-2">
+                                    <div class="inline-flex items-center justify-end gap-1.5 flex-wrap">
                                         @php
                                             $userData = [
                                                 'user_id' => $user->user_id,
@@ -220,33 +235,60 @@
                                                 'edit_url' => route('admin.users.edit', $user->user_id)
                                             ];
                                         @endphp
-                                        <button type="button" @click='openView(@json($userData))'
-                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors" title="View Account Details">
-                                            <svg class="w-3.5 h-3.5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                            <span>View</span>
-                                        </button>
 
-                                        <a href="{{ route('admin.users.edit', $user->user_id) }}" 
-                                           class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors" title="Edit User">
-                                            ✏️ Edit
-                                        </a>
-
-                                        @if($user->status === 'active')
-                                            <button type="button"
-                                                    data-action="toggle-status"
-                                                    data-user-id="{{ $user->user_id }}"
-                                                    class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors" title="Deactivate Account">
-                                                Deactivate
-                                            </button>
-                                        @else
-                                            <button type="button"
-                                                    data-action="toggle-status"
-                                                    data-user-id="{{ $user->user_id }}"
-                                                    class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs border border-emerald-200 transition-colors" title="Activate Account">
-                                                Activate
+                                        {{-- 1. Update Email or Password (HR Turnover / Resignation Recovery) --}}
+                                        @if($user->role === 'employer' && !empty($user->employer_id))
+                                            <button type="button" 
+                                                    @click="openCredentialsModal({{ json_encode([
+                                                        'employer_id' => $user->employer_id,
+                                                        'user_id' => $user->user_id,
+                                                        'company_name' => $user->company_name ?: $displayName,
+                                                        'email' => $user->email,
+                                                        'secondary_email' => $user->employer_secondary_email ?? '',
+                                                        'contact_person' => $user->contact_person ?? '',
+                                                        'contact_phone' => $user->employer_contact ?? '',
+                                                    ]) }})"
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs transition-colors" 
+                                                    title="Update Email or Password (e.g. Assigned HR resigned without leaving credentials)">
+                                                <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                                                <span>Update Email/Pass</span>
                                             </button>
                                         @endif
 
+                                        {{-- 2. Deactivate / Activate Account Toggle --}}
+                                        <form action="{{ route('admin.users.toggle-status', $user->user_id) }}" method="POST" class="inline"
+                                              onsubmit="return confirm('Are you sure you want to {{ $user->status === 'active' ? 'DEACTIVATE' : 'ACTIVATE' }} account #{{ $user->user_id }} ({{ addslashes($displayName) }})?');">
+                                            @csrf
+                                            @if($user->status === 'active')
+                                                <button type="submit" 
+                                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-colors" 
+                                                        title="Deactivate Account">
+                                                    <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                                    <span>Deac</span>
+                                                </button>
+                                            @else
+                                                <button type="submit" 
+                                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-xs transition-colors" 
+                                                        title="Activate Account">
+                                                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    <span>Activate</span>
+                                                </button>
+                                            @endif
+                                        </form>
+
+                                        {{-- 3. Edit Account --}}
+                                        <a href="{{ route('admin.users.edit', $user->user_id) }}" 
+                                           class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs transition-colors" title="Edit User">
+                                            <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            <span>Edit</span>
+                                        </a>
+
+                                        {{-- 4. View Details --}}
+                                        <button type="button" @click='openView(@json($userData))'
+                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors" title="View Account Details">
+                                            <svg class="w-3.5 h-3.5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <span>View</span>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -400,10 +442,22 @@
             </div>
         </div>
 
+        {{-- Reusable Employer Credentials Modal --}}
+        @include('partials.employer-credentials-modal')
+
     </div>
 </div>
 
 <script>
+    function manageUsersComponent() {
+        return {
+            viewModal: false,
+            selectedUser: null,
+            openView(u) { this.selectedUser = u; this.viewModal = true; },
+            ...(window.employerCredentialsHandler ? window.employerCredentialsHandler('{{ csrf_token() }}') : {})
+        };
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('[data-action="toggle-status"]').forEach(function (button) {
             button.addEventListener('click', function () {
