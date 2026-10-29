@@ -183,10 +183,10 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
                         @forelse($jobs as $job)
                         <tr class="hover:bg-slate-50/80 transition-colors">
                             <td class="py-4 px-3">
-                                <button type="button" @click="openView({{ $job->job_id }})" class="text-left group focus:outline-none">
+                                <a href="{{ route('employer.job-postings.show', $job->job_id) }}" class="text-left group focus:outline-none">
                                     <span class="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors block text-sm">{{ $job->title }}</span>
                                     <span class="text-[11px] text-slate-400 line-clamp-1 max-w-sm">{{ $job->description }}</span>
-                                </button>
+                                </a>
                             </td>
                             <td class="py-4 px-3 font-bold text-slate-900">
                                 <span class="inline-flex items-center gap-1.5">
@@ -244,14 +244,14 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
                             </td>
                             <td class="py-4 px-3 text-right">
                                 <div class="inline-flex items-center gap-1.5">
-                                    <button type="button" @click="openView({{ $job->job_id }})"
+                                    <a href="{{ route('employer.job-postings.show', $job->job_id) }}"
                                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                         </svg>
                                         <span>View</span>
-                                    </button>
+                                    </a>
 
                                     <button type="button" @click="openEdit({{ $job->job_id }})"
                                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200 transition-colors">
@@ -793,7 +793,6 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
         return {
             createModal: hasCreateParam,
             editModal: editJobId ? true : false,
-            viewModal: false,
             deleteModal: false,
             closeModal: false,
             jobsMap: jobsMap,
@@ -806,12 +805,6 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
             },
             openCreate() {
                 this.createModal = true;
-            },
-            openView(id) {
-                if (this.jobsMap[id]) {
-                    this.selectedJob = Object.assign({}, initialJob, this.jobsMap[id]);
-                    this.viewModal = true;
-                }
             },
             openEdit(id) {
                 if (this.jobsMap[id]) {
