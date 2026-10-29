@@ -247,14 +247,6 @@
                                             </button>
                                         @endif
 
-                                        @if(!$user->is_approved && $user->role !== 'admin')
-                                            <button type="button"
-                                                    data-action="approve-user"
-                                                    data-user-id="{{ $user->user_id }}"
-                                                    class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm" title="Approve Account">
-                                                ✓ Approve
-                                            </button>
-                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -444,36 +436,6 @@
             });
         });
 
-        document.querySelectorAll('[data-action="approve-user"]').forEach(function (button) {
-            button.addEventListener('click', function () {
-                const userId = this.dataset.userId;
-
-                Swal.fire({
-                    title: 'Approve User Account?',
-                    text: 'This will authorize the user account to log in and access system functions.',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#059669',
-                    cancelButtonColor: '#64748b',
-                    confirmButtonText: 'Yes, approve'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        fetch(`/admin/users/${userId}/approve`, {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            }
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                Swal.fire('Approved!', data.success, 'success').then(() => location.reload());
-                            }
-                        })
-                    }
-                });
-            });
-        });
     });
 </script>
 @endsection

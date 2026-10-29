@@ -25,6 +25,9 @@
     {{-- Vite --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    {{-- SweetAlert2 --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     {{-- Alpine.js --}}
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
@@ -180,6 +183,17 @@
                           d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                 </svg>
                 <span class="jpo-sidebar-label flex-1">Evaluate Jobseekers</span>
+            </a>
+
+            {{-- Approve Jobseekers --}}
+            <a href="{{ route('jpo.jobseekers.index') }}"
+               class="nav-item {{ request()->routeIs('jpo.jobseekers.index*') ? 'nav-item-active' : '' }}"
+               :title="collapsed ? 'Approve Jobseekers' : ''">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <span class="jpo-sidebar-label flex-1">Approve Jobseekers</span>
             </a>
 
             {{-- Accreditation Papers --}}

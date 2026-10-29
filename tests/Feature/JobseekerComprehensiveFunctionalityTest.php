@@ -230,6 +230,28 @@ class JobseekerComprehensiveFunctionalityTest extends TestCase
         $duplicateResponse->assertSessionHas('warning');
     }
 
+    public function test_approved_jobseeker_can_apply_through_api_with_incomplete_documents(): void
+    {
+        $this->user->update([
+            'status' => 'active',
+            'is_approved' => 1,
+            'account_status' => 'verified',
+        ]);
+        DB::table('jobseeker_details')
+            ->where('jobseeker_id', $this->jobseeker->jobseeker_id)
+            ->update(['training_certificates' => json_encode([])]);
+
+        $response = $this->actingAs($this->user, 'sanctum')
+            ->postJson("/api/jobs/{$this->jobId}/apply", ['jobId' => $this->jobId]);
+
+        $response->assertOk()->assertJsonPath('success', true);
+        $this->assertDatabaseHas('job_applications', [
+            'job_id' => $this->jobId,
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'status' => 'pending',
+        ]);
+    }
+
     public function test_applications_pipeline_view_and_withdrawal(): void
     {
         // Submit an application

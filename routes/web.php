@@ -270,7 +270,7 @@ Route::prefix('jpo')->name('jpo.')->middleware(['auth', 'jpo'])->group(function 
     Route::get('/evaluations/jobseekers/{id}/documents/{documentIndex}', [JpoPortalController::class, 'viewJobseekerDocument'])->name('evaluations.jobseekers.documents.show');
     Route::post('/evaluations/jobseekers/{id}/refer', [JpoPortalController::class, 'referJobseeker'])->name('evaluations.jobseekers.refer');
     Route::post('/evaluations/jobseekers/{id}/approve', [JpoPortalController::class, 'approveJobseeker'])->name('evaluations.jobseekers.approve');
-    Route::post('/evaluations/jobseekers/{id}/reject', [JpoPortalController::class, 'rejectJobseeker'])->name('evaluations.jobseekers.reject');
+    Route::post('/evaluations/jobseekers/{id}/disapprove', [JpoPortalController::class, 'rejectJobseeker'])->name('evaluations.jobseekers.disapprove');
     Route::get('/evaluations/jobseekers/{id}/nsrp', [JpoPortalController::class, 'showNsrpForm'])->name('evaluations.jobseekers.nsrp');
 
     // 2. Evaluate Accreditation Papers (Recommend to Admin)
@@ -297,6 +297,10 @@ Route::prefix('jpo')->name('jpo.')->middleware(['auth', 'jpo'])->group(function 
     Route::get('/notifications', [JpoPortalController::class, 'notifications'])->name('notifications');
     Route::post('/notifications/read-all', [JpoPortalController::class, 'markAllNotificationsRead'])->name('notifications.read_all');
     Route::post('/notifications/{id}/read', [JpoPortalController::class, 'markNotificationRead'])->name('notifications.read');
+
+    // Approve Jobseeker
+    Route::get('/jobseekers', [JpoPortalController::class, 'jobseekers'])->name('jobseekers.index');
+    Route::get('/jobseekers/{id}/valid-id', [JpoPortalController::class, 'viewJobseekerValidId'])->name('jobseekers.valid-id');
 });
 
 /*
@@ -413,6 +417,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/approvals/trainers/{id}/approve', [ApprovalsController::class, 'approveTrainer'])->name('approvals.trainers.approve');
     Route::post('/approvals/trainers/{id}/reject', [ApprovalsController::class, 'rejectTrainer'])->name('approvals.trainers.reject');
     Route::post('/approvals/jobseekers/{id}/approve', [ApprovalsController::class, 'approveJobseeker'])->name('approvals.jobseekers.approve');
+    Route::post('/approvals/jobseekers/{id}/disapprove', [ApprovalsController::class, 'disapproveJobseeker'])->name('approvals.jobseekers.disapprove');
     Route::post('/approvals/jobseekers/{id}/reject', [ApprovalsController::class, 'rejectJobseeker'])->name('approvals.jobseekers.reject');
 
     // Placement Reports Management Directory
@@ -422,6 +427,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // View Jobseeker Status Directory
     Route::get('/jobseekers', [ApprovalsController::class, 'jobseekers'])->name('jobseekers.index');
+    Route::get('/jobseekers/{id}/valid-id', [ApprovalsController::class, 'viewJobseekerValidId'])->name('jobseekers.valid-id');
 
     // Employee Account Management (Create, Activate, Deactivate)
     Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
