@@ -126,46 +126,49 @@
                 <div class="space-y-4">
                     <div class="border-b border-slate-100 pb-3 flex items-center gap-2">
                         <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                        <h2 class="text-sm font-black text-slate-900 uppercase tracking-wider">Authorized Company Representative / HR Contact</h2>
+                        <h2 class="text-sm font-black text-slate-900 uppercase tracking-wider">Owner &amp; Authorized Company Contacts</h2>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Representative Full Name / Authorized Contact Person <span class="text-rose-500">*</span></label>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Owner / Primary Authorized Person <span class="text-rose-500">*</span></label>
                             <input type="text" name="contact_person" value="{{ old('contact_person', $employer->contact_person ?? ($profile->full_name ?? ($user->full_name ?? ''))) }}" placeholder="e.g. Maria Santos" required
                                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            @error('contact_person')<span class="text-[10px] text-rose-600 font-semibold">{{ $message }}</span>@enderror
                         </div>
 
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Position / Designation</label>
-                            <input type="text" name="position" value="{{ old('position', $profile->position ?? 'HR Manager') }}" placeholder="e.g. Human Resources Officer / Talent Lead"
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Owner's Position / Designation</label>
+                            <input type="text" name="position" value="{{ old('position', $profile->position ?? 'Owner') }}" placeholder="e.g. Owner / Proprietor"
                                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Department / Division</label>
-                            <input type="text" name="department" value="{{ old('department', $profile->department ?? 'Human Resources') }}" placeholder="e.g. Talent Acquisition & Placement"
+                            <input type="text" name="department" value="{{ old('department', $profile->department ?? 'Company Ownership') }}" placeholder="e.g. Company Ownership"
                                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                         </div>
 
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Official Contact Number / Mobile</label>
-                            <input type="text" name="phone" value="{{ old('phone', $employer->contact_phone ?? ($profile->phone ?? '')) }}" placeholder="e.g. (032) 234-5678 / 0912-345-6789"
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Owner's Mobile Number <span class="text-rose-500">*</span></label>
+                            <input type="text" name="phone" value="{{ old('phone', $employer->contact_phone ?? ($profile->phone ?? '')) }}" placeholder="e.g. 0912-345-6789" required
                                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            @error('phone')<span class="text-[10px] text-rose-600 font-semibold">{{ $message }}</span>@enderror
                         </div>
 
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Primary Official Email</label>
-                            <input type="email" name="primary_email" value="{{ old('primary_email', $employer->primary_email ?? $user->email) }}" placeholder="e.g. hr@company.com"
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Owner's Official Email</label>
+                            <input type="email" name="primary_email" value="{{ old('primary_email', $employer->primary_email ?? $user->email) }}" placeholder="e.g. owner@company.com"
                                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                            <span class="text-[10px] text-slate-400">Main email for recruitment correspondence and PESO endorsements.</span>
+                            <span class="text-[10px] text-slate-400">Primary email for owner and company correspondence.</span>
+                            @error('primary_email')<span class="text-[10px] text-rose-600 font-semibold">{{ $message }}</span>@enderror
                         </div>
 
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Secondary / Alternate Email</label>
-                            <input type="email" name="secondary_email" value="{{ old('secondary_email', $employer->secondary_email ?? '') }}" placeholder="e.g. recruitment@company.com"
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Owner's Direct Landline <span class="text-slate-400 font-normal normal-case">(optional)</span></label>
+                            <input type="text" name="contact_landline" value="{{ old('contact_landline', $employer->contact_landline ?? '') }}" placeholder="e.g. (032) 234-5678"
                                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                            <span class="text-[10px] text-slate-400">Backup email for notifications, certificates, and alerts.</span>
+                            @error('contact_landline')<span class="text-[10px] text-rose-600 font-semibold">{{ $message }}</span>@enderror
                         </div>
 
                         <div class="sm:col-span-2 space-y-1.5">
@@ -173,6 +176,46 @@
                             <input type="text" value="{{ $user->email }}" disabled
                                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs bg-slate-100 text-slate-500 cursor-not-allowed">
                             <span class="text-[10px] text-slate-400">Account login ID credential.</span>
+                        </div>
+
+                        <div class="sm:col-span-2 border-t border-slate-100 pt-5">
+                            <h3 class="text-xs font-black uppercase tracking-wider text-slate-900">Secondary Authorized Person <span class="font-medium normal-case text-slate-400">(optional)</span></h3>
+                            <p class="text-[10px] text-slate-500 mt-1">Add the HR representative or another person authorized to act for the company. If any details are entered, complete their name, position, mobile, and email. Landline is optional.</p>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Full Name</label>
+                            <input type="text" name="secondary_contact_person" value="{{ old('secondary_contact_person', $employer->secondary_contact_person ?? '') }}" placeholder="e.g. Maria Santos"
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            @error('secondary_contact_person')<span class="text-[10px] text-rose-600 font-semibold">{{ $message }}</span>@enderror
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Position / Designation</label>
+                            <input type="text" name="secondary_contact_position" value="{{ old('secondary_contact_position', $employer->secondary_contact_position ?? '') }}" placeholder="e.g. HR Manager / Recruitment Lead"
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            @error('secondary_contact_position')<span class="text-[10px] text-rose-600 font-semibold">{{ $message }}</span>@enderror
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Mobile Number</label>
+                            <input type="text" name="secondary_contact_phone" value="{{ old('secondary_contact_phone', $employer->secondary_contact_phone ?? '') }}" placeholder="e.g. 0912-345-6789"
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            @error('secondary_contact_phone')<span class="text-[10px] text-rose-600 font-semibold">{{ $message }}</span>@enderror
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Direct Landline <span class="text-slate-400 font-normal normal-case">(optional)</span></label>
+                            <input type="text" name="secondary_contact_landline" value="{{ old('secondary_contact_landline', $employer->secondary_contact_landline ?? '') }}" placeholder="e.g. (032) 234-5678"
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            @error('secondary_contact_landline')<span class="text-[10px] text-rose-600 font-semibold">{{ $message }}</span>@enderror
+                        </div>
+
+                        <div class="sm:col-span-2 space-y-1.5">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Official Email</label>
+                            <input type="email" name="secondary_email" value="{{ old('secondary_email', $employer->secondary_email ?? '') }}" placeholder="e.g. recruitment@company.com"
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            @error('secondary_email')<span class="text-[10px] text-rose-600 font-semibold">{{ $message }}</span>@enderror
                         </div>
                     </div>
                 </div>
@@ -284,4 +327,3 @@
     </div>
 </div>
 @endsection
-

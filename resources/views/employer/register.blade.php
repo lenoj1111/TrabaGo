@@ -103,7 +103,7 @@
                         $employerSteps = [
                             ['num' => 1, 'name' => 'Account', 'sub' => 'Credentials'],
                             ['num' => 2, 'name' => 'Company', 'sub' => 'Business Profile'],
-                            ['num' => 3, 'name' => 'Contact', 'sub' => 'Dual Email & HR'],
+                            ['num' => 3, 'name' => 'Contact', 'sub' => 'Owner & HR Contacts'],
                             ['num' => 4, 'name' => 'Documents', 'sub' => 'Accreditation'],
                         ];
                     @endphp
@@ -151,7 +151,7 @@
                                 <input type="email" id="email" name="email" value="{{ old('email') }}" required autocomplete="email" placeholder="hr@yourcompany.com"
                                        class="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border @error('email') border-rose-400 ring-2 ring-rose-100 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
                             </div>
-                            <p class="text-[11px] text-slate-500 mt-1">Primary corporate email used for portal authentication and notifications. (Dual Email & alternate inboxes can be configured in Step 3).</p>
+                            <p class="text-[11px] text-slate-500 mt-1">Primary corporate email used for portal authentication and notifications. Owner and authorized contact details are entered in Step 3.</p>
                             @error('email')<span class="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">{{ $message }}</span>@enderror
                         </div>
 
@@ -265,7 +265,30 @@
                             </label>
                             <select id="industry" name="industry" class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition">
                                 <option value="">Select industry sector...</option>
-                                @foreach(['Information Technology & BPO','Manufacturing & Assembly','Retail, Wholesale & Trading','Healthcare & Pharmaceuticals','Education & Academic Services','Construction & Real Estate','Financial Services & Banking','Hospitality, Tourism & Food Service','Transportation, Logistics & Warehousing','Other Services'] as $ind)
+                                @foreach([
+                                    'Agriculture, Forestry and Fishing',
+                                    'Mining and Quarrying',
+                                    'Manufacturing',
+                                    'Electricity, Gas, Steam and Air Conditioning Supply',
+                                    'Water Supply; Sewerage, Waste Management and Remediation Activities',
+                                    'Construction',
+                                    'Wholesale and Retail Trade; Repair of Motor Vehicles and Motorcycles',
+                                    'Transportation and Storage',
+                                    'Accommodation and Food Service Activities',
+                                    'Publishing, Broadcasting, and Content Production and Distribution Activities',
+                                    'Telecommunications, Computer Programming, Consultancy, Computing Infrastructure, and Other Information Service Activities',
+                                    'Financial and Insurance Activities',
+                                    'Real Estate Activities',
+                                    'Professional, Scientific and Technical Activities',
+                                    'Administrative and Support Service Activities',
+                                    'Public Administration and Defense; Compulsory Social Security',
+                                    'Education',
+                                    'Human Health and Social Work Activities',
+                                    'Arts, Sports and Recreation',
+                                    'Other Service Activities',
+                                    'Activities of Households as Employers; Undifferentiated Goods- and Services-Producing Activities of Households for Own Use',
+                                    'Activities of Extraterritorial Organizations and Bodies',
+                                ] as $ind)
                                     <option value="{{ $ind }}" {{ old('industry') == $ind ? 'selected' : '' }}>{{ $ind }}</option>
                                 @endforeach
                             </select>
@@ -325,18 +348,17 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                     </div>
                     <div>
-                        <h2 class="text-lg font-bold text-slate-900">Dual Email & Contact Management</h2>
-                        <p class="text-xs text-slate-500">Designated HR representative, dual corporate emails (Primary & Secondary Inboxes), and workplace headquarters in Region 7</p>
+                        <h2 class="text-lg font-bold text-slate-900">Owner &amp; Authorized Contacts</h2>
+                        <p class="text-xs text-slate-500">Register the company owner as the primary authorized person, with an optional secondary HR or authorized contact and workplace headquarters in Region 7</p>
                     </div>
                 </div>
 
                 <div class="p-6 sm:p-8 space-y-5">
-                    <!-- Authorized Contact Person Section -->
+                    <!-- Owner / Primary Authorized Person -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Contact Person -->
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="contact_person">
-                                Authorized Contact Person (Full Name) <span class="text-rose-500">*</span>
+                                Owner / Primary Authorized Person (Full Name) <span class="text-rose-500">*</span>
                             </label>
                             <input type="text" id="contact_person" name="contact_person" value="{{ old('contact_person') }}" required
                                    placeholder="e.g. Maria Clara Santos"
@@ -344,42 +366,40 @@
                             @error('contact_person')<span class="text-xs text-rose-600 font-semibold mt-1 block">{{ $message }}</span>@enderror
                         </div>
 
-                        <!-- Position -->
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="contact_position">
-                                Official Position / Designation <span class="text-rose-500">*</span>
+                                Owner's Position / Designation <span class="text-rose-500">*</span>
                             </label>
-                            <input type="text" id="contact_position" name="contact_position" value="{{ old('contact_position') }}" required
-                                   placeholder="e.g. HR Director / Talent Acquisition Lead"
+                            <input type="text" id="contact_position" name="contact_position" value="{{ old('contact_position', 'Owner') }}" required
+                                   placeholder="e.g. Owner / Proprietor"
                                    class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border @error('contact_position') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
                             @error('contact_position')<span class="text-xs text-rose-600 font-semibold mt-1 block">{{ $message }}</span>@enderror
                         </div>
 
-                        <!-- Phone -->
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="phone">
-                                Direct Landline / Telephone <span class="text-rose-500">*</span>
+                                Direct Landline / Telephone <span class="text-slate-400 font-normal normal-case">(optional)</span>
                             </label>
-                            <input type="tel" id="phone" name="phone" value="{{ old('phone') }}" required
+                            <input type="tel" id="phone" name="phone" value="{{ old('phone') }}"
                                    placeholder="(032) 123-4567"
                                    class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border @error('phone') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
                             @error('phone')<span class="text-xs text-rose-600 font-semibold mt-1 block">{{ $message }}</span>@enderror
                         </div>
 
-                        <!-- Mobile -->
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="mobile">
-                                Mobile Number
+                                Owner's Mobile Number <span class="text-rose-500">*</span>
                             </label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-xs font-semibold text-slate-500">+63</span>
-                                <input type="tel" id="mobile" name="mobile" value="{{ old('mobile') }}" placeholder="917 123 4567"
-                                       class="w-full pl-12 pr-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                                <input type="tel" id="mobile" name="mobile" value="{{ old('mobile') }}" placeholder="917 123 4567" required
+                                       class="w-full pl-12 pr-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border @error('mobile') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
                             </div>
+                            @error('mobile')<span class="text-xs text-rose-600 font-semibold mt-1 block">{{ $message }}</span>@enderror
                         </div>
                     </div>
 
-                    <!-- Dual Email Management Section -->
+                    <!-- Primary Authorized Person Email -->
                     <div class="p-5 rounded-2xl bg-slate-50/70 border border-slate-200 space-y-4">
                         <div class="flex items-center justify-between pb-2 border-b border-slate-200/80">
                             <div class="flex items-center gap-2">
@@ -387,35 +407,77 @@
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Dual Email Inboxes (Primary & Secondary)</h3>
-                                    <p class="text-[11px] text-slate-500">Provide dual communication channels for primary endorsements and backup redundancy</p>
+                                    <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Owner's Official Email</h3>
+                                    <p class="text-[11px] text-slate-500">Primary email for the owner and company recruitment correspondence</p>
                                 </div>
                             </div>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Dual Email System</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Primary Contact</span>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="primary_email">
+                                Owner's Official Email <span class="text-rose-500">*</span>
+                            </label>
+                            <input type="email" id="primary_email" name="primary_email" value="{{ old('primary_email', old('email')) }}" required
+                                   placeholder="e.g. owner@company.com"
+                                   class="w-full px-4 py-2.5 bg-white border @error('primary_email') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                            @error('primary_email')<span class="text-xs text-rose-600 font-semibold mt-1 block">{{ $message }}</span>@enderror
+                        </div>
+                    </div>
+
+                    <!-- Optional Secondary Authorized Person -->
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200 space-y-4" data-secondary-contact>
+                        <div class="pb-2 border-b border-slate-200/80">
+                            <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Secondary Authorized Person <span class="text-slate-400 normal-case font-medium">(optional)</span></h3>
+                            <p class="text-[11px] text-slate-500 mt-1">Add an HR representative or another person authorized to act for the company. If you start this section, provide their name, position, mobile number, and email. Landline is optional.</p>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Primary Email -->
                             <div>
-                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="primary_email">
-                                    Primary Official Email <span class="text-rose-500">*</span>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="secondary_contact_person">
+                                    Full Name
                                 </label>
-                                <input type="email" id="primary_email" name="primary_email" value="{{ old('primary_email', old('email')) }}" required
-                                       placeholder="e.g. hr@company.com"
-                                       class="w-full px-4 py-2.5 bg-white border @error('primary_email') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
-                                <p class="text-[11px] text-slate-500 mt-1">Main email for recruitment correspondence and PESO endorsements.</p>
-                                @error('primary_email')<span class="text-xs text-rose-600 font-semibold mt-1 block">{{ $message }}</span>@enderror
+                                <input type="text" id="secondary_contact_person" name="secondary_contact_person" value="{{ old('secondary_contact_person') }}" placeholder="e.g. Maria Clara Santos"
+                                       class="w-full px-4 py-2.5 bg-white border @error('secondary_contact_person') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                                @error('secondary_contact_person')<span class="text-xs text-rose-600 font-semibold mt-1 block">{{ $message }}</span>@enderror
                             </div>
 
-                            <!-- Secondary / Alternate Email -->
                             <div>
-                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="secondary_email">
-                                    Secondary / Alternate Email
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="secondary_contact_position">
+                                    Position / Designation
                                 </label>
-                                <input type="email" id="secondary_email" name="secondary_email" value="{{ old('secondary_email') }}"
-                                       placeholder="e.g. recruitment@company.com"
+                                <input type="text" id="secondary_contact_position" name="secondary_contact_position" value="{{ old('secondary_contact_position') }}" placeholder="e.g. HR Manager / Recruitment Lead"
+                                       class="w-full px-4 py-2.5 bg-white border @error('secondary_contact_position') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                                @error('secondary_contact_position')<span class="text-xs text-rose-600 font-semibold mt-1 block">{{ $message }}</span>@enderror
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="secondary_mobile">
+                                    Mobile Number
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-xs font-semibold text-slate-500">+63</span>
+                                    <input type="tel" id="secondary_mobile" name="secondary_mobile" value="{{ old('secondary_mobile') }}" placeholder="917 123 4567"
+                                           class="w-full pl-12 pr-4 py-2.5 bg-white border @error('secondary_mobile') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                                </div>
+                                @error('secondary_mobile')<span class="text-xs text-rose-600 font-semibold mt-1 block">{{ $message }}</span>@enderror
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="secondary_phone">
+                                    Direct Landline / Telephone <span class="text-slate-400 font-normal normal-case">(optional)</span>
+                                </label>
+                                <input type="tel" id="secondary_phone" name="secondary_phone" value="{{ old('secondary_phone') }}" placeholder="(032) 123-4567"
+                                       class="w-full px-4 py-2.5 bg-white border @error('secondary_phone') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                                @error('secondary_phone')<span class="text-xs text-rose-600 font-semibold mt-1 block">{{ $message }}</span>@enderror
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="secondary_email">
+                                    Official Email
+                                </label>
+                                <input type="email" id="secondary_email" name="secondary_email" value="{{ old('secondary_email') }}" placeholder="e.g. recruitment@company.com"
                                        class="w-full px-4 py-2.5 bg-white border @error('secondary_email') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
-                                <p class="text-[11px] text-slate-500 mt-1">Backup inbox for certificates, system alerts, and compliance updates.</p>
                                 @error('secondary_email')<span class="text-xs text-rose-600 font-semibold mt-1 block">{{ $message }}</span>@enderror
                             </div>
                         </div>
@@ -701,11 +763,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const headerStepText = document.getElementById('headerStepText');
     const headerPercentText = document.getElementById('headerPercentText');
     const headerProgressBar = document.getElementById('headerProgressBar');
+    const secondaryContactGroup = document.querySelector('[data-secondary-contact]');
+    const secondaryContactFields = secondaryContactGroup
+        ? Array.from(secondaryContactGroup.querySelectorAll('input'))
+        : [];
+    const requiredSecondaryContactFields = ['secondary_contact_person', 'secondary_contact_position', 'secondary_mobile', 'secondary_email']
+        .map(name => secondaryContactGroup?.querySelector(`[name="${name}"]`))
+        .filter(Boolean);
+
+    function syncSecondaryContactRequirements() {
+        const hasSecondaryContactDetails = secondaryContactFields.some(input => input.value.trim() !== '');
+        requiredSecondaryContactFields.forEach(input => {
+            input.required = hasSecondaryContactDetails;
+        });
+    }
+
+    secondaryContactFields.forEach(input => {
+        input.addEventListener('input', syncSecondaryContactRequirements);
+    });
+    syncSecondaryContactRequirements();
 
     const stepTitles = [
         'Account Credentials',
         'Company Profile',
-        'Dual Email & Contact Management',
+        'Owner & Authorized Contacts',
         'Accreditation Documents & Terms'
     ];
 
@@ -761,6 +842,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const c = document.querySelector(`.step-content[data-step="${step}"]`);
         if (!c) return true;
 
+        if (step === 3) syncSecondaryContactRequirements();
         const inputs = c.querySelectorAll('input[required], select[required], textarea[required]');
         let isValid = true;
         let firstInvalid = null;
@@ -982,7 +1064,7 @@ document.addEventListener('DOMContentLoaded', function() {
             targetErrorStep = 1;
         } else if (errorFields.some(f => ['company_name', 'company_description', 'industry', 'company_size', 'website', 'company_type'].includes(f))) {
             targetErrorStep = 2;
-        } else if (errorFields.some(f => ['contact_person', 'contact_position', 'phone', 'mobile', 'primary_email', 'secondary_email', 'address', 'city', 'province', 'postal_code'].includes(f))) {
+        } else if (errorFields.some(f => ['contact_person', 'contact_position', 'phone', 'mobile', 'primary_email', 'secondary_contact_person', 'secondary_contact_position', 'secondary_phone', 'secondary_mobile', 'secondary_email', 'address', 'city', 'province', 'postal_code'].includes(f))) {
             targetErrorStep = 3;
         } else if (errorFields.some(f => f.startsWith('documents') || f === 'terms')) {
             targetErrorStep = 4;

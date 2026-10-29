@@ -38,13 +38,17 @@ class EmployerRegistrationController extends Controller
             'website' => 'nullable|url|max:255',
             'company_type' => 'nullable|string|max:100',
 
-            // Step 3: Dual Email & Contact Information
+            // Step 3: Owner and Authorized Contact Information
             'contact_person' => 'required|string|max:150',
             'contact_position' => 'required|string|max:100',
-            'primary_email' => 'nullable|email|max:150',
-            'secondary_email' => 'nullable|email|max:150',
-            'phone' => 'required|string|max:50',
-            'mobile' => 'nullable|string|max:50',
+            'primary_email' => 'required|email|max:150',
+            'phone' => 'nullable|string|max:50',
+            'mobile' => 'required|string|max:50',
+            'secondary_contact_person' => 'nullable|required_with:secondary_contact_position,secondary_phone,secondary_mobile,secondary_email|string|max:150',
+            'secondary_contact_position' => 'nullable|required_with:secondary_contact_person,secondary_phone,secondary_mobile,secondary_email|string|max:100',
+            'secondary_phone' => 'nullable|string|max:50',
+            'secondary_mobile' => 'nullable|required_with:secondary_contact_person,secondary_contact_position,secondary_phone,secondary_email|string|max:50',
+            'secondary_email' => 'nullable|required_with:secondary_contact_person,secondary_contact_position,secondary_phone,secondary_mobile|email|max:150',
             'address' => 'nullable|string|max:255',
             'city' => 'nullable|string|max:100',
             'province' => 'nullable|string|max:100',
@@ -98,9 +102,8 @@ class EmployerRegistrationController extends Controller
             $hasDocs = count($documents) > 0;
             $accountStatus = $hasDocs ? 'pending_review' : 'unverified';
 
-            $primaryEmail = !empty($validated['primary_email']) ? $validated['primary_email'] : $validated['email'];
             $secondaryEmail = !empty($validated['secondary_email']) ? $validated['secondary_email'] : null;
-            $contactPhone = $validated['phone'] ?? ($validated['mobile'] ?? null);
+            $contactPhone = $validated['mobile'];
 
             $addressParts = array_filter([
                 $validated['address'] ?? null,
@@ -124,14 +127,19 @@ class EmployerRegistrationController extends Controller
                 'created_at' => Carbon::now(),
             ]);
 
-            // 2. Create employer profile with Dual Email & Contact Management
+            // 2. Create employer profile with owner and secondary authorized contacts
             $employerData = [
                 'user_id' => $user,
                 'company_name' => $validated['company_name'],
                 'contact_person' => $validated['contact_person'],
-                'primary_email' => $primaryEmail,
+                'primary_email' => $validated['primary_email'],
                 'secondary_email' => $secondaryEmail,
                 'contact_phone' => $contactPhone,
+                'contact_landline' => $validated['phone'] ?? null,
+                'secondary_contact_person' => $validated['secondary_contact_person'] ?? null,
+                'secondary_contact_position' => $validated['secondary_contact_position'] ?? null,
+                'secondary_contact_phone' => $validated['secondary_mobile'] ?? null,
+                'secondary_contact_landline' => $validated['secondary_phone'] ?? null,
                 'company_address' => $fullAddress ?: null,
                 'is_accredited' => 0,
                 'accredited_at' => null,
@@ -167,7 +175,7 @@ class EmployerRegistrationController extends Controller
                 'position' => $validated['contact_position'],
                 'phone' => $contactPhone,
                 'office' => $validated['company_name'],
-                'department' => 'Human Resources / Recruitment',
+                'department' => 'Company Ownership',
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ]);
