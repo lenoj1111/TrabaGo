@@ -72,6 +72,10 @@
                         @enderror
                     </div>
 
+                    <div class="sm:col-span-2 space-y-1.5">
+                        <x-nsrp-skill-selector :selected="old('skills', [])" name="skills[]" label="Required Skills (DOLE NSRP Form 1.REV 3 Compliant)" />
+                    </div>
+
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-700">Application Deadline (Valid Until) <span class="text-rose-500">*</span></label>
                         <input type="date" name="valid_until" value="{{ old('valid_until') }}" required min="{{ date('Y-m-d', strtotime('+1 day')) }}"

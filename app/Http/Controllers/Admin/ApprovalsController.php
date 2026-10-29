@@ -184,35 +184,42 @@ class ApprovalsController extends Controller
             return redirect()->back()->withErrors(['error' => 'Accreditation record not found.']);
         }
 
-        // Enforce: Admin cannot accredit an employer without the recommending approval of the JPO
-        if (!$accreditation->jpo_reviewed || !in_array($accreditation->status, ['jpo_approved', 'supervisor_approved'])) {
-            return redirect()->back()
-                ->withErrors([
-                    'error' => 'Cannot accredit employer without the recommending approval of the JPO. JPO evaluation is required first.'
-                ])
-                ->with('error', 'Cannot accredit employer without the recommending approval of the JPO. JPO evaluation is required first.');
+        // Enforce: Admin cannot accredit an employer without recommending approval of JPO unless direct_override is requested
+        if (!$request->boolean('direct_override')) {
+            if (!$accreditation->jpo_reviewed || !in_array($accreditation->status, ['jpo_approved', 'supervisor_approved'])) {
+                return redirect()->back()
+                    ->withErrors([
+                        'error' => 'Cannot accredit employer without the recommending approval of the JPO. JPO evaluation is required first.'
+                    ])
+                    ->with('error', 'Cannot accredit employer without the recommending approval of the JPO. JPO evaluation is required first.');
+            }
+
+            if (($accreditation->document_status ?? 'pending') !== 'complete') {
+                $reason = !empty($accreditation->document_incomplete_reason) 
+                    ? " (Reason: {$accreditation->document_incomplete_reason})" 
+                    : "";
+                return redirect()->back()
+                    ->withErrors([
+                        'error' => "Cannot accredit employer: Required legal documents are marked as " . ucfirst($accreditation->document_status ?? 'pending') . "{$reason}. Employer documents must be verified as Complete first."
+                    ])
+                    ->with('error', "Cannot accredit employer: Required legal documents are incomplete or unverified.");
+            }
         }
 
-        // Enforce: Admin and JPO cannot recommend or approve accreditation if required documents are incomplete
-        if (($accreditation->document_status ?? 'pending') !== 'complete') {
-            $reason = !empty($accreditation->document_incomplete_reason) 
-                ? " (Reason: {$accreditation->document_incomplete_reason})" 
-                : "";
-            return redirect()->back()
-                ->withErrors([
-                    'error' => "Cannot accredit employer: Required legal documents are marked as " . ucfirst($accreditation->document_status ?? 'pending') . "{$reason}. Employer documents must be verified as Complete first."
-                ])
-                ->with('error', "Cannot accredit employer: Required legal documents are incomplete or unverified.");
-        }
+        // Direct accreditation allowed with warning logging
+        $isDirectOverride = (!$accreditation->jpo_reviewed || !in_array($accreditation->status, ['jpo_approved', 'supervisor_approved']));
+        $certNo = $accreditation->certificate_no ?: ('DMDP-EMP-' . date('Y') . '-' . str_pad($accreditation->employer_id, 5, '0', STR_PAD_LEFT));
 
-        $remarks = $request->input('remarks', 'Officially accredited by DMDP City Administrator.');
-
-        // Update accreditation table
+        // Update accreditation table & generate official Certificate
         DB::table('employer_accreditation')->where('accreditation_id', $id)->update([
             'status' => 'admin_approved',
             'admin_approved' => 1,
             'admin_approved_at' => now(),
             'approved_at' => now()->toDateString(),
+            'certificate_no' => $certNo,
+            'certificate_issued_at' => now(),
+            'certificate_issued_by' => Auth::id(),
+            'admin_rejection_remarks' => null,
         ]);
 
         // Update employer table to mark accredited
@@ -232,42 +239,115 @@ class ApprovalsController extends Controller
 
             Notification::create([
                 'user_id' => $employer->user->user_id,
-                'title' => 'Official Accreditation Granted!',
-                'message' => "Congratulations! {$employer->company_name} is now officially accredited with the Cebu City Department of Manpower Development and Placement (DMDP). Job posting is now unlocked.",
+                'title' => 'Official Accreditation Granted & Certificate Issued!',
+                'message' => "Congratulations! {$employer->company_name} is now officially accredited with DMDP Cebu City (Certificate No: {$certNo}). You can view your Certificate of Accreditation in your dashboard.",
                 'type' => 'approval',
                 'is_read' => false,
                 'related_id' => $employer->employer_id,
             ]);
         }
 
-        return redirect()->back()->with('success', "Employer '{$employer->company_name}' successfully accredited.");
+        $msg = $isDirectOverride 
+            ? "Employer '{$employer->company_name}' directly accredited by Administrator (Direct Override). Certificate {$certNo} generated."
+            : "Employer '{$employer->company_name}' successfully accredited. Certificate {$certNo} issued.";
+
+        return redirect()->back()->with('success', $msg);
     }
 
     public function rejectAccreditation(Request $request, $id)
     {
+        $request->validate([
+            'remarks' => 'required|string|min:5',
+        ], [
+            'remarks.required' => 'Mandatory administrative remarks are required to explain why this accreditation application is rejected/returned to JPO.',
+        ]);
+
         $accreditation = DB::table('employer_accreditation')->where('accreditation_id', $id)->first();
         if (!$accreditation) {
             return redirect()->back()->withErrors(['error' => 'Accreditation record not found.']);
         }
 
+        $remarks = $request->input('remarks');
+
+        // Loop back to JPO with mandatory administrative remarks
         DB::table('employer_accreditation')->where('accreditation_id', $id)->update([
-            'status' => 'rejected',
+            'status' => 'submitted_to_jpo',
             'admin_approved' => 0,
+            'jpo_reviewed' => 0,
+            'admin_rejection_remarks' => $remarks,
+        ]);
+
+        DB::table('employers')->where('employer_id', $accreditation->employer_id)->update([
+            'is_accredited' => 0,
         ]);
 
         $employer = Employer::with('user')->find($accreditation->employer_id);
+        
+        // Notify JPO about the rejection loop with mandatory remarks
+        $jpos = User::where('role', 'jpo')->get();
+        foreach ($jpos as $jpo) {
+            Notification::create([
+                'user_id' => $jpo->user_id,
+                'title' => 'Accreditation Returned by Admin for Re-evaluation',
+                'message' => "Employer '{$employer->company_name}' was rejected by DMDP Admin and returned to JPO queue. Mandatory Remarks: \"{$remarks}\"",
+                'type' => 'rejection',
+                'is_read' => false,
+                'related_id' => $id,
+            ]);
+        }
+
+        // Notify employer
         if ($employer && $employer->user) {
             Notification::create([
                 'user_id' => $employer->user->user_id,
-                'title' => 'Accreditation Papers Need Revision',
-                'message' => "Your accreditation application requires additional verification: " . $request->input('remarks', 'Please contact DMDP.'),
+                'title' => 'Accreditation Returned for Revision',
+                'message' => "Your accreditation application was reviewed by DMDP Admin and returned to JPO for re-evaluation. Admin Remarks: {$remarks}",
                 'type' => 'rejection',
                 'is_read' => false,
                 'related_id' => $employer->employer_id,
             ]);
         }
 
-        return redirect()->back()->with('info', "Accreditation returned for revision.");
+        return redirect()->back()->with('info', "Accreditation application for '{$employer->company_name}' has been rejected and returned to JPO queue with administrative remarks.");
+    }
+
+    public function disaccreditEmployer(Request $request, $id)
+    {
+        $employer = Employer::with('user')->findOrFail($id);
+        
+        $employer->update([
+            'is_accredited' => 0,
+        ]);
+
+        DB::table('employer_accreditation')->where('employer_id', $id)->update([
+            'status' => 'disaccredited',
+            'admin_approved' => 0,
+        ]);
+
+        if ($employer->user) {
+            Notification::create([
+                'user_id' => $employer->user->user_id,
+                'title' => 'Employer Accreditation Revoked',
+                'message' => 'Your official accreditation has been revoked by DMDP Administration. Please contact the DMDP office for further details.',
+                'type' => 'rejection',
+                'is_read' => false,
+                'related_id' => $employer->employer_id,
+            ]);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => "Employer '{$employer->company_name}' has been disaccredited."]);
+        }
+
+        return redirect()->back()->with('info', "Employer '{$employer->company_name}' has been disaccredited.");
+    }
+
+    public function employerCertificate($id)
+    {
+        $employer = DB::table('employers')->where('employer_id', $id)->first();
+        if (!$employer) abort(404, 'Employer not found');
+        $accreditation = DB::table('employer_accreditation')->where('employer_id', $id)->first();
+        return view('reports.employer-certificate', compact('employer', 'accreditation'));
     }
 
     // =========================================================================

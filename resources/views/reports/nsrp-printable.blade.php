@@ -199,12 +199,17 @@
                             <span class="font-bold uppercase">{{ $jobseeker->employment_status ?: 'Jobseeker / Unemployed' }}</span>
                         </td>
                         <td colspan="3">
-                            <span class="text-[8px] text-slate-500 block uppercase font-bold">SOCIAL PROGRAM / 4Ps / OFW</span>
-                            <span class="font-bold">
-                                4Ps Beneficiary: [{{ ($socialStatus && $socialStatus->is_4ps) ? 'X' : ' ' }}] Yes 
+                            <span class="text-[8px] text-slate-500 block uppercase font-bold">SOCIAL SECTORS / REGION 7 INCLUSIONS</span>
+                            <span class="font-bold text-[9px] block">
+                                4Ps: [{{ ($socialStatus && $socialStatus->is_4ps) ? 'X' : ' ' }}] 
                                 @if($socialStatus && $socialStatus->is_4ps && $socialStatus->household_id) (HH #{{ $socialStatus->household_id }}) @endif
                                 &bull; OFW: [{{ ($socialStatus && $socialStatus->is_ofw) ? 'X' : ' ' }}]
+                                &bull; LGBTQ+: [{{ ($socialStatus && $socialStatus->is_lgbtq) ? 'X' : ' ' }}]
+                                &bull; Senior (60+): [{{ ($socialStatus && $socialStatus->is_senior_citizen) ? 'X' : ' ' }}]
+                                &bull; Immigrant: [{{ ($socialStatus && $socialStatus->is_immigrant) ? 'X' : ' ' }}]
+                                @if($socialStatus && $socialStatus->is_immigrant && $socialStatus->immigrant_origin) ({{ $socialStatus->immigrant_origin }}) @endif
                             </span>
+                            <span class="text-[8px] text-emerald-800 font-bold block mt-0.5">Region Scope: {{ $socialStatus->region ?? 'Region VII - Central Visayas (Cebu City)' }}</span>
                         </td>
                     </tr>
                 </tbody>

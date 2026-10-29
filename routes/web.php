@@ -245,6 +245,9 @@ Route::prefix('employer')->name('employer.')->group(function () {
         Route::get('/notifications', [EmployerPortalController::class, 'notifications'])->name('notifications');
         Route::post('/notifications/read-all', [EmployerPortalController::class, 'markAllNotificationsRead'])->name('notifications.read_all');
         Route::post('/notifications/{id}/read', [EmployerPortalController::class, 'markNotificationRead'])->name('notifications.read');
+
+        // 7. Official Accreditation Certificate
+        Route::get('/certificate', [EmployerPortalController::class, 'certificate'])->name('certificate');
     });
 });
 
@@ -259,6 +262,10 @@ Route::prefix('jpo')->name('jpo.')->middleware(['auth', 'jpo'])->group(function 
     // Dashboard
     Route::get('/dashboard', [JpoPortalController::class, 'dashboard'])->name('dashboard');
 
+    // Client User Provisioning (Jobseeker & Employer)
+    Route::get('/users/create', [JpoPortalController::class, 'createUser'])->name('users.create');
+    Route::post('/users', [JpoPortalController::class, 'storeUser'])->name('users.store');
+
     // 1. Evaluate Jobseekers (Refer to Employer) & NSRP Form
     Route::get('/evaluations/jobseekers', [JpoPortalController::class, 'evaluateJobseekers'])->name('evaluations.jobseekers');
     Route::post('/evaluations/jobseekers/{id}/refer', [JpoPortalController::class, 'referJobseeker'])->name('evaluations.jobseekers.refer');
@@ -266,9 +273,13 @@ Route::prefix('jpo')->name('jpo.')->middleware(['auth', 'jpo'])->group(function 
     Route::post('/evaluations/jobseekers/{id}/reject', [JpoPortalController::class, 'rejectJobseeker'])->name('evaluations.jobseekers.reject');
     Route::get('/evaluations/jobseekers/{id}/nsrp', [JpoPortalController::class, 'showNsrpForm'])->name('evaluations.jobseekers.nsrp');
 
-    // 2. Evaluate Accreditation Papers (Recommend to Admin)
+    // 2. Evaluate Accreditation Papers (Recommend to Admin / Direct Accredit / Certificate)
     Route::get('/evaluations/accreditations', [JpoPortalController::class, 'evaluateAccreditations'])->name('evaluations.accreditations');
     Route::post('/evaluations/accreditations/{id}/recommend', [JpoPortalController::class, 'recommendAccreditation'])->name('evaluations.accreditations.recommend');
+    Route::post('/evaluations/accreditations/{id}/accredit', [JpoPortalController::class, 'accreditEmployer'])->name('evaluations.accreditations.accredit');
+    Route::post('/evaluations/accreditations/{id}/disaccredit', [JpoPortalController::class, 'disaccreditEmployer'])->name('evaluations.accreditations.disaccredit');
+    Route::post('/evaluations/accreditations/{id}/reject', [JpoPortalController::class, 'rejectAccreditation'])->name('evaluations.accreditations.reject');
+    Route::get('/evaluations/accreditations/{id}/certificate', [JpoPortalController::class, 'certificate'])->name('evaluations.accreditations.certificate');
     Route::post('/evaluations/accreditations/{id}/document-status', [JpoPortalController::class, 'updateDocumentStatus'])->name('evaluations.accreditations.document-status');
     Route::get('/evaluations/accreditations/{id}/print', [JpoPortalController::class, 'printAccreditation'])->name('evaluations.accreditations.print');
 
@@ -470,33 +481,126 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         return view('admin.employers', compact('employers', 'totalEmployers', 'accreditedEmployers', 'pendingAccreditation'));
     })->name('employers');
 
-    Route::post('/employers/{id}/accredit', function ($id) {
-        $accreditation = DB::table('employer_accreditation')
-            ->where('employer_id', $id)
-            ->first();
-
-        // Enforce: Admin cannot accredit an employer without the recommending approval of the JPO
-        if (!$accreditation || !$accreditation->jpo_reviewed || !in_array($accreditation->status, ['jpo_approved', 'supervisor_approved'])) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Cannot accredit employer without the recommending approval of the JPO. JPO evaluation is required first.'
-            ], 422);
+    Route::post('/employers/{id}/accredit', function (\Illuminate\Http\Request $request, $id) {
+        $employer = DB::table('employers')->where('employer_id', $id)->first();
+        if (!$employer) {
+            return response()->json(['success' => false, 'error' => 'Employer not found.'], 404);
         }
+
+        $accreditation = DB::table('employer_accreditation')->where('employer_id', $id)->first();
+        $certNo = ($accreditation && !empty($accreditation->certificate_no))
+            ? $accreditation->certificate_no
+            : ('DMDP-EMP-' . date('Y') . '-' . str_pad($id, 5, '0', STR_PAD_LEFT));
 
         DB::table('employers')->where('employer_id', $id)->update([
             'is_accredited' => 1,
             'accredited_at' => now()->toDateString(),
         ]);
 
-        DB::table('employer_accreditation')->where('employer_id', $id)->update([
-            'status' => 'admin_approved',
-            'admin_approved' => 1,
-            'admin_approved_at' => now(),
-            'approved_at' => now()->toDateString(),
+        if ($accreditation) {
+            DB::table('employer_accreditation')->where('employer_id', $id)->update([
+                'status' => 'admin_approved',
+                'admin_approved' => 1,
+                'admin_approved_at' => now(),
+                'approved_at' => now()->toDateString(),
+                'certificate_no' => $certNo,
+                'certificate_issued_at' => now(),
+                'certificate_issued_by' => Auth::id(),
+                'admin_rejection_remarks' => null,
+            ]);
+        } else {
+            DB::table('employer_accreditation')->insert([
+                'employer_id' => $id,
+                'status' => 'admin_approved',
+                'admin_approved' => 1,
+                'admin_approved_at' => now(),
+                'approved_at' => now()->toDateString(),
+                'certificate_no' => $certNo,
+                'certificate_issued_at' => now(),
+                'certificate_issued_by' => Auth::id(),
+                'documents' => json_encode([]),
+                'submitted_at' => now(),
+            ]);
+        }
+
+        if ($employer->user_id) {
+            DB::table('users')->where('user_id', $employer->user_id)->update([
+                'account_status' => 'verified',
+                'is_approved' => 1,
+                'updated_at' => now(),
+            ]);
+
+            \App\Models\Notification::create([
+                'user_id' => $employer->user_id,
+                'title' => 'Official Accreditation Granted & Certificate Issued!',
+                'message' => "Congratulations! {$employer->company_name} is now officially accredited with DMDP Cebu City (Certificate No: {$certNo}).",
+                'type' => 'approval',
+                'is_read' => false,
+                'related_id' => $id,
+            ]);
+        }
+
+        return response()->json([
+            'success' => "Employer '{$employer->company_name}' accredited successfully. Certificate {$certNo} issued.",
+            'certificate_no' => $certNo
+        ]);
+    })->name('employers.accredit');
+
+    Route::post('/employers/{id}/disaccredit', [ApprovalsController::class, 'disaccreditEmployer'])->name('employers.disaccredit');
+
+    Route::post('/employers/{id}/reject', function (\Illuminate\Http\Request $request, $id) {
+        $request->validate([
+            'remarks' => 'required|string|min:5',
+        ], [
+            'remarks.required' => 'Mandatory administrative remarks are required when returning an accreditation application to JPO.',
         ]);
 
-        return response()->json(['success' => 'Employer accredited successfully.']);
-    })->name('employers.accredit');
+        $employer = DB::table('employers')->where('employer_id', $id)->first();
+        if (!$employer) {
+            return response()->json(['success' => false, 'error' => 'Employer not found.'], 404);
+        }
+
+        $remarks = $request->input('remarks');
+
+        DB::table('employers')->where('employer_id', $id)->update([
+            'is_accredited' => 0,
+        ]);
+
+        DB::table('employer_accreditation')->where('employer_id', $id)->update([
+            'status' => 'submitted_to_jpo',
+            'admin_approved' => 0,
+            'jpo_reviewed' => 0,
+            'admin_rejection_remarks' => $remarks,
+        ]);
+
+        $jpos = \App\Models\User::where('role', 'jpo')->get();
+        foreach ($jpos as $jpo) {
+            \App\Models\Notification::create([
+                'user_id' => $jpo->user_id,
+                'title' => 'Accreditation Returned to JPO',
+                'message' => "Employer '{$employer->company_name}' application was returned by Admin to JPO queue. Remarks: {$remarks}",
+                'type' => 'rejection',
+                'is_read' => false,
+                'related_id' => $id,
+            ]);
+        }
+
+        return response()->json(['success' => "Application returned to JPO queue with administrative remarks."]);
+    })->name('employers.reject');
+
+    Route::get('/employers/{id}/certificate', [ApprovalsController::class, 'employerCertificate'])->name('employers.certificate');
+
+    Route::post('/employers/{id}/impersonate', function ($id) {
+        $employer = DB::table('employers')->where('employer_id', $id)->first();
+        if (!$employer || !$employer->user_id) {
+            return redirect()->back()->with('error', 'Employer user account not found.');
+        }
+
+        session(['admin_impersonator_id' => Auth::id()]);
+        Auth::loginUsingId($employer->user_id);
+
+        return redirect()->route('employer.dashboard')->with('success', "Logged in as {$employer->company_name}. You have full operational control over this employer account.");
+    })->name('employers.impersonate');
 
     // Job Postings Management (Create direct, Deactivate/Close)
     Route::get('/job-postings', [JobPostingController::class, 'index'])->name('job-postings');
@@ -592,3 +696,17 @@ Route::get('/test-login', function () {
     }
     return ['authenticated' => false];
 });
+
+/*
+|--------------------------------------------------------------------------
+| Admin Impersonation Leave Route
+|--------------------------------------------------------------------------
+*/
+Route::post('/impersonate/leave', function () {
+    if (session()->has('admin_impersonator_id')) {
+        $adminId = session()->pull('admin_impersonator_id');
+        Auth::loginUsingId($adminId);
+        return redirect()->route('admin.employers')->with('success', 'Returned to Admin Portal.');
+    }
+    return redirect('/');
+})->name('impersonate.leave')->middleware(['auth']);

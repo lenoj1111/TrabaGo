@@ -387,13 +387,13 @@
                         <!-- Barangay -->
                         <div class="md:col-span-2">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="address_barangay">
-                                Barangay (Cebu City) <span class="text-rose-500">*</span>
+                                Barangay <span class="text-rose-500">*</span>
                             </label>
                             @php
                                 $cebuBarangays = \App\Services\BarangayDistributionService::getBarangayNames();
                             @endphp
                             <div class="relative">
-                                <input list="cebu_barangays_list" id="address_barangay" name="address[barangay]" value="{{ old('address.barangay') }}" placeholder="Start typing your Cebu City barangay..." required autocomplete="off"
+                                <input list="cebu_barangays_list" id="address_barangay" name="address[barangay]" value="{{ old('address.barangay') }}" placeholder="Start typing your barangay..." required autocomplete="off"
                                        class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border @error('address.barangay') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
                                 <datalist id="cebu_barangays_list">
                                     @foreach($cebuBarangays as $bName)
@@ -401,25 +401,50 @@
                                     @endforeach
                                 </datalist>
                             </div>
-                            <p class="text-[11px] text-slate-500 mt-1">Select from the 80 official Cebu City barangays for localized manpower distribution.</p>
+                            <p class="text-[11px] text-slate-500 mt-1">Select or type your barangay for localized manpower distribution across Region 7.</p>
                         </div>
 
                         <!-- City -->
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="address_city">
-                                City
+                                City / Municipality <span class="text-rose-500">*</span>
                             </label>
-                            <input type="text" id="address_city" name="address[city]" value="{{ old('address.city', 'Cebu City') }}" readonly
-                                   class="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-700 font-medium cursor-not-allowed" />
+                            <input list="region7_cities_list" type="text" id="address_city" name="address[city]" value="{{ old('address.city', 'Cebu City') }}" placeholder="e.g. Cebu City, Mandaue, Tagbilaran" required
+                                   class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                            <datalist id="region7_cities_list">
+                                <option value="Cebu City">
+                                <option value="Mandaue City">
+                                <option value="Lapu-Lapu City">
+                                <option value="Talisay City">
+                                <option value="Toledo City">
+                                <option value="Danao City">
+                                <option value="City of Naga">
+                                <option value="Carcar City">
+                                <option value="Bogo City">
+                                <option value="Tagbilaran City">
+                                <option value="Dumaguete City">
+                                <option value="Bayawan City">
+                                <option value="Bais City">
+                                <option value="Tanjay City">
+                                <option value="Guihulngan City">
+                                <option value="Canlaon City">
+                                <option value="Siquijor">
+                            </datalist>
                         </div>
 
                         <!-- Province -->
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="address_province">
-                                Province
+                                Province <span class="text-rose-500">*</span>
                             </label>
-                            <input type="text" id="address_province" name="address[province]" value="{{ old('address.province', 'Cebu') }}" readonly
-                                   class="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-700 font-medium cursor-not-allowed" />
+                            <input list="region7_provinces_list" type="text" id="address_province" name="address[province]" value="{{ old('address.province', 'Cebu') }}" placeholder="e.g. Cebu, Bohol, Negros Oriental, Siquijor" required
+                                   class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                            <datalist id="region7_provinces_list">
+                                <option value="Cebu">
+                                <option value="Bohol">
+                                <option value="Negros Oriental">
+                                <option value="Siquijor">
+                            </datalist>
                         </div>
 
                         <!-- Postal Code -->
@@ -729,6 +754,46 @@
                                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                             </div>
                         </div>
+
+                        <!-- LGBTQ+ Membership Card -->
+                        <div class="p-4 rounded-2xl border border-slate-200 bg-white hover:border-emerald-300 transition-colors">
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="checkbox" name="is_lgbtq" value="1" {{ old('is_lgbtq') ? 'checked' : '' }} class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 border-slate-300" />
+                                <div class="flex-1">
+                                    <span class="text-sm font-bold text-slate-900 block">LGBTQ+ Community Member</span>
+                                    <span class="text-xs text-slate-500">Equal employment opportunity and anti-discrimination tracking under Region 7 PESO</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Senior Citizen Card -->
+                        <div class="p-4 rounded-2xl border border-slate-200 bg-white hover:border-emerald-300 transition-colors">
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="checkbox" name="is_senior_citizen" value="1" {{ old('is_senior_citizen') ? 'checked' : '' }} class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 border-slate-300" />
+                                <div class="flex-1">
+                                    <span class="text-sm font-bold text-slate-900 block">Senior Citizen (60 years old and above)</span>
+                                    <span class="text-xs text-slate-500">Elderly workforce inclusion and active productivity opportunities under RA 10911</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Immigrant Worker Card -->
+                        <div class="p-4 rounded-2xl border border-slate-200 bg-white hover:border-emerald-300 transition-colors">
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="checkbox" id="is_immigrant_checkbox" name="is_immigrant" value="1" {{ old('is_immigrant') ? 'checked' : '' }} class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 border-slate-300" />
+                                <div class="flex-1">
+                                    <span class="text-sm font-bold text-slate-900 block">Immigrant / Migrant Worker / Foreign National</span>
+                                    <span class="text-xs text-slate-500">Support & monitoring for immigrant laborers and inter-regional transferees to Region 7</span>
+                                </div>
+                            </label>
+                            <div id="immigrantOriginField" class="mt-3 pt-3 border-t border-slate-100 {{ old('is_immigrant') ? '' : 'hidden' }}">
+                                <label class="block text-xs font-semibold text-slate-700 mb-1" for="immigrant_origin">Country / Province of Origin or Visa/Permit Details</label>
+                                <input type="text" id="immigrant_origin" name="immigrant_origin" value="{{ old('immigrant_origin') }}" placeholder="e.g. Country of Origin, Alien Employment Permit (AEP), or Transferee Province"
+                                       class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                            </div>
+                        </div>
+
+                        <input type="hidden" name="region" value="Region VII - Central Visayas" />
                     </div>
 
                     <!-- Profile Summary Card -->
@@ -1117,6 +1182,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Immigrant toggle
+    const isImmigrant = document.getElementById('is_immigrant_checkbox');
+    const immigrantOriginField = document.getElementById('immigrantOriginField');
+    if (isImmigrant && immigrantOriginField) {
+        isImmigrant.addEventListener('change', function() {
+            immigrantOriginField.classList.toggle('hidden', !this.checked);
+        });
+    }
+
     // Summary Review in Step 7
     function updateSummaryReview() {
         const fn = document.getElementById('first_name')?.value || '';
@@ -1132,7 +1206,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (sName) sName.textContent = (fn || ln) ? `${fn} ${ln}` : 'Not provided';
         if (sEmail) sEmail.textContent = em || 'Not provided';
-        if (sBrgy) sBrgy.textContent = brgy || 'Cebu City';
+        if (sBrgy) sBrgy.textContent = brgy || 'Not specified';
         if (sEdu) sEdu.textContent = edu || 'Not provided';
     }
 

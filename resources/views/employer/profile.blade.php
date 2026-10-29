@@ -131,8 +131,8 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Representative Full Name</label>
-                            <input type="text" name="full_name" value="{{ old('full_name', $profile->full_name ?? ($user->full_name ?? '')) }}" placeholder="e.g. Maria Santos"
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Representative Full Name / Authorized Contact Person <span class="text-rose-500">*</span></label>
+                            <input type="text" name="contact_person" value="{{ old('contact_person', $employer->contact_person ?? ($profile->full_name ?? ($user->full_name ?? ''))) }}" placeholder="e.g. Maria Santos" required
                                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                         </div>
 
@@ -150,15 +150,29 @@
 
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Official Contact Number / Mobile</label>
-                            <input type="text" name="phone" value="{{ old('phone', $profile->phone ?? '') }}" placeholder="e.g. (032) 234-5678 / 0912-345-6789"
+                            <input type="text" name="phone" value="{{ old('phone', $employer->contact_phone ?? ($profile->phone ?? '')) }}" placeholder="e.g. (032) 234-5678 / 0912-345-6789"
                                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                         </div>
 
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Primary Official Email</label>
+                            <input type="email" name="primary_email" value="{{ old('primary_email', $employer->primary_email ?? $user->email) }}" placeholder="e.g. hr@company.com"
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            <span class="text-[10px] text-slate-400">Main email for recruitment correspondence and PESO endorsements.</span>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Secondary / Alternate Email</label>
+                            <input type="email" name="secondary_email" value="{{ old('secondary_email', $employer->secondary_email ?? '') }}" placeholder="e.g. recruitment@company.com"
+                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            <span class="text-[10px] text-slate-400">Backup email for notifications, certificates, and alerts.</span>
+                        </div>
+
                         <div class="sm:col-span-2 space-y-1.5">
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Account Email Address (Login Identity)</label>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Account System Login Email</label>
                             <input type="text" value="{{ $user->email }}" disabled
                                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs bg-slate-100 text-slate-500 cursor-not-allowed">
-                            <span class="text-[10px] text-slate-400">Primary login credential managed by system administrator.</span>
+                            <span class="text-[10px] text-slate-400">Account login ID credential.</span>
                         </div>
                     </div>
                 </div>

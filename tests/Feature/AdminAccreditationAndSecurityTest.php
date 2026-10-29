@@ -111,24 +111,25 @@ class AdminAccreditationAndSecurityTest extends TestCase
             'jpo_reviewed' => 0,
         ]);
 
-        // 1. Via ApprovalsController
+        // 1. Via ApprovalsController: blocked without JPO recommendation
         $response = $this->actingAs($this->adminUser)->post("/admin/approvals/accreditations/{$accId}/approve", [
             'remarks' => 'Attempting premature accreditation.',
         ]);
         $response->assertSessionHas('error');
         $response->assertSessionHasErrors(['error']);
 
-        // Employer is NOT accredited
+        // Employer is NOT accredited yet
         $this->assertDatabaseHas('employers', [
             'employer_id' => $this->employer->employer_id,
             'is_accredited' => 0,
         ]);
 
-        // 2. Via Employer Management Direct Route
+        // 2. Via Employer Management Direct Route: Admin direct override allowed per user rules
         $jsonResponse = $this->actingAs($this->adminUser)->postJson("/admin/employers/{$this->employer->employer_id}/accredit");
-        $jsonResponse->assertStatus(422);
-        $jsonResponse->assertJsonFragment([
-            'success' => false,
+        $jsonResponse->assertStatus(200);
+        $this->assertDatabaseHas('employers', [
+            'employer_id' => $this->employer->employer_id,
+            'is_accredited' => 1,
         ]);
     }
 

@@ -257,12 +257,7 @@ class JobseekerPortalController extends Controller
                 ->with('error', 'This job posting has expired or is no longer accepting applications.');
         }
 
-        // Employed check: cannot apply for another job while currently hired/employed
-        if ($jobseeker->isEmployed()) {
-            $company = $jobseeker->hired_company ?: 'your current employer';
-            return redirect()->route('jobseeker.jobs')
-                ->with('error', "You cannot apply for another job while currently employed at {$company}. You must request a resignation from your employer and have it approved before applying for other positions.");
-        }
+        // Employment Flexibility: Jobseekers remain "Open to all" for opportunities even if currently employed.
 
         $user = Auth::user();
         if (!$user || !$user->isAccountVerified()) {
@@ -416,31 +411,9 @@ class JobseekerPortalController extends Controller
             ]);
         }
 
-        // 4. Auto-withdraw all other active applications
-        $otherActiveApps = JobApplication::with(['jobPosting.employer.user'])
-            ->where('jobseeker_id', $jobseeker->jobseeker_id)
-            ->where('application_id', '!=', $application->application_id)
-            ->whereIn('status', ['pending', 'reviewed', 'interview', 'offered'])
-            ->get();
-
-        foreach ($otherActiveApps as $otherApp) {
-            $otherApp->update([
-                'status' => 'withdrawn',
-            ]);
-
-            // Notify other employers
-            $otherEmployerUser = $otherApp->jobPosting?->employer?->user;
-            if ($otherEmployerUser) {
-                Notification::create([
-                    'user_id' => $otherEmployerUser->user_id,
-                    'title' => 'Application Withdrawn (Candidate Accepted Another Offer)',
-                    'message' => "Candidate {$jobseeker->first_name} {$jobseeker->last_name} has accepted an offer from another company and their application for '{$otherApp->jobPosting->title}' has been automatically withdrawn.",
-                    'type' => 'info',
-                    'is_read' => false,
-                    'related_id' => $otherApp->application_id,
-                ]);
-            }
-        }
+        // 4. In accordance with Region 7 Employment Flexibility & Status Privacy rules,
+        // jobseekers remain "Open to all" for opportunities even if currently employed.
+        // We do not broadcast or force-withdraw their other applications.
 
         // 5. Notify the jobseeker
         Notification::create([
@@ -452,13 +425,7 @@ class JobseekerPortalController extends Controller
             'related_id' => $application->application_id,
         ]);
 
-        $withdrawnCount = $otherActiveApps->count();
-        $msg = "Congratulations! You have accepted the job offer from {$companyName}. You are now officially hired!";
-        if ($withdrawnCount > 0) {
-            $msg .= " Your other {$withdrawnCount} active application(s) were automatically withdrawn.";
-        }
-
-        return redirect()->route('jobseeker.applications')->with('success', $msg);
+        return redirect()->route('jobseeker.applications')->with('success', "Congratulations! You have accepted the job offer from {$companyName}. You are now officially hired!");
     }
 
     public function declineOffer(Request $request, $id)
@@ -1286,13 +1253,18 @@ class JobseekerPortalController extends Controller
         $preferences->salary_expectation = $request->input('salary_expectation', $preferences->salary_expectation);
         $preferences->save();
 
-        // 4. Update Social Status (PWD, 4Ps, OFW)
+        // 4. Update Social Status (PWD, 4Ps, OFW, LGBTQ+, Senior, Immigrant, Region 7)
         $social = $jobseeker->socialStatus ?: new SocialStatus(['jobseeker_id' => $jobseeker->jobseeker_id]);
         $social->is_pwd = $request->boolean('is_pwd');
         $social->pwd_type = $request->boolean('is_pwd') ? $request->input('pwd_type', '') : null;
         $social->is_4ps = $request->boolean('is_4ps');
         $social->household_id = $request->boolean('is_4ps') ? $request->input('household_id', '') : null;
         $social->is_ofw = $request->boolean('is_ofw');
+        $social->is_lgbtq = $request->boolean('is_lgbtq');
+        $social->is_senior_citizen = $request->boolean('is_senior_citizen');
+        $social->is_immigrant = $request->boolean('is_immigrant');
+        $social->immigrant_origin = $request->boolean('is_immigrant') ? $request->input('immigrant_origin', '') : null;
+        $social->region = $request->input('region', $social->region ?: 'Region VII - Central Visayas');
         $social->save();
 
         return redirect()->route('jobseeker.profile')->with('success', 'Comprehensive profile updated successfully.');

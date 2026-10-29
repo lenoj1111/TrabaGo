@@ -468,12 +468,7 @@
                     </div>
 
                     <div class="space-y-1">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                            Required Skills
-                            <span class="text-[10px] text-slate-400 lowercase font-normal">(enter 1 per line)</span>
-                        </label>
-                        <textarea name="skills" rows="3" placeholder="PHP / Laravel&#10;MySQL Database Design&#10;RESTful API Development&#10;Git Version Control"
-                                  class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">{{ old('skills') }}</textarea>
+                        <x-nsrp-skill-selector :value="old('skills')" />
                     </div>
                 </div>
 
@@ -618,12 +613,39 @@
                                   class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
                     </div>
 
-                    <div class="space-y-1">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                            Required Skills
-                            <span class="text-[10px] text-slate-400 lowercase font-normal">(enter 1 per line)</span>
-                        </label>
-                        <textarea name="skills" rows="3" x-model="selectedJob.skills" placeholder="One skill per line..."
+                    <div class="space-y-1.5" x-data="{
+                        nsrpSelect: '',
+                        addNsrpSkill(val) {
+                            if (!val) return;
+                            let current = (selectedJob.skills || '').split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
+                            if (!current.includes(val)) {
+                                current.push(val);
+                                selectedJob.skills = current.join('\n');
+                            }
+                            this.nsrpSelect = '';
+                        }
+                    }">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                                Required Skills (DOLE NSRP Form 1)
+                            </label>
+                            <span class="text-[10px] text-emerald-700 font-semibold">Standard Dropdown + Custom</span>
+                        </div>
+                        <select x-model="nsrpSelect" @change="addNsrpSkill(nsrpSelect)"
+                                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 bg-white focus:border-emerald-500">
+                            <option value="">-- Quick-add Standard NSRP Skill --</option>
+                            <optgroup label="21st Century Skills (DOLE NSRP Section VII)">
+                                @foreach(\App\Services\NsrpSkillService::get21stCenturySkills() as $sk)
+                                    <option value="{{ $sk }}">{{ $sk }}</option>
+                                @endforeach
+                            </optgroup>
+                            <optgroup label="Technical & Vocational Skills (DOLE NSRP Section IX)">
+                                @foreach(\App\Services\NsrpSkillService::getTechnicalSkills() as $sk)
+                                    <option value="{{ $sk }}">{{ $sk }}</option>
+                                @endforeach
+                            </optgroup>
+                        </select>
+                        <textarea name="skills" rows="3" x-model="selectedJob.skills" placeholder="Selected NSRP skills and custom entries (1 per line)..."
                                   class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
                     </div>
                 </div>

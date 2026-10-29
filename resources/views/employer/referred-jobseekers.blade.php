@@ -205,7 +205,7 @@
                                         @elseif($app->resignation_status === 'approved')
                                             <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-extrabold bg-slate-100 text-slate-700 border border-slate-300 shadow-sm">
                                                 <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                                                <span>Resigned (Unemployed)</span>
+                                                <span>Resigned</span>
                                             </span>
                                         @else
                                             <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm">
@@ -317,13 +317,13 @@
                                         </p>
                                     </div>
                                     <p class="text-[10px] text-amber-800 font-medium">
-                                        Approving this resignation will update their status back to <strong>Unemployed</strong> and allow them to apply to other jobs.
+                                        Approving this resignation will officially conclude their tenure at your company.
                                     </p>
                                 </div>
                             @elseif($app->resignation_status === 'approved')
                                 <div class="p-3 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-600 flex items-center justify-between">
                                     <span class="font-semibold text-slate-700">Resignation approved on {{ $app->resignation_approved_at ? \Carbon\Carbon::parse($app->resignation_approved_at)->format('M d, Y') : 'N/A' }}</span>
-                                    <span class="text-[11px] text-emerald-700 font-bold">Profile: Unemployed</span>
+                                    <span class="text-[11px] text-slate-600 font-bold">Resigned / Concluded</span>
                                 </div>
                             @elseif($app->resignation_status === 'rejected')
                                 <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800">
@@ -676,7 +676,7 @@
                         <span>Resignation Clearance Impact:</span>
                     </p>
                     <p class="leading-relaxed">
-                        Approving this resignation will officially conclude their employment at your company. Their profile status will automatically be updated back to <strong>Unemployed</strong>, allowing them to browse and apply for other employment opportunities on TrabaGo.
+                        Approving this resignation will officially conclude their employment at your company and record their clearance.
                     </p>
                 </div>
 
@@ -686,7 +686,7 @@
                         <span>Request Declined:</span>
                     </p>
                     <p class="leading-relaxed">
-                        The candidate will remain marked as <strong>Employed</strong> at your company and will continue to be restricted from applying to other jobs.
+                        The candidate will remain marked as active staff at your company.
                     </p>
                 </div>
 

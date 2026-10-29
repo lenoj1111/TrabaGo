@@ -336,9 +336,13 @@
                     </div>
 
                     <div class="sm:col-span-2 space-y-1.5">
-                        <label class="text-xs font-bold text-slate-700">Qualifications & Skills Required</label>
-                        <textarea name="qualifications" rows="3" placeholder="Education, years of experience, skill certifications..."
+                        <label class="text-xs font-bold text-slate-700">Qualifications & Requirements</label>
+                        <textarea name="qualifications" rows="3" placeholder="Education, years of experience, general qualifications..."
                                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"></textarea>
+                    </div>
+
+                    <div class="sm:col-span-2 space-y-1.5">
+                        <x-nsrp-skill-selector :selected="[]" name="skills[]" label="Required Skills (DOLE NSRP Form 1.REV 3 Compliant)" />
                     </div>
 
                     <div class="space-y-1.5">

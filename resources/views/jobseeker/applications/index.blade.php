@@ -315,7 +315,7 @@
                                     <form action="{{ route('jobseeker.applications.accept_offer', $app->application_id) }}" method="POST" class="w-full sm:w-auto">
                                         @csrf
                                         <button type="submit" 
-                                                onclick="return confirm('Congratulations! Are you sure you want to ACCEPT this job offer from {{ addslashes($company) }}?\n\nThis will tag your profile as Employed and automatically withdraw your other active applications.')"
+                                                onclick="return confirm('Congratulations! Are you sure you want to ACCEPT this job offer from {{ addslashes($company) }}?\n\nThis will confirm your hiring for this position while keeping your profile flexible for future opportunities.')"
                                                 class="w-full sm:w-auto px-8 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-xl shadow-emerald-600/30 transition-all hover:scale-105 flex items-center justify-center gap-2">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
                                             <span>Accept Job Offer</span>

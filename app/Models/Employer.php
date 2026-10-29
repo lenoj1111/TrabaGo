@@ -25,7 +25,7 @@ class Employer extends Model
      *
      * @var bool
      */
-    public $timestamps = false;
+    public $timestamps = true;
 
     /**
      * The attributes that are mass assignable.
@@ -35,6 +35,14 @@ class Employer extends Model
     protected $fillable = [
         'user_id',
         'company_name',
+        'contact_person',
+        'primary_email',
+        'secondary_email',
+        'contact_phone',
+        'company_address',
+        'business_nature',
+        'region',
+        'pending_updates',
         'is_accredited',
         'accredited_at',
     ];
@@ -49,6 +57,7 @@ class Employer extends Model
         return [
             'is_accredited' => 'boolean',
             'accredited_at' => 'date',
+            'pending_updates' => 'array',
         ];
     }
 

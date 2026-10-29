@@ -36,6 +36,25 @@
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-900 antialiased" x-data="{ sidebarOpen: false, profileMenuOpen: false }">
 
+    @if(session()->has('admin_impersonator_id'))
+        <!-- Admin Impersonation Notice Bar -->
+        <div class="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 px-4 py-2 font-bold text-xs flex items-center justify-between shadow-md relative z-50 border-b border-amber-600">
+            <div class="flex items-center gap-2">
+                <span class="p-1 rounded-md bg-amber-600 text-white">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                </span>
+                <span>Administrator Direct Account Control: Operating as <strong>{{ Auth::user()->email }}</strong></span>
+            </div>
+            <form method="POST" action="{{ route('impersonate.leave') }}">
+                @csrf
+                <button type="submit" class="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-black shadow-sm transition-colors flex items-center gap-1">
+                    <span>Return to Admin Portal</span>
+                    <span>&rarr;</span>
+                </button>
+            </form>
+        </div>
+    @endif
+
     <!-- DESKTOP PERMANENT SIDEBAR (ALWAYS OPEN & FIXED ON SCREEN) -->
     <aside class="hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:w-64 lg:flex-col bg-slate-900 text-slate-300 border-r border-slate-800">
         @include('partials.employer-sidebar', ['isMobile' => false])

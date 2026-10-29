@@ -24,7 +24,19 @@ class SkillMatchingService
     {
         $skills = [];
 
-        if (!empty($job->qualifications)) {
+        // 1. Prioritize explicit NSRP skills entered on the job posting
+        if (!empty($job->skills)) {
+            $lines = preg_split('/[\r\n,;]+/', $job->skills);
+            foreach ($lines as $line) {
+                $cleaned = trim(preg_replace('/^[\s\-\*\•\d\.\)]+/', '', $line));
+                if (!empty($cleaned) && strlen($cleaned) >= 2) {
+                    $skills[] = $cleaned;
+                }
+            }
+        }
+
+        // 2. Parse qualifications if skills field is empty
+        if (empty($skills) && !empty($job->qualifications)) {
             $lines = preg_split('/[\r\n,;]+/', $job->qualifications);
             foreach ($lines as $line) {
                 $cleaned = trim(preg_replace('/^[\s\-\*\•\d\.\)]+/', '', $line));

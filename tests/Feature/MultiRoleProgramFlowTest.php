@@ -232,11 +232,20 @@ class MultiRoleProgramFlowTest extends TestCase
             'interview_mode' => 'online',
         ]);
 
-        // 3. Employer marks candidate as Hired (Figure 9)
+        // 3. Employer extends job offer to candidate (Figure 9 & Rule 2)
         $hireResponse = $this->actingAs($this->employerUser)->post("/employer/applicants/{$app->application_id}/status", [
             'action' => 'hire',
         ]);
         $hireResponse->assertRedirect();
+
+        $this->assertDatabaseHas('job_applications', [
+            'application_id' => $app->application_id,
+            'status' => 'offered',
+        ]);
+
+        // 4. Candidate accepts the job offer to finalize Hired status
+        $acceptResponse = $this->actingAs($this->jobseekerUser)->post("/jobseeker/applications/{$app->application_id}/accept-offer");
+        $acceptResponse->assertRedirect();
 
         $this->assertDatabaseHas('job_applications', [
             'application_id' => $app->application_id,

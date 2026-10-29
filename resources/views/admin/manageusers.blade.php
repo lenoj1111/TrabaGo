@@ -184,21 +184,36 @@
                                     </span>
                                 </td>
                                 <td class="py-4 px-6 text-center">
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold border {{ $user->is_approved ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200' }}">
-                                        @if($user->is_approved)
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                            Approved
-                                        @else
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                            Pending
+                                    <div class="flex flex-col items-center gap-1">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold border {{ $user->is_approved ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200' }}">
+                                            @if($user->is_approved)
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                                Approved
+                                            @else
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                Pending
+                                            @endif
+                                        </span>
+                                        @if(!$user->is_approved)
+                                            @if($user->role === 'employer')
+                                                <a href="{{ route('admin.employers') }}" class="text-[10px] font-bold text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-0.5">
+                                                    <span>Review in Employers</span>
+                                                    <span>&rarr;</span>
+                                                </a>
+                                            @elseif($user->role === 'jobseeker')
+                                                <a href="{{ route('admin.jobseekers.index') }}" class="text-[10px] font-bold text-emerald-600 hover:text-emerald-800 hover:underline inline-flex items-center gap-0.5">
+                                                    <span>Review in Jobseekers</span>
+                                                    <span>&rarr;</span>
+                                                </a>
+                                            @endif
                                         @endif
-                                    </span>
+                                    </div>
                                 </td>
                                 <td class="py-4 px-6 text-slate-500 text-[11px]">
                                     {{ $user->created_at ? date('M d, Y', strtotime($user->created_at)) : 'N/A' }}
                                 </td>
                                 <td class="py-4 px-6 text-right">
-                                    <div class="inline-flex items-center justify-end gap-2">
+                                    <div class="inline-flex items-center justify-end gap-1.5 flex-wrap">
                                         @php
                                             $userData = [
                                                 'user_id' => $user->user_id,
@@ -220,17 +235,54 @@
                                                 'edit_url' => route('admin.users.edit', $user->user_id)
                                             ];
                                         @endphp
-                                        <button type="button" @click='openView(@json($userData))'
-                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors" title="View Account Details">
-                                            <svg class="w-3.5 h-3.5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                            <span>View</span>
-                                        </button>
 
+                                        {{-- 1. Direct Impersonate / Use Employer Account --}}
+                                        @if($user->role === 'employer' && !empty($user->employer_id))
+                                            <form action="{{ route('admin.employers.impersonate', $user->employer_id) }}" method="POST" class="inline">
+                                                @csrf
+                                                <button type="submit" 
+                                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold text-xs transition-colors" 
+                                                        title="Log In & Directly Operate this Employer Account">
+                                                    <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                                                    <span>Use</span>
+                                                </button>
+                                            </form>
+                                        @endif
+
+                                        {{-- 2. Deactivate / Activate Account Toggle --}}
+                                        <form action="{{ route('admin.users.toggle-status', $user->user_id) }}" method="POST" class="inline"
+                                              onsubmit="return confirm('Are you sure you want to {{ $user->status === 'active' ? 'DEACTIVATE' : 'ACTIVATE' }} account #{{ $user->user_id }} ({{ addslashes($displayName) }})?');">
+                                            @csrf
+                                            @if($user->status === 'active')
+                                                <button type="submit" 
+                                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-colors" 
+                                                        title="Deactivate Account">
+                                                    <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                                    <span>Deac</span>
+                                                </button>
+                                            @else
+                                                <button type="submit" 
+                                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-xs transition-colors" 
+                                                        title="Activate Account">
+                                                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    <span>Activate</span>
+                                                </button>
+                                            @endif
+                                        </form>
+
+                                        {{-- 3. Edit Account --}}
                                         <a href="{{ route('admin.users.edit', $user->user_id) }}" 
-                                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs transition-colors" title="Edit User">
+                                           class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs transition-colors" title="Edit User">
                                             <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                             <span>Edit</span>
                                         </a>
+
+                                        {{-- 4. View Details --}}
+                                        <button type="button" @click='openView(@json($userData))'
+                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors" title="View Account Details">
+                                            <svg class="w-3.5 h-3.5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <span>View</span>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>

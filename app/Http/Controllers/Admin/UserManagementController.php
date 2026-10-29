@@ -89,29 +89,64 @@ class UserManagementController extends Controller
      */
     public function create()
     {
-        $roles = ['admin', 'jpo', 'trainer'];
+        $roles = ['admin', 'jpo', 'trainer', 'employer', 'jobseeker'];
         return view('admin.users.create', compact('roles'));
     }
 
     /**
-     * Store a newly created user
+     * Store a newly created user (Admin or JPO)
      */
-    public function store(Request $request)
+    public function store(Request $request, bool $isJpo = false)
     {
-        $validator = Validator::make($request->all(), [
+        $allowedRoles = $isJpo ? ['employer', 'jobseeker'] : ['admin', 'jpo', 'trainer', 'employer', 'jobseeker'];
+
+        $roleRules = [
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8|confirmed',
-            'role' => 'required|in:admin,jpo,trainer',
-            'full_name' => 'required|string|max:150',
-            'position' => 'required|string|max:100',
-            'department' => 'nullable|string|max:150',
-            'office' => 'nullable|string|max:150',
-            'phone' => 'nullable|string|max:50',
-            'specialization' => 'nullable|string|max:150',
-            'trainer_type' => 'nullable|in:dmdp,partner',
-            'partner_institution' => 'nullable|string|max:255',
-            'is_approved' => 'nullable|boolean',
-        ]);
+            'role' => 'required|in:' . implode(',', $allowedRoles),
+        ];
+
+        $role = $request->input('role');
+
+        if ($role === 'employer') {
+            $rules = array_merge($roleRules, [
+                'company_name' => 'required|string|max:255',
+                'contact_person' => 'required|string|max:150',
+                'primary_email' => 'nullable|email|max:150',
+                'secondary_email' => 'nullable|email|max:150',
+                'phone' => 'nullable|string|max:50',
+                'contact_phone' => 'nullable|string|max:50',
+                'company_address' => 'required|string|max:255',
+                'business_nature' => 'nullable|string|max:150',
+                'is_accredited' => 'nullable',
+            ]);
+        } elseif ($role === 'jobseeker') {
+            $rules = array_merge($roleRules, [
+                'first_name' => 'required|string|max:100',
+                'last_name' => 'required|string|max:100',
+                'middle_name' => 'nullable|string|max:100',
+                'phone' => 'required|string|max:50',
+                'employment_status' => 'required|string|max:100',
+                'is_lgbtq' => 'nullable|boolean',
+                'is_senior_citizen' => 'nullable|boolean',
+                'is_immigrant' => 'nullable|boolean',
+                'immigrant_origin' => 'nullable|string|max:150',
+            ]);
+        } else {
+            $rules = array_merge($roleRules, [
+                'full_name' => 'required|string|max:150',
+                'position' => 'required|string|max:100',
+                'department' => 'nullable|string|max:150',
+                'office' => 'nullable|string|max:150',
+                'phone' => 'nullable|string|max:50',
+                'specialization' => 'nullable|string|max:150',
+                'trainer_type' => 'nullable|in:dmdp,partner',
+                'partner_institution' => 'nullable|string|max:255',
+                'is_approved' => 'nullable|boolean',
+            ]);
+        }
+
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
             return redirect()->back()
@@ -122,45 +157,189 @@ class UserManagementController extends Controller
         try {
             DB::beginTransaction();
 
-            // If admin creates a trainer account, it is automatically approved per requirements
-            $isApproved = ($request->role === 'trainer') ? 1 : ($request->is_approved ?? 1);
-            $isTrainerApproved = ($request->role === 'trainer') ? 1 : ($request->is_approved ?? 0);
+            if ($role === 'employer') {
+                $isAccredited = $request->boolean('is_accredited') || $request->input('auto_accredit') == '1';
+                $primaryEmail = $request->primary_email ?: $request->email;
+                $secondaryEmail = $request->secondary_email;
+                $contactPhone = $request->phone ?: ($request->contact_phone ?: null);
+                $companyAddress = $request->company_address;
 
-            // 1. Create user account
-            $user = DB::table('users')->insertGetId([
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'role' => $request->role,
-                'status' => 'active',
-                'is_approved' => $isApproved,
-                'created_at' => Carbon::now(),
-            ]);
+                $userId = DB::table('users')->insertGetId([
+                    'email' => $primaryEmail,
+                    'password' => Hash::make($request->password),
+                    'role' => 'employer',
+                    'status' => 'active',
+                    'is_approved' => $isAccredited ? 1 : 0,
+                    'phone_number' => $contactPhone,
+                    'is_contact_verified' => 1,
+                    'account_status' => $isAccredited ? 'verified' : 'unverified',
+                    'created_at' => Carbon::now(),
+                ]);
 
-            // 2. Create user profile
-            DB::table('user_profiles')->insert([
-                'user_id' => $user,
-                'full_name' => $request->full_name,
-                'position' => $request->position,
-                'department' => $request->department,
-                'office' => $request->office,
-                'phone' => $request->phone,
-                'specialization' => $request->specialization,
-                'trainer_type' => $request->trainer_type ?? 'dmdp',
-                'partner_institution' => $request->partner_institution,
-                'is_trainer_approved' => $isTrainerApproved,
-                'trainer_approved_by' => $request->role === 'trainer' ? \Illuminate\Support\Facades\Auth::id() : null,
-                'trainer_approved_at' => $request->role === 'trainer' ? Carbon::now() : null,
-                'created_at' => Carbon::now(),
-            ]);
+                $employerData = [
+                    'user_id' => $userId,
+                    'company_name' => $request->company_name,
+                    'contact_person' => $request->contact_person,
+                    'primary_email' => $primaryEmail,
+                    'secondary_email' => $secondaryEmail,
+                    'contact_phone' => $contactPhone,
+                    'company_address' => $companyAddress,
+                    'is_accredited' => $isAccredited ? 1 : 0,
+                    'accredited_at' => $isAccredited ? Carbon::now()->toDateString() : null,
+                ];
 
-            // 3. Create notification
-            $this->createNotification($user, 'New Employee Account Created', 
-                "An employee account has been created for {$request->full_name} ({$request->role}).");
+                if (\Illuminate\Support\Facades\Schema::hasColumn('employers', 'business_nature')) {
+                    $employerData['business_nature'] = $request->business_nature;
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('employers', 'region')) {
+                    $employerData['region'] = 'Region VII - Central Visayas';
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('employers', 'created_at')) {
+                    $employerData['created_at'] = Carbon::now();
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('employers', 'updated_at')) {
+                    $employerData['updated_at'] = Carbon::now();
+                }
 
-            DB::commit();
+                $employerId = DB::table('employers')->insertGetId($employerData);
 
-            return redirect()->route('admin.users.index')
-                ->with('success', "Employee account created successfully!");
+                DB::table('user_profiles')->insert([
+                    'user_id' => $userId,
+                    'full_name' => $request->contact_person,
+                    'position' => 'Authorized Contact Person',
+                    'phone' => $contactPhone,
+                    'office' => $companyAddress,
+                    'created_at' => Carbon::now(),
+                ]);
+
+                $certNo = $isAccredited ? ('DMDP-EMP-' . date('Y') . '-' . str_pad($employerId, 5, '0', STR_PAD_LEFT)) : null;
+
+                DB::table('employer_accreditation')->insert([
+                    'employer_id' => $employerId,
+                    'status' => $isAccredited ? 'admin_approved' : 'submitted_to_jpo',
+                    'admin_approved' => $isAccredited ? 1 : 0,
+                    'admin_approved_at' => $isAccredited ? Carbon::now() : null,
+                    'approved_at' => $isAccredited ? Carbon::now()->toDateString() : null,
+                    'certificate_no' => $certNo,
+                    'certificate_issued_at' => $isAccredited ? Carbon::now() : null,
+                    'certificate_issued_by' => $isAccredited ? \Illuminate\Support\Facades\Auth::id() : null,
+                    'documents' => json_encode([]),
+                    'submitted_at' => Carbon::now(),
+                ]);
+
+                $this->createNotification($userId, 'Employer Account Created', 
+                    "Employer account for {$request->company_name} has been provisioned.");
+
+                DB::commit();
+
+                $redirect = $isJpo ? redirect()->route('jpo.evaluations.accreditations') : redirect()->route('admin.employers');
+                return $redirect->with('success', "Employer account for '{$request->company_name}' created successfully!" . ($isAccredited ? " (Certificate {$certNo} issued)" : ""));
+
+            } elseif ($role === 'jobseeker') {
+                $fullName = trim("{$request->first_name} {$request->last_name}");
+
+                $userId = DB::table('users')->insertGetId([
+                    'email' => $request->email,
+                    'password' => Hash::make($request->password),
+                    'role' => 'jobseeker',
+                    'status' => 'active',
+                    'is_approved' => 1,
+                    'phone_number' => $request->phone,
+                    'is_contact_verified' => 1,
+                    'account_status' => 'verified',
+                    'created_at' => Carbon::now(),
+                ]);
+
+                $jobseekerId = DB::table('jobseekers')->insertGetId([
+                    'user_id' => $userId,
+                    'first_name' => $request->first_name,
+                    'last_name' => $request->last_name,
+                    'middle_name' => $request->middle_name,
+                    'mobile_number' => $request->phone,
+                    'email' => $request->email,
+                    'employment_status' => $request->employment_status,
+                    'created_at' => Carbon::now(),
+                    'updated_at' => Carbon::now(),
+                ]);
+
+                DB::table('social_status')->insert([
+                    'jobseeker_id' => $jobseekerId,
+                    'is_lgbtq' => $request->boolean('is_lgbtq') ? 1 : 0,
+                    'is_senior_citizen' => $request->boolean('is_senior_citizen') ? 1 : 0,
+                    'is_immigrant' => $request->boolean('is_immigrant') ? 1 : 0,
+                    'immigrant_origin' => $request->immigrant_origin,
+                    'region' => 'Region VII',
+                    'created_at' => Carbon::now(),
+                    'updated_at' => Carbon::now(),
+                ]);
+
+                DB::table('user_profiles')->insert([
+                    'user_id' => $userId,
+                    'full_name' => $fullName,
+                    'phone' => $request->phone,
+                    'created_at' => Carbon::now(),
+                ]);
+
+                DB::table('jobseeker_details')->insert([
+                    'jobseeker_id' => $jobseekerId,
+                    'address' => json_encode([]),
+                    'education' => json_encode([]),
+                    'work_experience' => json_encode([]),
+                    'eligibility' => json_encode([]),
+                    'language_proficiency' => json_encode([]),
+                    'training_certificates' => json_encode([]),
+                    'created_at' => Carbon::now(),
+                ]);
+
+                $this->createNotification($userId, 'Jobseeker Account Created', 
+                    "Jobseeker account for {$fullName} has been provisioned.");
+
+                DB::commit();
+
+                $redirect = $isJpo ? redirect()->route('jpo.evaluations.jobseekers') : redirect()->route('admin.jobseekers.index');
+                return $redirect->with('success', "Jobseeker account for '{$fullName}' created successfully!");
+
+            } else {
+                // Admin, JPO, Trainer
+                $isApproved = ($request->role === 'trainer') ? 1 : ($request->is_approved ?? 1);
+                $isTrainerApproved = ($request->role === 'trainer') ? 1 : ($request->is_approved ?? 0);
+
+                // 1. Create user account
+                $user = DB::table('users')->insertGetId([
+                    'email' => $request->email,
+                    'password' => Hash::make($request->password),
+                    'role' => $request->role,
+                    'status' => 'active',
+                    'is_approved' => $isApproved,
+                    'created_at' => Carbon::now(),
+                ]);
+
+                // 2. Create user profile
+                DB::table('user_profiles')->insert([
+                    'user_id' => $user,
+                    'full_name' => $request->full_name,
+                    'position' => $request->position,
+                    'department' => $request->department,
+                    'office' => $request->office,
+                    'phone' => $request->phone,
+                    'specialization' => $request->specialization,
+                    'trainer_type' => $request->trainer_type ?? 'dmdp',
+                    'partner_institution' => $request->partner_institution,
+                    'is_trainer_approved' => $isTrainerApproved,
+                    'trainer_approved_by' => $request->role === 'trainer' ? \Illuminate\Support\Facades\Auth::id() : null,
+                    'trainer_approved_at' => $request->role === 'trainer' ? Carbon::now() : null,
+                    'created_at' => Carbon::now(),
+                ]);
+
+                // 3. Create notification
+                $this->createNotification($user, 'New Employee Account Created', 
+                    "An employee account has been created for {$request->full_name} ({$request->role}).");
+
+                DB::commit();
+
+                return redirect()->route('admin.users.index')
+                    ->with('success', "Staff account created successfully!");
+            }
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -249,13 +428,18 @@ class UserManagementController extends Controller
         try {
             DB::beginTransaction();
 
-            // 1. Update user
+            $existingUser = DB::table('users')->where('user_id', $id)->first();
+            $isApproved = in_array($request->role, ['employer', 'jobseeker'])
+                ? ($existingUser->is_approved ?? 0)
+                : ($request->is_approved ?? 0);
+
+            // 1. Update user (Approvals for employer/jobseeker handled strictly in dedicated dashboards)
             DB::table('users')
                 ->where('user_id', $id)
                 ->update([
                     'role' => $request->role,
                     'status' => $request->status,
-                    'is_approved' => $request->is_approved ?? 0,
+                    'is_approved' => $isApproved,
                     'updated_at' => Carbon::now(),
                 ]);
 

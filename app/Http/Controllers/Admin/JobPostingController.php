@@ -118,7 +118,7 @@ class JobPostingController extends Controller
             'benefits' => 'nullable|string',
             'other_instructions' => 'nullable|string',
             'qualifications' => 'nullable|string',
-            'skills' => 'nullable|string',
+            'skills' => 'nullable',
             'vacancy_count' => 'required|integer|min:1',
             'valid_until' => 'required|date|after:today',
             'accepts_disability' => 'boolean',
@@ -144,6 +144,7 @@ class JobPostingController extends Controller
 
         // If employer_id is empty, set to null (DMDP)
         $employerId = $request->employer_id ?: null;
+        $skillsFormatted = \App\Services\NsrpSkillService::formatSkills($request->input('skills'));
 
         $jobId = DB::table('job_postings')->insertGetId([
             'employer_id' => $employerId,
@@ -156,7 +157,7 @@ class JobPostingController extends Controller
             'benefits' => $request->benefits,
             'other_instructions' => $request->other_instructions,
             'qualifications' => $request->qualifications,
-            'skills' => $request->skills,
+            'skills' => $skillsFormatted,
             'vacancy_count' => $request->vacancy_count,
             'valid_until' => $request->valid_until,
             'accepts_disability' => $request->accepts_disability ?? 0,
@@ -253,7 +254,7 @@ class JobPostingController extends Controller
             'benefits' => 'nullable|string',
             'other_instructions' => 'nullable|string',
             'qualifications' => 'nullable|string',
-            'skills' => 'nullable|string',
+            'skills' => 'nullable',
             'vacancy_count' => 'required|integer|min:1',
             'valid_until' => 'required|date|after:today',
             'accepts_disability' => 'boolean',
@@ -273,6 +274,7 @@ class JobPostingController extends Controller
 
         // If employer_id is empty, set to null (DMDP)
         $employerId = $request->employer_id ?: null;
+        $skillsFormatted = \App\Services\NsrpSkillService::formatSkills($request->input('skills'));
 
         DB::table('job_postings')
             ->where('job_id', $id)
@@ -286,7 +288,7 @@ class JobPostingController extends Controller
                 'benefits' => $request->benefits,
                 'other_instructions' => $request->other_instructions,
                 'qualifications' => $request->qualifications,
-                'skills' => $request->skills,
+                'skills' => $skillsFormatted,
                 'vacancy_count' => $request->vacancy_count,
                 'valid_until' => $request->valid_until,
                 'accepts_disability' => $request->accepts_disability ?? 0,

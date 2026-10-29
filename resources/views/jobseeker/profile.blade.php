@@ -70,7 +70,8 @@
         return this.skills.some(s => s.toLowerCase() === trimmed);
     },
     isPwd: {{ ($socialStatus->is_pwd ?? false) ? 'true' : 'false' }},
-    is4ps: {{ ($socialStatus->is_4ps ?? false) ? 'true' : 'false' }}
+    is4ps: {{ ($socialStatus->is_4ps ?? false) ? 'true' : 'false' }},
+    isImmigrant: {{ ($socialStatus->is_immigrant ?? false) ? 'true' : 'false' }}
 }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-5xl space-y-8">
         
@@ -1008,6 +1009,52 @@
                                 </label>
                                 <p class="text-[11px] text-slate-400 mt-1 pl-7">Qualifies for DMDP local reintegration and skills bridging programs.</p>
                             </div>
+
+                            <!-- LGBTQ+ Membership -->
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" name="is_lgbtq" value="1" {{ ($socialStatus->is_lgbtq ?? false) ? 'checked' : '' }}
+                                           class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                                    <span class="text-xs font-bold text-slate-900">LGBTQ+ Community Member</span>
+                                </label>
+                                <p class="text-[11px] text-slate-400 mt-1 pl-7">Equal employment opportunity and diversity tracking under Region 7 PESO.</p>
+                            </div>
+
+                            <!-- Senior Citizen -->
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" name="is_senior_citizen" value="1" {{ ($socialStatus->is_senior_citizen ?? false) ? 'checked' : '' }}
+                                           class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                                    <span class="text-xs font-bold text-slate-900">Senior Citizen (60 years old and above)</span>
+                                </label>
+                                <p class="text-[11px] text-slate-400 mt-1 pl-7">Priority inclusion for active community workforce and elder livelihood under RA 10911.</p>
+                            </div>
+
+                            <!-- Immigrant / Migrant Worker -->
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 sm:col-span-2">
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" name="is_immigrant" value="1" x-model="isImmigrant"
+                                           class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                                    <span class="text-xs font-bold text-slate-900">Immigrant / Migrant Worker / Foreign National</span>
+                                </label>
+                                <p class="text-[11px] text-slate-400 pl-7">Support & monitoring for immigrant laborers and inter-regional transferees to Region 7 (Central Visayas).</p>
+                                <div x-show="isImmigrant" x-cloak class="pt-2 border-t border-slate-200 pl-7">
+                                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Country / Province of Origin or Visa/AEP Details</label>
+                                    <input type="text" name="immigrant_origin" value="{{ old('immigrant_origin', $socialStatus->immigrant_origin ?? '') }}" placeholder="Country of Origin, Alien Employment Permit (AEP), or Transferee Province"
+                                           class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-emerald-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Region Scope Badge -->
+                        <div class="p-3 bg-emerald-50/70 border border-emerald-200 rounded-2xl flex items-center justify-between text-xs">
+                            <span class="font-bold text-emerald-950 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+                                Coverage Scope: <strong>{{ $socialStatus->region ?: 'Region VII - Central Visayas (Cebu City DMDP Hub)' }}</strong>
+                            </span>
+                            <input type="hidden" name="region" value="{{ $socialStatus->region ?: 'Region VII - Central Visayas' }}">
+                            <span class="text-[10px] text-emerald-700 font-bold bg-white px-2 py-0.5 rounded-lg border border-emerald-200">Central Visayas</span>
+                        </div>
                         </div>
                     </div>
                 </section>

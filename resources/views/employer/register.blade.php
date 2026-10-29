@@ -103,7 +103,7 @@
                         $employerSteps = [
                             ['num' => 1, 'name' => 'Account', 'sub' => 'Credentials'],
                             ['num' => 2, 'name' => 'Company', 'sub' => 'Business Profile'],
-                            ['num' => 3, 'name' => 'Contact', 'sub' => 'HR & Address'],
+                            ['num' => 3, 'name' => 'Contact', 'sub' => 'Dual Email & HR'],
                             ['num' => 4, 'name' => 'Documents', 'sub' => 'Accreditation'],
                         ];
                     @endphp
@@ -142,7 +142,7 @@
                         <!-- Email -->
                         <div class="md:col-span-2">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="email">
-                                Official Company Email Address <span class="text-rose-500">*</span>
+                                Official Company Email Address (Primary Sign-In) <span class="text-rose-500">*</span>
                             </label>
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -151,7 +151,7 @@
                                 <input type="email" id="email" name="email" value="{{ old('email') }}" required autocomplete="email" placeholder="hr@yourcompany.com"
                                        class="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border @error('email') border-rose-400 ring-2 ring-rose-100 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
                             </div>
-                            <p class="text-[11px] text-slate-500 mt-1">Please use your company or corporate domain email where possible.</p>
+                            <p class="text-[11px] text-slate-500 mt-1">Primary corporate email used for portal authentication and notifications. (Dual Email & alternate inboxes can be configured in Step 3).</p>
                             @error('email')<span class="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">{{ $message }}</span>@enderror
                         </div>
 
@@ -325,17 +325,18 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                     </div>
                     <div>
-                        <h2 class="text-lg font-bold text-slate-900">Authorized Contact & Office Address</h2>
-                        <p class="text-xs text-slate-500">Designated HR representative and company primary location in Cebu / Region 7</p>
+                        <h2 class="text-lg font-bold text-slate-900">Dual Email & Contact Management</h2>
+                        <p class="text-xs text-slate-500">Designated HR representative, dual corporate emails (Primary & Secondary Inboxes), and workplace headquarters in Region 7</p>
                     </div>
                 </div>
 
                 <div class="p-6 sm:p-8 space-y-5">
+                    <!-- Authorized Contact Person Section -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Contact Person -->
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="contact_person">
-                                Contact Person (Full Name) <span class="text-rose-500">*</span>
+                                Authorized Contact Person (Full Name) <span class="text-rose-500">*</span>
                             </label>
                             <input type="text" id="contact_person" name="contact_person" value="{{ old('contact_person') }}" required
                                    placeholder="e.g. Maria Clara Santos"
@@ -376,6 +377,52 @@
                                        class="w-full pl-12 pr-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Dual Email Management Section -->
+                    <div class="p-5 rounded-2xl bg-slate-50/70 border border-slate-200 space-y-4">
+                        <div class="flex items-center justify-between pb-2 border-b border-slate-200/80">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Dual Email Inboxes (Primary & Secondary)</h3>
+                                    <p class="text-[11px] text-slate-500">Provide dual communication channels for primary endorsements and backup redundancy</p>
+                                </div>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Dual Email System</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Primary Email -->
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="primary_email">
+                                    Primary Official Email <span class="text-rose-500">*</span>
+                                </label>
+                                <input type="email" id="primary_email" name="primary_email" value="{{ old('primary_email', old('email')) }}" required
+                                       placeholder="e.g. hr@company.com"
+                                       class="w-full px-4 py-2.5 bg-white border @error('primary_email') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                                <p class="text-[11px] text-slate-500 mt-1">Main email for recruitment correspondence and PESO endorsements.</p>
+                                @error('primary_email')<span class="text-xs text-rose-600 font-semibold mt-1 block">{{ $message }}</span>@enderror
+                            </div>
+
+                            <!-- Secondary / Alternate Email -->
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="secondary_email">
+                                    Secondary / Alternate Email
+                                </label>
+                                <input type="email" id="secondary_email" name="secondary_email" value="{{ old('secondary_email') }}"
+                                       placeholder="e.g. recruitment@company.com"
+                                       class="w-full px-4 py-2.5 bg-white border @error('secondary_email') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                                <p class="text-[11px] text-slate-500 mt-1">Backup inbox for certificates, system alerts, and compliance updates.</p>
+                                @error('secondary_email')<span class="text-xs text-rose-600 font-semibold mt-1 block">{{ $message }}</span>@enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Workplace Address Section -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                         <!-- Company Address -->
                         <div class="md:col-span-2 pt-2 border-t border-slate-100">
@@ -658,7 +705,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const stepTitles = [
         'Account Credentials',
         'Company Profile',
-        'Authorized Contact & Location',
+        'Dual Email & Contact Management',
         'Accreditation Documents & Terms'
     ];
 
@@ -909,6 +956,23 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     });
 
+    // Sync Step 1 primary email with Step 3 primary_email unless manually edited
+    const emailField = document.getElementById('email');
+    const primaryEmailField = document.getElementById('primary_email');
+    if (emailField && primaryEmailField) {
+        if (!primaryEmailField.value && emailField.value) {
+            primaryEmailField.value = emailField.value;
+        }
+        emailField.addEventListener('input', function() {
+            if (!primaryEmailField.dataset.userEdited) {
+                primaryEmailField.value = this.value;
+            }
+        });
+        primaryEmailField.addEventListener('input', function() {
+            primaryEmailField.dataset.userEdited = 'true';
+        });
+    }
+
     // Auto-detect Laravel errors and jump to step
     @if($errors->any())
         const errorFields = @json($errors->keys());
@@ -918,7 +982,7 @@ document.addEventListener('DOMContentLoaded', function() {
             targetErrorStep = 1;
         } else if (errorFields.some(f => ['company_name', 'company_description', 'industry', 'company_size', 'website', 'company_type'].includes(f))) {
             targetErrorStep = 2;
-        } else if (errorFields.some(f => ['contact_person', 'contact_position', 'phone', 'mobile', 'address', 'city', 'province', 'postal_code'].includes(f))) {
+        } else if (errorFields.some(f => ['contact_person', 'contact_position', 'phone', 'mobile', 'primary_email', 'secondary_email', 'address', 'city', 'province', 'postal_code'].includes(f))) {
             targetErrorStep = 3;
         } else if (errorFields.some(f => f.startsWith('documents') || f === 'terms')) {
             targetErrorStep = 4;
