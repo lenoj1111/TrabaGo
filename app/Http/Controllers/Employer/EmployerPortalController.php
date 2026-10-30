@@ -297,6 +297,11 @@ class EmployerPortalController extends Controller
 
     public function storeJobPosting(Request $request)
     {
+        if (Auth::user() && !Auth::user()->is_approved) {
+            return redirect()->route('employer.job-postings')
+                ->with('error', 'Your employer account is pending approval. You must be approved before creating a job posting.');
+        }
+
         $user = Auth::user();
         if (!$user || !$user->isAccountVerified()) {
             return redirect()->route('employer.accreditation')
@@ -304,11 +309,6 @@ class EmployerPortalController extends Controller
         }
 
         $employer = $this->getOrCreateEmployer();
-
-        if (Auth::user() && !Auth::user()->is_approved) {
-            return redirect()->route('employer.job-postings')
-                ->with('error', 'Your employer account is pending approval. You must be approved before creating a job posting.');
-        }
 
         if (!$this->employerIsAccredited($employer)) {
             return redirect()->route('employer.accreditation')->with('error', 'You must be accredited before creating a job posting.');

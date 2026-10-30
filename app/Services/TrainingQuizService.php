@@ -39,8 +39,27 @@ class TrainingQuizService
             }
         }
 
-        // Assessments MUST be created by the trainer.
-        // It should NOT be built-in or automatically generated.
+        // 3. If questions count < $minCount, fill from course-tailored question bank
+        if ($minCount > 0 && count($questions) < $minCount) {
+            $bank = $this->getQuestionBankForTitle($training->title, $training->description ?? '');
+            foreach ($bank as $item) {
+                $exists = false;
+                foreach ($questions as $existing) {
+                    if (strcasecmp($existing['question'], $item['question']) === 0) {
+                        $exists = true;
+                        break;
+                    }
+                }
+
+                if (!$exists) {
+                    $questions[] = $item;
+                    if (count($questions) >= $minCount) {
+                        break;
+                    }
+                }
+            }
+        }
+
         return array_values($questions);
     }
 

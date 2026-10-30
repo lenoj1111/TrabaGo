@@ -86,7 +86,7 @@ class UserManagementController extends Controller
      */
     public function create()
     {
-        $roles = ['admin', 'jpo', 'trainer', 'employer', 'jobseeker', 'supervisor', 'lmo'];
+        $roles = ['admin', 'jpo', 'trainer', 'employer', 'jobseeker'];
         return view('admin.users.create', compact('roles'));
     }
 
@@ -95,7 +95,7 @@ class UserManagementController extends Controller
      */
     public function store(Request $request, bool $isJpo = false)
     {
-        $allowedRoles = $isJpo ? ['employer', 'jobseeker'] : ['admin', 'jpo', 'trainer', 'employer', 'jobseeker', 'supervisor', 'lmo'];
+        $allowedRoles = $isJpo ? ['employer', 'jobseeker'] : ['admin', 'jpo', 'trainer', 'employer', 'jobseeker'];
 
         $roleRules = [
             'email' => 'required|email|unique:users,email',
@@ -539,7 +539,10 @@ class UserManagementController extends Controller
             $user = DB::table('users')->where('user_id', $id)->first();
 
             if (!$user) {
-                return response()->json(['error' => 'User not found.'], 404);
+                if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+                    return response()->json(['error' => 'User not found.'], 404);
+                }
+                return redirect()->back()->with('error', 'User not found.');
             }
 
             DB::table('users')
@@ -556,14 +559,21 @@ class UserManagementController extends Controller
                 'Your account has been approved. You can now access the system.'
             );
 
-            return response()->json([
-                'success' => 'User approved successfully!',
-            ]);
+            if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => 'User approved successfully!',
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'User approved successfully!');
 
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Approval failed: ' . $e->getMessage(),
-            ], 500);
+            if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+                return response()->json([
+                    'error' => 'Approval failed: ' . $e->getMessage(),
+                ], 500);
+            }
+            return redirect()->back()->with('error', 'Approval failed: ' . $e->getMessage());
         }
     }
 

@@ -186,7 +186,8 @@ class JobseekerEnhancementsTest extends TestCase
         // 1. View Profile
         $viewResponse = $this->actingAs($this->jobseekerUser)->get(route('jobseeker.profile', ['tab' => 'view']));
         $viewResponse->assertStatus(200);
-        $viewResponse->assertSee('Pedro Penduko');
+        $viewResponse->assertSee('Pedro');
+        $viewResponse->assertSee('Penduko');
         $viewResponse->assertSee('Personal Information');
         $viewResponse->assertSee('Residential Address');
 

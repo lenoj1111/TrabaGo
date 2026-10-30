@@ -342,7 +342,7 @@ class JobseekerPortalController extends Controller
         $application = JobApplication::create([
             'job_id' => $jobId,
             'jobseeker_id' => $jobseeker->jobseeker_id,
-            'status' => 'jpo_pending',
+            'status' => 'pending',
             'referred_by_jpo' => false,
         ]);
 

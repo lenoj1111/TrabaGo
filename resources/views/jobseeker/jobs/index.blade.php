@@ -130,6 +130,10 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
                             <span>{{ $job->location ?: 'Location not specified' }}</span>
                             <span>&bull;</span>
                             <span>{{ $job->salary_range ?: 'Salary not specified' }}</span>
+                            @if($job->valid_until)
+                            <span>&bull;</span>
+                            <span>Available until {{ $job->valid_until->format('M d, Y') }}</span>
+                            @endif
                         </p>
                     </div>
 
@@ -216,6 +220,9 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
                                 <h2 class="text-xl sm:text-2xl font-black text-slate-900 mt-1">{{ $job->title }}</h2>
                                 <p class="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
                                     <span>{{ $job->location ?: 'Location not specified' }} &bull; {{ $job->job_type ?: 'Job type not specified' }} &bull; {{ $job->salary_range ?: 'Salary not specified' }}</span>
+                                    @if($job->valid_until)
+                                    <span>&bull; Available until {{ $job->valid_until->format('M d, Y') }}</span>
+                                    @endif
                                 </p>
                             </div>
                             <button @click="previewOpen = false" class="rounded-full bg-slate-100 p-2 text-slate-500 hover:bg-slate-200 font-bold text-lg leading-none">&times;</button>
@@ -378,6 +385,7 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
                     </div>
                     <input type="file" name="resume" accept=".pdf,.doc,.docx"
                         class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100">
+                    <p class="text-[11px] text-slate-400">Accepted formats: PDF, DOC, DOCX (Max 5MB). If omitted, the employer will evaluate your application using your verified TrabaGo profile details and skills matrix.</p>
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">

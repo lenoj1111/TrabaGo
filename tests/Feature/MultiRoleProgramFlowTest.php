@@ -100,6 +100,8 @@ class MultiRoleProgramFlowTest extends TestCase
 
     public function test_employer_creates_job_posting_sent_to_admin_and_admin_approves(): void
     {
+        $this->employer->update(['is_accredited' => 1]);
+
         // 1. Employer creates job posting (Figure 9)
         $createResponse = $this->actingAs($this->employerUser)->post('/employer/job-postings', [
             'title' => 'Software Quality Analyst',

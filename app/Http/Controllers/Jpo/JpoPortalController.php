@@ -151,7 +151,7 @@ class JpoPortalController extends Controller
         if ($recommendation === 'refer') {
             $application->update([
                 'referred_by_jpo' => 1,
-                'status' => 'pending',
+                'status' => 'reviewed',
                 'jpo_notes' => $remarks,
                 'jpo_evaluated_at' => now(),
             ]);
