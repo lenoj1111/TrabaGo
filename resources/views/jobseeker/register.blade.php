@@ -1254,13 +1254,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (step === 3) {
             const brgy = document.getElementById('address_barangay');
             const err = document.getElementById('barangayError');
-            if (brgy.value.trim() && !barangayOptions.includes(brgy.value.trim())) {
+            const cityInput = document.getElementById('address_city')?.value?.trim() || '';
+            const isCebuCity = cityInput.toLowerCase() === 'cebu city';
+            if (brgy.value.trim() && isCebuCity && !barangayOptions.includes(brgy.value.trim())) {
                 isValid = false;
                 brgy.classList.add('border-rose-400');
                 err?.classList.remove('hidden');
                 if (!firstInvalid) firstInvalid = brgy;
             } else {
                 err?.classList.add('hidden');
+                brgy.classList.remove('border-rose-400');
             }
         }
 
@@ -1513,7 +1516,9 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(hideBrgyList, 150);
         const v = brgyInput.value.trim();
         const err = document.getElementById('barangayError');
-        if (v && !barangayOptions.includes(v)) {
+        const cityInput = document.getElementById('address_city')?.value?.trim() || '';
+        const isCebuCity = cityInput.toLowerCase() === 'cebu city';
+        if (v && isCebuCity && !barangayOptions.includes(v)) {
             err?.classList.remove('hidden');
             brgyInput.classList.add('border-rose-400');
         } else {
