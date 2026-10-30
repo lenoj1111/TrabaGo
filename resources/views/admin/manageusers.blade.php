@@ -3,7 +3,7 @@
 @section('title', 'Employee Accounts & User Management')
 
 @section('content')
-<div x-data="{ viewModal: false, selectedUser: null, openView(u) { this.selectedUser = u; this.viewModal = true; } }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
+<div x-data="manageUsersComponent()" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
     <div class="w-full max-w-[1680px] mx-auto space-y-8">
 
         <!-- Header -->
@@ -236,17 +236,23 @@
                                             ];
                                         @endphp
 
-                                        {{-- 1. Direct Impersonate / Use Employer Account --}}
+                                        {{-- 1. Update Email or Password (HR Turnover / Resignation Recovery) --}}
                                         @if($user->role === 'employer' && !empty($user->employer_id))
-                                            <form action="{{ route('admin.employers.impersonate', $user->employer_id) }}" method="POST" class="inline">
-                                                @csrf
-                                                <button type="submit" 
-                                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold text-xs transition-colors" 
-                                                        title="Log In & Directly Operate this Employer Account">
-                                                    <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
-                                                    <span>Use</span>
-                                                </button>
-                                            </form>
+                                            <button type="button" 
+                                                    @click="openCredentialsModal({{ json_encode([
+                                                        'employer_id' => $user->employer_id,
+                                                        'user_id' => $user->user_id,
+                                                        'company_name' => $user->company_name ?: $displayName,
+                                                        'email' => $user->email,
+                                                        'secondary_email' => $user->employer_secondary_email ?? '',
+                                                        'contact_person' => $user->contact_person ?? '',
+                                                        'contact_phone' => $user->employer_contact ?? '',
+                                                    ]) }})"
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs transition-colors" 
+                                                    title="Update Email or Password (e.g. Assigned HR resigned without leaving credentials)">
+                                                <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                                                <span>Update Email/Pass</span>
+                                            </button>
                                         @endif
 
                                         {{-- 2. Deactivate / Activate Account Toggle --}}
@@ -436,10 +442,22 @@
             </div>
         </div>
 
+        {{-- Reusable Employer Credentials Modal --}}
+        @include('partials.employer-credentials-modal')
+
     </div>
 </div>
 
 <script>
+    function manageUsersComponent() {
+        return {
+            viewModal: false,
+            selectedUser: null,
+            openView(u) { this.selectedUser = u; this.viewModal = true; },
+            ...(window.employerCredentialsHandler ? window.employerCredentialsHandler('{{ csrf_token() }}') : {})
+        };
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('[data-action="toggle-status"]').forEach(function (button) {
             button.addEventListener('click', function () {

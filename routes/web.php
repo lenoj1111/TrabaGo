@@ -461,8 +461,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
                 'users.status as user_status',
                 'users.is_approved as user_approved',
                 'users.created_at as user_created_at',
-                'user_profiles.full_name as contact_person',
-                'user_profiles.phone as contact_number',
+                DB::raw("COALESCE(user_profiles.full_name, employers.contact_person) as contact_person"),
+                DB::raw("COALESCE(user_profiles.phone, employers.contact_phone) as contact_number"),
                 'employer_accreditation.accreditation_id',
                 'employer_accreditation.documents',
                 'employer_accreditation.status as accreditation_status',
@@ -602,6 +602,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     })->name('employers.reject');
 
     Route::get('/employers/{id}/certificate', [ApprovalsController::class, 'employerCertificate'])->name('employers.certificate');
+    Route::post('/employers/{id}/update-credentials', [ApprovalsController::class, 'updateEmployerCredentials'])->name('employers.update-credentials');
 
     Route::post('/employers/{id}/impersonate', function ($id) {
         $employer = DB::table('employers')->where('employer_id', $id)->first();

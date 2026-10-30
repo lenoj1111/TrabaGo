@@ -13,8 +13,11 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class ApprovalsController extends Controller
 {
@@ -432,6 +435,135 @@ class ApprovalsController extends Controller
         if (!$employer) abort(404, 'Employer not found');
         $accreditation = DB::table('employer_accreditation')->where('employer_id', $id)->first();
         return view('reports.employer-certificate', compact('employer', 'accreditation'));
+    }
+
+    /**
+     * Update Employer Login Credentials & HR Information
+     * Designed for cases where assigned HR resigns without providing password/access.
+     */
+    public function updateEmployerCredentials(Request $request, $id)
+    {
+        $employer = DB::table('employers')->where('employer_id', $id)->first();
+        if (!$employer) {
+            $employer = DB::table('employers')->where('user_id', $id)->first();
+        }
+
+        if (!$employer) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'error' => 'Employer record not found.'], 404);
+            }
+            return redirect()->back()->with('error', 'Employer record not found.');
+        }
+
+        $userId = $employer->user_id;
+
+        $validator = Validator::make($request->all(), [
+            'email' => [
+                'required',
+                'email',
+                'max:150',
+                $userId ? Rule::unique('users', 'email')->ignore($userId, 'user_id') : 'nullable',
+            ],
+            'secondary_email' => 'nullable|email|max:150',
+            'contact_person' => 'nullable|string|max:150',
+            'contact_phone' => 'nullable|string|max:30',
+            'password' => 'nullable|string|min:8|confirmed',
+        ], [
+            'email.required' => 'The login email address is required.',
+            'email.email' => 'Please provide a valid email address.',
+            'email.unique' => 'This email address is already in use by another user account.',
+            'password.min' => 'The new password must be at least 8 characters long.',
+            'password.confirmed' => 'The password confirmation does not match.',
+        ]);
+
+        if ($validator->fails()) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()->first(),
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        $validated = $validator->validated();
+
+        // 1. Update User Credentials
+        if ($userId) {
+            $userUpdate = [
+                'email' => $validated['email'],
+                'updated_at' => now(),
+            ];
+            if (!empty($validated['password'])) {
+                $userUpdate['password'] = Hash::make($validated['password']);
+            }
+            DB::table('users')->where('user_id', $userId)->update($userUpdate);
+
+            // Update user_profiles if present
+            if (!empty($validated['contact_person']) || !empty($validated['contact_phone'])) {
+                $userProfile = DB::table('user_profiles')->where('user_id', $userId)->first();
+                if ($userProfile) {
+                    $profileUpdate = ['updated_at' => now()];
+                    if (!empty($validated['contact_person'])) {
+                        $profileUpdate['full_name'] = $validated['contact_person'];
+                    }
+                    if (!empty($validated['contact_phone'])) {
+                        $profileUpdate['phone'] = $validated['contact_phone'];
+                    }
+                    DB::table('user_profiles')->where('user_id', $userId)->update($profileUpdate);
+                } else if (!empty($validated['contact_person'])) {
+                    DB::table('user_profiles')->insert([
+                        'user_id' => $userId,
+                        'full_name' => $validated['contact_person'],
+                        'phone' => $validated['contact_phone'] ?? null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+        }
+
+        // 2. Update Employer Record
+        $employerUpdate = [
+            'primary_email' => $validated['email'],
+            'updated_at' => now(),
+        ];
+        if (array_key_exists('secondary_email', $validated)) {
+            $employerUpdate['secondary_email'] = $validated['secondary_email'];
+        }
+        if (array_key_exists('contact_person', $validated)) {
+            $employerUpdate['contact_person'] = $validated['contact_person'];
+        }
+        if (array_key_exists('contact_phone', $validated)) {
+            $employerUpdate['contact_phone'] = $validated['contact_phone'];
+        }
+
+        DB::table('employers')->where('employer_id', $employer->employer_id)->update($employerUpdate);
+
+        // 3. Security Audit Notification
+        if ($userId) {
+            Notification::create([
+                'user_id' => $userId,
+                'title' => 'Employer Login Credentials Updated',
+                'message' => "The login credentials for {$employer->company_name} were updated by DMDP Administration. Login email: {$validated['email']}.",
+                'type' => 'security',
+                'is_read' => false,
+                'related_id' => $employer->employer_id,
+            ]);
+        }
+
+        $successMessage = "Login credentials for '{$employer->company_name}' have been updated successfully. The new HR can now log in using '{$validated['email']}'.";
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $successMessage,
+                'email' => $validated['email'],
+            ]);
+        }
+
+        return redirect()->back()->with('success', $successMessage);
     }
 
     // =========================================================================
