@@ -1,25 +1,25 @@
-# 🌴 TrabaGo — Cebu City DMDP Employment & Skills Facilitation Platform
+# TrabaGo — Region 7 (Central Visayas) Employment & Skills Facilitation Platform
 
-> **Official Integrated Digital Platform for the City Government of Cebu — Department of Manpower Development and Placement (DMDP) & Public Employment Service Office (PESO)**
+> **Official Integrated Digital Platform for the Department of Manpower Development and Placement (DMDP) & Public Employment Service Office (PESO) — Region 7 (Central Visayas)**
 
 ---
 
 ## 📌 Project Overview
 
-**TrabaGo** is an enterprise-grade, multi-role web platform and cross-platform mobile application built to modernize public employment facilitation, vocational skills certification, employer accreditation, and workforce placement analytics for the City Government of Cebu.
+**TrabaGo** is an enterprise-grade, multi-role web platform and cross-platform mobile application designed to modernize public employment facilitation, vocational skills certification, employer accreditation, and workforce placement analytics across **Region 7 (Central Visayas — Cebu, Bohol, Negros Oriental, and Siquijor)**.
 
-Built with a unified **Minimalist Emerald Green** design system, TrabaGo bridges Cebuano jobseekers with accredited corporate employers through AI-driven cosine skill matching, self-paced DMDP vocational training, and transparent PESO coordination.
+Built with an **Emerald Green** design system, TrabaGo bridges jobseekers with accredited corporate employers through AI-driven skill matching, DOLE NSRP compliance, self-paced vocational training, and transparent PESO/JPO coordination.
 
 ---
 
-## 🏛️ System Architecture & Access Model
+## 🏗️ System Architecture & Access Model
 
 The TrabaGo ecosystem consists of two synchronized client interfaces connected to a unified Laravel REST API backend:
 
 ```mermaid
 graph TD
     subgraph Clients
-        Web["🖥️ Web Portal (Tailwind + Alpine.js)<br/>Admin, Trainer, JPO, Employer, Jobseeker"]
+        Web["💻 Web Portal (Blade + Tailwind + Alpine.js)<br/>Admin, Trainer, JPO, Employer, Jobseeker"]
         Mobile["📱 Mobile App (React Native + Expo)<br/>Exclusively for Jobseekers"]
     end
 
@@ -29,8 +29,8 @@ graph TD
         Reverb["Realtime WebSockets (Laravel Reverb :8080)"]
     end
 
-    subgraph Storage["💾 Persistence Layer"]
-        DB[("Database (SQL Server / MySQL / SQLite)")]
+    subgraph Storage["🗄️ Persistence Layer"]
+        DB[("Database (SQLite / MySQL / SQL Server)")]
         Disk[("Storage Disk (Document Hub & Certs)")]
     end
 
@@ -45,38 +45,47 @@ graph TD
 ```
 
 > [!IMPORTANT]
-> **Mobile Access Policy**: The mobile application is **strictly reserved for Jobseekers**. Administrative, verification, and facilitation roles (**Admin**, **Trainer**, **JPO**, and **Employer**) must access their portals via the **Web Application**.
+> **Mobile Access Policy**: The mobile application is **strictly reserved for Jobseekers**. Administrative, verification, and facilitation roles (**Admin**, **Trainer**, **JPO**, and **Employer**) access their portals via the **Web Application**.
 
 ---
 
-## 🌟 Ecosystem Roles & Features
+## ✨ Key Capabilities & Region 7 Feature Highlights
 
-### 1. 🧑‍💼 Jobseeker Portal (Web & Mobile)
-- **AI Skill-Match Engine:** Cosine-similarity matching calculates real-time candidate compatibility scores against live job vacancies.
-- **National Skills Profile (NSRP Form 1):** DOLE-compliant profile with education attainment, licenses, civil service status, 4Ps beneficiary, and PWD priority placement.
-- **Official Credentials Vault:** Secure multi-category storage for Resumes, Valid Government IDs, Technical Licensures, and PWD IDs.
-- **DMDP Vocational Training Hub:** Direct access to course syllabi, video lectures, and in-app competency assessments.
-- **Automated Digital Certificates:** Immediate issuance of verified certificates (`DMDP-CERT-YYYY-XXXXXX`) with auto-synced profile skill badges.
+### 1. 🏳️‍🌈 User Demographics & Sector Inclusions (PSIC / NSRP Alignment)
+- **LGBTQ+ Membership**: Dedicated demographic indicator tracking LGBTQ+ sector representation.
+- **Senior Citizens**: Recognition and placement facilitation for senior citizens seeking gainful employment.
+- **Immigrant Workers**: Support and tracking for immigrant worker demographics.
+- **Region 7 (Central Visayas) Scope**: Registration and address management covers Cebu, Bohol, Negros Oriental, and Siquijor without restrictive city/province locks.
 
-### 2. 👑 System Administrator Portal (Web)
-- **Central Approvals Queue:** Authorize job postings, review employer accreditation packets, and inspect monthly placement reports.
-- **User Account Management:** Control platform accounts, statuses, and role privileges.
-- **Statistical Analytics & Audit Logs:** City-wide placement percentages, applicant influx tracking, and system audit trail.
+### 2. 🤝 Jobseeker Employment Flexibility & Privacy Rules
+- **"Open to All" Flexibility**: Jobseekers remain eligible and open to new opportunities even while currently employed.
+- **Status Privacy**: A jobseeker's current employment status is kept private from employers.
+- **Formal Offer Acceptance Flow**: When an employer extends an offer, the candidate reviews the package and can **Accept** or **Decline**. The candidate status only transitions to **"Hired"** once the jobseeker explicitly accepts the job offer.
 
-### 3. 📋 Job Placement Officer (JPO) Portal (Web)
-- **Candidate Evaluation & Referrals:** Review jobseeker qualifications and refer screened candidates directly to employers.
-- **Employer Accreditation Audit:** Authenticate SEC/DTI certificates, Mayor's Permits, and BIR 2303 records.
-- **Placement Monitoring:** Validate employer monthly hiring and placement logs.
+### 3. 🏢 Employer Account Management, Accreditation & Recovery
+- **Dual Email Support**: Primary login email + secondary corporate backup email for employer contacts.
+- **Authorized Contact Person**: Dedicated fields for company HR officers/representatives.
+- **Admin & JPO Account Creation**: Admins and JPOs share authority to provision employer and jobseeker accounts.
+- **HR Turnover Credential Recovery ("Update Email/Pass")**: In case an assigned HR representative resigns without handing over credentials, Administrators can directly update the employer login email and reset the account password so new HR personnel regain immediate access.
+- **Official Accreditation Certificates**: Admins issue official Certificates of Accreditation (`DMDP-EMP-YYYY-XXXXX`) upon employer verification.
+- **JPO Rejection Loop**: If an employer accreditation application is rejected by Admin, it is returned to the JPO queue with mandatory administrative remarks.
+- **Direct Accreditation Override**: Admins can directly accredit or disaccredit employers with interactive warning confirmations.
 
-### 4. 🎓 Skills Trainer Portal (Web)
-- **Curriculum & Module Builder:** Author course syllabi, lesson topics, and video lecture materials.
-- **Interactive Quiz Management:** Configure question banks and passing score thresholds (default: 80%).
-- **Roster & Certifications:** Monitor trainee enrollment rosters, score assessments, and issue verified credentials.
+### 4. 📋 Job Postings & DOLE NSRP Form Compliance
+- **Strict Skills Standardization**: Required skills in job postings align with the National Skills Registration Program (NSRP Form 1).
+- **Skill Input Types**: Standardized skill selections via dropdowns with an **"Others"** free-text input option.
+- **AI Skill-Match Engine**: Cosine similarity algorithm scores applicant competencies against vacancy requirements.
 
-### 5. 🏢 Corporate Employer Portal (Web)
-- **Accreditation Pipeline:** Digital submission of legal company documentation for JPO and Admin verification.
-- **Job Vacancy Management:** Post and manage job openings with disability-inclusive tagging and qualification requirements.
-- **Candidate Pipeline:** Schedule candidate interviews, issue job offers, and record hires.
+### 5. 🎓 Vocational Training & Digital Certifications
+- **Course & Module Builder**: Trainers author course syllabi, lesson units, and video lecture materials.
+- **Interactive Quizzes**: Trainers configure question banks and passing score thresholds (default: 80%).
+- **Digital Certificates**: Automatic generation and issuance of verifiable completion certificates (`DMDP-CERT-YYYY-XXXXXX`).
+
+### 6. 📁 Document Vault & Verification Hub
+- Multi-category vault for Resumes, Government IDs, Technical Licensures, PWD IDs, BIR 2303, SEC/DTI registrations, and Mayor's Business Permits with built-in preview and inspection tools.
+
+### 7. 📊 Monthly Placement Reports
+- Employers submit monthly placement reports; JPOs inspect and verify hired records; Admins provide final authorization.
 
 ---
 
@@ -84,46 +93,46 @@ graph TD
 
 | Layer | Technology |
 | :--- | :--- |
-| **Backend Framework** | Laravel 12 / PHP 8.2+ |
-| **Database** | Microsoft SQL Server (SSMS) / MySQL / SQLite |
-| **API Authentication** | Laravel Sanctum & Session Guards |
+| **Backend Framework** | Laravel 12 (PHP 8.2+) |
+| **Database** | SQLite / MySQL / Microsoft SQL Server |
+| **Authentication** | Laravel Session Guards & Laravel Sanctum Tokens |
 | **Realtime WebSockets** | Laravel Reverb (Port 8080) |
 | **Web Frontend** | Blade Components, TailwindCSS, Alpine.js, Vite |
-| **Mobile App** | React Native (Expo SDK 52, Expo Router), TypeScript |
+| **Mobile Application** | React Native, Expo SDK (Jobseeker interface) |
+| **Testing Suite** | PHPUnit (157 Feature & Unit Tests) |
 
 ---
 
-## 🚀 Step-by-Step Installation & Setup
+## 🚀 Setup & Installation Guide
 
 ### Prerequisites
-Make sure your workstation has the following installed:
-- **PHP** 8.2 or 8.3 with PDO, OpenSSL, and cURL extensions
-- **Composer** (v2.x)
-- **Node.js** (v18.x or v20.x LTS) & npm
+- **PHP 8.2+** with `pdo`, `mbstring`, `openssl`, `curl`, and `fileinfo` extensions
+- **Composer** (v2+)
+- **Node.js** (v18+) & **npm**
 - **Git**
-- **Expo Go App** (installed on your iOS or Android phone)
 
 ---
 
-### Step 1: Clone the Repository
+### Step 1: Clone & Checkout
+
 ```bash
 git clone https://github.com/lenoj1111/TrabaGo.git
 cd TrabaGo
-git checkout jimmy-v2
+git checkout jimmy
 ```
 
 ---
 
 ### Step 2: Install Dependencies
 
-#### A. Backend & Web Dependencies (Project Root):
 ```bash
+# 1. Install Backend PHP dependencies
 composer install
-npm install
-```
 
-#### B. Mobile Dependencies:
-```bash
+# 2. Install Web Frontend dependencies
+npm install
+
+# 3. Install Mobile App dependencies (if working on mobile)
 cd mobile
 npm install
 cd ..
@@ -133,16 +142,15 @@ cd ..
 
 ### Step 3: Environment Configuration
 
-#### A. Backend `.env`:
-```powershell
-# Windows PowerShell
-Copy-Item .env.example .env
+```bash
+# Copy root .env file
+cp .env.example .env
 
-# Generate application key
+# Generate application encryption key
 php artisan key:generate
 ```
 
-Open `.env` and configure your database settings:
+Configure your database in `.env`:
 ```env
 APP_NAME=TrabaGo
 APP_ENV=local
@@ -150,17 +158,18 @@ APP_KEY=base64:...
 APP_DEBUG=true
 APP_URL=http://localhost:8000
 
-# Database Configuration (Example: SQL Server)
-DB_CONNECTION=sqlsrv
-DB_HOST=localhost
-DB_PORT=1433
-DB_DATABASE=Trabago1
-DB_USERNAME=your_username
-DB_PASSWORD=your_password
-DB_ENCRYPT=no
-DB_TRUST_SERVER_CERTIFICATE=true
+# SQLite (Default / Recommended for Development)
+DB_CONNECTION=sqlite
 
-# Realtime WebSocket Configuration (Laravel Reverb)
+# Or MySQL:
+# DB_CONNECTION=mysql
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=trabago
+# DB_USERNAME=root
+# DB_PASSWORD=
+
+# Laravel Reverb (WebSockets)
 BROADCAST_CONNECTION=reverb
 REVERB_APP_ID=trabago-app
 REVERB_APP_KEY=ckzj1ifqrv7u8cszy3tq
@@ -170,51 +179,36 @@ REVERB_PORT=8080
 REVERB_SCHEME="http"
 ```
 
-#### B. Mobile `.env`:
-In `mobile/`, create `.env` from `.env.example`:
-```powershell
-# Windows PowerShell
-Copy-Item mobile\.env.example mobile\.env
-```
-
-Open `mobile/.env` and set your computer's local IP address so physical mobile devices can connect over Wi-Fi:
-```env
-# Check your local IP with 'ipconfig' (e.g. 192.168.1.X)
-EXPO_PUBLIC_API_URL=http://192.168.100.9:8000/api
-EXPO_PUBLIC_REVERB_HOST=192.168.100.9
-EXPO_PUBLIC_REVERB_PORT=8080
-EXPO_PUBLIC_REVERB_KEY=ckzj1ifqrv7u8cszy3tq
-```
-
 ---
 
-### Step 4: Run Database Migrations & Seeds
+### Step 4: Database Migrations, Seeding & Storage Link
 
 ```bash
-# Run migrations and seed official staff accounts
+# Run migrations and seed staff accounts
 php artisan migrate --seed
 
-# Link public storage disk (critical for document vault & certificates)
+# Create storage symbolic link (vital for documents, logos, and certificates)
 php artisan storage:link
 ```
 
 ---
 
-## 🖥️ Running the Platform
+## 🖥️ Running the Application
 
-To run the complete system, open separate terminal windows for each service:
+Open separate terminal windows for the required services:
 
-### Terminal 1: Laravel Backend Server
-Serve on `0.0.0.0` so mobile devices on your local network can communicate with the API:
+### Terminal 1: Laravel Web & API Server
 ```bash
 php artisan serve --host=0.0.0.0 --port=8000
 ```
-- Web Portal URL: **`http://localhost:8000`**
+- Web Application: **`http://localhost:8000`**
 - REST API Base: **`http://localhost:8000/api`**
 
-### Terminal 2: Web Asset Compiler (Vite)
+### Terminal 2: Web Frontend Assets (Vite)
 ```bash
 npm run dev
+# Or create a production build:
+npm run build
 ```
 
 ### Terminal 3: Realtime WebSockets (Laravel Reverb)
@@ -222,66 +216,75 @@ npm run dev
 php artisan reverb:start --host=0.0.0.0 --port=8080
 ```
 
-### Terminal 4: Mobile Application (Expo Go)
+### Terminal 4: Mobile Application (Expo Go - Optional)
 ```bash
 cd mobile
 npx expo start -c
 ```
-- **Physical Device:** Scan the terminal QR code with **Expo Go** (Android) or the native **Camera** (iOS).
-- **Web Browser:** Press **`w`** in the terminal to open the mobile web preview at `http://localhost:8081`.
-- **Android Emulator:** Press **`a`** in the terminal.
+- Press **`w`** for web browser preview (`http://localhost:8081`).
+- Scan the terminal QR code with the **Expo Go** mobile app.
 
 ---
 
-## 🔑 Official Seeded Accounts
+## 👥 Official Seeded Accounts
 
-The database seed maintains **exactly one clean account** for each administrative role. All accounts share the default password: **`password123`**
+All default seeded accounts use the password: **`password123`**
 
-| Role | Email Address | Default Password | Authorized Interface |
+| Role | Email Address | Default Password | Portal URL |
 | :--- | :--- | :--- | :--- |
-| 👑 **System Administrator** | `admin@trabago.com` | `password123` | **Web Portal Only** (`/admin/dashboard`) |
-| 🎓 **Skills Trainer** | `trainer@trabago.com` | `password123` | **Web Portal Only** (`/trainer/dashboard`) |
-| 📋 **Job Placement Officer (JPO)** | `jpo@trabago.com` | `password123` | **Web Portal Only** (`/jpo/dashboard`) |
-| 🧑‍💼 **Jobseeker** | *Self-registered* | *User defined* | **Mobile App** & **Web Portal** |
-| 🏢 **Employer** | *Self-registered* | *User defined* | **Web Portal Only** (`/employer/homepage`) |
-
-> [!NOTE]
-> Jobseekers can register instantly via the **Mobile App** (`/auth/register`) or **Web Portal** (`/register`). Non-jobseeker roles attempting to sign into the mobile app will receive an **Access Restricted (HTTP 403)** notification.
+| 🛡️ **System Administrator** | `admin@trabago.com` | `password123` | `/admin/dashboard` |
+| 🎓 **Skills Trainer** | `trainer@trabago.com` | `password123` | `/trainer/dashboard` |
+| 👔 **Job Placement Officer (JPO)** | `jpo@trabago.com` | `password123` | `/jpo/dashboard` |
+| 🏢 **Employer** | *Self-registered / Seeded* | *User defined* | `/employer/home` |
+| 💼 **Jobseeker** | *Self-registered* | *User defined* | `/jobseeker/home` or Mobile |
 
 ---
 
-## 🧪 Testing & Code Quality
+## 🧪 Testing & Verification
 
-Run automated test suites across backend and mobile:
+Run automated test suites with PHPUnit:
 
 ```bash
-# 1. Run PHPUnit test suite
+# Run all feature and unit tests
 php artisan test
 
-# 2. Run Document Vault & Verification flow tests
-php artisan test --filter=DocumentValidationFlowTest
+# Run Admin Accreditation, Security & Credential Management tests
+php artisan test --filter=AdminAccreditationAndSecurityTest
 
-# 3. Verify Mobile TypeScript compilation
-cd mobile
-npx tsc --noEmit
+# Run Offer Acceptance and Demographics tests
+php artisan test --filter=OfferAcceptanceFlowTest
 ```
 
 ---
 
-## 🛡️ Troubleshooting Checklist
+## 📤 How to Push Code to the `jimmy` Branch
 
-1. **Mobile Cannot Reach Backend (`Network Error` / `Connection Timed Out`)**:
-   - Ensure your mobile device and computer are connected to the **same Wi-Fi network**.
-   - Verify that port `8000` is allowed through **Windows Defender Firewall** (`Inbound Rules -> New Rule -> Port 8000 -> Allow`).
-   - Run `ipconfig` in Command Prompt to confirm your IPv4 address matches `EXPO_PUBLIC_API_URL` in `mobile/.env`.
-2. **Missing Document / Certificate Images (404 Not Found)**:
-   - Run `php artisan storage:link` in the project root to ensure `public/storage` points to `storage/app/public`.
-3. **Stale Mobile Screen / Bundler Errors**:
-   - Stop Metro bundler (`Ctrl + C`) and start with a fresh cache: `npx expo start -c`.
+If you are working on your local branch (e.g. `jimmy-v2`) and want to push your commits to the remote `jimmy` branch:
+
+### Option A: Push Local `jimmy-v2` directly to Remote `jimmy`
+```bash
+# Push your current commits to origin/jimmy
+git push origin jimmy-v2:jimmy
+```
+
+### Option B: Merge into Local `jimmy` Branch and Push
+```bash
+# 1. Fetch latest changes from remote
+git fetch origin
+
+# 2. Switch to or create local jimmy tracking branch
+git checkout -B jimmy origin/jimmy
+
+# 3. Merge your updates from jimmy-v2
+git merge jimmy-v2
+
+# 4. Push to remote jimmy
+git push origin jimmy
+```
 
 ---
 
-## 👥 DMDP Capstone Team & Credits
-- **Project:** TrabaGo
-- **Agency:** Cebu City Department of Manpower Development and Placement (DMDP) / PESO
-- **License:** Open-source under the [MIT License](LICENSE)
+## 📄 License & Credits
+- **Project**: TrabaGo
+- **Agency**: Department of Manpower Development and Placement (DMDP) / Public Employment Service Office (PESO) — Region 7
+- **License**: Open-source under the [MIT License](LICENSE)
