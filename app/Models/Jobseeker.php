@@ -52,6 +52,11 @@ class Jobseeker extends Model
      */
     public function isEmployed(): bool
     {
+        $user = $this->user()->first();
+        if (!$user || !$user->is_approved) {
+            return false;
+        }
+
         // Check for active hired application without approved resignation
         $hasActiveHired = $this->applications()
             ->where('status', 'hired')
@@ -265,7 +270,12 @@ class Jobseeker extends Model
         if (!empty($education)) {
             $eduArr = is_array($education) ? $education : (json_decode($education, true) ?: []);
             if (is_array($eduArr)) {
-                $hasEdu = !empty($eduArr['school']) || !empty($eduArr['course']) || !empty($eduArr['level']) || count($eduArr) > 0;
+                foreach ($eduArr as $value) {
+                    if (is_scalar($value) && trim((string) $value) !== '') {
+                        $hasEdu = true;
+                        break;
+                    }
+                }
             } else {
                 $hasEdu = !empty(trim((string)$education));
             }

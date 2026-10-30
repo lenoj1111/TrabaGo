@@ -1,17 +1,17 @@
 -- ============================================================================
 -- TrabaGo Full Database Schema & Seed Script for Microsoft SQL Server (SSMS)
--- Database Name: Trabago1
+-- Database Name: TrabaGoDB
 -- Target: SQL Server Management Studio (SSMS) 2017 / 2019 / 2022 / Azure SQL
 -- ============================================================================
 
 -- Step 1: Create Database if it does not exist
-IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'Trabago1')
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'TrabaGoDB')
 BEGIN
-    CREATE DATABASE [Trabago1];
+    CREATE DATABASE [TrabaGoDB];
 END
 GO
 
-USE [Trabago1];
+USE [TrabaGoDB];
 GO
 
 -- ============================================================================
@@ -53,12 +53,24 @@ CREATE TABLE dbo.users (
     role NVARCHAR(50) NOT NULL,
     status NVARCHAR(50) NOT NULL DEFAULT 'active',
     is_approved BIT NOT NULL DEFAULT 0,
+    is_contact_verified BIT NOT NULL DEFAULT 0,
+    phone_number NVARCHAR(50) NULL,
+    account_status NVARCHAR(30) NOT NULL DEFAULT 'unverified',
     remember_token NVARCHAR(100) NULL,
     created_at DATETIME2 NULL,
     updated_at DATETIME2 NULL,
     CONSTRAINT CK_users_role CHECK ([role] IN ('admin', 'supervisor', 'pesd_supervisor', 'jpo', 'trainer', 'lmo', 'employer', 'jobseeker')),
-    CONSTRAINT CK_users_status CHECK ([status] IN ('active', 'inactive'))
+    CONSTRAINT CK_users_status CHECK ([status] IN ('active', 'inactive', 'pending')),
+    CONSTRAINT CK_users_account_status CHECK ([account_status] IN ('unverified', 'pending_review', 'verified'))
 );
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'users_phone_number_unique' AND object_id = OBJECT_ID('dbo.users'))
+BEGIN
+    CREATE UNIQUE NONCLUSTERED INDEX users_phone_number_unique
+    ON dbo.users(phone_number)
+    WHERE phone_number IS NOT NULL;
+END
 GO
 
 -- ============================================================================
@@ -229,7 +241,13 @@ CREATE TABLE dbo.job_postings (
     admin_id BIGINT NULL,
     title NVARCHAR(150) NOT NULL,
     description NVARCHAR(MAX) NULL,
+    job_type NVARCHAR(100) NULL,
+    location NVARCHAR(255) NULL,
+    salary_range NVARCHAR(150) NULL,
+    benefits NVARCHAR(MAX) NULL,
+    other_instructions NVARCHAR(MAX) NULL,
     qualifications NVARCHAR(MAX) NULL,
+    skills NVARCHAR(MAX) NULL,
     vacancy_count INT NOT NULL DEFAULT 1,
     valid_until DATE NULL,
     accepts_disability BIT NULL,
@@ -486,7 +504,24 @@ CREATE INDEX IX_personal_access_tokens_expires_at ON dbo.personal_access_tokens(
 GO
 
 -- ============================================================================
--- 23. LARAVEL MIGRATIONS TABLE (Marks all migrations as completed)
+-- 23. LARAVEL CACHE TABLES (Database Cache Driver)
+-- ============================================================================
+CREATE TABLE dbo.cache (
+    [key] NVARCHAR(255) NOT NULL PRIMARY KEY,
+    value NVARCHAR(MAX) NOT NULL,
+    expiration INT NOT NULL
+);
+GO
+
+CREATE TABLE dbo.cache_locks (
+    [key] NVARCHAR(255) NOT NULL PRIMARY KEY,
+    owner NVARCHAR(255) NOT NULL,
+    expiration INT NOT NULL
+);
+GO
+
+-- ============================================================================
+-- 24. LARAVEL MIGRATIONS TABLE (Marks all migrations as completed)
 -- ============================================================================
 CREATE TABLE dbo.migrations (
     id INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
@@ -510,7 +545,9 @@ INSERT INTO dbo.migrations (migration, batch) VALUES
 ('2026_09_05_220000_add_timestamps_to_placement_reports', 1),
 ('2026_09_05_230000_add_hired_company_to_jobseekers', 1),
 ('2026_09_05_240000_add_resignation_columns_to_job_applications', 1),
-('2026_09_05_250000_add_offer_acceptance_to_job_applications', 1);
+('2026_09_05_250000_add_offer_acceptance_to_job_applications', 1),
+('2026_10_15_000001_add_auth_verification_and_otp_tables', 1),
+('2026_10_21_000001_create_cache_tables', 1);
 GO
 
 -- ============================================================================
@@ -523,8 +560,8 @@ GO
 -- $2y$12$UOJiYAM4mEw8mrxE0B47TetoWfLDovZFaiWpA3QRoSzQ5Yf86llrS
 
 -- 1. Admin
-INSERT INTO dbo.users (email, password, role, status, is_approved, created_at, updated_at)
-VALUES ('admin@trabago.com', '$2y$12$UOJiYAM4mEw8mrxE0B47TetoWfLDovZFaiWpA3QRoSzQ5Yf86llrS', 'admin', 'active', 1, SYSDATETIME(), SYSDATETIME());
+INSERT INTO dbo.users (email, password, role, status, is_approved, is_contact_verified, account_status, created_at, updated_at)
+VALUES ('admin@trabago.com', '$2y$12$UOJiYAM4mEw8mrxE0B47TetoWfLDovZFaiWpA3QRoSzQ5Yf86llrS', 'admin', 'active', 1, 1, 'verified', SYSDATETIME(), SYSDATETIME());
 DECLARE @AdminId BIGINT = SCOPE_IDENTITY();
 
 INSERT INTO dbo.user_profiles (user_id, full_name, position, department, office, created_at, updated_at)
@@ -534,8 +571,8 @@ INSERT INTO dbo.notifications (user_id, title, message, type, is_read, created_a
 VALUES (@AdminId, 'System Initialized', 'TrabaGo platform initialized. All systems and core modules operating normally.', 'approval', 0, SYSDATETIME(), SYSDATETIME());
 
 -- 2. Trainer
-INSERT INTO dbo.users (email, password, role, status, is_approved, created_at, updated_at)
-VALUES ('trainer@trabago.com', '$2y$12$UOJiYAM4mEw8mrxE0B47TetoWfLDovZFaiWpA3QRoSzQ5Yf86llrS', 'trainer', 'active', 1, SYSDATETIME(), SYSDATETIME());
+INSERT INTO dbo.users (email, password, role, status, is_approved, is_contact_verified, account_status, created_at, updated_at)
+VALUES ('trainer@trabago.com', '$2y$12$UOJiYAM4mEw8mrxE0B47TetoWfLDovZFaiWpA3QRoSzQ5Yf86llrS', 'trainer', 'active', 1, 1, 'verified', SYSDATETIME(), SYSDATETIME());
 DECLARE @TrainerUserId BIGINT = SCOPE_IDENTITY();
 
 INSERT INTO dbo.user_profiles (user_id, full_name, position, department, office, specialization, trainer_type, is_trainer_approved, created_at, updated_at)
@@ -562,8 +599,8 @@ INSERT INTO dbo.notifications (user_id, title, message, type, is_read, created_a
 VALUES (@TrainerUserId, 'Trainer Portal Active', 'Your vocational training program has been published and is accepting enrollments.', 'approval', 0, SYSDATETIME(), SYSDATETIME());
 
 -- 3. JPO (Job Placement Officer)
-INSERT INTO dbo.users (email, password, role, status, is_approved, created_at, updated_at)
-VALUES ('jpo@trabago.com', '$2y$12$UOJiYAM4mEw8mrxE0B47TetoWfLDovZFaiWpA3QRoSzQ5Yf86llrS', 'jpo', 'active', 1, SYSDATETIME(), SYSDATETIME());
+INSERT INTO dbo.users (email, password, role, status, is_approved, is_contact_verified, account_status, created_at, updated_at)
+VALUES ('jpo@trabago.com', '$2y$12$UOJiYAM4mEw8mrxE0B47TetoWfLDovZFaiWpA3QRoSzQ5Yf86llrS', 'jpo', 'active', 1, 1, 'verified', SYSDATETIME(), SYSDATETIME());
 DECLARE @JpoUserId BIGINT = SCOPE_IDENTITY();
 
 INSERT INTO dbo.user_profiles (user_id, full_name, position, department, office, created_at, updated_at)
@@ -574,8 +611,8 @@ INSERT INTO dbo.notifications (user_id, title, message, type, is_read, created_a
 VALUES (@JpoUserId, 'JPO Evaluation Desk Ready', 'Your placement officer workspace is ready to review candidate referrals and accreditations.', 'approval', 0, SYSDATETIME(), SYSDATETIME());
 
 -- 4. Employer (TechCorp Solutions Inc.)
-INSERT INTO dbo.users (email, password, role, status, is_approved, created_at, updated_at)
-VALUES ('employer@techcorp.com', '$2y$12$UOJiYAM4mEw8mrxE0B47TetoWfLDovZFaiWpA3QRoSzQ5Yf86llrS', 'employer', 'active', 1, SYSDATETIME(), SYSDATETIME());
+INSERT INTO dbo.users (email, password, role, status, is_approved, is_contact_verified, account_status, created_at, updated_at)
+VALUES ('employer@techcorp.com', '$2y$12$UOJiYAM4mEw8mrxE0B47TetoWfLDovZFaiWpA3QRoSzQ5Yf86llrS', 'employer', 'active', 1, 1, 'verified', SYSDATETIME(), SYSDATETIME());
 DECLARE @EmployerUserId BIGINT = SCOPE_IDENTITY();
 
 INSERT INTO dbo.employers (user_id, company_name, is_accredited, accredited_at)
@@ -638,8 +675,8 @@ INSERT INTO dbo.notifications (user_id, title, message, type, is_read, created_a
 VALUES (@EmployerUserId, 'Company Profile Verified', 'TechCorp Solutions Inc. is accredited. Your job opening for Junior Web Developer is published.', 'approval', 0, SYSDATETIME(), SYSDATETIME());
 
 -- 5. Jobseeker (Juan Santos Dela Cruz)
-INSERT INTO dbo.users (email, password, role, status, is_approved, created_at, updated_at)
-VALUES ('jobseeker@trabago.com', '$2y$12$UOJiYAM4mEw8mrxE0B47TetoWfLDovZFaiWpA3QRoSzQ5Yf86llrS', 'jobseeker', 'active', 1, SYSDATETIME(), SYSDATETIME());
+INSERT INTO dbo.users (email, password, role, status, is_approved, is_contact_verified, account_status, created_at, updated_at)
+VALUES ('jobseeker@trabago.com', '$2y$12$UOJiYAM4mEw8mrxE0B47TetoWfLDovZFaiWpA3QRoSzQ5Yf86llrS', 'jobseeker', 'active', 1, 1, 'verified', SYSDATETIME(), SYSDATETIME());
 DECLARE @JobseekerUserId BIGINT = SCOPE_IDENTITY();
 
 INSERT INTO dbo.jobseekers (

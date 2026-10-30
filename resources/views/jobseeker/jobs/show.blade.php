@@ -3,8 +3,24 @@
 @section('title', $job->title . ' - TrabaGo AI Match')
 
 @section('content')
-<div x-data="{ applyModalOpen: false, accredModalOpen: false }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
+@php
+    $currentUser = Auth::user();
+    $isApproved = (bool) ($currentUser->is_approved ?? false);
+@endphp
+<div x-data="{ applyModalOpen: false, approvalWarningOpen: false, accredModalOpen: false }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-4xl space-y-8">
+
+        @if(!$isApproved)
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5 shadow-sm">
+                <div class="flex items-start gap-3">
+                    <div class="h-10 w-10 rounded-xl bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center text-lg shrink-0">⚠️</div>
+                    <div>
+                        <h2 class="text-sm font-black text-amber-900">Approval Required Before Applying</h2>
+                        <p class="text-xs text-amber-800 mt-0.5">Your jobseeker account is pending admin approval. You may browse the job listing, but you must be approved before you can apply for this job posting.</p>
+                    </div>
+                </div>
+            </div>
+        @endif
         
         <!-- Back Navigation -->
         <div class="flex items-center justify-between">
@@ -48,14 +64,16 @@
                     <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">{{ $job->title }}</h1>
                     
                     <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500 pt-1">
-                        <span class="flex items-center gap-1">
+                        @if($job->location)
+                            <span class="flex items-center gap-1">
                             <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
                             {{ $job->location ?? 'Cebu City, Philippines' }}
                         </span>
+                        @endif
                         <span>&bull;</span>
-                        <span class="font-bold text-slate-900">{{ $job->salary_range ?: 'Competitive / Negotiable' }}</span>
+                        <span class="font-bold text-slate-900">{{ $job->salary_range ?: 'Salary not specified' }}</span>
                         <span>&bull;</span>
-                        <span>{{ $job->job_type ?? 'Full-time Position' }}</span>
+                        <span>{{ $job->job_type ?: 'Job type not specified' }}</span>
                         @if ($job->valid_until)
                             <span>&bull;</span>
                             <span class="inline-flex items-center gap-1 font-bold {{ $job->valid_until->isPast() ? 'text-rose-600' : 'text-emerald-700' }}">
@@ -66,7 +84,7 @@
                     </div>
                 </div>
 
-                <!-- Match Score Badge in green Theme -->
+                <!-- Match Score Badge -->
                 <div class="shrink-0 rounded-2xl bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 text-white p-5 text-center min-w-[140px] shadow-lg border border-emerald-500/30">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-300">AI Skill Match</span>
                     <p class="text-4xl font-black text-emerald-400 mt-1">{{ $match['percentage'] ?? 0 }}%</p>
@@ -84,7 +102,6 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
-                    <!-- Matched Skills -->
                     <div class="space-y-2">
                         <span class="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
                             <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
@@ -101,7 +118,6 @@
                         </div>
                     </div>
 
-                    <!-- Missing Skills -->
                     <div class="space-y-2">
                         <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                             <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
@@ -128,7 +144,6 @@
                 </p>
             </div>
 
-            <!-- Qualifications & Requirements in Bullets -->
             @if(!empty($job->qualifications_list))
                 <div class="space-y-3">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700">Qualifications & Requirements</h3>
@@ -149,7 +164,6 @@
                 </div>
             @endif
 
-            <!-- Required Skills in Bullets -->
             @if(!empty($job->skills_list))
                 <div class="space-y-3">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700">Required Skills</h3>
@@ -163,7 +177,6 @@
                 </div>
             @endif
 
-            <!-- Benefits & Perks in Bullets -->
             @if(!empty($job->benefits_list))
                 <div class="space-y-3">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-900">Benefits & Perks</h3>
@@ -177,7 +190,6 @@
                 </div>
             @endif
 
-            <!-- Other Application Instructions -->
             @if($job->other_instructions)
                 <div class="space-y-3">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700">Application Instructions</h3>
@@ -187,7 +199,6 @@
                 </div>
             @endif
 
-            <!-- Suggested Training Modules -->
             @if(!empty($recommendedTrainings) && count($recommendedTrainings) > 0)
                 <div class="rounded-2xl bg-emerald-50/70 p-5 border border-emerald-200 space-y-3">
                     <div class="flex items-center justify-between">
@@ -224,25 +235,19 @@
                         <svg class="h-5 w-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         Job Posting Expired
                     </div>
-                @elseif($jobseeker->isEmployed())
-                    <div class="space-y-1.5 text-right">
-                        <div class="inline-flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-300 px-6 py-3.5 text-xs font-bold text-amber-900 shadow-xs">
-                            <svg class="w-4 h-4 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                            <span>Currently Employed at {{ $jobseeker->hired_company ?: 'Partner Employer' }}</span>
-                        </div>
-                        <p class="text-[11px] text-slate-500 max-w-sm ml-auto">
-                            Employed candidates cannot apply for another job. You must request a resignation from your employer and receive approval before applying for other positions.
-                            <a href="{{ route('jobseeker.applications') }}" class="text-emerald-700 font-bold underline">Manage Resignation &rarr;</a>
-                        </p>
-                    </div>
+                @elseif(!$isApproved)
+                    <button type="button" @click="approvalWarningOpen = true" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-amber-100 border border-amber-300 hover:bg-amber-200 px-10 py-3.5 text-sm font-black text-amber-900 shadow-sm transition-all">
+                        <span>⚠️</span>
+                        Approval Required to Apply
+                    </button>
                 @elseif(auth()->user()->account_status !== 'verified' || !auth()->user()->is_approved)
-                    @if(auth()->user()->account_status === 'unverified' || !$jobseeker->hasDocument('resume') || !$jobseeker->hasDocument('valid_id'))
+                    @if(auth()->user()->account_status === 'unverified' || !$jobseeker->isProfileAndDocumentsComplete())
                         @php
                             $missing = $jobseeker->getMissingRequirements();
                         @endphp
                         <div class="space-y-2 text-right max-w-md ml-auto">
                             <button type="button" 
-                                    onclick="alert('You cannot apply for this job yet. Please submit your required documents (Resume, Valid ID) in the Document Hub and wait for Admin/JPO verification before applying.\n\nMissing requirements:\n- {{ implode('\n- ', $missing) }}')"
+                                    onclick="alert('You cannot apply for this job yet. Please complete your profile and submit the required documents in the Document Hub, then wait for Admin/JPO verification before applying.\n\nMissing requirements:\n- {{ implode('\n- ', $missing) }}')"
                                     class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 px-8 py-3.5 text-sm font-bold shadow-xs transition-colors">
                                 <svg class="w-4 h-4 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                                 <span>Verification Required to Apply</span>
@@ -257,12 +262,11 @@
                                 </p>
                                 <div class="pt-1.5 flex items-center gap-3 font-black text-emerald-800 text-xs border-t border-amber-200">
                                     <a href="{{ route('jobseeker.documents') }}" class="underline hover:text-emerald-950">Upload in Document Hub &rarr;</a>
-                                    <a href="{{ route('jobseeker.profile', ['tab' => 'profile']) }}" class="underline hover:text-emerald-950">Update Profile &rarr;</a>
+                                    <a href="{{ route('jobseeker.profile', ['tab' => 'edit']) }}" class="underline hover:text-emerald-950">Update Profile &rarr;</a>
                                 </div>
                             </div>
                         </div>
                     @else
-                        {{-- Pending Review --}}
                         <div class="space-y-1.5 text-right">
                             <button type="button" 
                                     onclick="alert('Your documents have been submitted and are currently under review by DMDP / JPO officers. You will be able to apply as soon as your account is verified.')"
@@ -283,6 +287,28 @@
 
         </div>
 
+    </div>
+
+    <div x-show="approvalWarningOpen" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+        <div @click.away="approvalWarningOpen = false" class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-amber-200 space-y-5">
+            <div class="flex items-start gap-3">
+                <div class="h-12 w-12 rounded-2xl bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center text-2xl shrink-0">⚠️</div>
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">Action required</p>
+                    <h3 class="text-xl font-black text-slate-900 mt-1">Approval Needed Before You Can Apply</h3>
+                </div>
+            </div>
+
+            <p class="text-sm text-slate-600 leading-relaxed">
+                Your jobseeker account is still pending admin approval. You need approval before you can apply for a job posting.
+            </p>
+
+            <div class="flex justify-end">
+                <button type="button" @click="approvalWarningOpen = false" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-black">
+                    OK
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Application Modal -->

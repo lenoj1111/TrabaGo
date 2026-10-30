@@ -59,6 +59,24 @@
                         @enderror
                     </div>
 
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-700">Employment Type</label>
+                        <input type="text" name="job_type" value="{{ old('job_type', $jobPosting->job_type) }}" maxlength="100" placeholder="e.g. Full-time, Part-time, Contract"
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none @error('job_type') border-rose-400 @enderror">
+                        @error('job_type')
+                            <p class="text-[11px] font-bold text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-700">Salary Range</label>
+                        <input type="text" name="salary_range" value="{{ old('salary_range', $jobPosting->salary_range) }}" maxlength="150" placeholder="e.g. ₱18,000 - ₱25,000 per month"
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none @error('salary_range') border-rose-400 @enderror">
+                        @error('salary_range')
+                            <p class="text-[11px] font-bold text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <div class="sm:col-span-2 space-y-1.5">
                         <label class="text-xs font-bold text-slate-700">Job Description & Responsibilities <span class="text-rose-500">*</span></label>
                         <textarea name="description" rows="5" required placeholder="Describe duties and benefits..."

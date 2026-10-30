@@ -10,9 +10,10 @@
         activeDocList: [],
         selectedDocKey: '',
         currentDoc: {},
-        openDocInspection(company, docs, initialKey = null) {
+        openDocInspection(company, docs, accreditationId, initialKey = null) {
             this.activeDocCompany = company;
             this.activeDocList = [];
+            const documentRouteTemplate = '{{ route('accreditation.documents', ['accreditationId' => '__ACCREDITATION_ID__', 'documentKey' => '__DOCUMENT_KEY__', 'action' => '__ACTION__']) }}';
             
             for (let [key, val] of Object.entries(docs || {})) {
                 if (!val) continue;
@@ -21,30 +22,22 @@
                 let icon = 'document';
                 let issuer = 'Regulatory Authority';
                 let filename = '';
-                let url = '';
-                let pathVal = '';
 
                 if (typeof val === 'object' && val !== null) {
-                    filename = val.original_name || (val.path ? val.path.split('/').pop() : '');
-                    pathVal = val.file_url || val.url || val.path || '';
+                    const storedPath = val.path || val.file_path || val.file_url || val.url || '';
+                    filename = val.original_name || storedPath.split('/').pop();
                 } else if (typeof val === 'string') {
                     filename = val.split('/').pop() || val;
-                    pathVal = val;
-                }
-
-                if (pathVal) {
-                    if (pathVal.startsWith('http://') || pathVal.startsWith('https://') || pathVal.startsWith('/storage/')) {
-                        url = pathVal;
-                    } else if (pathVal.startsWith('storage/')) {
-                        url = '/' + pathVal;
-                    } else if (pathVal.startsWith('/')) {
-                        url = pathVal;
-                    } else {
-                        url = '/storage/' + pathVal;
-                    }
                 }
 
                 let validity = 'Current / Valid';
+                const extensionSource = typeof val === 'object' && val !== null ? (val.path || filename) : val;
+                const extension = String(extensionSource || '').split('.').pop().toLowerCase();
+                const isImage = ['jpg', 'jpeg', 'png'].includes(extension);
+                const canPreview = isImage || extension === 'pdf';
+                const fileRoute = documentRouteTemplate
+                    .replace('__ACCREDITATION_ID__', encodeURIComponent(accreditationId))
+                    .replace('__DOCUMENT_KEY__', encodeURIComponent(key));
 
                 if (key.includes('bir') || key.includes('2303') || key.includes('tin')) {
                     label = 'BIR Certificate of Registration (Form 2303)';
@@ -110,7 +103,10 @@
                     issuer: issuer,
                     validity: validity,
                     filename: filename,
-                    url: url,
+                    isImage: isImage,
+                    canPreview: canPreview,
+                    previewUrl: canPreview ? fileRoute.replace('__ACTION__', 'preview') : '',
+                    downloadUrl: fileRoute.replace('__ACTION__', 'download'),
                     status: 'Verified Valid'
                 });
             }
@@ -175,6 +171,16 @@
                         <span class="inline-flex items-center gap-1 rounded-full bg-slate-500/60 text-white px-3 py-1 text-xs font-bold">
                             Not Submitted
                         </span>
+                    @endif
+
+                    @php
+                        $jpoReason = trim((string) ($accreditation->document_incomplete_reason ?? $accreditation->jpo_remarks ?? ''));
+                    @endphp
+                    @if($jpoReason !== '')
+                        <div class="mt-3 rounded-2xl border border-amber-200 bg-amber-50/90 px-3 py-2 text-left text-slate-800 shadow-sm">
+                            <p class="text-[9px] font-black uppercase tracking-[0.2em] text-amber-700">JPO Reason</p>
+                            <p class="mt-1 text-[11px] leading-relaxed text-amber-900">{{ $jpoReason }}</p>
+                        </div>
                     @endif
                 </div>
             </div>
@@ -308,7 +314,7 @@
                             <svg class="w-2.5 h-2.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                         </a>
                         <button type="button" 
-                                @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($uploadedDocs))'
+                                @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($uploadedDocs), {{ $accreditation->accreditation_id }})'
                                 class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 self-start sm:self-auto">
                             <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                             <span>Inspect Document Hub ({{ count($uploadedDocs) }} Files)</span>
@@ -350,7 +356,7 @@
                                 </div>
                             </div>
                             <button type="button" 
-                                    @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($uploadedDocs), "{{ $key }}")'
+                                    @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($uploadedDocs), {{ $accreditation->accreditation_id }}, "{{ $key }}")'
                                     class="w-full py-2 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-900 text-slate-700 text-[11px] font-bold border border-slate-200 transition-colors text-center">
                                 Preview / Inspect &rarr;
                             </button>
@@ -654,4 +660,3 @@
 
 </div>
 @endsection
-

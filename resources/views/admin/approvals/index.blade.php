@@ -5,6 +5,12 @@
 @section('content')
 <div class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8" x-data="{
     tab: 'jobs',
+    jobDetailsOpen: false,
+    selectedJobDetails: {},
+    openJobDetails(job) {
+        this.selectedJobDetails = job;
+        this.jobDetailsOpen = true;
+    },
     reportModal: false,
     selectedReport: null,
     viewReport(rep) {
@@ -26,23 +32,54 @@
         this.selectedJobseekerDocName = docName || 'Government-Issued Valid ID';
         this.jsDocModalOpen = true;
     },
-    openDocInspection(company, docs) {
+    openDocInspection(company, docs, accreditationId) {
         this.activeDocCompany = company;
         this.activeDocList = [];
+        const documentRouteTemplate = '{{ route('accreditation.documents', ['accreditationId' => '__ACCREDITATION_ID__', 'documentKey' => '__DOCUMENT_KEY__', 'action' => '__ACTION__']) }}';
+        const seenPaths = new Set();
+        const aliases = {
+            sec_dti_registration: 'sec_dti',
+            updated_job_vacancies: 'job_vacancies_form',
+            business_permit: 'mayors_permit'
+        };
+        const versionGroups = new Map();
+        for (const [key, val] of Object.entries(docs || {})) {
+            if (!val || key.includes('_previous_')) continue;
+            const canonicalKey = aliases[key] || key;
+            const path = typeof val === 'object' && val !== null ? val.path : val;
+            if (!versionGroups.has(canonicalKey)) versionGroups.set(canonicalKey, []);
+            versionGroups.get(canonicalKey).push({ key, val, path });
+        }
+        const inferredPreviousKeys = new Set();
+        for (const candidates of versionGroups.values()) {
+            const distinctPaths = new Set(candidates.map(item => item.path).filter(Boolean));
+            if (distinctPaths.size < 2) continue;
+            const explicitCurrent = candidates.find(item => item.val?.revision_status === 'new');
+            const current = explicitCurrent || [...candidates].sort((a, b) => {
+                const aDate = Date.parse(a.val?.uploaded_at || '') || 0;
+                const bDate = Date.parse(b.val?.uploaded_at || '') || 0;
+                return bDate - aDate;
+            })[0];
+            for (const candidate of candidates) {
+                if (candidate !== current) inferredPreviousKeys.add(candidate.key);
+            }
+        }
         
         for (let [key, val] of Object.entries(docs || {})) {
+            const documentPath = typeof val === 'object' && val !== null ? val.path : val;
+            const normalizedPath = typeof documentPath === 'string' ? documentPath.replace(/\\/g, '/') : '';
+            if (normalizedPath && seenPaths.has(normalizedPath)) continue;
+            if (normalizedPath) seenPaths.add(normalizedPath);
+
             let label = 'Attached Document';
             let icon = 'document';
             let issuer = 'Regulatory Authority';
             let filename = '';
-            let url = '';
 
             if (typeof val === 'object' && val !== null) {
                 filename = val.original_name || val.path || '';
-                url = val.path ? ('/storage/' + val.path) : '';
             } else if (typeof val === 'string') {
                 filename = val.split('/').pop() || val;
-                url = (val.startsWith('http') || val.startsWith('/')) ? val : ('/storage/' + val);
             }
 
             let validity = 'Current / Valid';
@@ -102,14 +139,29 @@
                 validity = 'Supporting Verification Document';
             }
 
+            const extensionSource = typeof val === 'object' && val !== null ? (val.path || filename) : val;
+            const extension = String(extensionSource || '').split('.').pop().toLowerCase();
+            const isImage = ['jpg', 'jpeg', 'png'].includes(extension);
+            const fileRoute = documentRouteTemplate
+                .replace('__ACCREDITATION_ID__', encodeURIComponent(accreditationId))
+                .replace('__DOCUMENT_KEY__', encodeURIComponent(key));
+            const revisionStatus = (typeof val === 'object' && val !== null && val.revision_status)
+                || (key.includes('_previous_') || inferredPreviousKeys.has(key) ? 'previous' : '');
+            const status = revisionStatus === 'new'
+                ? 'New upload'
+                : (revisionStatus === 'previous' ? 'Previous version' : 'Verified Valid');
+
             this.activeDocList.push({
                 key: key,
                 label: label,
                 icon: icon,
                 issuer: issuer,
                 filename: filename,
-                url: url,
-                status: 'Verified Valid',
+                isImage: isImage,
+                previewUrl: isImage ? fileRoute.replace('__ACTION__', 'preview') : '',
+                downloadUrl: fileRoute.replace('__ACTION__', 'download'),
+                status: status,
+                revisionStatus: revisionStatus,
                 validity: validity
             });
         }
@@ -273,6 +325,32 @@
                                     </td>
                                     <td class="py-4 px-6 text-right">
                                         <div class="inline-flex items-center gap-2">
+                                                <button type="button"
+                                                    data-details="{{ json_encode([
+                                                        "id" => $job->job_id,
+                                                        "title" => $job->title,
+                                                        "company" => $job->employer->company_name ?? "DMDP Portal",
+                                                        "email" => $job->employer->user->email ?? "N/A",
+                                                        "status" => ucfirst($job->status),
+                                                        "employer_accreditation" => $job->employer_accreditation_badge ?? "Not Accredited",
+                                                        "job_type" => $job->job_type,
+                                                        "location" => $job->location,
+                                                        "salary" => $job->salary_compensation,
+                                                        "vacancies" => $job->vacancy_count,
+                                                        "valid_until" => $job->valid_until ? date("M d, Y", strtotime($job->valid_until)) : "Continuous",
+                                                        "description" => $job->description,
+                                                        "qualifications" => array_values(array_filter(array_map("trim", preg_split("/\\r\\n|\\r|\\n/", $job->qualifications ?? "")))),
+                                                        "benefits" => array_values(array_filter(array_map("trim", preg_split("/\\r\\n|\\r|\\n/", $job->benefits_perks ?? "")))),
+                                                        "instructions" => $job->other_instructions,
+                                                        "pwd" => (bool) $job->accepts_disability,
+                                                        "disability_type" => $job->disability_type,
+                                                        "applications" => $job->applications_count ?? 0,
+                                                        "submitted" => $job->created_at ? date("M d, Y", strtotime($job->created_at)) : "N/A"
+                                                    ]) }}"
+                                                    @click="openJobDetails(JSON.parse($el.dataset.details))"
+                                                    class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors">
+                                                View Details
+                                            </button>
                                             <form action="{{ route('admin.approvals.job-postings.approve', $job->job_id) }}" method="POST">
                                                 @csrf
                                                 <button type="submit" class="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm">
@@ -306,6 +384,93 @@
             </div>
         </div>
 
+        <!-- Job Details Modal -->
+        <div x-show="jobDetailsOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div @click.away="jobDetailsOpen = false" class="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
+                <template x-if="selectedJobDetails && Object.keys(selectedJobDetails).length">
+                    <div class="space-y-6">
+                        <div class="flex items-start justify-between border-b border-slate-100 pb-4 gap-4">
+                            <div>
+                                <span class="text-[10px] font-black uppercase tracking-wider text-emerald-700">Job Posting Inspection</span>
+                                <h3 class="text-2xl font-black text-slate-900 mt-1" x-text="selectedJobDetails.title || 'Job Posting'">Job Posting</h3>
+                                <p class="text-xs text-slate-500 mt-1">
+                                    Employer: <span x-text="selectedJobDetails.company || 'DMDP Portal'"></span>
+                                    &bull; Listing #<span x-text="selectedJobDetails.id || 'N/A'"></span>
+                                </p>
+                            </div>
+                            <button type="button" @click="jobDetailsOpen = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold leading-none">&times;</button>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+                                <div class="text-[10px] font-bold uppercase text-slate-400">Employer</div>
+                                <div class="mt-1 font-black text-slate-900" x-text="selectedJobDetails.company || 'DMDP Portal'"></div>
+                                <div class="text-[11px] text-slate-500" x-text="selectedJobDetails.email || 'N/A'"></div>
+                            </div>
+                            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+                                <div class="text-[10px] font-bold uppercase text-slate-400">Role / Type</div>
+                                <div class="mt-1 font-black text-slate-900" x-text="selectedJobDetails.job_type || 'Full-time'"></div>
+                                <div class="text-[11px] text-slate-500" x-text="selectedJobDetails.location || 'Cebu City'"></div>
+                            </div>
+                            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+                                <div class="text-[10px] font-bold uppercase text-slate-400">Compensation</div>
+                                <div class="mt-1 font-black text-emerald-700" x-text="selectedJobDetails.salary || 'Competitive / Negotiable'"></div>
+                                <div class="text-[11px] text-slate-500">Vacancies: <span x-text="selectedJobDetails.vacancies || '0'"></span></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs">
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                                <div class="text-[10px] font-bold uppercase text-slate-400">Description</div>
+                                <p class="mt-2 text-slate-700 whitespace-pre-line leading-relaxed" x-text="selectedJobDetails.description || 'No description provided.'"></p>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                                <div class="text-[10px] font-bold uppercase text-slate-400">Application Details</div>
+                                <div class="mt-2 space-y-2 text-slate-700">
+                                    <div><span class="font-bold text-slate-800">Status:</span> <span x-text="selectedJobDetails.status || 'Pending'"></span></div>
+                                    <div><span class="font-bold text-slate-800">Valid Until:</span> <span x-text="selectedJobDetails.valid_until || 'Open Continuous'"></span></div>
+                                    <div><span class="font-bold text-slate-800">PWD Inclusive:</span> <span x-text="selectedJobDetails.pwd ? 'Yes' : 'No'"></span></div>
+                                    <div x-show="selectedJobDetails.disability_type"><span class="font-bold text-slate-800">Disability Type:</span> <span x-text="selectedJobDetails.disability_type"></span></div>
+                                    <div><span class="font-bold text-slate-800">Submitted:</span> <span x-text="selectedJobDetails.submitted || 'N/A'"></span></div>
+                                    <div><span class="font-bold text-slate-800">Applications:</span> <span x-text="selectedJobDetails.applications || 0"></span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs">
+                            <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50" x-show="selectedJobDetails.qualifications && selectedJobDetails.qualifications.length">
+                                <div class="text-[10px] font-bold uppercase text-slate-400">Qualifications</div>
+                                <ul class="mt-2 list-disc list-inside space-y-1 text-slate-700">
+                                    <template x-for="(item, index) in (selectedJobDetails.qualifications || [])" :key="index">
+                                        <li x-text="item"></li>
+                                    </template>
+                                </ul>
+                            </div>
+                            <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50" x-show="selectedJobDetails.benefits && selectedJobDetails.benefits.length">
+                                <div class="text-[10px] font-bold uppercase text-slate-400">Benefits & Perks</div>
+                                <ul class="mt-2 list-disc list-inside space-y-1 text-slate-700">
+                                    <template x-for="(item, index) in (selectedJobDetails.benefits || [])" :key="index">
+                                        <li x-text="item"></li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50" x-show="selectedJobDetails.instructions">
+                            <div class="text-[10px] font-bold uppercase text-slate-400">Application Instructions</div>
+                            <p class="mt-2 text-slate-700 whitespace-pre-line leading-relaxed" x-text="selectedJobDetails.instructions"></p>
+                        </div>
+
+                        <div class="flex justify-end pt-2 border-t border-slate-100">
+                            <button type="button" @click="jobDetailsOpen = false" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
         <!-- =================================================================== -->
         <!-- PILLAR 2: EMPLOYER ACCREDITATION FINAL APPROVAL -->
         <!-- =================================================================== -->
@@ -335,6 +500,19 @@
                             @forelse($pendingAccreditations as $acc)
                                 @php
                                     $docs = is_array($acc->documents) ? $acc->documents : json_decode($acc->documents ?? '[]', true);
+                                    $displayDocs = [];
+                                    $seenDocumentPaths = [];
+                                    foreach ($docs ?: [] as $docKey => $document) {
+                                        $documentPath = is_array($document) ? ($document['path'] ?? null) : $document;
+                                        $normalizedPath = is_string($documentPath) ? str_replace('\\', '/', $documentPath) : '';
+                                        if ($normalizedPath !== '' && isset($seenDocumentPaths[$normalizedPath])) {
+                                            continue;
+                                        }
+                                        if ($normalizedPath !== '') {
+                                            $seenDocumentPaths[$normalizedPath] = true;
+                                        }
+                                        $displayDocs[$docKey] = $document;
+                                    }
                                     $docStatus = $acc->document_status ?? 'pending';
                                     $isDocsComplete = ($docStatus === 'complete');
                                 @endphp
@@ -347,9 +525,9 @@
                                         <div class="space-y-1.5">
                                             <div class="flex flex-wrap gap-1">
                                                 @if(is_array($docs) && count($docs) > 0)
-                                                    @foreach($docs as $k => $d)
+                                                    @foreach($displayDocs as $k => $d)
                                                         <button type="button" 
-                                                                @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs))'
+                                                                @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs), {{ $acc->accreditation_id }})'
                                                                 class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-emerald-100 hover:text-emerald-900 text-slate-700 text-[10px] font-bold border border-slate-200 transition-colors cursor-pointer"
                                                                 title="Click to inspect this document">
                                                             <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -416,7 +594,7 @@
 
                                             @if(is_array($docs) && count($docs) > 0)
                                                 <button type="button" 
-                                                        @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs))'
+                                                        @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs), {{ $acc->accreditation_id }})'
                                                         class="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors">
                                                     <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                                     View Docs

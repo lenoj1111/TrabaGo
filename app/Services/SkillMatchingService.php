@@ -13,40 +13,74 @@ class SkillMatchingService
      */
     public function normalizeSkill(string $skill): string
     {
-        return strtolower(trim($skill));
+        $normalized = mb_strtolower(trim($skill));
+        $normalized = str_replace('highschool', 'high school', $normalized);
+        $normalized = preg_replace('/[^\p{L}\p{N}+#]+/u', ' ', $normalized);
+
+        return trim(preg_replace('/\s+/u', ' ', $normalized) ?? $normalized);
+    }
+
+    private function skillsMatch(string $first, string $second): bool
+    {
+        $normalizedFirst = $this->normalizeSkill($first);
+        $normalizedSecond = $this->normalizeSkill($second);
+
+        if ($normalizedFirst === '' || $normalizedSecond === '') {
+            return false;
+        }
+
+        if ($normalizedFirst === $normalizedSecond) {
+            return true;
+        }
+
+        return str_contains(" {$normalizedFirst} ", " {$normalizedSecond} ")
+            || str_contains(" {$normalizedSecond} ", " {$normalizedFirst} ");
     }
 
     /**
      * Extract skills array from a JobPosting model.
      * Checks qualifications lines, requirements, or common keywords.
      */
-    public function getJobSkills(JobPosting $job): array
+    public function getJobSkills(JobPosting $job, ?array $userSkills = null): array
     {
         $skills = [];
 
-        // 1. Prioritize explicit NSRP skills entered on the job posting
-        if (!empty($job->skills)) {
-            $lines = preg_split('/[\r\n,;]+/', $job->skills);
-            foreach ($lines as $line) {
+        foreach ([$job->skills, $job->qualifications] as $skillText) {
+            if (empty($skillText)) {
+                continue;
+            }
+
+            $lines = preg_split('/[\r\n,;]+/', (string) $skillText);
+            foreach ($lines ?: [] as $line) {
                 $cleaned = trim(preg_replace('/^[\s\-\*\•\d\.\)]+/', '', $line));
-                if (!empty($cleaned) && strlen($cleaned) >= 2) {
+                if ($cleaned !== '' && mb_strlen($cleaned) >= 2) {
                     $skills[] = $cleaned;
                 }
             }
         }
 
-        // 2. Parse qualifications if skills field is empty
-        if (empty($skills) && !empty($job->qualifications)) {
-            $lines = preg_split('/[\r\n,;]+/', $job->qualifications);
-            foreach ($lines as $line) {
-                $cleaned = trim(preg_replace('/^[\s\-\*\•\d\.\)]+/', '', $line));
-                if (!empty($cleaned) && strlen($cleaned) >= 2) {
-                    $skills[] = $cleaned;
+        $uniqueSkills = [];
+        $seenSkills = [];
+        foreach ($skills as $skill) {
+            $normalized = $this->normalizeSkill($skill);
+            if ($normalized !== '' && !isset($seenSkills[$normalized])) {
+                $seenSkills[$normalized] = true;
+                $uniqueSkills[] = $skill;
+            }
+        }
+
+        // When no requirements were entered, use jobseeker skills mentioned in the posting text.
+        if (empty($uniqueSkills) && !empty($userSkills)) {
+            $jobText = trim(($job->title ?? '') . ' ' . ($job->description ?? ''));
+            foreach ($userSkills as $userSkill) {
+                if (is_string($userSkill) && $this->skillsMatch($jobText, $userSkill)) {
+                    $uniqueSkills[] = $userSkill;
                 }
             }
         }
 
-        // Fallback or defaults if qualifications text is too short
+        // Fall back to title words only when no requirements or contextual skill matches exist.
+        $skills = $uniqueSkills;
         if (empty($skills) && !empty($job->title)) {
             $titleWords = explode(' ', $job->title);
             $skills = array_filter($titleWords, fn($w) => strlen($w) > 3);
@@ -93,6 +127,22 @@ class SkillMatchingService
                         }
                     }
                 }
+            }
+        }
+
+        if ($jobseeker->details && !empty($jobseeker->details->education)) {
+            $education = is_array($jobseeker->details->education)
+                ? $jobseeker->details->education
+                : json_decode($jobseeker->details->education, true);
+            $educationLevel = is_array($education)
+                ? trim((string) ($education['level'] ?? $education['educational_level'] ?? ''))
+                : '';
+
+            if ($educationLevel !== '') {
+                $normalizedEducationLevel = $this->normalizeSkill($educationLevel);
+                $skills[] = $normalizedEducationLevel === 'senior high school'
+                    ? 'Senior High School Graduate'
+                    : $educationLevel;
             }
         }
 
@@ -149,64 +199,22 @@ class SkillMatchingService
             ];
         }
 
-        // Normalize skill sets
-        $normalizedUser = array_map([$this, 'normalizeSkill'], $userSkills);
-        $normalizedJob = array_map([$this, 'normalizeSkill'], $jobSkills);
+        $normalizedUser = array_values(array_unique(array_filter(
+            array_map([$this, 'normalizeSkill'], $userSkills),
+            fn ($skill) => $skill !== ''
+        )));
+        $normalizedJob = array_values(array_unique(array_filter(
+            array_map([$this, 'normalizeSkill'], $jobSkills),
+            fn ($skill) => $skill !== ''
+        )));
 
-        // Build combined vocabulary
-        $vocab = array_values(array_unique(array_merge($normalizedUser, $normalizedJob)));
-
-        // Create vectors
-        $userVec = [];
-        $jobVec = [];
-
-        foreach ($vocab as $word) {
-            // Check direct match or substring match
-            $inUser = false;
-            foreach ($normalizedUser as $uSkill) {
-                if ($uSkill === $word || str_contains($word, $uSkill) || str_contains($uSkill, $word)) {
-                    $inUser = true;
-                    break;
-                }
-            }
-
-            $inJob = false;
-            foreach ($normalizedJob as $jSkill) {
-                if ($jSkill === $word || str_contains($word, $jSkill) || str_contains($jSkill, $word)) {
-                    $inJob = true;
-                    break;
-                }
-            }
-
-            $userVec[] = $inUser ? 1 : 0;
-            $jobVec[] = $inJob ? 1 : 0;
-        }
-
-        // Cosine Similarity calculation
-        $dotProduct = 0;
-        $magUserSq = 0;
-        $magJobSq = 0;
-
-        for ($i = 0; $i < count($vocab); $i++) {
-            $dotProduct += $userVec[$i] * $jobVec[$i];
-            $magUserSq += $userVec[$i] * $userVec[$i];
-            $magJobSq += $jobVec[$i] * $jobVec[$i];
-        }
-
-        $magnitude = sqrt($magUserSq) * sqrt($magJobSq);
-        $similarity = $magnitude > 0 ? ($dotProduct / $magnitude) : 0;
-        $percentage = (int) round($similarity * 100);
-
-        // Classify matched and missing skills (referencing original strings)
         $matchedSkills = [];
         $missingSkills = [];
 
         foreach ($jobSkills as $origJobSkill) {
-            $normJ = $this->normalizeSkill($origJobSkill);
             $matched = false;
             foreach ($userSkills as $origUserSkill) {
-                $normU = $this->normalizeSkill($origUserSkill);
-                if ($normU === $normJ || str_contains($normJ, $normU) || str_contains($normU, $normJ)) {
+                if ($this->skillsMatch($origJobSkill, (string) $origUserSkill)) {
                     $matched = true;
                     break;
                 }
@@ -218,6 +226,10 @@ class SkillMatchingService
                 $missingSkills[] = $origJobSkill;
             }
         }
+
+        $magnitude = sqrt(count($normalizedUser) * count($normalizedJob));
+        $similarity = $magnitude > 0 ? count($matchedSkills) / $magnitude : 0;
+        $percentage = (int) round(min(1, $similarity) * 100);
 
         // Tier classification
         if ($percentage >= 90) {
@@ -260,7 +272,7 @@ class SkillMatchingService
         $ranked = [];
 
         foreach ($jobs as $job) {
-            $jobSkills = $this->getJobSkills($job);
+            $jobSkills = $this->getJobSkills($job, $userSkills);
             $matchResult = $this->calculateMatch($userSkills, $jobSkills);
 
             $ranked[] = [

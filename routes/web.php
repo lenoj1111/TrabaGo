@@ -107,6 +107,10 @@ Route::middleware('auth')->group(function () {
     Route::put('/password', [PasswordController::class, 'update'])->name('password.update');
     Route::get('/confirm-password', [ConfirmablePasswordController::class, 'show'])->name('password.confirm');
     Route::post('/confirm-password', [ConfirmablePasswordController::class, 'store']);
+
+    Route::get('/accreditations/{accreditationId}/documents/{documentKey}/{action}', [ApprovalsController::class, 'accreditationDocument'])
+        ->whereIn('action', ['preview', 'download'])
+        ->name('accreditation.documents');
 });
 
 /*
@@ -169,6 +173,7 @@ Route::prefix('jobseeker')->name('jobseeker.')->group(function () {
 
         // Document Hub & Verification
         Route::get('/documents', [JobseekerPortalController::class, 'documents'])->name('documents');
+        Route::get('/documents/{category}/preview', [JobseekerPortalController::class, 'previewDocument'])->name('documents.preview');
         Route::post('/documents/upload', [JobseekerPortalController::class, 'uploadDocument'])->name('documents.upload');
         Route::delete('/documents/{category}', [JobseekerPortalController::class, 'deleteDocument'])->name('documents.delete');
 
@@ -225,6 +230,7 @@ Route::prefix('employer')->name('employer.')->group(function () {
         // 3. Review Referred Jobseekers (From JPO) & Schedule Interview / Hire / Mark Not Qualified
         Route::get('/referred-jobseekers', [EmployerPortalController::class, 'referredJobseekers'])->name('referred-jobseekers');
         Route::get('/applications', [EmployerPortalController::class, 'referredJobseekers'])->name('applications');
+        Route::get('/applicants/{id}/documents/{documentIndex}', [EmployerPortalController::class, 'viewApplicantDocument'])->name('applicants.documents.show');
         Route::post('/applicants/{id}/status', [EmployerPortalController::class, 'updateApplicantStatus'])->name('applicants.update_status');
         Route::post('/applicants/{id}/resignation', [EmployerPortalController::class, 'respondResignation'])->name('applicants.resignation');
 
@@ -268,6 +274,7 @@ Route::prefix('jpo')->name('jpo.')->middleware(['auth', 'jpo'])->group(function 
 
     // 1. Evaluate Jobseekers (Refer to Employer) & NSRP Form
     Route::get('/evaluations/jobseekers', [JpoPortalController::class, 'evaluateJobseekers'])->name('evaluations.jobseekers');
+    Route::get('/evaluations/jobseekers/{id}/documents/{documentIndex}', [JpoPortalController::class, 'viewJobseekerDocument'])->name('evaluations.jobseekers.documents.show');
     Route::post('/evaluations/jobseekers/{id}/refer', [JpoPortalController::class, 'referJobseeker'])->name('evaluations.jobseekers.refer');
     Route::post('/evaluations/jobseekers/{id}/approve', [JpoPortalController::class, 'approveJobseeker'])->name('evaluations.jobseekers.approve');
     Route::post('/evaluations/jobseekers/{id}/reject', [JpoPortalController::class, 'rejectJobseeker'])->name('evaluations.jobseekers.reject');
@@ -438,6 +445,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('/users/{id}', [UserManagementController::class, 'destroy'])->name('users.destroy');
 
     // Employer Management
+    Route::get('/accreditations/{accreditationId}/documents/{documentKey}/{action}', [ApprovalsController::class, 'accreditationDocument'])
+        ->whereIn('action', ['preview', 'download'])
+        ->name('accreditation.documents');
+
     Route::get('/employers', function (Request $request) {
         $query = DB::table('employers')
             ->leftJoin('users', 'employers.user_id', '=', 'users.user_id')
@@ -449,12 +460,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
                 'users.email',
                 'users.status as user_status',
                 'users.is_approved as user_approved',
-                'users.created_at',
+                'users.created_at as user_created_at',
                 'user_profiles.full_name as contact_person',
                 'user_profiles.phone as contact_number',
                 'employer_accreditation.accreditation_id',
                 'employer_accreditation.documents',
                 'employer_accreditation.status as accreditation_status',
+                'employer_accreditation.document_status',
+                'employer_accreditation.document_incomplete_reason',
                 'employer_accreditation.jpo_reviewed',
                 'employer_accreditation.jpo_remarks'
             )

@@ -173,9 +173,20 @@ class TrainerPortalComprehensiveTest extends TestCase
             'auto_generate_certificate' => 1,
         ]);
 
+        DB::table('training_topics')->insert([
+            'training_id' => $course->training_id,
+            'title' => 'Legacy topic quiz',
+            'topic_order' => 1,
+            'questions' => json_encode([[
+                'question' => 'This legacy topic question is not a course assessment.',
+                'choices' => ['Choice A', 'Choice B'],
+                'answer' => 0,
+            ]]),
+        ]);
+
         $quizService = new TrainingQuizService();
 
-        // Initially: No questions should exist; should NOT return built-in questions
+        // Only trainer-authored assessment rows count; topic quiz data is not part of the course assessment.
         $initialQuestions = $quizService->getQuestionsForTraining($course);
         $this->assertEmpty($initialQuestions, 'Assessments should not be built-in or automatically generated.');
 

@@ -67,7 +67,7 @@
 
                         <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                             <span class="text-[10px] font-bold uppercase text-slate-400">Compensation</span>
-                            <p class="font-black text-emerald-700 text-sm">{{ $jobPosting->salary_range ?: 'Competitive / Negotiable' }}</p>
+                            <p class="font-black text-emerald-700 text-sm">{{ $jobPosting->salary_range ?? 'Competitive / Negotiable' }}</p>
                             <p class="text-[11px] text-slate-500">Salary & benefits package</p>
                         </div>
 

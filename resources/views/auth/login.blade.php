@@ -84,9 +84,9 @@
                     <div class="mb-8">
                         <div class="flex items-center justify-between">
                             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                Official Login
+                                 Login
                             </span>
-                            <span class="text-xs text-slate-400 font-medium">All User Roles</span>
+                            
                         </div>
                         <h2 class="text-2xl sm:text-3xl font-black text-slate-900 mt-2 tracking-tight">Account Login</h2>
                         <p class="text-sm text-slate-500 mt-1.5 leading-relaxed">

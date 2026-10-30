@@ -100,6 +100,37 @@ class EmployerDocumentaryRequirementsTest extends TestCase
         Storage::disk('public')->assertExists($docs['mayors_permit']['path']);
     }
 
+    public function test_reuploaded_accreditation_document_keeps_a_labeled_previous_version(): void
+    {
+        Storage::fake('public');
+
+        $this->actingAs($this->employerUser)->post(route('employer.accreditation.submit'), [
+            'mayors_permit' => UploadedFile::fake()->create('permit_old.pdf', 100, 'application/pdf'),
+        ])->assertRedirect();
+
+        $accreditation = EmployerAccreditation::where('employer_id', $this->employer->employer_id)->firstOrFail();
+        $oldPath = $accreditation->documents['mayors_permit']['path'];
+
+        $this->actingAs($this->employerUser)->post(route('employer.accreditation.submit'), [
+            'business_permit' => UploadedFile::fake()->create('permit_new.pdf', 100, 'application/pdf'),
+        ])->assertRedirect();
+
+        $documents = $accreditation->fresh()->documents;
+        $this->assertSame('new', $documents['mayors_permit']['revision_status']);
+        $this->assertSame($documents['mayors_permit']['path'], $documents['business_permit']['path']);
+
+        $previousVersions = array_filter(
+            $documents,
+            fn ($document, $key) => str_starts_with((string) $key, 'mayors_permit_previous_')
+                && ($document['revision_status'] ?? null) === 'previous',
+            ARRAY_FILTER_USE_BOTH
+        );
+        $this->assertCount(1, $previousVersions);
+        $this->assertSame($oldPath, array_values($previousVersions)[0]['path']);
+        Storage::disk('public')->assertExists($oldPath);
+        Storage::disk('public')->assertExists($documents['mayors_permit']['path']);
+    }
+
     public function test_employer_registration_page_contains_official_documentary_notice(): void
     {
         $response = $this->get(route('employer.register'));

@@ -3,140 +3,18 @@
 @section('title', 'Employers Registry')
 
 @section('content')
-<div class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8"
-     x-data="{
-        viewModal: false,
-        selectedEmployer: null,
-        openView(emp) {
-            this.selectedEmployer = emp;
-            this.viewModal = true;
-        },
-        docModalOpen: false,
-        activeDocCompany: '',
-        activeDocList: [],
-        selectedDocKey: '',
-        currentDoc: {},
-        openDocInspection(company, docs, initialKey = null) {
-            this.activeDocCompany = company;
-            this.activeDocList = [];
-            
-            for (let [key, val] of Object.entries(docs || {})) {
-                if (!val) continue;
+<div
+    class="bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8"
+    x-data="employersRegistry({
+        csrfToken: '{{ csrf_token() }}',
+        documentRouteTemplate: '{{ route('admin.accreditation.documents', ['accreditationId' => '__ACCREDITATION_ID__', 'documentKey' => '__DOCUMENT_KEY__', 'action' => '__ACTION__']) }}'
+    })"
+>
+    <div class="w-full space-y-8">
 
-                let label = 'Attached Document';
-                let icon = 'document';
-                let issuer = 'Regulatory Authority';
-                let filename = '';
-                let url = '';
-                let pathVal = '';
-
-                if (typeof val === 'object' && val !== null) {
-                    filename = val.original_name || (val.path ? val.path.split('/').pop() : '');
-                    pathVal = val.file_url || val.url || val.path || '';
-                } else if (typeof val === 'string') {
-                    filename = val.split('/').pop() || val;
-                    pathVal = val;
-                }
-
-                if (pathVal) {
-                    if (pathVal.startsWith('http://') || pathVal.startsWith('https://') || pathVal.startsWith('/storage/')) {
-                        url = pathVal;
-                    } else if (pathVal.startsWith('storage/')) {
-                        url = '/' + pathVal;
-                    } else if (pathVal.startsWith('/')) {
-                        url = pathVal;
-                    } else {
-                        url = '/storage/' + pathVal;
-                    }
-                }
-
-                let validity = 'Current / Valid';
-
-                if (key.includes('bir') || key.includes('2303') || key.includes('tin')) {
-                    label = 'BIR Certificate of Registration (Form 2303)';
-                    icon = 'form';
-                    issuer = 'Bureau of Internal Revenue (BIR District 080)';
-                    validity = 'Current / Valid';
-                } else if (key.includes('sec') || key.includes('dti')) {
-                    label = 'SEC Registration or DTI Registration';
-                    icon = 'scroll';
-                    issuer = 'Securities and Exchange Commission (SEC) / DTI';
-                    validity = 'Perpetual / Registered';
-                } else if (key.includes('mayor') || key.includes('permit') || key.includes('business')) {
-                    label = 'Mayor’s Business Permit (current year)';
-                    icon = 'permit';
-                    issuer = 'City Government of Cebu - BPLO';
-                    validity = 'Calendar Year ' + new Date().getFullYear();
-                } else if (key.includes('philjobnet')) {
-                    label = 'PhilJobNet Proof of Registration';
-                    icon = 'network';
-                    issuer = 'PhilJobNet / DOLE Bureau of Local BLE';
-                    validity = 'Active Registration Certificate';
-                } else if (key.includes('vacanc') || key.includes('job_vacanc')) {
-                    label = 'Updated Job Vacancies (prescribed form)';
-                    icon = 'briefcase';
-                    issuer = 'Cebu City DMDP Prescribed Template';
-                    validity = 'Active Hiring Needs';
-                } else if (key.includes('dole')) {
-                    label = 'DOLE License / DO 174';
-                    icon = 'shield';
-                    issuer = 'Department of Labor and Employment (DOLE RO-7)';
-                    validity = 'Valid License (PRPA / Subcontractor)';
-                } else if (key.includes('dmw_license') || (key.includes('dmw') && !key.includes('order'))) {
-                    label = 'DMW License (Overseas Agency)';
-                    icon = 'agency';
-                    issuer = 'Department of Migrant Workers (DMW / POEA)';
-                    validity = 'Valid DMW License';
-                } else if (key.includes('order') || key.includes('job_order')) {
-                    label = 'DMW Approved and Validated Job Orders';
-                    icon = 'clipboard';
-                    issuer = 'Department of Migrant Workers (DMW)';
-                    validity = 'Verified Job Orders Period';
-                } else if (key.includes('intent') || key.includes('letter')) {
-                    label = 'Letter of Intent (Services & Assistance Details)';
-                    icon = 'letter';
-                    issuer = 'Corporate Executive / Authorized Signatory';
-                    validity = 'Official Signed Request';
-                } else if (key.includes('profile')) {
-                    label = 'Company Overview Profile / Org Chart';
-                    icon = 'folder';
-                    issuer = 'Corporate Executive Board';
-                    validity = 'Corporate Registry Reference';
-                } else {
-                    label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    validity = 'Supporting Verification Document';
-                }
-
-                this.activeDocList.push({
-                    key: key,
-                    label: label,
-                    icon: icon,
-                    issuer: issuer,
-                    filename: filename,
-                    url: url,
-                    status: 'Verified Valid',
-                    validity: validity
-                });
-            }
-
-            if (this.activeDocList.length > 0) {
-                let targetDoc = this.activeDocList[0];
-                if (initialKey) {
-                    let found = this.activeDocList.find(d => d.key === initialKey);
-                    if (found) targetDoc = found;
-                }
-                this.selectDocument(targetDoc);
-                this.docModalOpen = true;
-            }
-        },
-        selectDocument(doc) {
-            this.selectedDocKey = doc.key;
-            this.currentDoc = doc;
-        }
-     }">
-    <div class="w-full max-w-[1680px] mx-auto space-y-8">
-
-        <!-- Header -->
+        {{-- ============================================================ --}}
+        {{-- HEADER                                                        --}}
+        {{-- ============================================================ --}}
         <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20">
             <div class="space-y-2">
                 <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
@@ -150,7 +28,9 @@
             </div>
         </div>
 
-        <!-- Metric Cards -->
+        {{-- ============================================================ --}}
+        {{-- METRIC CARDS                                                  --}}
+        {{-- ============================================================ --}}
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm flex items-center justify-between gap-4">
                 <div class="space-y-1">
@@ -158,8 +38,8 @@
                     <p class="text-3xl font-black text-slate-900">{{ $totalEmployers ?? 0 }}</p>
                     <span class="text-[11px] text-slate-500">Registered companies</span>
                 </div>
-                <div class="h-12 w-12 rounded-2xl bg-slate-100 text-slate-800 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                <div class="h-12 w-12 rounded-2xl bg-slate-100 text-slate-800 flex items-center justify-center text-xl font-black">
+                    🏢
                 </div>
             </div>
 
@@ -169,8 +49,8 @@
                     <p class="text-3xl font-black text-emerald-700">{{ $accreditedEmployers ?? 0 }}</p>
                     <span class="text-[11px] text-emerald-800">Verified & authorized</span>
                 </div>
-                <div class="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                <div class="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-center text-xl font-black">
+                    🛡️
                 </div>
             </div>
 
@@ -180,18 +60,20 @@
                     <p class="text-3xl font-black text-amber-600">{{ $pendingAccreditation ?? 0 }}</p>
                     <span class="text-[11px] text-amber-700">Awaiting authorization</span>
                 </div>
-                <div class="h-12 w-12 rounded-2xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div class="h-12 w-12 rounded-2xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-center text-xl font-black">
+                    ⏳
                 </div>
             </div>
         </div>
 
-        <!-- Search & Filter Bar -->
+        {{-- ============================================================ --}}
+        {{-- SEARCH & FILTER BAR                                           --}}
+        {{-- ============================================================ --}}
         <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <form method="GET" action="{{ route('admin.employers') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
                 <div class="lg:col-span-6 space-y-1">
                     <label class="text-xs font-bold text-slate-700">Search Company</label>
-                    <input type="text" name="search" value="{{ request('search') }}" 
+                    <input type="text" name="search" value="{{ request('search') }}"
                            placeholder="Company name..."
                            class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
                 </div>
@@ -216,14 +98,18 @@
             </form>
         </div>
 
-        <!-- Employers Table -->
+        {{-- ============================================================ --}}
+        {{-- EMPLOYERS TABLE                                               --}}
+        {{-- ============================================================ --}}
         <div class="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div class="p-6 sm:p-8 border-b border-slate-100 flex items-center justify-between">
                 <div>
                     <h3 class="text-lg font-black text-slate-900">Registered Partner Employers</h3>
                     <p class="text-xs text-slate-500">Corporate entities authorized to post job listings and review candidate referrals</p>
                 </div>
-                <span class="text-xs font-bold text-slate-400">{{ $employers->total() ?? count($employers) }} Employers</span>
+                <span class="text-xs font-bold text-slate-400">
+                    {{ isset($employers) && method_exists($employers, 'total') ? $employers->total() : count($employers ?? []) }} Employers
+                </span>
             </div>
 
             <div class="overflow-x-auto">
@@ -241,15 +127,17 @@
                     <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
                         @forelse($employers ?? [] as $employer)
                             @php
-                                $docs = is_array($employer->documents ?? null) ? $employer->documents : json_decode($employer->documents ?? '[]', true);
+                                $docs = is_array($employer->documents ?? null)
+                                    ? $employer->documents
+                                    : json_decode($employer->documents ?? '[]', true);
                                 $isAccountApproved = ($employer->user_status === 'active' && ($employer->user_approved ?? 1));
                                 $isJpoRecommended = ($employer->accreditation_status === 'jpo_approved' || $employer->accreditation_status === 'supervisor_approved');
                             @endphp
                             <tr class="hover:bg-slate-50/80 transition-colors">
                                 <td class="py-4 px-6">
                                     <div class="flex items-center gap-3">
-                                        <div class="h-9 w-9 rounded-xl bg-emerald-900 text-white flex items-center justify-center ring-2 ring-emerald-500/30 shrink-0">
-                                            <svg class="w-5 h-5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                        <div class="h-9 w-9 rounded-xl bg-teal-900 text-white font-bold text-xs flex items-center justify-center ring-2 ring-teal-500/30 shrink-0">
+                                            🏢
                                         </div>
                                         <div>
                                             <div class="font-black text-slate-900 text-sm">{{ $employer->company_name }}</div>
@@ -263,13 +151,11 @@
                                         <div>
                                             @if($isAccountApproved)
                                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200">
-                                                    <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                                    Account Active
+                                                    ✓ Account Active
                                                 </span>
                                             @else
                                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200">
-                                                    <svg class="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                                    Account Pending Approval
+                                                    ⏳ Account Pending Approval
                                                 </span>
                                             @endif
                                         </div>
@@ -277,19 +163,20 @@
                                 </td>
                                 <td class="py-4 px-6">
                                     @if(is_array($docs) && count($docs) > 0)
-                                        <div class="space-y-1">
-                                            <div class="flex flex-wrap gap-1">
-                                                @foreach($docs as $k => $d)
-                                                    <button type="button" 
-                                                            @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($docs), "{{ $k }}")'
-                                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-emerald-100 hover:text-emerald-900 text-slate-700 text-[10px] font-bold border border-slate-200 transition-colors cursor-pointer"
-                                                            title="Click to inspect this document">
-                                                        <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                                        <span>{{ ucfirst(str_replace('_', ' ', $k)) }}</span>
-                                                        <span class="text-[9px] text-emerald-600">&rarr;</span>
-                                                    </button>
-                                                @endforeach
-                                            </div>
+                                        <div class="flex flex-wrap gap-1">
+                                            @foreach($docs as $k => $d)
+                                                <button type="button"
+                                                        @click="openDocInspection(
+                                                            @js($employer->company_name),
+                                                            @js($docs),
+                                                            @js($employer->accreditation_id)
+                                                        )"
+                                                        class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-emerald-100 hover:text-emerald-900 text-slate-700 text-[10px] font-bold border border-slate-200 transition-colors cursor-pointer"
+                                                        title="Click to inspect this document">
+                                                    <span>📄 {{ ucfirst(str_replace('_', ' ', $k)) }}</span>
+                                                    <span class="text-[9px] text-emerald-600">↗</span>
+                                                </button>
+                                            @endforeach
                                         </div>
                                     @else
                                         <span class="text-[11px] text-slate-400 italic">No files on record</span>
@@ -297,24 +184,20 @@
                                 </td>
                                 <td class="py-4 px-6 text-center">
                                     @if($employer->is_accredited)
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold border bg-emerald-50 text-emerald-800 border-emerald-200">
-                                            <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                                            Accredited
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold border bg-emerald-50 text-emerald-800 border-emerald-200">
+                                            🛡️ Accredited
                                         </span>
                                     @elseif($isJpoRecommended)
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold border bg-blue-50 text-blue-800 border-blue-200" title="JPO has evaluated and recommended this employer">
-                                            <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
-                                            JPO Recommended
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold border bg-blue-50 text-blue-800 border-blue-200" title="JPO has evaluated and recommended this employer">
+                                            ⭐ JPO Recommended
                                         </span>
                                     @elseif($employer->accreditation_status === 'submitted_to_jpo')
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold border bg-amber-50 text-amber-800 border-amber-200" title="Awaiting JPO evaluation">
-                                            <svg class="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                            Under JPO Review
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold border bg-amber-50 text-amber-800 border-amber-200" title="Awaiting JPO evaluation">
+                                            ⏳ Under JPO Review
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold border bg-slate-100 text-slate-600 border-slate-200">
-                                            <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                            Not Accredited
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold border bg-slate-100 text-slate-600 border-slate-200">
+                                            ✕ Not Accredited
                                         </span>
                                     @endif
                                 </td>
@@ -325,43 +208,37 @@
                                 </td>
                                 <td class="py-4 px-6 text-right">
                                     <div class="inline-flex items-center gap-1.5">
-                                        @php
-                                            $empData = [
-                                                'id' => $employer->employer_id,
-                                                'company_name' => $employer->company_name,
-                                                'trade_name' => $employer->trade_name ?? '',
-                                                'email' => $employer->email ?? 'N/A',
-                                                'contact_person' => $employer->contact_person ?? 'N/A',
-                                                'contact_number' => $employer->contact_number ?? 'Not provided',
-                                                'company_address' => $employer->company_address ?? 'Cebu City',
-                                                'business_nature' => $employer->business_nature ?? 'General Business',
-                                                'workforce_size' => $employer->workforce_size ?? 'Not specified',
-                                                'is_accredited' => (bool)($employer->is_accredited ?? false),
-                                                'is_account_approved' => (bool)$isAccountApproved,
-                                                'is_jpo_recommended' => (bool)$isJpoRecommended,
-                                                'accreditation_status' => $employer->accreditation_status ?? 'pending',
-                                                'jpo_remarks' => $employer->jpo_remarks ?? '',
-                                                'jobs_count' => $employer->jobs_count ?? 0,
-                                                'docs' => $docs,
-                                                'user_id' => $employer->user_id ?? null,
-                                                'created_at' => !empty($employer->created_at) ? date('F d, Y', strtotime($employer->created_at)) : 'N/A'
-                                            ];
-                                        @endphp
-                                        <button type="button" 
-                                                @click='openView(@json($empData))'
-                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors"
-                                                title="View Employer Profile">
-                                            <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                            <span>View</span>
+                                        <button type="button"
+                                                @click="openEmployerDetails(@js([
+                                                    'id' => $employer->employer_id,
+                                                    'company' => $employer->company_name,
+                                                    'email' => $employer->email,
+                                                    'account_status' => $employer->user_status,
+                                                    'account_approved' => (bool) $employer->user_approved,
+                                                    'accredited' => (bool) $employer->is_accredited,
+                                                    'accreditation_status' => $employer->accreditation_status,
+                                                    'document_status' => $employer->document_status,
+                                                    'document_reason' => $employer->document_incomplete_reason,
+                                                    'jpo_remarks' => $employer->jpo_remarks,
+                                                    'jpo_reviewed' => (bool) $employer->jpo_reviewed,
+                                                    'jobs' => $employer->jobs_count ?? 0,
+                                                    'documents' => is_array($docs) ? count($docs) : 0,
+                                                    'created' => $employer->user_created_at ? date('M d, Y', strtotime($employer->user_created_at)) : 'N/A',
+                                                ]))"
+                                                class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200 transition-colors">
+                                            View Details
                                         </button>
 
                                         @if(is_array($docs) && count($docs) > 0)
-                                            <button type="button" 
-                                                    @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($docs))'
-                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors"
+                                            <button type="button"
+                                                    @click="openDocInspection(
+                                                        @js($employer->company_name),
+                                                        @js($docs),
+                                                        @js($employer->accreditation_id)
+                                                    )"
+                                                    class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors"
                                                     title="View Legal Documents">
-                                                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                                <span>Docs</span>
+                                                👁️ Docs
                                             </button>
                                         @endif
 
@@ -369,19 +246,21 @@
                                         @if(!$isAccountApproved && !empty($employer->user_id))
                                             <form action="{{ route('admin.users.approve', $employer->user_id) }}" method="POST" class="inline">
                                                 @csrf
-                                                <button type="submit" 
-                                                        class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-colors shadow-sm"
+                                                <button type="submit"
+                                                        class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-colors shadow-sm"
                                                         title="Approve Employer Account">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                                    <span>Approve Account</span>
+                                                    ✓ Approve Account
                                                 </button>
                                             </form>
                                         @endif
 
                                         {{-- 2. Employer Accreditation & Control Actions --}}
                                         @if(!$employer->is_accredited)
+                                        {{-- 2. Employer Accreditation & Control Actions --}}
+                                        @if(!$employer->is_accredited)
                                             {{-- Accredit Button (Direct Accredit with warning or JPO Recommended) --}}
-                                            <button onclick="accreditEmployer({{ $employer->employer_id }}, {{ $isJpoRecommended ? 'true' : 'false' }})" 
+                                            <button type="button"
+                                                    @click="accreditEmployer({{ $employer->employer_id }}, {{ $isJpoRecommended ? 'true' : 'false' }})" 
                                                     class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg {{ $isJpoRecommended ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm' : 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm' }} font-bold text-xs transition-colors" 
                                                     title="{{ $isJpoRecommended ? 'Grant DMDP Accreditation' : 'Direct Accredit without JPO Recommendation (with Warning)' }}">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
@@ -389,7 +268,8 @@
                                             </button>
 
                                             {{-- Reject / Return to JPO with remarks --}}
-                                            <button onclick="rejectAccreditationAdmin({{ $employer->employer_id }})" 
+                                            <button type="button"
+                                                    @click="rejectAccreditationAdmin({{ $employer->employer_id }})" 
                                                     class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-colors" 
                                                     title="Reject & Return Application to JPO with Mandatory Remarks">
                                                 <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -405,12 +285,14 @@
                                             </a>
 
                                             {{-- Disaccredit Button --}}
-                                            <button onclick="disaccreditEmployer({{ $employer->employer_id }})" 
+                                            <button type="button"
+                                                    @click="disaccreditEmployer({{ $employer->employer_id }})" 
                                                     class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-colors" 
                                                     title="Disaccredit Employer & Revoke Status">
                                                 <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                                                 <span>Disaccredit</span>
                                             </button>
+                                        @endif
                                         @endif
 
                                         {{-- 3. Direct Account Impersonation / Use --}}
@@ -429,9 +311,7 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="py-12 text-center text-slate-400">
-                                    <div class="h-12 w-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                                    </div>
+                                    <div class="text-3xl mb-2">🏢</div>
                                     <p class="font-bold text-slate-700">No employers found</p>
                                     <p class="text-xs mt-0.5">Try adjusting your search criteria.</p>
                                 </td>
@@ -450,270 +330,548 @@
 
     </div>
 
-    <!-- View Employer Details Modal -->
-    <div x-show="viewModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div @click.away="viewModal = false" class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6 max-h-[90vh] overflow-y-auto" x-show="selectedEmployer">
-            
-            <div class="flex items-start justify-between border-b border-slate-100 pb-4">
-                <div class="space-y-1">
-                    <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Employer Profile</span>
-                    <h3 class="text-2xl font-black text-slate-900" x-text="selectedEmployer.company_name"></h3>
-                    <p class="text-xs text-slate-400">Employer ID #<span x-text="selectedEmployer.id"></span> &bull; <span x-text="selectedEmployer.trade_name ? ('Trade: ' + selectedEmployer.trade_name) : selectedEmployer.email"></span></p>
-                </div>
-                <button @click="viewModal = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
-            </div>
+    {{-- ============================================================ --}}
+    {{-- EMPLOYER DETAILS MODAL                                        --}}
+    {{-- ============================================================ --}}
+    <div x-show="employerDetailsOpen" x-cloak
+         class="fixed inset-0 z-[70] overflow-y-auto bg-slate-950/60 backdrop-blur-sm"
+         @keydown.escape.window="employerDetailsOpen = false">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div @click.away="employerDetailsOpen = false"
+                 class="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-2xl space-y-5">
 
-            <!-- Badges -->
-            <div class="grid grid-cols-3 gap-3 text-xs bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <div>
-                    <span class="text-slate-400 text-[10px] font-bold uppercase block">Accreditation</span>
-                    <span class="font-bold uppercase" :class="selectedEmployer.is_accredited ? 'text-emerald-700' : 'text-amber-600'" x-text="selectedEmployer.is_accredited ? 'Accredited' : (selectedEmployer.accreditation_status || 'Pending')"></span>
-                </div>
-                <div>
-                    <span class="text-slate-400 text-[10px] font-bold uppercase block">Account</span>
-                    <span class="font-bold" :class="selectedEmployer.is_account_approved ? 'text-emerald-700' : 'text-amber-600'" x-text="selectedEmployer.is_account_approved ? 'Approved' : 'Pending'"></span>
-                </div>
-                <div>
-                    <span class="text-slate-400 text-[10px] font-bold uppercase block">Vacancies</span>
-                    <span class="font-bold text-slate-900" x-text="selectedEmployer.jobs_count + ' Openings'"></span>
-                </div>
-            </div>
-
-            <!-- Corporate Details -->
-            <div class="space-y-2 text-xs">
-                <h4 class="font-black uppercase tracking-wider text-slate-800">Establishment Information</h4>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
                     <div>
-                        <span class="text-slate-400 font-semibold block text-[10px] uppercase">Industry / Nature</span>
-                        <span class="font-bold text-slate-900" x-text="selectedEmployer.business_nature"></span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Employer Profile</span>
+                        <h2 class="mt-1 text-xl font-black text-slate-900" x-text="selectedEmployerDetails.company"></h2>
+                        <p class="text-xs text-slate-500">Employer #<span x-text="selectedEmployerDetails.id"></span></p>
                     </div>
-                    <div>
-                        <span class="text-slate-400 font-semibold block text-[10px] uppercase">Workforce Size</span>
-                        <span class="font-bold text-slate-900" x-text="selectedEmployer.workforce_size"></span>
-                    </div>
-                    <div>
-                        <span class="text-slate-400 font-semibold block text-[10px] uppercase">Contact Person</span>
-                        <span class="font-bold text-slate-900" x-text="selectedEmployer.contact_person"></span>
-                    </div>
-                    <div>
-                        <span class="text-slate-400 font-semibold block text-[10px] uppercase">Contact Phone</span>
-                        <span class="font-bold text-slate-900" x-text="selectedEmployer.contact_number"></span>
-                    </div>
-                    <div class="sm:col-span-2">
-                        <span class="text-slate-400 font-semibold block text-[10px] uppercase">Official Address</span>
-                        <span class="font-bold text-slate-900" x-text="selectedEmployer.company_address"></span>
-                    </div>
+                    <button type="button" @click="employerDetailsOpen = false"
+                            class="text-2xl font-bold text-slate-400 hover:text-slate-800"
+                            aria-label="Close details">&times;</button>
                 </div>
-            </div>
 
-            <!-- JPO Remarks / Incomplete Reason -->
-            <template x-if="selectedEmployer.jpo_remarks">
-                <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
-                    <span class="font-black uppercase text-[11px] block">JPO Accreditation Feedback / Remarks:</span>
-                    <p class="leading-relaxed" x-text="selectedEmployer.jpo_remarks"></p>
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div class="rounded-xl bg-slate-50 p-3">
+                        <dt class="text-[10px] font-bold uppercase text-slate-400">Account Email</dt>
+                        <dd class="mt-1 break-words font-semibold text-slate-900" x-text="selectedEmployerDetails.email || 'N/A'"></dd>
+                    </div>
+                    <div class="rounded-xl bg-slate-50 p-3">
+                        <dt class="text-[10px] font-bold uppercase text-slate-400">Account Status</dt>
+                        <dd class="mt-1 font-semibold text-slate-900" x-text="(selectedEmployerDetails.account_status || 'Unknown') + ' · ' + (selectedEmployerDetails.account_approved ? 'Approved' : 'Pending approval')"></dd>
+                    </div>
+                    <div class="rounded-xl bg-slate-50 p-3">
+                        <dt class="text-[10px] font-bold uppercase text-slate-400">Accreditation</dt>
+                        <dd class="mt-1 font-semibold text-slate-900" x-text="selectedEmployerDetails.accredited ? 'Accredited' : (selectedEmployerDetails.accreditation_status || 'Not submitted')"></dd>
+                    </div>
+                    <div class="rounded-xl bg-slate-50 p-3">
+                        <dt class="text-[10px] font-bold uppercase text-slate-400">Document Review</dt>
+                        <dd class="mt-1 font-semibold text-slate-900" x-text="selectedEmployerDetails.document_status || 'Not reviewed'"></dd>
+                    </div>
+                    <div class="rounded-xl bg-slate-50 p-3">
+                        <dt class="text-[10px] font-bold uppercase text-slate-400">Job Postings</dt>
+                        <dd class="mt-1 font-semibold text-slate-900" x-text="selectedEmployerDetails.jobs"></dd>
+                    </div>
+                    <div class="rounded-xl bg-slate-50 p-3">
+                        <dt class="text-[10px] font-bold uppercase text-slate-400">Documents Submitted</dt>
+                        <dd class="mt-1 font-semibold text-slate-900" x-text="selectedEmployerDetails.documents"></dd>
+                    </div>
+                    <div class="rounded-xl bg-slate-50 p-3 sm:col-span-2">
+                        <dt class="text-[10px] font-bold uppercase text-slate-400">Account Created</dt>
+                        <dd class="mt-1 font-semibold text-slate-900" x-text="selectedEmployerDetails.created"></dd>
+                    </div>
+                </dl>
+
+                <template x-if="selectedEmployerDetails.document_reason || selectedEmployerDetails.jpo_remarks">
+                    <section class="space-y-3">
+                        <template x-if="selectedEmployerDetails.document_reason">
+                            <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs">
+                                <h3 class="font-black text-amber-800">Document Incomplete Reason</h3>
+                                <p class="mt-1 whitespace-pre-line text-amber-900" x-text="selectedEmployerDetails.document_reason"></p>
+                            </div>
+                        </template>
+                        <template x-if="selectedEmployerDetails.jpo_remarks">
+                            <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-xs">
+                                <h3 class="font-black text-blue-800">JPO Remarks</h3>
+                                <p class="mt-1 whitespace-pre-line text-blue-900" x-text="selectedEmployerDetails.jpo_remarks"></p>
+                            </div>
+                        </template>
+                    </section>
+                </template>
+
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <template x-if="!selectedEmployerDetails.accredited">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <button type="button" @click="employerDetailsOpen = false; accreditEmployer(selectedEmployerDetails.id, selectedEmployerDetails.jpo_reviewed)"
+                                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white font-bold text-xs shadow-sm transition-colors"
+                                        :class="selectedEmployerDetails.jpo_reviewed ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-amber-600 hover:bg-amber-500'">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                    <span x-text="selectedEmployerDetails.jpo_reviewed ? 'Grant DMDP Accreditation' : 'Direct Accredit (Override)'"></span>
+                                </button>
+
+                                <button type="button" @click="employerDetailsOpen = false; rejectAccreditationAdmin(selectedEmployerDetails.id)"
+                                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    <span>Reject & Return to JPO</span>
+                                </button>
+                            </div>
+                        </template>
+
+                        <template x-if="selectedEmployerDetails.accredited">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <a :href="'/admin/employers/' + selectedEmployerDetails.id + '/certificate'" target="_blank"
+                                   class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs transition-colors">
+                                    <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <span>View Certificate of Accreditation</span>
+                                </a>
+
+                                <button type="button" @click="employerDetailsOpen = false; disaccreditEmployer(selectedEmployerDetails.id)"
+                                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                    <span>Disaccredit Employer</span>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                    <button type="button" @click="employerDetailsOpen = false" class="px-5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
+                        Close
+                    </button>
                 </div>
-            </template>
-
-            <!-- Attached Documents -->
-            <div class="space-y-2 text-xs">
-                <h4 class="font-black uppercase tracking-wider text-slate-800">Accreditation Documents</h4>
-                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                    <template x-if="selectedEmployer.docs && Object.keys(selectedEmployer.docs).length > 0">
-                        <div class="flex flex-wrap gap-2">
-                            <button type="button" 
-                                    @click="viewModal = false; openDocInspection(selectedEmployer.company_name, selectedEmployer.docs)"
-                                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-colors">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                <span>Open Live Document Viewer & Inspection</span>
-                            </button>
-                        </div>
-                    </template>
-                    <template x-if="!selectedEmployer.docs || Object.keys(selectedEmployer.docs).length === 0">
-                        <p class="text-slate-400 italic">No accreditation documents uploaded yet.</p>
-                    </template>
-                </div>
-            </div>
-
-            <div class="pt-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
-                <div class="flex items-center gap-2 flex-wrap">
-                    <template x-if="!selectedEmployer.is_accredited">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <button type="button" @click="viewModal = false; accreditEmployer(selectedEmployer.id, selectedEmployer.is_jpo_recommended)"
-                                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white font-bold text-xs shadow-sm transition-colors"
-                                    :class="selectedEmployer.is_jpo_recommended ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-amber-600 hover:bg-amber-500'">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                                <span x-text="selectedEmployer.is_jpo_recommended ? 'Grant DMDP Accreditation' : 'Direct Accredit (Override)'"></span>
-                            </button>
-
-                            <button type="button" @click="viewModal = false; rejectAccreditationAdmin(selectedEmployer.id)"
-                                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-colors">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                <span>Reject & Return to JPO</span>
-                            </button>
-                        </div>
-                    </template>
-
-                    <template x-if="selectedEmployer.is_accredited">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <a :href="'/admin/employers/' + selectedEmployer.id + '/certificate'" target="_blank"
-                               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs transition-colors">
-                                <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                <span>View Certificate of Accreditation</span>
-                            </a>
-
-                            <button type="button" @click="viewModal = false; disaccreditEmployer(selectedEmployer.id)"
-                                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-colors">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
-                                <span>Disaccredit Employer</span>
-                            </button>
-                        </div>
-                    </template>
-                </div>
-                <button type="button" @click="viewModal = false" class="px-5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
-                    Close
-                </button>
             </div>
         </div>
     </div>
 
-    <!-- Reusable Employer Document Viewer Modal -->
-    @include('partials.employer-document-viewer-modal')
+    {{-- ============================================================ --}}
+    {{-- DOCUMENT VIEWER MODAL (inline — no partial dependency)        --}}
+    {{-- ============================================================ --}}
+    <div x-show="docModalOpen" x-cloak
+         class="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/70 backdrop-blur-sm"
+         @keydown.escape.window="docModalOpen = false">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div @click.away="docModalOpen = false"
+                 class="w-full max-w-5xl rounded-3xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
+
+                {{-- Modal Header --}}
+                <div class="flex items-start justify-between gap-4 border-b border-slate-100 bg-slate-50/60 p-6">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Document Inspection</span>
+                        <h2 class="mt-1 text-lg font-black text-slate-900" x-text="activeDocCompany"></h2>
+                        <p class="text-xs text-slate-500">
+                            <span x-text="activeDocList.length"></span> document(s) on record
+                        </p>
+                    </div>
+                    <button type="button" @click="docModalOpen = false"
+                            class="text-2xl font-bold text-slate-400 hover:text-slate-800"
+                            aria-label="Close documents">&times;</button>
+                </div>
+
+                {{-- Modal Body: Sidebar + Preview --}}
+                <div class="grid grid-cols-1 lg:grid-cols-12">
+
+                    {{-- Document List --}}
+                    <aside class="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-slate-100 max-h-[60vh] lg:max-h-[70vh] overflow-y-auto">
+                        <ul class="divide-y divide-slate-100">
+                            <template x-for="doc in activeDocList" :key="doc.key">
+                                <li>
+                                    <button type="button"
+                                            @click="selectDocument(doc)"
+                                            :class="selectedDocKey === doc.key
+                                                ? 'bg-emerald-50 border-l-4 border-emerald-500'
+                                                : 'hover:bg-slate-50 border-l-4 border-transparent'"
+                                            class="w-full text-left p-4 transition-colors">
+                                        <div class="flex items-start gap-3">
+                                            <span class="text-2xl shrink-0" x-text="doc.icon"></span>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-xs font-black text-slate-900 leading-tight" x-text="doc.label"></p>
+                                                <p class="text-[10px] text-slate-500 mt-0.5" x-text="doc.issuer"></p>
+                                                <div class="flex items-center gap-1.5 mt-1.5">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
+                                                        ✓ <span x-text="doc.status"></span>
+                                                    </span>
+                                                </div>
+                                                <p class="text-[10px] text-slate-400 mt-1" x-text="doc.validity"></p>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </li>
+                            </template>
+
+                            <template x-if="activeDocList.length === 0">
+                                <li class="p-6 text-center text-xs text-slate-400 italic">
+                                    No documents attached.
+                                </li>
+                            </template>
+                        </ul>
+                    </aside>
+
+                    {{-- Preview Panel --}}
+                    <div class="lg:col-span-7 bg-slate-50/40 p-6 max-h-[60vh] lg:max-h-[70vh] overflow-y-auto">
+                        <template x-if="currentDoc && currentDoc.key">
+                            <div class="space-y-4">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Currently Viewing</span>
+                                        <h3 class="mt-1 text-sm font-black text-slate-900" x-text="currentDoc.label"></h3>
+                                        <p class="text-[11px] text-slate-500 mt-0.5" x-text="currentDoc.issuer"></p>
+                                    </div>
+                                    <a :href="currentDoc.downloadUrl"
+                                       class="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-emerald-600 text-white text-[11px] font-bold transition-colors">
+                                        ⬇ Download
+                                    </a>
+                                </div>
+
+                                <div class="rounded-xl border border-slate-200 bg-white p-3">
+                                    <template x-if="currentDoc.isImage && currentDoc.previewUrl">
+                                        <img :src="currentDoc.previewUrl"
+                                             :alt="currentDoc.label"
+                                             class="w-full rounded-lg border border-slate-100"
+                                             loading="lazy">
+                                    </template>
+                                    <template x-if="!currentDoc.isImage || !currentDoc.previewUrl">
+                                        <div class="flex flex-col items-center justify-center py-12 text-center">
+                                            <div class="text-5xl mb-3" x-text="currentDoc.icon || '📄'"></div>
+                                            <p class="text-xs font-bold text-slate-700">Preview not available</p>
+                                            <p class="text-[11px] text-slate-500 mt-1">Use the Download button above to view this file.</p>
+                                            <p class="text-[10px] text-slate-400 mt-3 font-mono break-all" x-text="currentDoc.filename"></p>
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <div class="rounded-xl bg-white border border-slate-200 p-4 space-y-2 text-[11px]">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span class="text-slate-500 font-semibold">File Name</span>
+                                        <span class="text-slate-900 font-bold truncate max-w-[60%]" x-text="currentDoc.filename || 'N/A'"></span>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span class="text-slate-500 font-semibold">Status</span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200" x-text="currentDoc.status"></span>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span class="text-slate-500 font-semibold">Validity</span>
+                                        <span class="text-slate-900 font-bold" x-text="currentDoc.validity"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template x-if="!currentDoc || !currentDoc.key">
+                            <div class="flex flex-col items-center justify-center py-20 text-center">
+                                <div class="text-4xl mb-3">📁</div>
+                                <p class="text-xs font-bold text-slate-700">Select a document from the list</p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </div>
 
+{{-- ============================================================ --}}
+{{-- ALPINE COMPONENT DEFINITION                                    --}}
+{{-- ============================================================ --}}
+@push('scripts')
 <script>
-function executeAccreditation(id, isDirectOverride) {
-    fetch(`/admin/employers/${id}/accredit`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
+function employersRegistry(config) {
+    return {
+        // Config
+        csrfToken: config.csrfToken,
+        documentRouteTemplate: config.documentRouteTemplate,
+
+        // Employer Details Modal
+        employerDetailsOpen: false,
+        selectedEmployerDetails: {},
+
+        // Document Viewer Modal
+        docModalOpen: false,
+        activeDocCompany: '',
+        activeDocList: [],
+        selectedDocKey: '',
+        currentDoc: {},
+
+        // ---------------------------------------------
+        // Employer Details
+        // ---------------------------------------------
+        openEmployerDetails(employer) {
+            this.selectedEmployerDetails = employer || {};
+            this.employerDetailsOpen = true;
         },
-        body: JSON.stringify({ direct_override: isDirectOverride })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            Swal.fire({
-                title: 'Accreditation Granted!',
-                html: `<p class="text-xs text-slate-700">${data.success}</p>${data.certificate_no ? `<p class="mt-2 text-xs font-mono font-bold text-emerald-800">Certificate No: ${data.certificate_no}</p>` : ''}`,
-                icon: 'success',
-                confirmButtonColor: '#059669',
-                confirmButtonText: 'View Registry'
-            }).then(() => location.reload());
-        } else {
-            Swal.fire('Cannot Accredit', data.error || 'Something went wrong.', 'error');
-        }
-    })
-    .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));
-}
 
-function accreditEmployer(id, isJpoRecommended) {
-    if (!isJpoRecommended) {
-        Swal.fire({
-            title: '⚠️ Direct Accreditation Override',
-            html: '<div class="text-left text-xs space-y-2 text-slate-700 bg-amber-50 p-4 rounded-xl border border-amber-200"><p class="font-bold text-amber-900">WARNING: No JPO Recommendation Recorded</p><p>This employer has not yet received a recommendation from the Job Placement Office (JPO).</p><p>As DMDP Administrator, you are directly bypassing JPO recommendation to officially accredit this employer and generate their official Certificate.</p><p class="font-bold text-amber-900">Are you sure you want to proceed?</p></div>',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d97706',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: 'Yes, Grant Direct Accreditation',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                executeAccreditation(id, true);
+        // ---------------------------------------------
+        // Document Inspection
+        // ---------------------------------------------
+        openDocInspection(company, docs, accreditationId) {
+            this.activeDocCompany = company || '';
+            this.activeDocList = [];
+            this.selectedDocKey = '';
+            this.currentDoc = {};
+
+            const entries = Object.entries(docs || {});
+
+            entries.forEach(([key, val]) => {
+                const meta = this.describeDocument(key, val);
+                const fileRoute = this.documentRouteTemplate
+                    .replace('__ACCREDITATION_ID__', encodeURIComponent(accreditationId || ''))
+                    .replace('__DOCUMENT_KEY__', encodeURIComponent(key));
+
+                this.activeDocList.push({
+                    key: key,
+                    label: meta.label,
+                    icon: meta.icon,
+                    issuer: meta.issuer,
+                    validity: meta.validity,
+                    filename: meta.filename,
+                    isImage: meta.isImage,
+                    previewUrl: meta.isImage ? fileRoute.replace('__ACTION__', 'preview') : '',
+                    downloadUrl: fileRoute.replace('__ACTION__', 'download'),
+                    status: 'Verified Valid',
+                    url: meta.isImage ? fileRoute.replace('__ACTION__', 'preview') : fileRoute.replace('__ACTION__', 'download')
+                });
+            });
+
+            if (this.activeDocList.length > 0) {
+                this.selectDocument(this.activeDocList[0]);
+                this.docModalOpen = true;
+            } else {
+                Swal.fire({
+                    title: 'No Documents',
+                    text: 'This employer has no documents on record.',
+                    icon: 'info',
+                    confirmButtonColor: '#059669'
+                });
             }
-        });
-        return;
-    }
+        },
 
-    Swal.fire({
-        title: 'Grant Official Employer Accreditation?',
-        text: 'JPO has recommended this company. This will officially accredit the employer and generate their official Certificate of Accreditation.',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#059669',
-        cancelButtonColor: '#64748b',
-        confirmButtonText: 'Yes, Accredit Company'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            executeAccreditation(id, false);
-        }
-    });
-}
+        selectDocument(doc) {
+            this.selectedDocKey = doc.key;
+            this.currentDoc = doc;
+        },
 
-function disaccreditEmployer(id) {
-    Swal.fire({
-        title: '⚠️ Revoke Employer Accreditation?',
-        html: '<div class="text-left text-xs space-y-2 text-slate-700 bg-rose-50 p-4 rounded-xl border border-rose-200"><p class="font-bold text-rose-900">WARNING: Accreditation Disaccreditation</p><p>This will immediately revoke official DMDP accreditation for this employer, invalidate their Certificate of Accreditation, and pause jobseeker referral processing.</p><p class="font-bold text-rose-900">Are you sure you want to proceed?</p></div>',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#e11d48',
-        cancelButtonColor: '#64748b',
-        confirmButtonText: 'Yes, Disaccredit Employer',
-        cancelButtonText: 'Cancel'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch(`/admin/employers/${id}/disaccredit`, {
+        describeDocument(key, val) {
+            // Extract filename
+            let filename = '';
+            if (typeof val === 'object' && val !== null) {
+                filename = val.original_name || val.path || '';
+            } else if (typeof val === 'string') {
+                filename = val.split('/').pop() || val;
+            }
+
+            // Detect extension
+            const extensionSource = (typeof val === 'object' && val !== null)
+                ? (val.path || filename)
+                : val;
+            const extension = String(extensionSource || '').split('.').pop().toLowerCase();
+            const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extension);
+
+            // Classify
+            let label = 'Attached Document';
+            let icon = '📄';
+            let issuer = 'Regulatory Authority';
+            let validity = 'Current / Valid';
+
+            const k = (key || '').toLowerCase();
+
+            if (k.includes('bir') || k.includes('2303') || k.includes('tin')) {
+                label = 'BIR Certificate of Registration (Form 2303)';
+                icon = '📑';
+                issuer = 'Bureau of Internal Revenue (BIR District 080)';
+                validity = 'Current / Valid';
+            } else if (k.includes('sec') || k.includes('dti')) {
+                label = 'SEC Registration or DTI Registration';
+                icon = '📜';
+                issuer = 'Securities and Exchange Commission (SEC) / DTI';
+                validity = 'Perpetual / Registered';
+            } else if (k.includes('mayor') || k.includes('permit') || k.includes('business')) {
+                label = 'Mayor’s Business Permit (current year)';
+                icon = '🏢';
+                issuer = 'City Government of Cebu - BPLO';
+                validity = 'Calendar Year ' + new Date().getFullYear();
+            } else if (k.includes('philjobnet')) {
+                label = 'PhilJobNet Proof of Registration';
+                icon = '🌐';
+                issuer = 'PhilJobNet / DOLE Bureau of Local Employment';
+                validity = 'Active Registration Certificate';
+            } else if (k.includes('vacanc') || k.includes('job_vacanc')) {
+                label = 'Updated Job Vacancies (prescribed form)';
+                icon = '💼';
+                issuer = 'Cebu City DMDP Prescribed Template';
+                validity = 'Active Hiring Needs';
+            } else if (k.includes('dole')) {
+                label = 'DOLE License / DO 174';
+                icon = '🛡️';
+                issuer = 'Department of Labor and Employment (DOLE RO-7)';
+                validity = 'Valid License (PRPA / Subcontractor)';
+            } else if (k.includes('dmw_license') || (k.includes('dmw') && !k.includes('order'))) {
+                label = 'DMW License (Overseas Agency)';
+                icon = '✈️';
+                issuer = 'Department of Migrant Workers (DMW / POEA)';
+                validity = 'Valid DMW License';
+            } else if (k.includes('order') || k.includes('job_order')) {
+                label = 'DMW Approved and Validated Job Orders';
+                icon = '📋';
+                issuer = 'Department of Migrant Workers (DMW)';
+                validity = 'Verified Job Orders Period';
+            } else if (k.includes('intent') || k.includes('letter')) {
+                label = 'Letter of Intent (Services & Assistance Details)';
+                icon = '✉️';
+                issuer = 'Corporate Executive / Authorized Signatory';
+                validity = 'Official Signed Request';
+            } else if (k.includes('profile')) {
+                label = 'Company Overview Profile / Org Chart';
+                icon = '📁';
+                issuer = 'Corporate Executive Board';
+                validity = 'Corporate Registry Reference';
+            } else {
+                label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                validity = 'Supporting Verification Document';
+            }
+
+            return { label, icon, issuer, validity, filename, isImage };
+        },
+
+        // ---------------------------------------------
+        // Accreditation Actions
+        // ---------------------------------------------
+        executeAccreditation(id, isDirectOverride) {
+            fetch(`/admin/employers/${id}/accredit`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire('Disaccredited', data.success, 'success').then(() => location.reload());
-                } else {
-                    Swal.fire('Error', data.error || 'Failed to disaccredit employer.', 'error');
-                }
-            })
-            .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));
-        }
-    });
-}
-
-function rejectAccreditationAdmin(id) {
-    Swal.fire({
-        title: 'Return Accreditation Application to JPO',
-        text: 'Mandatory administrative remarks are required to explain why this employer application is rejected and returned to the JPO queue.',
-        input: 'textarea',
-        inputPlaceholder: 'Enter mandatory administrative remarks explaining the reason for rejection (min 5 characters)...',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#e11d48',
-        cancelButtonColor: '#64748b',
-        confirmButtonText: 'Reject & Return to JPO',
-        cancelButtonText: 'Cancel',
-        inputValidator: (value) => {
-            if (!value || value.trim().length < 5) {
-                return 'Mandatory remarks are required (minimum 5 characters).';
-            }
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch(`/admin/employers/${id}/reject`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-CSRF-TOKEN': this.csrfToken,
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify({ remarks: result.value })
+                body: JSON.stringify({ direct_override: isDirectOverride })
             })
-            .then(res => res.json())
+            .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    Swal.fire('Returned to JPO', data.success, 'info').then(() => location.reload());
+                    Swal.fire({
+                        title: 'Accreditation Granted!',
+                        html: `<p class="text-xs text-slate-700">${data.success}</p>${data.certificate_no ? `<p class="mt-2 text-xs font-mono font-bold text-emerald-800">Certificate No: ${data.certificate_no}</p>` : ''}`,
+                        icon: 'success',
+                        confirmButtonColor: '#059669',
+                        confirmButtonText: 'View Registry'
+                    }).then(() => location.reload());
                 } else {
-                    Swal.fire('Error', data.error || 'Failed to reject accreditation.', 'error');
+                    Swal.fire('Cannot Accredit', data.error || 'Something went wrong.', 'error');
                 }
             })
             .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));
+        },
+
+        accreditEmployer(id, isJpoRecommended) {
+            if (!isJpoRecommended) {
+                Swal.fire({
+                    title: '⚠️ Direct Accreditation Override',
+                    html: '<div class="text-left text-xs space-y-2 text-slate-700 bg-amber-50 p-4 rounded-xl border border-amber-200"><p class="font-bold text-amber-900">WARNING: No JPO Recommendation Recorded</p><p>This employer has not yet received a recommendation from the Job Placement Office (JPO).</p><p>As DMDP Administrator, you are directly bypassing JPO recommendation to officially accredit this employer and generate their official Certificate.</p><p class="font-bold text-amber-900">Are you sure you want to proceed?</p></div>',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d97706',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, Grant Direct Accreditation',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        this.executeAccreditation(id, true);
+                    }
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Grant Official Employer Accreditation?',
+                text: 'JPO has recommended this company. This will officially accredit the employer and generate their official Certificate of Accreditation.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#059669',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Yes, Accredit Company'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.executeAccreditation(id, false);
+                }
+            });
+        },
+
+        disaccreditEmployer(id) {
+            Swal.fire({
+                title: '⚠️ Revoke Employer Accreditation?',
+                html: '<div class="text-left text-xs space-y-2 text-slate-700 bg-rose-50 p-4 rounded-xl border border-rose-200"><p class="font-bold text-rose-900">WARNING: Accreditation Disaccreditation</p><p>This will immediately revoke official DMDP accreditation for this employer, invalidate their Certificate of Accreditation, and pause jobseeker referral processing.</p><p class="font-bold text-rose-900">Are you sure you want to proceed?</p></div>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Yes, Disaccredit Employer',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/admin/employers/${id}/disaccredit`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': this.csrfToken,
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('Disaccredited', data.success, 'success').then(() => location.reload());
+                        } else {
+                            Swal.fire('Error', data.error || 'Failed to disaccredit employer.', 'error');
+                        }
+                    })
+                    .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));
+                }
+            });
+        },
+
+        rejectAccreditationAdmin(id) {
+            Swal.fire({
+                title: 'Return Accreditation Application to JPO',
+                text: 'Mandatory administrative remarks are required to explain why this employer application is rejected and returned to the JPO queue.',
+                input: 'textarea',
+                inputPlaceholder: 'Enter mandatory administrative remarks explaining the reason for rejection (min 5 characters)...',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Reject & Return to JPO',
+                cancelButtonText: 'Cancel',
+                inputValidator: (value) => {
+                    if (!value || value.trim().length < 5) {
+                        return 'Mandatory remarks are required (minimum 5 characters).';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/admin/employers/${id}/reject`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': this.csrfToken,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ remarks: result.value })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('Returned to JPO', data.success, 'info').then(() => location.reload());
+                        } else {
+                            Swal.fire('Error', data.error || 'Failed to reject accreditation.', 'error');
+                        }
+                    })
+                    .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));
+                }
+            });
         }
-    });
+    };
+}
+        }
+    };
 }
 </script>
+@endpush
 @endsection

@@ -61,17 +61,7 @@ export default function TrainingDetailScreen() {
 
   // Consolidate questions from topics or directly from program
   const getQuestions = (): QuizQuestion[] => {
-    if (!training) return [];
-    if (training.questions && training.questions.length > 0) {
-      return training.questions;
-    }
-    const topicQs: QuizQuestion[] = [];
-    training.topics?.forEach((t) => {
-      if (t.questions && t.questions.length > 0) {
-        topicQs.push(...t.questions);
-      }
-    });
-    return topicQs;
+    return training?.questions ?? [];
   };
 
   const questions = getQuestions();

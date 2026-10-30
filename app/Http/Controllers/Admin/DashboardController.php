@@ -134,15 +134,23 @@ class DashboardController extends Controller
             }
         }
 
+        $hasAccountStatusColumn = Schema::hasColumn('users', 'account_status');
+
         $pendingJobseekers = DB::table('jobseekers')
             ->join('users', 'jobseekers.user_id', '=', 'users.user_id')
             ->select('jobseekers.first_name', 'jobseekers.last_name', 'users.email', 'users.created_at')
             ->where('users.role', 'jobseeker')
-            ->where(function ($q) {
-                $q->where('users.is_approved', 0)
-                  ->orWhere('users.account_status', 'pending_review')
-                  ->orWhere('users.account_status', 'unverified')
-                  ->orWhereNull('users.account_status');
+            ->where(function ($q) use ($hasAccountStatusColumn) {
+                $q->where('users.is_approved', 0);
+
+                if ($hasAccountStatusColumn) {
+                    $q->orWhere('users.account_status', 'pending_review')
+                      ->orWhere('users.account_status', 'unverified')
+                      ->orWhereNull('users.account_status');
+                } else {
+                    $q->orWhere('users.status', 'pending')
+                      ->orWhereNull('users.status');
+                }
             })
             ->latest('users.created_at')
             ->limit(4)
@@ -301,7 +309,7 @@ class DashboardController extends Controller
     /**
      * Mark single notification as read.
      */
-    public function markNotificationRead($id)
+    public function markNotificationRead(int $id)
     {
         DB::table('notifications')
             ->where('notification_id', $id)

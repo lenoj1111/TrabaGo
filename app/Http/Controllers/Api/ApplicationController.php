@@ -140,11 +140,11 @@ class ApplicationController extends Controller
             ], 422);
         }
 
-        $job = JobPosting::find($jobId);
+        $job = JobPosting::availableForJobseekers()->find($jobId);
         if (!$job) {
             return response()->json([
                 'success' => false,
-                'message' => 'Job posting not found.',
+                'message' => 'Job posting is no longer available.',
             ], 404);
         }
 

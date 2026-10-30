@@ -125,7 +125,7 @@ export default function JobsScreen() {
           <View style={styles.salaryChip}>
             <Ionicons name="cash-outline" size={13} color={COLORS.emerald700} />
             <Text style={styles.salaryText}>
-              {item.salary || item.salary_expectation || 'Competitive'}
+              {item.salary || item.salary_expectation || 'Not specified'}
             </Text>
           </View>
         </View>
@@ -134,7 +134,7 @@ export default function JobsScreen() {
         <View style={styles.badgeRow}>
           <View style={styles.badge}>
             <Ionicons name="time-outline" size={12} color={COLORS.slate600} style={{ marginRight: 3 }} />
-            <Text style={styles.badgeText}>{item.type || item.employment_type || 'Full-time'}</Text>
+            <Text style={styles.badgeText}>{item.type || item.employment_type || 'Not specified'}</Text>
           </View>
 
           {hasMatchScore && (
@@ -241,7 +241,7 @@ export default function JobsScreen() {
 
             <Text style={styles.aiMatchTitle} numberOfLines={1}>{bestMatchJob.title}</Text>
             <Text style={styles.aiMatchCompany}>{bestMatchJob.company || bestMatchJob.company_name} • Cebu City</Text>
-            <Text style={styles.aiMatchSalary}>{bestMatchJob.salary || '₱18,000 - ₱35,000 / mo'}</Text>
+            <Text style={styles.aiMatchSalary}>{bestMatchJob.salary || bestMatchJob.salary_expectation || 'Not specified'}</Text>
 
             {bestMatchJob.matched_skills && bestMatchJob.matched_skills.length > 0 && (
               <View style={styles.aiSkillsRow}>

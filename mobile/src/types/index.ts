@@ -112,6 +112,9 @@ export interface JobItem {
   qualifications: string;
   requirements: string[];
   skills: string[];
+  required_skills?: string[];
+  benefits?: string | string[] | null;
+  other_instructions?: string | null;
   vacancy_count: number;
   valid_until?: string | null;
   accepts_disability: boolean;
@@ -121,6 +124,14 @@ export interface JobItem {
   match_percentage?: number | null;
   matched_skills?: string[];
   missing_skills?: string[];
+  match_details?: {
+    percentage: number;
+    tier: string;
+    matchedSkills: string[];
+    missingSkills: string[];
+    matchedCount: number;
+    totalRequired: number;
+  };
   has_applied?: boolean;
   can_apply?: boolean;
   is_employed?: boolean;

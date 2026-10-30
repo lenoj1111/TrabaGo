@@ -16,6 +16,8 @@
     editDocStatus: 'pending',
     editIncompleteReason: '',
 
+    documentRouteTemplate: '{{ route('accreditation.documents', ['accreditationId' => '__ACCREDITATION_ID__', 'documentKey' => '__DOCUMENT_KEY__', 'action' => '__ACTION__']) }}',
+
     docModalOpen: false,
     activeDocCompany: '',
     activeDocList: [],
@@ -38,97 +40,73 @@
         this.docStatusModal = true;
     },
 
-    openDocInspection(company, docs, initialKey = null) {
-        this.activeDocCompany = company;
+    openDocInspection(company, docs, accreditationId = null, initialKey = null) {
+        this.activeDocCompany = company || '';
         this.activeDocList = [];
-        
-        for (let [key, val] of Object.entries(docs || {})) {
-            if (!val) continue;
+        this.selectedDocKey = '';
+        this.currentDoc = {};
 
-            let label = 'Attached Document';
-            let issuer = 'Regulatory Authority';
-            let filename = '';
-            let url = '';
-            let pathVal = '';
+        const entries = Object.entries(docs || {});
+        const seenPaths = new Set();
+        const aliases = {
+            sec_dti_registration: 'sec_dti',
+            updated_job_vacancies: 'job_vacancies_form',
+            business_permit: 'mayors_permit'
+        };
+        const versionGroups = new Map();
+        entries.forEach(([key, val]) => {
+            if (!val || key.includes('_previous_')) return;
+            const canonicalKey = aliases[key] || key;
+            const path = typeof val === 'object' && val !== null ? val.path : val;
+            if (!versionGroups.has(canonicalKey)) versionGroups.set(canonicalKey, []);
+            versionGroups.get(canonicalKey).push({ key, val, path });
+        });
+        const inferredPreviousKeys = new Set();
+        for (const candidates of versionGroups.values()) {
+            const distinctPaths = new Set(candidates.map(item => item.path).filter(Boolean));
+            if (distinctPaths.size < 2) continue;
+            const explicitCurrent = candidates.find(item => item.val?.revision_status === 'new');
+            const current = explicitCurrent || [...candidates].sort((a, b) => {
+                const aDate = Date.parse(a.val?.uploaded_at || '') || 0;
+                const bDate = Date.parse(b.val?.uploaded_at || '') || 0;
+                return bDate - aDate;
+            })[0];
+            candidates.forEach(candidate => {
+                if (candidate !== current) inferredPreviousKeys.add(candidate.key);
+            });
+        }
 
-            if (typeof val === 'object' && val !== null) {
-                filename = val.original_name || (val.path ? val.path.split('/').pop() : '');
-                pathVal = val.file_url || val.url || val.path || '';
-            } else if (typeof val === 'string') {
-                filename = val.split('/').pop() || val;
-                pathVal = val;
-            }
+        entries.forEach(([key, val]) => {
+            if (!val) return;
+            const documentPath = typeof val === 'object' && val !== null ? val.path : val;
+            const normalizedPath = typeof documentPath === 'string' ? documentPath.replace(/\\/g, '/') : '';
+            if (normalizedPath && seenPaths.has(normalizedPath)) return;
+            if (normalizedPath) seenPaths.add(normalizedPath);
 
-            if (pathVal) {
-                if (pathVal.startsWith('http://') || pathVal.startsWith('https://') || pathVal.startsWith('/storage/')) {
-                    url = pathVal;
-                } else if (pathVal.startsWith('storage/')) {
-                    url = '/' + pathVal;
-                } else if (pathVal.startsWith('/')) {
-                    url = pathVal;
-                } else {
-                    url = '/storage/' + pathVal;
-                }
-            }
+            const meta = this.describeDocument(key, val);
+            const fileRoute = this.documentRouteTemplate
+                .replace('__ACCREDITATION_ID__', encodeURIComponent(accreditationId ?? this.selectedAccId ?? ''))
+                .replace('__DOCUMENT_KEY__', encodeURIComponent(key));
 
-            let validity = 'Current / Valid';
-
-            if (key.includes('bir') || key.includes('2303') || key.includes('tin')) {
-                label = 'BIR Certificate of Registration (Form 2303)';
-                issuer = 'Bureau of Internal Revenue (BIR District 080)';
-                validity = 'Current / Valid';
-            } else if (key.includes('sec') || key.includes('dti')) {
-                label = 'SEC Registration or DTI Registration';
-                issuer = 'Securities and Exchange Commission (SEC) / DTI';
-                validity = 'Perpetual / Registered';
-            } else if (key.includes('mayor') || key.includes('permit') || key.includes('business')) {
-                label = 'Mayor’s Business Permit (current year)';
-                issuer = 'City Government of Cebu - BPLO';
-                validity = 'Calendar Year ' + new Date().getFullYear();
-            } else if (key.includes('philjobnet')) {
-                label = 'PhilJobNet Proof of Registration';
-                issuer = 'PhilJobNet / DOLE Bureau of Local Employment';
-                validity = 'Active Registration Certificate';
-            } else if (key.includes('vacanc') || key.includes('job_vacanc')) {
-                label = 'Updated Job Vacancies (prescribed form)';
-                issuer = 'Cebu City DMDP Prescribed Template';
-                validity = 'Active Hiring Needs';
-            } else if (key.includes('dole')) {
-                label = 'DOLE License / DO 174';
-                issuer = 'Department of Labor and Employment (DOLE RO-7)';
-                validity = 'Valid License (PRPA / Subcontractor)';
-            } else if (key.includes('dmw_license') || (key.includes('dmw') && !key.includes('order'))) {
-                label = 'DMW License (Overseas Agency)';
-                issuer = 'Department of Migrant Workers (DMW / POEA)';
-                validity = 'Valid DMW License';
-            } else if (key.includes('order') || key.includes('job_order')) {
-                label = 'DMW Approved and Validated Job Orders';
-                issuer = 'Department of Migrant Workers (DMW)';
-                validity = 'Verified Job Orders Period';
-            } else if (key.includes('intent') || key.includes('letter')) {
-                label = 'Letter of Intent (Services & Assistance Details)';
-                issuer = 'Corporate Executive / Authorized Signatory';
-                validity = 'Official Signed Request';
-            } else if (key.includes('profile')) {
-                label = 'Company Overview Profile / Org Chart';
-                issuer = 'Corporate Executive Board';
-                validity = 'Current Operations Overview';
-            } else {
-                label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                issuer = 'Government Regulatory Agency';
-                validity = 'On File';
-            }
+            const previewUrl = meta.isImage ? fileRoute.replace('__ACTION__', 'preview') : '';
+            const downloadUrl = fileRoute.replace('__ACTION__', 'download');
 
             this.activeDocList.push({
                 key: key,
-                label: label,
-                issuer: issuer,
-                validity: validity,
-                filename: filename,
-                url: url,
-                status: 'Attached for Review'
+                label: meta.label,
+                issuer: meta.issuer,
+                validity: meta.validity,
+                filename: meta.filename,
+                isImage: meta.isImage,
+                previewUrl: previewUrl,
+                downloadUrl: downloadUrl,
+                status: meta.revisionStatus === 'new'
+                    ? 'New upload'
+                    : (meta.revisionStatus === 'previous' || inferredPreviousKeys.has(key) ? 'Previous version' : 'Attached for Review'),
+                revisionStatus: meta.revisionStatus || (inferredPreviousKeys.has(key) ? 'previous' : ''),
+                url: previewUrl || downloadUrl || ''
             });
-        }
+        });
 
         if (this.activeDocList.length > 0) {
             let targetDoc = this.activeDocList[0];
@@ -140,9 +118,82 @@
             this.docModalOpen = true;
         }
     },
+
     selectDocument(doc) {
         this.selectedDocKey = doc.key;
-        this.currentDoc = doc;
+        this.currentDoc = {
+            ...doc,
+            url: doc.previewUrl || doc.downloadUrl || doc.url || ''
+        };
+    },
+
+    describeDocument(key, val) {
+        let label = 'Attached Document';
+        let issuer = 'Regulatory Authority';
+        let filename = '';
+
+        if (typeof val === 'object' && val !== null) {
+            filename = val.original_name || (val.path ? val.path.split('/').pop() : '');
+        } else if (typeof val === 'string') {
+            filename = val.split('/').pop() || val;
+        }
+
+        let validity = 'Current / Valid';
+        const normalizedKey = String(key || '').toLowerCase();
+        const revisionStatus = (typeof val === 'object' && val !== null && val.revision_status)
+            || (normalizedKey.includes('_previous_') ? 'previous' : '');
+
+        if (normalizedKey.includes('bir') || normalizedKey.includes('2303') || normalizedKey.includes('tin')) {
+            label = 'BIR Certificate of Registration (Form 2303)';
+            issuer = 'Bureau of Internal Revenue (BIR District 080)';
+            validity = 'Current / Valid';
+        } else if (normalizedKey.includes('sec') || normalizedKey.includes('dti')) {
+            label = 'SEC Registration or DTI Registration';
+            issuer = 'Securities and Exchange Commission (SEC) / DTI';
+            validity = 'Perpetual / Registered';
+        } else if (normalizedKey.includes('mayor') || normalizedKey.includes('permit') || normalizedKey.includes('business')) {
+            label = 'Mayor’s Business Permit (current year)';
+            issuer = 'City Government of Cebu - BPLO';
+            validity = 'Calendar Year ' + new Date().getFullYear();
+        } else if (normalizedKey.includes('philjobnet')) {
+            label = 'PhilJobNet Proof of Registration';
+            issuer = 'PhilJobNet / DOLE Bureau of Local Employment';
+            validity = 'Active Registration Certificate';
+        } else if (normalizedKey.includes('vacanc') || normalizedKey.includes('job_vacanc')) {
+            label = 'Updated Job Vacancies (prescribed form)';
+            issuer = 'Cebu City DMDP Prescribed Template';
+            validity = 'Active Hiring Needs';
+        } else if (normalizedKey.includes('dole')) {
+            label = 'DOLE License / DO 174';
+            issuer = 'Department of Labor and Employment (DOLE RO-7)';
+            validity = 'Valid License (PRPA / Subcontractor)';
+        } else if (normalizedKey.includes('dmw_license') || (normalizedKey.includes('dmw') && !normalizedKey.includes('order'))) {
+            label = 'DMW License (Overseas Agency)';
+            issuer = 'Department of Migrant Workers (DMW / POEA)';
+            validity = 'Valid DMW License';
+        } else if (normalizedKey.includes('order') || normalizedKey.includes('job_order')) {
+            label = 'DMW Approved and Validated Job Orders';
+            issuer = 'Department of Migrant Workers (DMW)';
+            validity = 'Verified Job Orders Period';
+        } else if (normalizedKey.includes('intent') || normalizedKey.includes('letter')) {
+            label = 'Letter of Intent (Services & Assistance Details)';
+            issuer = 'Corporate Executive / Authorized Signatory';
+            validity = 'Official Signed Request';
+        } else if (normalizedKey.includes('profile')) {
+            label = 'Company Overview Profile / Org Chart';
+            issuer = 'Corporate Executive Board';
+            validity = 'Current Operations Overview';
+        } else {
+            label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            issuer = 'Government Regulatory Agency';
+            validity = 'On File';
+        }
+
+        const extensionSource = typeof val === 'object' && val !== null ? (val.path || filename) : val;
+        const extension = String(extensionSource || '').split('.').pop().toLowerCase();
+        const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extension);
+
+        return { label, issuer, validity, filename, isImage, revisionStatus };
     }
 }" class="min-h-screen bg-slate-50/80 px-4 py-6 sm:px-6 lg:px-8">
     <div class="space-y-6 max-w-[1680px] mx-auto">
@@ -237,6 +288,19 @@
                         @forelse($accreditations as $acc)
                             @php
                                 $docs = is_array($acc->documents) ? $acc->documents : json_decode($acc->documents ?? '[]', true);
+                                $displayDocs = [];
+                                $seenDocumentPaths = [];
+                                foreach ($docs ?: [] as $docKey => $document) {
+                                    $documentPath = is_array($document) ? ($document['path'] ?? null) : $document;
+                                    $normalizedPath = is_string($documentPath) ? str_replace('\\', '/', $documentPath) : '';
+                                    if ($normalizedPath !== '' && isset($seenDocumentPaths[$normalizedPath])) {
+                                        continue;
+                                    }
+                                    if ($normalizedPath !== '') {
+                                        $seenDocumentPaths[$normalizedPath] = true;
+                                    }
+                                    $displayDocs[$docKey] = $document;
+                                }
                                 $docStatus = $acc->document_status ?? 'pending';
                                 $isComplete = ($docStatus === 'complete');
                                 $isIncomplete = ($docStatus === 'incomplete');
@@ -274,9 +338,9 @@
                                     <div class="space-y-1.5">
                                         <div class="flex flex-wrap gap-1.5">
                                             @if(is_array($docs) && count($docs) > 0)
-                                                @foreach($docs as $key => $doc)
+                                                @foreach($displayDocs as $key => $doc)
                                                     <button type="button" 
-                                                            @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs), "{{ $key }}")'
+                                                            @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs), {{ $acc->accreditation_id }}, "{{ $key }}")'
                                                             class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-900 hover:border-emerald-300 border border-slate-200/80 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors cursor-pointer group"
                                                             title="Click to inspect this document">
                                                         <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -378,6 +442,16 @@
                                             <svg class="w-2.5 h-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                                         </a>
 
+                                        @if(is_array($docs) && count($docs) > 0)
+                                            <button type="button"
+                                                    @click='openDocInspection("{{ addslashes($acc->company_name) }}", @json($docs), {{ $acc->accreditation_id }})'
+                                                    class="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 transition-colors inline-flex items-center gap-1.5 shrink-0"
+                                                    title="Review uploaded accreditation papers">
+                                                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                <span>View Docs</span>
+                                            </button>
+                                        @endif
+
                                         <!-- Action Buttons: Same Function as Admin (Accredit, Reject, Disaccredit, Certificate) -->
                                         @if($acc->status === 'admin_approved')
                                             <!-- Official Accreditation Certificate -->
@@ -410,8 +484,9 @@
                                                 </button>
                                             </form>
 
-                                            <!-- Recommend to Admin Button -->
-                                            @if($acc->status === 'submitted_to_jpo' && $isComplete)
+                                            <!-- Recommend to Admin Button (Conditioned on Documents Complete) -->
+                                            @if($acc->status === 'submitted_to_jpo')
+                                                @if($isComplete)
                                                 <button type="button" 
                                                         @click='openRecommend({{ $acc->accreditation_id }}, "{{ addslashes($acc->company_name) }}", "{{ $docStatus }}", "")'
                                                         class="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold transition-all inline-flex items-center gap-1 shrink-0"

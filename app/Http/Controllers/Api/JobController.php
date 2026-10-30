@@ -36,7 +36,13 @@ class JobController extends Controller
             $reqs = array_values(array_filter(array_map('trim', $lines)));
         }
 
-        $jobSkills = $this->matchingService->getJobSkills($job);
+        $requiredSkills = [];
+        if (!empty($job->skills)) {
+            $lines = preg_split('/[\r\n,;]+/', $job->skills);
+            $requiredSkills = array_values(array_filter(array_map('trim', $lines ?: [])));
+        }
+
+        $jobSkills = $this->matchingService->getJobSkills($job, $userSkills);
         $match = null;
         $matchPercentage = null;
         $matchedSkills = [];
@@ -62,14 +68,17 @@ class JobController extends Controller
             'company_name' => $companyName,
             'employer_id' => $job->employer_id,
             'location' => $location,
-            'type' => 'Full-time',
-            'employment_type' => 'Full-time',
-            'salary' => '₱18,000 - ₱35,000',
-            'salary_expectation' => '₱18,000 - ₱35,000',
+            'type' => $job->job_type ?? '',
+            'employment_type' => $job->job_type ?? '',
+            'salary' => $job->salary_range ?? '',
+            'salary_expectation' => $job->salary_range ?? '',
             'description' => $job->description ?? 'No description provided.',
             'qualifications' => $job->qualifications ?? '',
             'requirements' => $reqs,
+            'required_skills' => $requiredSkills,
             'skills' => $jobSkills,
+            'benefits' => $job->benefits ?? '',
+            'other_instructions' => $job->other_instructions ?? '',
             'vacancy_count' => $job->vacancy_count ?? 1,
             'vacancyCount' => $job->vacancy_count ?? 1,
             'valid_until' => $job->valid_until ? $job->valid_until->format('Y-m-d') : null,
@@ -99,7 +108,7 @@ class JobController extends Controller
             ? JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->pluck('job_id')->toArray() 
             : [];
 
-        $query = JobPosting::with('employer');
+        $query = JobPosting::with('employer')->availableForJobseekers();
 
         $searchTerm = $request->input('q', $request->input('query'));
         if (!empty($searchTerm)) {
@@ -147,7 +156,7 @@ class JobController extends Controller
      */
     public function getById(Request $request, $id)
     {
-        $job = JobPosting::with('employer')->find($id);
+        $job = JobPosting::with('employer')->availableForJobseekers()->find($id);
 
         if (!$job) {
             return response()->json([
@@ -158,7 +167,7 @@ class JobController extends Controller
 
         $jobseeker = $this->resolveJobseeker($request);
         $userSkills = $jobseeker ? $this->matchingService->getJobseekerSkills($jobseeker) : [];
-        $jobSkills = $this->matchingService->getJobSkills($job);
+        $jobSkills = $this->matchingService->getJobSkills($job, $userSkills);
         $match = $this->matchingService->calculateMatch($userSkills, $jobSkills);
 
         $hasApplied = false;
