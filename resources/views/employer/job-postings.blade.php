@@ -243,7 +243,7 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
                                 @endif
                             </td>
                             <td class="py-4 px-3 text-right">
-                                <div class="inline-flex items-center gap-1.5">
+                                <div class="ml-auto flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
                                     <a href="{{ route('employer.job-postings.show', $job->job_id) }}"
                                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,20 +263,22 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
 
                                     @if($job->status !== 'closed')
                                     <button type="button" @click="openClose({{ $job->job_id }})"
-                                        class="p-1.5 rounded-xl text-slate-400 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                                        class="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-800 transition-colors hover:bg-amber-100"
                                         title="Close Vacancy">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                         </svg>
+                                        <span>Close</span>
                                     </button>
                                     @endif
 
                                     <button type="button" @click="openDelete({{ $job->job_id }})"
-                                        class="p-1.5 rounded-xl text-slate-400 hover:text-rose-700 hover:bg-rose-50 transition-colors"
+                                        class="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-100"
                                         title="Delete Job">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
+                                        <span>Delete</span>
                                     </button>
                                 </div>
                             </td>

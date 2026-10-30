@@ -245,7 +245,7 @@
                                     @endif
                                 </td>
                                 <td class="py-4 px-6 text-right">
-                                    <div class="flex items-center justify-end gap-1.5">
+                                    <div class="ml-auto flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
                                         <button type="button"
                                                 data-action="approve-user"
                                                 data-approve-url="{{ route('jpo.evaluations.jobseekers.approve', $js->jobseeker_id) }}"

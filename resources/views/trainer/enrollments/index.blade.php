@@ -129,7 +129,7 @@
                                     @endif
                                 </td>
                                 <td class="py-4 px-3 text-right">
-                                    <div class="flex items-center justify-end gap-1.5 flex-wrap">
+                                    <div class="ml-auto flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
                                         <!-- 1. Update Enrollment Status -->
                                         <button type="button" 
                                                 @click="openStatus({{ $enr->enrollment_id }}, '{{ $enr->first_name }} {{ $enr->last_name }}', '{{ $enr->status }}', '{{ addslashes($enr->lab_remarks ?? '') }}')"

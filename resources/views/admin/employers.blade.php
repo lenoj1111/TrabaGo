@@ -207,7 +207,7 @@
                                     </span>
                                 </td>
                                 <td class="py-4 px-6 text-right">
-                                    <div class="inline-flex items-center gap-1.5">
+                                    <div class="ml-auto flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
                                         <button type="button"
                                                 @click="openEmployerDetails(@js([
                                                     'id' => $employer->employer_id,
@@ -407,9 +407,9 @@
                 </template>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
-                    <div class="flex items-center gap-2 flex-wrap">
+                    <div class="flex flex-col items-start gap-2">
                         <template x-if="!selectedEmployerDetails.accredited">
-                            <div class="flex items-center gap-2 flex-wrap">
+                            <div class="flex flex-col items-start gap-2">
                                 <button type="button" @click="employerDetailsOpen = false; accreditEmployer(selectedEmployerDetails.id, selectedEmployerDetails.jpo_reviewed)"
                                         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white font-bold text-xs shadow-sm transition-colors"
                                         :class="selectedEmployerDetails.jpo_reviewed ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-amber-600 hover:bg-amber-500'">
@@ -426,7 +426,7 @@
                         </template>
 
                         <template x-if="selectedEmployerDetails.accredited">
-                            <div class="flex items-center gap-2 flex-wrap">
+                            <div class="flex flex-col items-start gap-2">
                                 <a :href="'/admin/employers/' + selectedEmployerDetails.id + '/certificate'" target="_blank"
                                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs transition-colors">
                                     <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>

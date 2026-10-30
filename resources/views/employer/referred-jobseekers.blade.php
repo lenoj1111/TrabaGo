@@ -458,7 +458,7 @@
                         @if($app->status === 'hired')
                         <div class="flex items-center justify-between w-full gap-2 flex-wrap">
                             @if($app->resignation_status === 'requested')
-                            <div class="flex items-center gap-2">
+                            <div class="flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
                                 <button type="button"
                                     @click="openResignation({{ $app->application_id }}, '{{ addslashes($fullName) }}', 'approve')"
                                     class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md shadow-emerald-600/20 transition-all">
@@ -525,7 +525,7 @@
                             <span class="text-xs font-semibold text-slate-500">
                                 Offer declined by candidate.
                             </span>
-                            <div class="flex items-center gap-2">
+                            <div class="flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
                                 <button type="button"
                                     @click="openOffer({{ $app->application_id }}, '{{ addslashes($fullName) }}')"
                                     class="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 transition-colors">
@@ -545,7 +545,7 @@
                             </div>
                         </div>
                         @else
-                        <div class="flex items-center gap-2 flex-wrap">
+                        <div class="flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
                             <button type="button"
                                 @click="openInterview({{ $app->application_id }}, '{{ addslashes($fullName) }}')"
                                 class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-xs font-bold transition-colors">

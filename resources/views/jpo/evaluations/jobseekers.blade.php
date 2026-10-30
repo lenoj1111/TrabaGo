@@ -185,7 +185,7 @@
 
                             <!-- Actions -->
                             <td class="py-4 px-6 text-right">
-                                <div class="inline-flex items-center gap-2 justify-end">
+                                <div class="ml-auto flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
                                     <!-- View Button (Triggers Modal) -->
                                     <button type="button" @click="openDetail({{ json_encode($appData) }})"
                                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors">

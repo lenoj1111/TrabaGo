@@ -431,7 +431,7 @@
 
                                 <!-- Actions Column -->
                                 <td class="py-4 px-5 align-top text-right whitespace-nowrap">
-                                    <div class="flex items-center justify-end gap-2">
+                                    <div class="ml-auto flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
                                         
                                         <!-- Official Establishment Registration PDF View -->
                                         <a href="{{ route('jpo.evaluations.accreditations.print', $acc->accreditation_id) }}" target="_blank"

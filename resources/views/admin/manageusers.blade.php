@@ -213,7 +213,7 @@
                                     {{ $user->created_at ? date('M d, Y', strtotime($user->created_at)) : 'N/A' }}
                                 </td>
                                 <td class="py-4 px-6 text-right">
-                                    <div class="inline-flex items-center justify-end gap-1.5 flex-wrap">
+                                    <div class="ml-auto flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
                                         @php
                                             $userData = [
                                                 'user_id' => $user->user_id,

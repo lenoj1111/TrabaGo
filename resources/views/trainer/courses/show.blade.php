@@ -135,7 +135,7 @@
                                         <h4 class="text-xs font-bold text-slate-900 leading-snug">{{ $item->question }}</h4>
                                     </div>
 
-                                    <div class="flex items-center gap-1 shrink-0">
+                                    <div class="flex shrink-0 flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
                                         <!-- Edit Question Button -->
                                         <button @click="activeQuestion = {
                                             id: {{ $item->assessment_id }},
@@ -144,16 +144,18 @@
                                             correct_answer: {{ (int) $item->correct_answer }},
                                             explanation: '{{ addslashes($item->explanation ?? '') }}',
                                             points: {{ (int) ($item->points ?? 1) }}
-                                        }; editQuestionModal = true;" type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors" title="Edit Question">
+                                        }; editQuestionModal = true;" type="button" class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-200" title="Edit Question">
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                            <span>Edit</span>
                                         </button>
 
                                         <!-- Delete Question -->
                                         <form action="{{ route('trainer.courses.assessments.destroy', [$course->training_id, $item->assessment_id]) }}" method="POST" onsubmit="return confirm('Delete this assessment question?');" class="inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Delete Question">
+                                            <button type="submit" class="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-100" title="Delete Question">
                                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                <span>Delete</span>
                                             </button>
                                         </form>
                                     </div>

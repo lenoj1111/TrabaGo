@@ -151,7 +151,7 @@
                             Manage & Assessments &rarr;
                         </a>
 
-                        <div class="flex items-center gap-1">
+                        <div class="flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
                             <!-- Edit Button -->
                             <button @click="activeCourse = {
                                 id: {{ $course->training_id }},
@@ -162,16 +162,18 @@
                                 skills: '{{ addslashes($course->skills ?? '') }}',
                                 passing_score: {{ $course->passing_score ?: 80 }},
                                 auto_generate_certificate: {{ ($course->auto_generate_certificate ?? true) ? 1 : 0 }}
-                            }; editModal = true;" type="button" class="p-2 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors" title="Edit Course">
+                            }; editModal = true;" type="button" class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-200" title="Edit Course">
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                <span>Edit</span>
                             </button>
 
                             <!-- Delete Form -->
                             <form action="{{ route('trainer.courses.destroy', $course->training_id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this course? All modules and trainer assessments will be deleted.');" class="inline">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Delete Course">
+                                <button type="submit" class="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-100" title="Delete Course">
                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    <span>Delete</span>
                                 </button>
                             </form>
                         </div>
