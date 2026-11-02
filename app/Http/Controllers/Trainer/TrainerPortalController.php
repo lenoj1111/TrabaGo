@@ -20,6 +20,11 @@ use Illuminate\Support\Str;
 
 class TrainerPortalController extends Controller
 {
+    private function hasTrainerAuthoredAssessments(int $trainingId): bool
+    {
+        return TrainingAssessment::where('training_id', $trainingId)->exists();
+    }
+
     /**
      * Get or create trainer user profile ID.
      */
@@ -165,7 +170,18 @@ class TrainerPortalController extends Controller
             );
 
         if ($request->filled('status')) {
-            $query->where('training_enrollments.status', $request->status);
+            $request->validate(['status' => 'in:enrolled,in_progress,completed,needs_retake,pending_review']);
+            if ($request->status === 'needs_retake') {
+                $query->where(function ($subQuery) {
+                    $subQuery->where('training_enrollments.status', 'failed')
+                        ->orWhere('training_enrollments.answers', 'LIKE', '%"review_status":"needs_retake"%');
+                });
+            } elseif ($request->status === 'pending_review') {
+                $query->where('training_enrollments.status', 'in_progress')
+                    ->where('training_enrollments.answers', 'LIKE', '%"review_status":"pending"%');
+            } else {
+                $query->where('training_enrollments.status', $request->status);
+            }
         }
 
         if ($request->filled('search')) {
@@ -196,6 +212,15 @@ class TrainerPortalController extends Controller
         $enrollment = DB::table('training_enrollments')->where('enrollment_id', $id)->first();
         if (!$enrollment) {
             return back()->with('error', 'Enrollment record not found.');
+        }
+        $answers = json_decode($enrollment->answers ?? '[]', true) ?: [];
+        if ($request->status === 'completed' && in_array($answers['review_status'] ?? null, ['pending', 'needs_retake'], true)) {
+            return back()->with('error', 'Review the submitted quiz and record a passing decision before marking this learner as completed.');
+        }
+        if ($request->status === 'completed'
+            && $this->hasTrainerAuthoredAssessments((int) $enrollment->training_id)
+            && ($answers['review_status'] ?? null) !== 'passed') {
+            return back()->with('error', 'The learner must submit the course quiz and receive trainer approval before completion.');
         }
 
         $updateData = [
@@ -242,7 +267,9 @@ class TrainerPortalController extends Controller
                 'jobseekers.last_name',
                 'jobseekers.email as jobseeker_email',
                 'training_programs.title as course_title',
-                'training_programs.description as course_desc'
+                'training_programs.description as course_desc',
+                'training_programs.passing_score',
+                'training_programs.auto_generate_certificate'
             )
             ->first();
 
@@ -250,21 +277,31 @@ class TrainerPortalController extends Controller
             return redirect()->route('trainer.enrollments.index')->with('error', 'Enrollment not found.');
         }
 
+        $answers = is_array($enrollment->answers)
+            ? $enrollment->answers
+            : (json_decode($enrollment->answers ?? '[]', true) ?: []);
         if ($request->isMethod('post')) {
             $request->validate([
-                'score' => 'required|numeric|min:0|max:100',
+                'outcome' => 'required|in:passed,needs_retake',
                 'trainer_feedback' => 'nullable|string|max:1000',
             ]);
+            $passed = $request->outcome === 'passed';
+            $status = $passed ? 'completed' : 'in_progress';
 
-            $passed = $request->score >= 80;
-            $status = $passed ? 'completed' : 'failed';
+            if (($answers['review_status'] ?? null) !== 'pending') {
+                return back()->with('error', 'Only assessments awaiting trainer review can be evaluated.');
+            }
+            $answers['review_status'] = $passed ? 'passed' : 'needs_retake';
+            $answers['reviewed_at'] = now()->toIso8601String();
+            $answers['reviewed_by'] = Auth::id();
 
             DB::table('training_enrollments')->where('enrollment_id', $id)->update([
-                'score' => $request->score,
+                'score' => data_get($answers, 'objective_score.percentage', $enrollment->score),
                 'passed' => $passed ? 1 : 0,
                 'status' => $status,
                 'trainer_feedback' => $request->trainer_feedback,
-                'end_date' => now()->toDateString(),
+                'end_date' => $passed ? now()->toDateString() : null,
+                'answers' => json_encode($answers),
             ]);
 
             // Notify jobseeker
@@ -273,7 +310,7 @@ class TrainerPortalController extends Controller
                 DB::table('notifications')->insert([
                     'user_id' => $jobseeker->user_id,
                     'title' => 'Training Course Evaluated',
-                    'message' => "Your assessment for '{$enrollment->course_title}' has been evaluated. Score: {$request->score}%. Status: " . ($passed ? 'PASSED' : 'NEEDS IMPROVEMENT'),
+                    'message' => "Your assessment for '{$enrollment->course_title}' has been reviewed. Outcome: " . ($passed ? 'PASSED' : 'NEEDS RETAKE') . ($request->trainer_feedback ? ". Trainer feedback: {$request->trainer_feedback}" : ''),
                     'type' => 'training',
                     'is_read' => 0,
                     'related_id' => $id,
@@ -282,10 +319,22 @@ class TrainerPortalController extends Controller
                 ]);
             }
 
-            return redirect()->route('trainer.enrollments.index')->with('success', 'Assessment evaluation saved successfully.');
+            if ($passed && $enrollment->auto_generate_certificate) {
+                return $this->generateCertificate($request, $id);
+            }
+
+            return redirect()->route('trainer.enrollments.index')->with(
+                'success',
+                $passed
+                    ? 'Assessment passed. The certificate is ready for trainer issuance.'
+                    : 'Assessment reviewed. The learner needs to retake the quiz.'
+            );
         }
 
-        $answers = is_array($enrollment->answers) ? $enrollment->answers : json_decode($enrollment->answers ?? '[]', true);
+        if (($answers['review_status'] ?? null) !== 'pending') {
+            return redirect()->route('trainer.enrollments.index')
+                ->with('info', 'This assessment is not awaiting trainer review.');
+        }
 
         return view('trainer.enrollments.evaluate', compact('enrollment', 'answers'));
     }
@@ -315,6 +364,19 @@ class TrainerPortalController extends Controller
             return redirect()->route('trainer.enrollments.index')->with('error', 'Enrollment not found.');
         }
 
+        $enrollmentAnswers = json_decode($enrollment->answers ?? '[]', true) ?: [];
+        if (($enrollmentAnswers['review_status'] ?? null) === 'pending') {
+            return redirect()->route('trainer.enrollments.evaluate', $id);
+        }
+        if ($this->hasTrainerAuthoredAssessments((int) $enrollment->training_id)) {
+            return redirect()->route('trainer.enrollments.index')
+                ->with('info', 'The learner must submit the course quiz for trainer review before another assessment can be conducted.');
+        }
+        if (in_array($enrollmentAnswers['review_status'] ?? null, ['passed', 'needs_retake'], true)) {
+            return redirect()->route('trainer.enrollments.index')
+                ->with('info', 'Use the quiz review decision for this enrollment; a new assessment is available after the learner retakes the quiz.');
+        }
+
         $answers = is_array($enrollment->answers) ? $enrollment->answers : json_decode($enrollment->answers ?? '[]', true);
         $assessments = TrainingAssessment::where('training_id', $enrollment->training_id)->get();
 
@@ -341,6 +403,13 @@ class TrainerPortalController extends Controller
 
         if (!$enrollment) {
             return redirect()->route('trainer.enrollments.index')->with('error', 'Enrollment not found.');
+        }
+        if ($this->hasTrainerAuthoredAssessments((int) $enrollment->training_id)) {
+            return back()->with('error', 'This course uses trainer-reviewed quiz answers. Review the submitted quiz instead of entering a separate score.');
+        }
+        $enrollmentAnswers = json_decode($enrollment->answers ?? '[]', true) ?: [];
+        if (in_array($enrollmentAnswers['review_status'] ?? null, ['pending', 'passed', 'needs_retake'], true)) {
+            return back()->with('error', 'Use the quiz review decision for this enrollment; a new assessment is available after the learner retakes the quiz.');
         }
 
         $passingThreshold = $enrollment->passing_score ?: 80;
@@ -424,7 +493,14 @@ class TrainerPortalController extends Controller
         if (!$enrollment) {
             return back()->with('error', 'Enrollment record not found.');
         }
-
+        $answers = json_decode($enrollment->answers ?? '[]', true) ?: [];
+        if (in_array($answers['review_status'] ?? null, ['pending', 'needs_retake'], true)) {
+            return back()->with('error', 'Review the submitted quiz and record a passing decision before marking this learner as completed.');
+        }
+        if ($this->hasTrainerAuthoredAssessments((int) $enrollment->training_id)
+            && ($answers['review_status'] ?? null) !== 'passed') {
+            return back()->with('error', 'The learner must submit the course quiz and receive trainer approval before completion.');
+        }
         DB::table('training_enrollments')->where('enrollment_id', $id)->update([
             'status' => 'completed',
             'passed' => 1,
@@ -496,6 +572,17 @@ class TrainerPortalController extends Controller
 
         if (!$enrollment) {
             return back()->with('error', 'Enrollment record not found.');
+        }
+        $answers = json_decode($enrollment->answers ?? '[]', true) ?: [];
+        if (in_array($answers['review_status'] ?? null, ['pending', 'needs_retake'], true)) {
+            return back()->with('error', 'A certificate can only be issued after the trainer approves the assessment.');
+        }
+        if ($this->hasTrainerAuthoredAssessments((int) $enrollment->training_id)
+            && ($answers['review_status'] ?? null) !== 'passed') {
+            return back()->with('error', 'A certificate can only be issued after the trainer approves the assessment.');
+        }
+        if ((int) $enrollment->passed !== 1 || $enrollment->status !== 'completed') {
+            return back()->with('error', 'A certificate can only be issued after the trainer approves the assessment.');
         }
 
         // Generate unique certificate ID
@@ -649,6 +736,72 @@ class TrainerPortalController extends Controller
     }
 
     /**
+     * Show enrolled jobseekers for a course with month and progress filters.
+     */
+    public function courseEnrollments(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'month' => ['nullable', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
+            'status' => 'nullable|in:ongoing,completed,pending_review,needs_retake',
+        ]);
+        $course = TrainingProgram::findOrFail($id);
+
+        $query = DB::table('training_enrollments')
+            ->join('jobseekers', 'training_enrollments.jobseeker_id', '=', 'jobseekers.jobseeker_id')
+            ->where('training_enrollments.training_id', $course->training_id)
+            ->select(
+                'training_enrollments.enrollment_id',
+                'training_enrollments.status',
+                'training_enrollments.start_date',
+                'training_enrollments.end_date',
+                'training_enrollments.score',
+                'training_enrollments.certificate_issued',
+                'training_enrollments.answers',
+                'jobseekers.first_name',
+                'jobseekers.last_name',
+                'jobseekers.email as jobseeker_email',
+                'jobseekers.mobile_number'
+            );
+
+        if (!empty($validated['month'])) {
+            $monthStart = \Carbon\Carbon::createFromFormat('!Y-m', $validated['month']);
+            $query->whereBetween('training_enrollments.start_date', [
+                $monthStart->toDateString(),
+                $monthStart->copy()->endOfMonth()->toDateString(),
+            ]);
+        }
+
+        if (($validated['status'] ?? null) === 'ongoing') {
+            $query->whereIn('training_enrollments.status', ['enrolled', 'in_progress'])
+                ->where(function ($subQuery) {
+                    $subQuery->whereNull('training_enrollments.answers')
+                        ->orWhere('training_enrollments.answers', 'NOT LIKE', '%"review_status":"pending"%');
+                })
+                ->where(function ($subQuery) {
+                    $subQuery->whereNull('training_enrollments.answers')
+                        ->orWhere('training_enrollments.answers', 'NOT LIKE', '%"review_status":"needs_retake"%');
+                });
+        } elseif (($validated['status'] ?? null) === 'completed') {
+            $query->where('training_enrollments.status', 'completed');
+        } elseif (($validated['status'] ?? null) === 'needs_retake') {
+            $query->where(function ($subQuery) {
+                $subQuery->where('training_enrollments.status', 'failed')
+                    ->orWhere('training_enrollments.answers', 'LIKE', '%"review_status":"needs_retake"%');
+            });
+        } elseif (($validated['status'] ?? null) === 'pending_review') {
+            $query->where('training_enrollments.status', 'in_progress')
+                ->where('training_enrollments.answers', 'LIKE', '%"review_status":"pending"%');
+        }
+
+        $enrollments = $query
+            ->orderByDesc('training_enrollments.enrollment_id')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('trainer.courses.enrollments', compact('course', 'enrollments'));
+    }
+
+    /**
      * Show detailed view of a Course, its Curriculum, Enrollees, and Assessments.
      */
     public function showCourse($id)
@@ -794,23 +947,28 @@ class TrainerPortalController extends Controller
     {
         $course = TrainingProgram::findOrFail($id);
 
-        $request->validate([
+        $validated = $request->validate([
             'question' => 'required|string|max:1000',
-            'question_type' => 'nullable|string|in:multiple_choice,true_false',
-            'options' => 'required|array|min:2|max:6',
+            'question_type' => 'required|in:multiple_choice,true_false,essay',
+            'options' => 'required_if:question_type,multiple_choice,true_false|array|min:2|max:6',
             'options.*' => 'required|string|max:300',
-            'correct_answer' => 'required|integer|min:0',
+            'correct_answer' => 'required_if:question_type,multiple_choice,true_false|integer|min:0',
             'explanation' => 'nullable|string|max:1000',
             'points' => 'nullable|integer|min:1|max:10',
         ]);
 
+        $options = $validated['question_type'] === 'essay' ? [] : array_values($validated['options']);
+        if ($validated['question_type'] !== 'essay' && $validated['correct_answer'] >= count($options)) {
+            return back()->withErrors(['correct_answer' => 'Choose one of the listed answer choices.'])->withInput();
+        }
+
         TrainingAssessment::create([
             'training_id' => $course->training_id,
-            'question' => trim($request->question),
-            'question_type' => $request->question_type ?: 'multiple_choice',
-            'options' => array_values($request->options),
-            'correct_answer' => (int) $request->correct_answer,
-            'explanation' => $request->explanation ? trim($request->explanation) : null,
+            'question' => trim($validated['question']),
+            'question_type' => $validated['question_type'],
+            'options' => $options,
+            'correct_answer' => $validated['question_type'] === 'essay' ? 0 : (int) $validated['correct_answer'],
+            'explanation' => !empty($validated['explanation']) ? trim($validated['explanation']) : null,
             'points' => $request->filled('points') ? (int) $request->points : 1,
         ]);
 
@@ -824,20 +982,27 @@ class TrainerPortalController extends Controller
     {
         $assessment = TrainingAssessment::where('training_id', $id)->where('assessment_id', $assessmentId)->firstOrFail();
 
-        $request->validate([
+        $validated = $request->validate([
             'question' => 'required|string|max:1000',
-            'options' => 'required|array|min:2|max:6',
+            'question_type' => 'required|in:multiple_choice,true_false,essay',
+            'options' => 'required_if:question_type,multiple_choice,true_false|array|min:2|max:6',
             'options.*' => 'required|string|max:300',
-            'correct_answer' => 'required|integer|min:0',
+            'correct_answer' => 'required_if:question_type,multiple_choice,true_false|integer|min:0',
             'explanation' => 'nullable|string|max:1000',
             'points' => 'nullable|integer|min:1|max:10',
         ]);
 
+        $options = $validated['question_type'] === 'essay' ? [] : array_values($validated['options']);
+        if ($validated['question_type'] !== 'essay' && $validated['correct_answer'] >= count($options)) {
+            return back()->withErrors(['correct_answer' => 'Choose one of the listed answer choices.'])->withInput();
+        }
+
         $assessment->update([
-            'question' => trim($request->question),
-            'options' => array_values($request->options),
-            'correct_answer' => (int) $request->correct_answer,
-            'explanation' => $request->explanation ? trim($request->explanation) : null,
+            'question' => trim($validated['question']),
+            'question_type' => $validated['question_type'],
+            'options' => $options,
+            'correct_answer' => $validated['question_type'] === 'essay' ? 0 : (int) $validated['correct_answer'],
+            'explanation' => !empty($validated['explanation']) ? trim($validated['explanation']) : null,
             'points' => $request->filled('points') ? (int) $request->points : 1,
         ]);
 

@@ -230,6 +230,28 @@ class JobseekerComprehensiveFunctionalityTest extends TestCase
         $duplicateResponse->assertSessionHas('warning');
     }
 
+    public function test_approved_jobseeker_can_apply_through_api_with_incomplete_documents(): void
+    {
+        $this->user->update([
+            'status' => 'active',
+            'is_approved' => 1,
+            'account_status' => 'verified',
+        ]);
+        DB::table('jobseeker_details')
+            ->where('jobseeker_id', $this->jobseeker->jobseeker_id)
+            ->update(['training_certificates' => json_encode([])]);
+
+        $response = $this->actingAs($this->user, 'sanctum')
+            ->postJson("/api/jobs/{$this->jobId}/apply", ['jobId' => $this->jobId]);
+
+        $response->assertOk()->assertJsonPath('success', true);
+        $this->assertDatabaseHas('job_applications', [
+            'job_id' => $this->jobId,
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'status' => 'pending',
+        ]);
+    }
+
     public function test_applications_pipeline_view_and_withdrawal(): void
     {
         // Submit an application
@@ -265,17 +287,17 @@ class JobseekerComprehensiveFunctionalityTest extends TestCase
         // View Quiz Page
         $quizResponse = $this->actingAs($this->user)->get("/jobseeker/training/{$this->trainingId}/quiz");
         $quizResponse->assertOk();
-        $quizResponse->assertSee('Skill Certification Assessment');
+        $quizResponse->assertSee('The trainer has not added questions to this course yet.');
 
-        // Submit Quiz with Passing Score (>= 80%)
+        // A course without trainer-authored questions cannot be submitted.
         $submitResponse = $this->actingAs($this->user)->post("/jobseeker/training/{$this->trainingId}/quiz", [
             'score' => 90,
             'passed' => 1,
         ]);
-        $submitResponse->assertRedirect("/jobseeker/training/{$this->trainingId}");
+        $submitResponse->assertRedirect();
+        $submitResponse->assertSessionHas('error');
 
-        // Verify Skill was Automatically Granted to Jobseeker Profile
-        $this->assertDatabaseHas('jobseeker_skills', [
+        $this->assertDatabaseMissing('jobseeker_skills', [
             'jobseeker_id' => $this->jobseeker->jobseeker_id,
             'skill_name' => 'Web Development with Laravel & SQL',
         ]);
@@ -371,23 +393,14 @@ class JobseekerComprehensiveFunctionalityTest extends TestCase
         ]);
     }
 
-    public function test_training_quiz_guarantees_minimum_five_questions_and_proper_options(): void
+    public function test_training_quiz_does_not_generate_questions_without_trainer_authored_assessment(): void
     {
         $quizResponse = $this->actingAs($this->user)->get("/jobseeker/training/{$this->trainingId}/quiz");
         $quizResponse->assertOk();
 
-        // Verify view data contains at least 5 questions
         $questions = $quizResponse->viewData('questions');
         $this->assertIsArray($questions);
-        $this->assertGreaterThanOrEqual(5, count($questions));
-
-        // Verify every question has question text, choices, and numeric answer
-        foreach ($questions as $q) {
-            $this->assertArrayHasKey('question', $q);
-            $this->assertNotEmpty($q['question']);
-            $this->assertArrayHasKey('choices', $q);
-            $this->assertGreaterThanOrEqual(2, count($q['choices']));
-            $this->assertArrayHasKey('answer', $q);
-        }
+        $this->assertEmpty($questions);
+        $quizResponse->assertSee('Please wait for the trainer to prepare the assessment.');
     }
 }

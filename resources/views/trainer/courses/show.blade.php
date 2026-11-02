@@ -6,9 +6,11 @@
 <div x-data="{ 
     addQuestionModal: false, 
     editQuestionModal: false,
+    newQuestionType: 'multiple_choice',
     activeQuestion: {
         id: null,
         question: '',
+        type: 'multiple_choice',
         options: ['', '', '', ''],
         correct_answer: 0,
         explanation: '',
@@ -134,45 +136,53 @@
                                         </span>
                                         <h4 class="text-xs font-bold text-slate-900 leading-snug">{{ $item->question }}</h4>
                                     </div>
+                                    <span class="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold uppercase text-indigo-700">{{ $item->question_type === 'essay' ? 'Essay' : 'Multiple Choice' }}</span>
 
-                                    <div class="flex items-center gap-1 shrink-0">
+                                    <div class="flex shrink-0 flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
                                         <!-- Edit Question Button -->
                                         <button @click="activeQuestion = {
                                             id: {{ $item->assessment_id }},
                                             question: '{{ addslashes($item->question) }}',
-                                            options: {{ json_encode($choices) }},
+                                            options: {{ json_encode(count($choices) ? $choices : ['', '', '', '']) }},
+                                            type: '{{ $item->question_type ?: 'multiple_choice' }}',
                                             correct_answer: {{ (int) $item->correct_answer }},
                                             explanation: '{{ addslashes($item->explanation ?? '') }}',
                                             points: {{ (int) ($item->points ?? 1) }}
-                                        }; editQuestionModal = true;" type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors" title="Edit Question">
+                                        }; editQuestionModal = true;" type="button" class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-200" title="Edit Question">
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                            <span>Edit</span>
                                         </button>
 
                                         <!-- Delete Question -->
                                         <form action="{{ route('trainer.courses.assessments.destroy', [$course->training_id, $item->assessment_id]) }}" method="POST" onsubmit="return confirm('Delete this assessment question?');" class="inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Delete Question">
+                                            <button type="submit" class="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-100" title="Delete Question">
                                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                <span>Delete</span>
                                             </button>
                                         </form>
                                     </div>
                                 </div>
 
                                 <!-- Choices -->
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 pl-8">
-                                    @foreach($choices as $cIndex => $choice)
-                                        <div class="rounded-xl px-3 py-2 text-xs flex items-center gap-2 border {{ (int)$item->correct_answer === $cIndex ? 'border-emerald-500 bg-emerald-50 text-emerald-950 font-bold' : 'border-slate-200 bg-white text-slate-700' }}">
-                                            <span class="h-4 w-4 rounded-full flex items-center justify-center text-[10px] {{ (int)$item->correct_answer === $cIndex ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 text-slate-500' }}">
-                                                {{ chr(65 + $cIndex) }}
-                                            </span>
-                                            <span class="truncate">{{ $choice }}</span>
-                                            @if((int)$item->correct_answer === $cIndex)
-                                                <span class="ml-auto text-[10px] text-emerald-700 uppercase font-black tracking-wider">Correct</span>
-                                            @endif
-                                        </div>
-                                    @endforeach
-                                </div>
+                                @if($item->question_type === 'essay')
+                                    <p class="pl-8 text-xs font-semibold text-indigo-700">Essay response - trainer reviewed</p>
+                                @else
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 pl-8">
+                                        @foreach($choices as $cIndex => $choice)
+                                            <div class="rounded-xl px-3 py-2 text-xs flex items-center gap-2 border {{ (int)$item->correct_answer === $cIndex ? 'border-emerald-500 bg-emerald-50 text-emerald-950 font-bold' : 'border-slate-200 bg-white text-slate-700' }}">
+                                                <span class="h-4 w-4 rounded-full flex items-center justify-center text-[10px] {{ (int)$item->correct_answer === $cIndex ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 text-slate-500' }}">
+                                                    {{ chr(65 + $cIndex) }}
+                                                </span>
+                                                <span class="truncate">{{ $choice }}</span>
+                                                @if((int)$item->correct_answer === $cIndex)
+                                                    <span class="ml-auto text-[10px] text-emerald-700 uppercase font-black tracking-wider">Correct</span>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
 
                                 @if(!empty($item->explanation))
                                     <div class="pl-8 text-[11px] text-slate-500 italic">
@@ -374,6 +384,14 @@
                     </div>
 
                     <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                        <div>
+                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">Question Type</label>
+                            <select name="question_type" x-model="newQuestionType" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-800">
+                                <option value="multiple_choice">Multiple Choice</option>
+                                <option value="essay">Essay</option>
+                            </select>
+                        </div>
+
                         <!-- Question Prompt -->
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Question Prompt <span class="text-rose-500">*</span></label>
@@ -381,7 +399,7 @@
                         </div>
 
                         <!-- Choices -->
-                        <div class="space-y-3">
+                        <fieldset class="space-y-3" x-show="newQuestionType !== 'essay'" :disabled="newQuestionType === 'essay'">
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Answer Choices & Correct Option <span class="text-rose-500">*</span></label>
                             <p class="text-[11px] text-slate-400">Select the radio button next to the correct answer choice.</p>
 
@@ -392,7 +410,10 @@
                                     <input type="text" name="options[]" required placeholder="Option {{ chr(65 + $i) }}" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
                                 </div>
                             @endfor
-                        </div>
+                        </fieldset>
+                        <p x-show="newQuestionType === 'essay'" class="rounded-xl border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-800">
+                            Jobseekers will enter a written response. The trainer reviews and decides the final result.
+                        </p>
 
                         <!-- Explanation -->
                         <div>
@@ -451,7 +472,15 @@
                             <textarea name="question" x-model="activeQuestion.question" rows="3" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none"></textarea>
                         </div>
 
-                        <div class="space-y-3">
+                        <div>
+                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">Question Type</label>
+                            <select name="question_type" x-model="activeQuestion.type" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-800">
+                                <option value="multiple_choice">Multiple Choice</option>
+                                <option value="essay">Essay</option>
+                            </select>
+                        </div>
+
+                        <fieldset class="space-y-3" x-show="activeQuestion.type !== 'essay'" :disabled="activeQuestion.type === 'essay'">
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Answer Choices & Correct Option <span class="text-rose-500">*</span></label>
                             
                             <template x-for="(opt, idx) in activeQuestion.options" :key="idx">
@@ -461,7 +490,10 @@
                                     <input type="text" name="options[]" x-model="activeQuestion.options[idx]" required class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
                                 </div>
                             </template>
-                        </div>
+                        </fieldset>
+                        <p x-show="activeQuestion.type === 'essay'" class="rounded-xl border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-800">
+                            Jobseekers will enter a written response. The trainer reviews and decides the final result.
+                        </p>
 
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Explanation / Rationale</label>
