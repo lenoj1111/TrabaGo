@@ -35,6 +35,7 @@ class Employer extends Model
     protected $fillable = [
         'user_id',
         'company_name',
+        'company_logo',
         'is_accredited',
         'accredited_at',
     ];

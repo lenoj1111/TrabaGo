@@ -324,6 +324,7 @@ class EmployerPortalController extends Controller
             'other_instructions' => 'nullable|string',
             'qualifications' => 'nullable|string',
             'skills' => 'nullable|string',
+            'company_logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'vacancy_count' => 'required|integer|min:1',
             'valid_until' => ['nullable', 'date', 'after_or_equal:today'],
             'accepts_disability' => 'nullable|boolean',
@@ -1096,6 +1097,28 @@ class EmployerPortalController extends Controller
         ]);
 
         $employer->update(['company_name' => $request->input('company_name')]);
+
+        // Handle company logo upload
+        if ($request->hasFile('company_logo')) {
+            $file = $request->file('company_logo');
+
+            // Delete old logo if it exists
+            if ($employer->company_logo && Storage::disk('public')->exists($employer->company_logo)) {
+                Storage::disk('public')->delete($employer->company_logo);
+            }
+
+            // Store new logo
+            $path = $file->store('employer_logos', 'public');
+            $employer->update(['company_logo' => $path]);
+        }
+
+        // Optional: allow removing the logo
+        if ($request->boolean('remove_logo') && $employer->company_logo) {
+            if (Storage::disk('public')->exists($employer->company_logo)) {
+                Storage::disk('public')->delete($employer->company_logo);
+            }
+            $employer->update(['company_logo' => null]);
+        }
 
         $profile = $user->profile ?: new UserProfile(['user_id' => $user->user_id]);
         $profile->full_name = $request->input('full_name', $profile->full_name);

@@ -22,6 +22,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\Process\Process;
 
 class JobseekerPortalController extends Controller
 {
@@ -261,10 +263,10 @@ class JobseekerPortalController extends Controller
         $jobseeker = $this->getOrCreateJobseeker();
         $job = JobPosting::findOrFail($jobId);
 
-        $user = Auth::user();
-        if (!$user || !$user->is_approved) {
-            return redirect()->route('jobseeker.jobs')
-                ->with('error', 'Your account is pending approval. You must be approved before you can apply for a job.');
+        // Check if the OCR verification passed (valid_id is present and not rejected)
+        if (!$jobseeker->isProfileAndDocumentsComplete()) {
+            return redirect()->route('jobseeker.documents')
+                ->with('error', 'You must upload a valid, verified Government ID before you can apply for jobs.');
         }
 
         if ($job->status !== 'approved' || $job->isExpired()) {
@@ -274,10 +276,11 @@ class JobseekerPortalController extends Controller
 
         // Employment Flexibility: Jobseekers remain "Open to all" for opportunities even if currently employed.
 
-        $user = Auth::user();
+        // Read fresh from DB — session-cached user can be stale after OCR auto-verify
+        $user = \App\Models\User::find(Auth::id());
         if (!$user || !$user->isAccountVerified()) {
             return redirect()->route('jobseeker.documents')
-                ->with('error', 'Your account is unverified. Please submit your valid documents in your Document Hub and wait for Admin/JPO verification before applying for jobs.');
+                ->with('error', 'Your account is unverified. Please upload a valid Government ID in your Document Hub so it can be verified automatically before applying for jobs.');
         }
 
         // Check if the user has an ACTIVE application for this job
@@ -342,18 +345,31 @@ class JobseekerPortalController extends Controller
         $application = JobApplication::create([
             'job_id' => $jobId,
             'jobseeker_id' => $jobseeker->jobseeker_id,
-            'status' => 'pending',
+            'status' => 'jpo_pending',   // ← was 'pending'
             'referred_by_jpo' => false,
         ]);
 
         Notification::create([
             'user_id' => Auth::id(),
             'title' => 'Application Submitted',
-            'message' => "Your application for {$job->title} at " . ($job->employer->company_name ?? 'Partner Employer') . " was successfully submitted.",
+            'message' => "Your application for {$job->title} at " . ($job->employer->company_name ?? 'Partner Employer') . " has been submitted and is pending DMDP evaluation.",
             'type' => 'approval',
             'is_read' => false,
             'related_id' => $application->application_id,
         ]);
+
+        // Notify all JPOs and Admins — either can evaluate
+        $reviewers = \App\Models\User::whereIn('role', ['jpo', 'admin'])->get();
+        foreach ($reviewers as $reviewer) {
+            Notification::create([
+                'user_id' => $reviewer->user_id,
+                'title' => 'New Application Awaiting Evaluation',
+                'message' => "{$jobseeker->first_name} {$jobseeker->last_name} applied for '{$job->title}' at " . ($job->employer->company_name ?? 'Partner Employer') . ". Pending JPO/Admin review.",
+                'type' => 'manual_review',
+                'is_read' => false,
+                'related_id' => $application->application_id,
+            ]);
+        }
 
         return redirect()->route('jobseeker.applications')
             ->with('success', "Your application for '{$job->title}' has been submitted successfully!");
@@ -402,20 +418,18 @@ class JobseekerPortalController extends Controller
 
         $counts = [
             'all' => $allApps->count(),
-
             'offered' => $allApps->where('status', 'offered')->count(),
 
-            // Combine JPO Pending, Training, and Employer Pending into "Pending"
-            'pending' => $allApps->whereIn('status', ['jpo_pending', 'pending', 'reviewed', 'training_recommended'])->count(),
+            // Pending DMDP review (JPO hasn't acted yet)
+            'jpo_pending' => $allApps->where('status', 'jpo_pending')->count(),
 
-            'interview' => $allApps->where('status', 'interview')->count(),
-
-            // Only count ACTIVE hires (resignation not approved)
-            'hired' => $allApps->filter(function ($app) {
-                return $app->status === 'hired' && $app->resignation_status !== 'approved';
+            // Endorsed by JPO — waiting for employer (status pending or reviewed AFTER referral)
+            'pending' => $allApps->filter(function ($a) {
+                return $a->referred_by_jpo == 1 && in_array($a->status, ['pending', 'reviewed']);
             })->count(),
 
-            // Count rejected
+            'interview' => $allApps->where('status', 'interview')->count(),
+            'hired' => $allApps->filter(fn($app) => $app->status === 'hired' && $app->resignation_status !== 'approved')->count(),
             'rejected' => $allApps->where('status', 'rejected')->count(),
         ];
 
@@ -840,8 +854,10 @@ class JobseekerPortalController extends Controller
                 if (!is_string($response) || trim($response) === '' || mb_strlen($response) > 5000) {
                     return back()->withErrors(['responses' => 'Essay answers are required and must be 5,000 characters or fewer.']);
                 }
-            } elseif (filter_var($response, FILTER_VALIDATE_INT) === false
-                || !array_key_exists((int) $response, $question['choices'])) {
+            } elseif (
+                filter_var($response, FILTER_VALIDATE_INT) === false
+                || !array_key_exists((int) $response, $question['choices'])
+            ) {
                 return back()->withErrors(['responses' => 'Please select a valid answer for each multiple-choice question.']);
             }
         }
@@ -1057,7 +1073,205 @@ class JobseekerPortalController extends Controller
 
         abort(404, 'Document file not found on storage.');
     }
+    /**
+     * Runs PaddleOCR on an uploaded ID image and returns the raw text.
+     */
+    private function runPaddleOcr(string $absolutePath): ?string
+    {
+        $pythonScript = base_path('app/scripts/ocr_engine.py');
 
+        if (!file_exists($pythonScript) || !file_exists($absolutePath)) {
+            Log::error("OCR failed: Script or image missing.", [
+                'script_exists' => file_exists($pythonScript),
+                'image_exists'  => file_exists($absolutePath),
+                'image_path'    => $absolutePath,
+            ]);
+            return null;
+        }
+
+        try {
+            // PHP-FPM on Windows does not pass USERPROFILE/HOME to subprocesses.
+            // PaddleOCR's ModelScope dependency requires a home directory to
+            // locate its cache, so we pass the env vars explicitly.
+            $home = getenv('USERPROFILE') ?: ('C:\\Users\\' . getenv('USERNAME'));
+            $env = [
+                'USERPROFILE' => $home,
+                'HOME'        => $home,
+                'PATH'        => getenv('PATH'),
+                'SYSTEMROOT'  => getenv('SYSTEMROOT') ?: 'C:\\Windows',
+                'TEMP'        => getenv('TEMP') ?: 'C:\\Windows\\Temp',
+                'TMP'         => getenv('TMP')  ?: 'C:\\Windows\\Temp',
+            ];
+
+            $process = new Process(['py', '-3.12', $pythonScript, $absolutePath], null, $env);
+            $process->setTimeout(60);
+            $process->run();
+
+            if (!$process->isSuccessful()) {
+                Log::warning('PaddleOCR exited non-zero: ' . $process->getErrorOutput());
+                return null;
+            }
+
+            $output = trim($process->getOutput());
+            return $output === '' ? null : $output;
+        } catch (\Throwable $e) {
+            Log::error('PaddleOCR exception: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Normalizes text for comparison (uppercase, letters only).
+     */
+    private function normalizeIdText(string $s): string
+    {
+        $s = strtoupper($s);
+        $s = preg_replace('/[^A-Z\s]/', '', $s);
+        $s = preg_replace('/\s+/', ' ', $s);
+        return trim($s);
+    }
+
+    /**
+     * Extracts and normalizes a date from raw OCR text.
+     */
+    private function extractOcrDate(string $ocrText): ?string
+    {
+        $months = [
+            'JANUARY' => '01',
+            'JANUAR' => '01',
+            'ANUARY' => '01',
+            'FEBRUARY' => '02',
+            'FEBRUAR' => '02',
+            'EBRUARY' => '02',
+            'MARCH' => '03',
+            'MARC' => '03',
+            'ARCH' => '03',
+            'APRIL' => '04',
+            'APRI' => '04',
+            'PRIL' => '04',
+            'MAY' => '05',
+            'JUNE' => '06',
+            'JUN' => '06',
+            'UNE' => '06',
+            'JULY' => '07',
+            'JUL' => '07',
+            'ULY' => '07',
+            'AUGUST' => '08',
+            'AUGUS' => '08',
+            'UGUST' => '08',
+            'SEPTEMBER' => '09',
+            'SEPTEMBE' => '09',
+            'EPTEMBER' => '09',
+            'OCTOBER' => '10',
+            'OCTOBE' => '10',
+            'CTOBER' => '10',
+            'NOVEMBER' => '11',
+            'NOVEMBE' => '11',
+            'OVEMBER' => '11',
+            'DECEMBER' => '12',
+            'DECEMBE' => '12',
+            'ECEMBER' => '12',
+        ];
+
+        $upper = strtoupper($ocrText);
+
+        // 1. Try full/truncated month names: "MARCH 07, 2003" or "ARCH072003" or "MARCH 7 2003"
+        //    The month name can be missing its first letter.
+        $pattern = '/\b(' . implode('|', array_map(fn($m) => preg_quote($m, '/'), array_keys($months))) . ')\s*(\d{1,2})[,\s]*(\d{4})\b/';
+        if (preg_match($pattern, $upper, $m)) {
+            $mon = $months[$m[1]] ?? null;
+            if ($mon) {
+                return sprintf('%04d-%02d-%02d', (int)$m[3], (int)$mon, (int)$m[2]);
+            }
+        }
+
+        // 2. Try "MM DD YYYY" with any 8-digit run (e.g. "072003" or "07 2003" or "07202003")
+        if (preg_match('/\b(\d{1,2})\s*(\d{4})\b/', $upper, $m)) {
+            // Can't be sure this is the DOB without month context, but if it's on a "BIRTH" line
+            // we accept it. Fall through is safer than wrong.
+        }
+
+        // 3. Look specifically for the DOB line and grab digits from it
+        if (preg_match('/(?:BIRTH|KAPANGANAKAN)[^\n]*?([A-Z]{2,10})\s*(\d{1,2})[,\s]*(\d{4})/i', $ocrText, $m)) {
+            $monKey = strtoupper($m[1]);
+            $mon = $months[$monKey] ?? null;
+            if ($mon) {
+                return sprintf('%04d-%02d-%02d', (int)$m[3], (int)$mon, (int)$m[2]);
+            }
+        }
+
+        // 4. Last resort: any 4-digit year on a line that also has "BIRTH" or "KAPANGANAKAN"
+        $lines = preg_split('/\r?\n/', $ocrText);
+        foreach ($lines as $i => $line) {
+            if (stripos($line, 'BIRTH') !== false || stripos($line, 'KAPANGANAKAN') !== false) {
+                // Check this line and the next line
+                $combined = $line . ' ' . ($lines[$i + 1] ?? '');
+                $combined = strtoupper($combined);
+
+                // Try MONTH DD YYYY
+                foreach ($months as $name => $num) {
+                    if (preg_match('/\b' . preg_quote($name, '/') . '\s*(\d{1,2})[,\s]*(\d{4})/', $combined, $m)) {
+                        return sprintf('%04d-%02d-%02d', (int)$m[2], (int)$num, (int)$m[1]);
+                    }
+                }
+
+                // Try a bare year (returns first day of that year — better than nothing)
+                if (preg_match('/\b(\d{4})\b/', $combined, $m)) {
+                    return sprintf('%04d-01-01', (int)$m[1]);
+                }
+            }
+        }
+
+        return null;
+    }
+    /**
+     * Checks if the OCR text matches the jobseeker's registered Name AND Date of Birth.
+     */
+    private function idMatchesJobseeker(Jobseeker $jobseeker, string $ocrText): array
+    {
+        $registeredName = trim(implode(' ', array_filter([
+            $jobseeker->first_name,
+            $jobseeker->middle_name,
+            $jobseeker->last_name,
+        ])));
+
+        $registeredDob = $jobseeker->birth_date ? \Carbon\Carbon::parse($jobseeker->birth_date)->format('Y-m-d') : null;
+
+        if ($registeredName === '' || trim($ocrText) === '') {
+            return ['match' => false, 'reason' => 'Could not read the ID clearly.'];
+        }
+
+        // 1. Check Name
+        $normRegistered = $this->normalizeIdText($registeredName);
+        $normOcr = $this->normalizeIdText($ocrText);
+
+        $nameMatch = true;
+        foreach (explode(' ', $normRegistered) as $word) {
+            if ($word !== '' && strpos($normOcr, $word) === false) {
+                $nameMatch = false;
+                break;
+            }
+        }
+
+        if (!$nameMatch) {
+            return ['match' => false, 'reason' => 'The name on this ID does not match your registered profile name.'];
+        }
+
+        // 2. Check DOB (if the jobseeker has a DOB set)
+        if ($registeredDob) {
+            $ocrDob = $this->extractOcrDate($ocrText);
+
+            if (!$ocrDob) {
+                return ['match' => false, 'reason' => 'We could not read the date of birth on this ID. Please upload a clearer photo.'];
+            }
+
+            if ($ocrDob !== $registeredDob) {
+                return ['match' => false, 'reason' => 'The date of birth on this ID does not match your registered profile.'];
+            }
+        }
+
+        return ['match' => true, 'reason' => null];
+    }
     public function uploadDocument(Request $request)
     {
         $request->validate([
@@ -1126,6 +1340,31 @@ class JobseekerPortalController extends Controller
             return false;
         });
 
+        // ---------------------------------------------------------
+        // AUTO-VERIFICATION LOGIC (Name + DOB)
+        // ---------------------------------------------------------
+        $status = 'under_review';
+        $rejectionReason = null;
+
+        if ($canonicalCategory === 'valid_id' && in_array($extension, ['jpg', 'jpeg', 'png'])) {
+            $absolutePath = Storage::disk('public')->path($filePath);
+            $ocrText = $this->runPaddleOcr($absolutePath);
+
+            if ($ocrText === null) {
+                $status = 'rejected';
+                $rejectionReason = 'We could not read your ID. Please upload a clearer, well-lit photo.';
+            } else {
+                $verification = $this->idMatchesJobseeker($jobseeker, $ocrText);
+
+                if ($verification['match']) {
+                    $status = 'verified'; // 🎉 Auto-verified!
+                } else {
+                    $status = 'rejected';
+                    $rejectionReason = $verification['reason'];
+                }
+            }
+        }
+
         $newDoc = [
             'id' => 'doc_' . uniqid(),
             'category' => $canonicalCategory,
@@ -1135,10 +1374,10 @@ class JobseekerPortalController extends Controller
             'file_path' => $filePath,
             'file_size' => $file->getSize(),
             'mime_type' => $file->getMimeType(),
-            'status' => 'under_review',
-            'rejection_reason' => null,
-            'reviewed_by' => null,
-            'reviewed_at' => null,
+            'status' => $status,
+            'rejection_reason' => $rejectionReason,
+            'reviewed_by' => $status === 'verified' ? 'auto_ocr' : null,
+            'reviewed_at' => $status === 'verified' ? now()->toIso8601String() : null,
             'uploaded_at' => now()->toIso8601String(),
         ];
 
@@ -1146,24 +1385,48 @@ class JobseekerPortalController extends Controller
         $details->training_certificates = array_values($filtered);
         $details->save();
 
+        // ---------------------------------------------------------
+        // UPDATE USER ACCOUNT STATUS
+        // ---------------------------------------------------------
         $user = Auth::user();
-        if ($user && $user->account_status === 'unverified') {
+        if ($user && $canonicalCategory === 'valid_id' && $status === 'verified') {
             DB::table('users')->where('user_id', $user->user_id)->update([
-                'account_status' => 'pending_review',
-                'updated_at' => now(),
+                'account_status' => 'approved',
+                'is_approved'    => true,
+                'updated_at'     => now(),
             ]);
+
+            // ✅ Reload the user into the current session so is_approved = true is seen
+            //    on the very next page load (Jobs page, Apply button, etc.)
+            Auth::setUser($user->fresh());
         }
+
+        // ---------------------------------------------------------
+        // NOTIFICATION & REDIRECT
+        // ---------------------------------------------------------
+        $notifyTitle = match (true) {
+            $status === 'verified' => 'ID Automatically Verified',
+            $status === 'rejected' => 'ID Could Not Be Verified',
+            default                => 'Document Uploaded',
+        };
+
+        $notifyMessage = match (true) {
+            $status === 'verified' => 'Your Government ID matched your registered name and date of birth. Your account is now verified!',
+            $status === 'rejected' => $rejectionReason,
+            default                => ucfirst(str_replace('_', ' ', $canonicalCategory)) . ' uploaded and is under review.',
+        };
 
         Notification::create([
             'user_id' => Auth::id(),
-            'title' => 'Document Uploaded',
-            'message' => "Your " . ucfirst(str_replace('_', ' ', $canonicalCategory)) . " has been uploaded and is under review.",
-            'type' => 'approval',
+            'title'   => $notifyTitle,
+            'message' => $notifyMessage,
+            'type'    => $status === 'rejected' ? 'rejection' : 'approval',
             'is_read' => false,
         ]);
 
-        return redirect()->route('jobseeker.documents')
-            ->with('success', ucfirst(str_replace('_', ' ', $canonicalCategory)) . ' uploaded successfully to your vault.');
+        $flashType = $status === 'rejected' ? 'error' : 'success';
+
+        return redirect()->route('jobseeker.documents')->with($flashType, $notifyMessage);
     }
 
     public function deleteDocument(Request $request, string $category)
@@ -1209,14 +1472,22 @@ class JobseekerPortalController extends Controller
         $query = Notification::where('user_id', $user->user_id);
 
         if ($filter !== 'all') {
-            if ($filter === 'application') {
-                $query->whereIn('type', ['application', 'approval', 'rejection', 'interview', 'manual_review', 'referral', 'hired']);
-            } elseif ($filter === 'training') {
-                $query->whereIn('type', ['training', 'certificate', 'course', 'quiz']);
-            } elseif ($filter === 'interview') {
-                $query->where('type', 'interview');
+            if ($filter === 'jpo_pending') {
+                // Still waiting for DMDP / JPO
+                $query->where('status', 'jpo_pending')->where('referred_by_jpo', 0);
+            } elseif ($filter === 'pending') {
+                // Endorsed by JPO — waiting for employer
+                $query->where('referred_by_jpo', 1)->whereIn('status', ['pending', 'reviewed']);
+            } elseif ($filter === 'hired') {
+                $query->where('status', 'hired')
+                    ->where(function ($q) {
+                        $q->whereNull('resignation_status')
+                            ->orWhere('resignation_status', '!=', 'approved');
+                    });
+            } elseif ($filter === 'rejected') {
+                $query->where('status', 'rejected');
             } else {
-                $query->where('type', $filter);
+                $query->where('status', $filter);
             }
         }
 

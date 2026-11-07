@@ -299,7 +299,134 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
 
     </div>
 
-    <!-- 1. Create Job Posting Modal -->
+    <!-- 1. View Job Posting Modal -->
+    <div x-show="viewModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div @click.away="viewModal = false" class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6 max-h-[90vh] overflow-y-auto">
+
+            <template x-if="selectedJob">
+                <div class="space-y-6">
+                    <!-- Header -->
+                    <div class="flex items-start justify-between border-b border-slate-100 pb-5">
+                        <div class="flex items-start gap-4">
+                            <!-- Company Logo -->
+                            <div class="h-14 w-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white text-xl shadow-md shrink-0 overflow-hidden">
+                                @if($employer && $employer->company_logo)
+                                <img src="{{ \Storage::url($employer->company_logo) }}" alt="{{ $employer->company_name }}" class="h-full w-full object-cover">
+                                @else
+                                🏢
+                                @endif
+                            </div>
+                            <div>
+                                <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">{{ $employer->company_name }}</span>
+                                <h3 class="text-2xl font-black text-slate-900 mt-0.5" x-text="selectedJob.title"></h3>
+                                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 mt-1.5 font-medium">
+                                    <span class="flex items-center gap-1"><i class="bi bi-geo-alt"></i> <span x-text="selectedJob.location"></span></span>
+                                    <span class="text-slate-300">&bull;</span>
+                                    <span class="flex items-center gap-1"><i class="bi bi-briefcase"></i> <span x-text="selectedJob.job_type"></span></span>
+                                    <span class="text-slate-300">&bull;</span>
+                                    <span class="flex items-center gap-1"><i class="bi bi-people"></i> <span x-text="selectedJob.vacancy_count + ' openings'"></span></span>
+                                </div>
+                            </div>
+                        </div>
+                        <button @click="viewModal = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
+                    </div>
+
+                    <!-- Status & Badges -->
+                    <div class="flex flex-wrap gap-2">
+                        <template x-if="selectedJob.status === 'approved'">
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-3 py-1 text-xs font-bold text-emerald-800">
+                                <span class="h-1.5 w-1.5 rounded-full bg-emerald-600"></span> Live & Approved
+                            </span>
+                        </template>
+                        <template x-if="selectedJob.status === 'pending'">
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 border border-amber-300 px-3 py-1 text-xs font-bold text-amber-800">
+                                <span class="h-1.5 w-1.5 rounded-full bg-amber-600 animate-pulse"></span> Pending DMDP Review
+                            </span>
+                        </template>
+                        <template x-if="selectedJob.status === 'rejected'">
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-100 border border-rose-300 px-3 py-1 text-xs font-bold text-rose-800">
+                                <span class="h-1.5 w-1.5 rounded-full bg-rose-600"></span> Needs Revision
+                            </span>
+                        </template>
+                        <template x-if="selectedJob.status === 'closed'">
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 border border-slate-300 px-3 py-1 text-xs font-bold text-slate-600">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span> Closed
+                            </span>
+                        </template>
+
+                        <template x-if="selectedJob.accepts_disability">
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-800">
+                                ♿ PWD Inclusive
+                            </span>
+                        </template>
+                    </div>
+
+                    <!-- Details Grid -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="rounded-xl bg-slate-50 p-3 border border-slate-200">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Salary Range</span>
+                            <p class="text-sm font-bold text-slate-900 mt-0.5" x-text="selectedJob.salary_range || 'Negotiable'"></p>
+                        </div>
+                        <div class="rounded-xl bg-slate-50 p-3 border border-slate-200">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Application Deadline</span>
+                            <p class="text-sm font-bold text-slate-900 mt-0.5" x-text="selectedJob.valid_until_formatted"></p>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="space-y-1.5">
+                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-400">Job Description</h4>
+                        <p class="text-xs text-slate-700 leading-relaxed whitespace-pre-line" x-text="selectedJob.description || 'No description provided.'"></p>
+                    </div>
+
+                    <!-- Qualifications -->
+                    <div class="space-y-1.5" x-show="selectedJob.qualifications">
+                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-400">Qualifications</h4>
+                        <ul class="list-disc list-inside space-y-1 rounded-xl bg-slate-50 p-4 border border-slate-200">
+                            <template x-for="(q, i) in selectedJob.qualifications.split('\n').filter(l => l.trim())" :key="i">
+                                <li class="text-xs text-slate-700" x-text="q.trim()"></li>
+                            </template>
+                        </ul>
+                    </div>
+
+                    <!-- Required Skills -->
+                    <div class="space-y-1.5" x-show="selectedJob.skills_array.length > 0">
+                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-400">Required Skills</h4>
+                        <div class="flex flex-wrap gap-1.5">
+                            <template x-for="(skill, i) in selectedJob.skills_array" :key="i">
+                                <span class="rounded-lg bg-indigo-50 text-indigo-900 border border-indigo-200 px-2.5 py-1 text-[11px] font-bold" x-text="skill"></span>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Benefits -->
+                    <div class="space-y-1.5" x-show="selectedJob.benefits">
+                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-400">Benefits</h4>
+                        <ul class="list-disc list-inside space-y-1 rounded-xl bg-emerald-50/50 p-4 border border-emerald-100">
+                            <template x-for="(b, i) in selectedJob.benefits.split('\n').filter(l => l.trim())" :key="i">
+                                <li class="text-xs text-slate-700" x-text="b.trim()"></li>
+                            </template>
+                        </ul>
+                    </div>
+
+                    <!-- Other Instructions -->
+                    <div class="space-y-1.5" x-show="selectedJob.other_instructions">
+                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-400">Other Instructions</h4>
+                        <p class="text-xs text-slate-700 leading-relaxed whitespace-pre-line rounded-xl bg-amber-50 p-4 border border-amber-200" x-text="selectedJob.other_instructions"></p>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-end">
+                        <button type="button" @click="viewModal = false" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black shadow-md transition-colors">
+                            Close Details
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- 2. Create Job Posting Modal -->
     <div x-show="createModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div @click.away="createModal = false" class="bg-white rounded-3xl max-h-[90vh] overflow-y-auto overscroll-contain max-w-4xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
 
@@ -472,7 +599,7 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
         </div>
     </div>
 
-    <!-- 2. Edit Job Posting Modal -->
+    <!-- 3. Edit Job Posting Modal -->
     <div x-show="editModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div @click.away="editModal = false" class="bg-white rounded-3xl max-h-[90vh] overflow-y-auto overscroll-contain max-w-4xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
 
@@ -643,7 +770,7 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
         </div>
     </div>
 
-    <!-- 3. Delete Confirmation Modal -->
+    <!-- 4. Delete Confirmation Modal -->
     <div x-show="deleteModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div @click.away="deleteModal = false" class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5">
             <div class="h-12 w-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
@@ -670,7 +797,7 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
         </div>
     </div>
 
-    <!-- 4. Close Job Modal -->
+    <!-- 5. Close Job Modal -->
     <div x-show="closeModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div @click.away="closeModal = false" class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5">
             <div class="h-12 w-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">

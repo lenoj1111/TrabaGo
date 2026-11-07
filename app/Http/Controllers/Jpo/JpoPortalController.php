@@ -108,19 +108,16 @@ class JpoPortalController extends Controller
 
     public function evaluateJobseekers(Request $request)
     {
-        $query = JobApplication::with(['jobseeker.skills', 'jobseeker.details', 'jobseeker.socialStatus', 'jobPosting.employer'])
+        $query = JobApplication::with([
+            'jobseeker.skills',
+            'jobseeker.details',
+            'jobseeker.socialStatus',
+            'jobPosting.employer'
+        ])
+            ->where('status', 'jpo_pending')
             ->latest();
 
-        // Default: fetch everything for the JPO
-        if ($request->has('status') && $request->status !== '') {
-            if ($request->status === 'pending') {
-                $query->whereIn('status', ['jpo_pending', 'pending', 'reviewed']);
-            } elseif ($request->status === 'referred') {
-                $query->where('referred_by_jpo', 1);
-            }
-        }
-
-        if ($request->has('search') && $request->search !== '') {
+        if ($request->filled('search')) {
             $s = $request->search;
             $query->whereHas('jobseeker', function ($q) use ($s) {
                 $q->where('first_name', 'like', "%{$s}%")
