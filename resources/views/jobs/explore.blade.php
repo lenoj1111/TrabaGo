@@ -1,18 +1,18 @@
-@extends('layouts.jobseeker')
+@extends($isJobseeker ? 'layouts.jobseeker' : 'layouts.public')
 
 @section('title', 'Explore Jobs & AI Matching - TrabaGo')
 
 @section('content')
 @php
 $currentUser = Auth::user();
-$isApproved = (bool) ($currentUser->is_approved ?? false);
+$isApproved = $isJobseeker && (bool) ($currentUser->is_approved ?? false);
 @endphp
 <div x-data="{ 
-    selectedJobId: '{{ $selectedItem ? $selectedItem['job_id'] : '' }}',
+    selectedJobId: @js($selectedItem['job_id'] ?? ''),
     applyModalOpen: false,
     approvalWarningOpen: false,
-    selectedJobTitle: '{{ $selectedItem ? addslashes($selectedItem['job']->title) : '' }}',
-    selectedJobCompany: '{{ $selectedItem ? addslashes($selectedItem['job']->employer->company_name ?? 'Partner Employer') : '' }}'
+    selectedJobTitle: @js($selectedItem['job']->title ?? ''),
+    selectedJobCompany: @js($selectedItem['job']->employer->company_name ?? 'Partner Employer')
 }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
     <div class="w-full max-w-[1680px] mx-auto space-y-6">
 
@@ -28,7 +28,7 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
             </div>
 
             <!-- Search Form -->
-            <form action="{{ route('jobseeker.jobs') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <form action="{{ route($jobsRoute) }}" method="GET" class="grid grid-cols-1 sm:grid-cols-12 gap-3">
                 <div class="sm:col-span-5 relative">
                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,7 +54,7 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
                         Search Jobs
                     </button>
                     @if(request()->hasAny(['q', 'location', 'pwd_only', 'sort']))
-                    <a href="{{ route('jobseeker.jobs') }}" class="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center justify-center">
+                    <a href="{{ route($jobsRoute) }}" class="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center justify-center">
                         Reset
                     </a>
                     @endif
@@ -64,11 +64,11 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
             <!-- Quick Filter Badges -->
             <div class="mt-4 flex flex-wrap items-center gap-2 pt-4 border-t border-white/10">
                 <span class="text-xs text-slate-400 font-semibold">Quick Filters:</span>
-                <a href="{{ route('jobseeker.jobs') }}"
+                <a href="{{ route($jobsRoute) }}"
                     class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all {{ !request('pwd_only') && !request('sort') ? 'bg-emerald-500 text-white shadow-sm' : 'bg-white/10 text-slate-300 hover:bg-white/20' }}">
                     All Matches
                 </a>
-                <a href="{{ route('jobseeker.jobs', array_merge(request()->query(), ['pwd_only' => 1])) }}"
+                <a href="{{ route($jobsRoute, array_merge(request()->query(), ['pwd_only' => 1])) }}"
                     class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all inline-flex items-center gap-1.5 {{ request('pwd_only') ? 'bg-emerald-500 text-white shadow-sm' : 'bg-white/10 text-slate-300 hover:bg-white/20' }}">
                     <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                         <circle cx="12" cy="4" r="2" />
@@ -77,7 +77,7 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
                     </svg>
                     <span>PWD Inclusive Only</span>
                 </a>
-                <a href="{{ route('jobseeker.jobs', array_merge(request()->query(), ['sort' => 'latest'])) }}"
+                <a href="{{ route($jobsRoute, array_merge(request()->query(), ['sort' => 'latest'])) }}"
                     class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all {{ request('sort') === 'latest' ? 'bg-emerald-500 text-white shadow-sm' : 'bg-white/10 text-slate-300 hover:bg-white/20' }}">
                     Latest Openings
                 </a>
@@ -342,7 +342,7 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
 
                     <!-- Action Bar -->
                     <div class="pt-6 border-t border-slate-100 flex items-center justify-between gap-4">
-                        <a href="{{ route('jobseeker.jobs.show', $job->job_id) }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-800">
+                        <a href="{{ route($jobShowRoute, $job->job_id) }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-800">
                             Full Page View &rarr;
                         </a>
 
@@ -360,6 +360,10 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
                             </svg>
                             Position Expired
                         </button>
+                        @elseif(!$isJobseeker)
+                        <a href="{{ route('login') }}" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-6 py-3 text-sm font-black text-white shadow-lg shadow-emerald-600/30 transition-all">
+                            Sign in to apply
+                        </a>
                         @elseif(!$isApproved)
                         <button type="button" @click="approvalWarningOpen = true" class="inline-flex items-center gap-2 rounded-xl bg-amber-100 border border-amber-300 px-6 py-3 text-sm font-black text-amber-900 shadow-sm transition-all hover:bg-amber-200">
                             <span>⚠️</span>
@@ -376,7 +380,7 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
                             </button>
                             <p class="text-[10px] text-amber-700 font-semibold">Account undergoing DMDP verification.</p>
                         </div>
-                        @elseif(!$jobseeker->isProfileAndDocumentsComplete())
+                        @elseif(!$jobseeker || !$jobseeker->isProfileAndDocumentsComplete())
                         <div class="text-right space-y-1">
                             <button type="button" onclick="alert('You cannot apply for this job yet. Please complete your profile and upload the required documents in the Document Hub.\n\nMissing: {{ implode(', ', $jobseeker->getMissingRequirements()) }}')"
                                 class="inline-flex items-center gap-1.5 rounded-xl bg-amber-100 border border-amber-300 px-5 py-2.5 text-xs font-bold text-amber-900 cursor-not-allowed">
@@ -412,6 +416,7 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
 
     </div>
 
+    @if($isJobseeker)
     <!-- APPLICATION SUBMISSION MODAL -->
     <div x-show="applyModalOpen" x-cloak
         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
@@ -489,6 +494,7 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
             </div>
         </div>
     </div>
+    @endif
 
 </div>
 @endsection

@@ -51,8 +51,9 @@
                         <option value="">All Enrollment Statuses</option>
                         <option value="enrolled" {{ request('status') === 'enrolled' ? 'selected' : '' }}>Enrolled (New)</option>
                         <option value="in_progress" {{ request('status') === 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                        <option value="pending_review" {{ request('status') === 'pending_review' ? 'selected' : '' }}>Pending Review</option>
+                        <option value="needs_retake" {{ request('status') === 'needs_retake' ? 'selected' : '' }}>Needs Retake</option>
                         <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
-                        <option value="failed" {{ request('status') === 'failed' ? 'selected' : '' }}>Failed / Needs Retake</option>
                     </select>
                 </div>
 
@@ -85,6 +86,10 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
                         @forelse($enrollments as $enr)
+                            @php
+                                $assessmentData = is_array($enr->answers) ? $enr->answers : (json_decode($enr->answers ?? '[]', true) ?: []);
+                                $reviewStatus = $assessmentData['review_status'] ?? null;
+                            @endphp
                             <tr class="hover:bg-slate-50/80 transition-colors">
                                 <td class="py-4 px-3 font-bold text-slate-900">
                                     <span class="text-sm block">{{ $enr->first_name }} {{ $enr->last_name }}</span>
@@ -95,9 +100,11 @@
                                     <span class="text-[11px] text-emerald-700 font-semibold">{{ ucfirst($enr->course_type) }}</span>
                                 </td>
                                 <td class="py-4 px-3 font-bold">
-                                    @if(!is_null($enr->score))
+                                    @if($reviewStatus === 'pending' && !empty($assessmentData['objective_score']['question_count']))
+                                        <span class="text-indigo-700">{{ $assessmentData['objective_score']['correct_count'] }}/{{ $assessmentData['objective_score']['question_count'] }} correct</span>
+                                    @elseif(!is_null($enr->score))
                                         <span class="{{ $enr->score >= 80 ? 'text-emerald-700' : 'text-rose-600' }}">
-                                            {{ $enr->score }}% {{ $enr->score >= 80 ? '(Passed)' : '(Failed)' }}
+                                            {{ $enr->score }}%
                                         </span>
                                     @else
                                         <span class="text-slate-400 text-[11px]">Ungraded</span>
@@ -105,8 +112,8 @@
                                 </td>
                                 <td class="py-4 px-3">
                                     <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold 
-                                        {{ $enr->status === 'completed' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : ($enr->status === 'in_progress' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-100 text-slate-700') }}">
-                                        {{ ucfirst(str_replace('_', ' ', $enr->status)) }}
+                                        {{ $reviewStatus === 'pending' ? 'bg-amber-100 text-amber-800 border border-amber-300' : ($reviewStatus === 'needs_retake' || $enr->status === 'failed' ? 'bg-rose-100 text-rose-800 border border-rose-300' : ($enr->status === 'completed' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-700')) }}">
+                                        {{ $reviewStatus === 'pending' ? 'Pending Review' : ($reviewStatus === 'needs_retake' || $enr->status === 'failed' ? 'Needs Retake' : ucfirst(str_replace('_', ' ', $enr->status))) }}
                                     </span>
                                 </td>
                                 <td class="py-4 px-3">
@@ -125,7 +132,7 @@
                                             </a>
                                         </div>
                                     @else
-                                        <span class="text-slate-400 text-[11px]">Not Issued</span>
+                                        <span class="text-slate-400 text-[11px]">{{ $reviewStatus === 'pending' ? 'Pending Review' : 'Not Issued' }}</span>
                                     @endif
                                 </td>
                                 <td class="py-4 px-3 text-right">
@@ -139,14 +146,22 @@
                                         </button>
 
                                         <!-- 2. Conduct Assessment -->
-                                        <a href="{{ route('trainer.enrollments.assessment', $enr->enrollment_id) }}" 
+                                        @if($reviewStatus === 'pending')
+                                            <a href="{{ route('trainer.enrollments.evaluate', $enr->enrollment_id) }}"
                                            class="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-[11px] font-bold transition-colors"
-                                           title="Conduct Assessment">
-                                            Assess
+                                           title="Review submitted answers">
+                                            Review Answers
                                         </a>
+                                        @elseif(!in_array($reviewStatus, ['passed', 'needs_retake'], true))
+                                            <a href="{{ route('trainer.enrollments.assessment', $enr->enrollment_id) }}"
+                                               class="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-[11px] font-bold transition-colors"
+                                               title="Conduct Assessment">Assess</a>
+                                        @elseif($reviewStatus === 'needs_retake')
+                                            <span class="rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-center text-[11px] font-bold text-rose-800">Awaiting Retake</span>
+                                        @endif
 
                                         <!-- 3. Mark Completion -->
-                                        @if($enr->status !== 'completed')
+                                        @if($enr->status !== 'completed' && !in_array($reviewStatus, ['pending', 'needs_retake'], true))
                                             <form action="{{ route('trainer.enrollments.complete', $enr->enrollment_id) }}" method="POST" class="inline">
                                                 @csrf
                                                 <button type="submit" onclick="return confirm('Mark this enrollment as Completed and award verified skills to the jobseeker?')"
@@ -161,7 +176,7 @@
                                         @endif
 
                                         <!-- 4. Generate Skills Certificate -->
-                                        @if(!$enr->certificate_issued)
+                                        @if(!$enr->certificate_issued && $enr->status === 'completed' && $enr->passed)
                                             <form action="{{ route('trainer.enrollments.certificate', $enr->enrollment_id) }}" method="POST" class="inline">
                                                 @csrf
                                                 <button type="submit" onclick="return confirm('Generate and issue official skills certificate?')"
@@ -175,6 +190,8 @@
                                                     <span>Generate Cert</span>
                                                 </button>
                                             </form>
+                                        @elseif($reviewStatus === 'pending')
+                                            <span class="rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-center text-[11px] font-bold text-amber-800">Certificate Pending Review</span>
                                         @endif
                                     </div>
                                 </td>
@@ -219,7 +236,6 @@
                         <option value="enrolled">Enrolled (New)</option>
                         <option value="in_progress">In Progress (Active in lectures / lab)</option>
                         <option value="completed">Completed (Successfully finished)</option>
-                        <option value="failed">Failed / Dropped</option>
                     </select>
                 </div>
 

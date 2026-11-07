@@ -96,7 +96,9 @@
                     $enrollment = $training->enrollments->first();
                     $isCompleted = $enrollment && $enrollment->status === 'completed';
                     $isInProgress = $enrollment && $enrollment->status === 'in_progress';
-                    $isEnrolled = $enrollment && in_array($enrollment->status, ['enrolled', 'in_progress', 'completed']);
+                    $isEnrolled = $enrollment && in_array($enrollment->status, ['enrolled', 'in_progress', 'completed', 'failed']);
+                    $assessmentData = $enrollment && is_array($enrollment->answers) ? $enrollment->answers : [];
+                    $reviewStatus = $assessmentData['review_status'] ?? null;
                 @endphp
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between gap-6">
                     
@@ -105,7 +107,13 @@
                             <span class="rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-0.5 text-xs font-bold">
                                 {{ ucfirst($training->training_type ?: 'Online') }}
                             </span>
-                            @if($isCompleted)
+                            @if($reviewStatus === 'pending')
+                                <span class="rounded-full bg-amber-100 text-amber-900 border border-amber-300 px-3 py-0.5 text-xs font-bold">Assessment Pending Review</span>
+                            @elseif($reviewStatus === 'needs_retake' || ($enrollment && $enrollment->status === 'failed'))
+                                <span class="rounded-full bg-rose-100 text-rose-800 border border-rose-300 px-3 py-0.5 text-xs font-bold">Needs Retake</span>
+                            @elseif($reviewStatus === 'passed')
+                                <span class="rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 px-3 py-0.5 text-xs font-bold">Assessment Passed</span>
+                            @elseif($isCompleted)
                                 <span class="rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 px-3 py-0.5 text-xs font-extrabold flex items-center gap-1">
                                     <svg class="h-3.5 w-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                                     Certified

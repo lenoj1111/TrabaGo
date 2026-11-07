@@ -17,8 +17,34 @@
 
         @php
             $isCompleted = $enrollment && $enrollment->status === 'completed';
-            $isEnrolled = $enrollment && in_array($enrollment->status, ['enrolled', 'in_progress', 'completed']);
+            $isEnrolled = $enrollment && in_array($enrollment->status, ['enrolled', 'in_progress', 'completed', 'failed']);
         @endphp
+
+        @if(session('success') || session('info') || session('error'))
+            <div class="rounded-2xl border {{ session('error') ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-emerald-200 bg-emerald-50 text-emerald-900' }} p-4 text-sm font-semibold">
+                {{ session('success') ?? session('info') ?? session('error') }}
+            </div>
+        @endif
+
+        @if($assessmentReviewStatus === 'pending')
+            <div class="rounded-2xl border border-amber-300 bg-amber-50 p-5 text-amber-950">
+                <h2 class="text-sm font-black">Assessment Status: Pending Review</h2>
+                <p class="mt-1 text-xs">Your answers are awaiting trainer review. You remain enrolled in this course.</p>
+            </div>
+        @elseif($assessmentReviewStatus === 'needs_retake')
+            <div class="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-900">
+                <h2 class="text-sm font-black">Assessment Status: Needs Retake</h2>
+                <p class="mt-1 text-xs">You are still enrolled in this course. Retake the quiz when you are ready.</p>
+                @if($enrollment->trainer_feedback)
+                    <p class="mt-2 text-xs"><strong>Trainer feedback:</strong> {{ $enrollment->trainer_feedback }}</p>
+                @endif
+            </div>
+        @elseif($assessmentReviewStatus === 'passed')
+            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-900">
+                <h2 class="text-sm font-black">Assessment Status: Passed</h2>
+                <p class="mt-1 text-xs">{{ $enrollment->certificate_issued ? 'Your certificate is ready to view.' : 'Your trainer approved your answers. Your certificate is awaiting issuance.' }}</p>
+            </div>
+        @endif
 
         <!-- Course Header Card in green Theme -->
         <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
@@ -27,12 +53,20 @@
                     <span class="rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-400/30">
                         {{ ucfirst($training->training_type ?: 'Online') }}
                     </span>
-                    @if($isCompleted)
+                    @if($assessmentReviewStatus === 'passed')
                         <span class="rounded-full bg-emerald-500/30 px-3 py-1 text-xs font-bold text-emerald-200 border border-emerald-400/40 flex items-center gap-1.5">
                             <svg class="h-3.5 w-3.5 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                             </svg>
-                            <span>Certificate Earned</span>
+                            <span>{{ $enrollment->certificate_issued ? 'Certificate Earned' : 'Assessment Passed' }}</span>
+                        </span>
+                    @elseif($assessmentReviewStatus === 'needs_retake')
+                        <span class="rounded-full bg-rose-400/20 px-3 py-1 text-xs font-bold text-rose-200 border border-rose-400/30">
+                            Assessment Needs Retake
+                        </span>
+                    @elseif($assessmentReviewStatus === 'pending')
+                        <span class="rounded-full bg-amber-400/20 px-3 py-1 text-xs font-bold text-amber-200 border border-amber-400/30">
+                            Assessment Pending Review
                         </span>
                     @elseif($isEnrolled)
                         <span class="rounded-full bg-amber-400/20 px-3 py-1 text-xs font-bold text-amber-300 border border-amber-400/30 flex items-center gap-1.5">
@@ -73,12 +107,23 @@
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                         </button>
                     </form>
-                @else
-                    <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}" 
+                @elseif($assessmentReviewStatus === 'pending')
+                    <span class="max-w-sm rounded-xl border border-amber-300 bg-amber-50 px-5 py-3 text-center text-xs font-bold text-amber-900">Assessment pending trainer review</span>
+                @elseif($assessmentReviewStatus === 'passed')
+                    <span class="max-w-sm rounded-xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-center text-xs font-bold text-emerald-900">
+                        {{ $enrollment->certificate_issued ? 'Course passed - certificate issued' : 'Course passed - certificate pending issuance' }}
+                    </span>
+                @elseif($hasAssessmentQuestions)
+                    <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}"
                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 px-6 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
-                        {{ $isCompleted ? 'Retake Quiz' : 'Take Skill Quiz' }}
+                        {{ $assessmentReviewStatus === 'needs_retake' ? 'Retake Quiz' : 'Take Skill Quiz' }}
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                     </a>
+                @else
+                    <div class="max-w-sm rounded-2xl border border-amber-300 bg-amber-50 p-4 text-center text-xs text-amber-900">
+                        <strong class="block font-black">Assessment not available yet</strong>
+                        <span class="mt-1 block">The trainer has not added questions yet. Please wait for the trainer to prepare the assessment.</span>
+                    </div>
                 @endif
             </div>
         </div>
@@ -132,10 +177,23 @@
                 </div>
 
                 <div class="pt-4 border-t border-slate-100">
-                    <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}" 
-                       class="w-full inline-flex items-center justify-center rounded-xl bg-slate-900 text-white px-4 py-3 text-xs font-bold hover:bg-emerald-600 transition-colors">
-                        Ready for Assessment? Take Quiz
-                    </a>
+                    @if($assessmentReviewStatus === 'pending')
+                        <p class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">Your assessment is pending trainer review.</p>
+                    @elseif($assessmentReviewStatus === 'passed')
+                        <p class="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900">Your assessment has been approved.</p>
+                    @elseif($assessmentReviewStatus === 'needs_retake' && $hasAssessmentQuestions)
+                        <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}"
+                           class="w-full inline-flex items-center justify-center rounded-xl bg-rose-700 text-white px-4 py-3 text-xs font-bold hover:bg-rose-600 transition-colors">
+                            Retake Quiz
+                        </a>
+                    @elseif($hasAssessmentQuestions)
+                        <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}"
+                           class="w-full inline-flex items-center justify-center rounded-xl bg-slate-900 text-white px-4 py-3 text-xs font-bold hover:bg-emerald-600 transition-colors">
+                            Ready for Assessment? Take Quiz
+                        </a>
+                    @else
+                        <p class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">No assessment questions yet. Please wait for the trainer to add them.</p>
+                    @endif
                 </div>
             </div>
 
@@ -220,9 +278,21 @@
                                         Next Module &rarr;
                                     </button>
                                 @else
-                                    <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}" class="rounded-xl bg-emerald-600 text-white px-6 py-2.5 text-xs font-black hover:bg-emerald-500 shadow-md">
-                                        Finish & Take Skill Quiz &rarr;
-                                    </a>
+                                    @if($assessmentReviewStatus === 'pending')
+                                        <span class="text-xs font-semibold text-amber-800">Assessment pending trainer review.</span>
+                                    @elseif($assessmentReviewStatus === 'passed')
+                                        <span class="text-xs font-semibold text-emerald-800">Assessment approved.</span>
+                                    @elseif($assessmentReviewStatus === 'needs_retake' && $hasAssessmentQuestions)
+                                        <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}" class="rounded-xl bg-rose-700 text-white px-6 py-2.5 text-xs font-black hover:bg-rose-600 shadow-md">
+                                            Retake Quiz &rarr;
+                                        </a>
+                                    @elseif($hasAssessmentQuestions)
+                                        <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}" class="rounded-xl bg-emerald-600 text-white px-6 py-2.5 text-xs font-black hover:bg-emerald-500 shadow-md">
+                                            Finish & Take Skill Quiz &rarr;
+                                        </a>
+                                    @else
+                                        <span class="text-xs font-semibold text-amber-800">Assessment questions are not ready yet. Please wait for the trainer.</span>
+                                    @endif
                                 @endif
                             </div>
                         </div>
@@ -231,9 +301,21 @@
                     <div class="space-y-4">
                         <h2 class="text-xl font-bold text-slate-900">Course Overview & Study Guide</h2>
                         <p class="text-sm text-slate-700 leading-relaxed">{{ $training->description }}</p>
-                        <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}" class="inline-flex rounded-xl bg-emerald-600 px-6 py-3 text-xs font-black text-white">
-                            Proceed to Certification Assessment
-                        </a>
+                        @if($assessmentReviewStatus === 'pending')
+                            <p class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">Your assessment is pending trainer review.</p>
+                        @elseif($assessmentReviewStatus === 'passed')
+                            <p class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-900">Your assessment has been approved.</p>
+                        @elseif($assessmentReviewStatus === 'needs_retake' && $hasAssessmentQuestions)
+                            <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}" class="inline-flex rounded-xl bg-rose-700 px-6 py-3 text-xs font-black text-white">
+                                Retake Quiz
+                            </a>
+                        @elseif($hasAssessmentQuestions)
+                            <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}" class="inline-flex rounded-xl bg-emerald-600 px-6 py-3 text-xs font-black text-white">
+                                Proceed to Certification Assessment
+                            </a>
+                        @else
+                            <p class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">The trainer has not added assessment questions yet. Please wait for the trainer to prepare the assessment.</p>
+                        @endif
                     </div>
                 @endif
             </div>

@@ -361,6 +361,7 @@ Route::prefix('trainer')->name('trainer.')->middleware(['auth', 'trainer'])->gro
     // Course Modules & Full CRUD
     Route::get('/courses', [TrainerPortalController::class, 'courses'])->name('courses');
     Route::post('/courses', [TrainerPortalController::class, 'storeCourse'])->name('courses.store');
+    Route::get('/courses/{id}/enrollments', [TrainerPortalController::class, 'courseEnrollments'])->name('courses.enrollments');
     Route::get('/courses/{id}', [TrainerPortalController::class, 'showCourse'])->name('courses.show');
     Route::put('/courses/{id}', [TrainerPortalController::class, 'updateCourse'])->name('courses.update');
     Route::delete('/courses/{id}', [TrainerPortalController::class, 'destroyCourse'])->name('courses.destroy');

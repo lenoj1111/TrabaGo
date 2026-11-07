@@ -19,7 +19,7 @@
                     Skills Curriculum Catalog
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Active Training Courses</h1>
-                <p class="text-sm text-slate-300">Create vocational courses, author custom evaluation assessments, and configure automated certification.</p>
+                <p class="text-sm text-slate-300">Create vocational courses, author assessment questions, and review learner completions before issuing certificates.</p>
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
@@ -82,23 +82,12 @@
                                 {{ $course->training_type === 'laboratory_onsite' ? 'Laboratory / Onsite' : 'Online Track' }}
                             </span>
 
-                            @if($course->auto_generate_certificate ?? true)
-                                <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800 inline-flex items-center gap-1" title="Certificate automatically issued when passing score is reached">
-                                    <svg class="h-3 w-3 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path d="M12 14l9-5-9-5-9 5 9 5z"/>
-                                        <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
-                                    </svg>
-                                    <span>Auto-Certificate</span>
-                                </span>
-                            @else
-                                <span class="rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-[10px] font-bold text-amber-800 inline-flex items-center gap-1" title="Requires manual trainer evaluation before certificate release">
-                                    <svg class="h-3 w-3 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                                    </svg>
-                                    <span>Manual Evaluation</span>
-                                </span>
-                            @endif
+                            <span class="rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-[10px] font-bold text-amber-800 inline-flex items-center gap-1" title="Trainer review is required before certificate issuance">
+                                <svg class="h-3 w-3 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                </svg>
+                                <span>Trainer Review Required</span>
+                            </span>
                         </div>
 
                         <div>
@@ -146,12 +135,17 @@
                     </div>
 
                     <!-- Footer Actions -->
-                    <div class="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
-                        <a href="{{ route('trainer.courses.show', $course->training_id) }}" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-extrabold transition-colors">
-                            Manage & Assessments &rarr;
-                        </a>
+                    <div class="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <a href="{{ route('trainer.courses.show', $course->training_id) }}" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-extrabold transition-colors">
+                                Manage & Assessments &rarr;
+                            </a>
+                            <a href="{{ route('trainer.courses.enrollments', $course->training_id) }}" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 text-xs font-extrabold transition-colors">
+                                View Enrolled ({{ $course->enrolled_count }})
+                            </a>
+                        </div>
 
-                        <div class="flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
+                        <div class="flex w-fit items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
                             <!-- Edit Button -->
                             <button @click="activeCourse = {
                                 id: {{ $course->training_id }},
@@ -160,8 +154,7 @@
                                 duration_months: {{ $course->duration_months ?: 1 }},
                                 description: '{{ addslashes($course->description ?? '') }}',
                                 skills: '{{ addslashes($course->skills ?? '') }}',
-                                passing_score: {{ $course->passing_score ?: 80 }},
-                                auto_generate_certificate: {{ ($course->auto_generate_certificate ?? true) ? 1 : 0 }}
+                                passing_score: {{ $course->passing_score ?: 80 }}
                             }; editModal = true;" type="button" class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-200" title="Edit Course">
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                 <span>Edit</span>
@@ -262,21 +255,6 @@
                             <input type="number" name="passing_score" value="80" min="50" max="100" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none">
                         </div>
 
-                        <!-- Certificate Generation Mode Toggle -->
-                        <div class="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 space-y-2">
-                            <div class="flex items-start gap-3">
-                                <input type="checkbox" id="auto_generate_certificate_create" name="auto_generate_certificate" value="1" checked class="mt-1 h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
-                                <div>
-                                    <label for="auto_generate_certificate_create" class="text-xs font-bold text-slate-900 cursor-pointer">
-                                        Auto-Generate Certificate upon Passing Assessment
-                                    </label>
-                                    <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                                        When checked, the system automatically generates and uploads the official Certificate of Completion to the jobseeker's Document Hub immediately upon passing your assessment. If unchecked, completion will require your manual review and approval before certificate release.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Description -->
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Course Description & Outcomes <span class="text-rose-500">*</span></label>
@@ -342,7 +320,7 @@
                             </div>
                             <div>
                                 <h3 class="text-base font-bold text-white">Edit Training Course</h3>
-                                <p class="text-xs text-slate-400">Update course details and certification logic.</p>
+                                <p class="text-xs text-slate-400">Update course details and passing threshold.</p>
                             </div>
                         </div>
                         <button @click="editModal = false" type="button" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
@@ -377,21 +355,6 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Passing Threshold (%)</label>
                             <input type="number" name="passing_score" x-model="activeCourse.passing_score" min="50" max="100" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
-                        </div>
-
-                        <!-- Certificate Generation Toggle -->
-                        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-1">
-                            <div class="flex items-start gap-3">
-                                <input type="checkbox" id="auto_generate_certificate_edit" name="auto_generate_certificate" value="1" :checked="activeCourse.auto_generate_certificate == 1" class="mt-1 h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
-                                <div>
-                                    <label for="auto_generate_certificate_edit" class="text-xs font-bold text-slate-900 cursor-pointer">
-                                        Auto-Generate Certificate upon Passing Assessment
-                                    </label>
-                                    <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                                        Enable for immediate automated certificate issuance upon passing score. Uncheck if you wish to manually assess and release certificates.
-                                    </p>
-                                </div>
-                            </div>
                         </div>
 
                         <div>
