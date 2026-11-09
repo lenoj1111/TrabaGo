@@ -29,7 +29,7 @@ class JobController extends Controller
     {
         $companyName = $job->employer->company_name ?? 'DMDP Partner Employer';
         $location = 'Cebu City, Philippines';
-        
+
         $reqs = [];
         if (!empty($job->qualifications)) {
             $lines = preg_split('/[\r\n]+/', $job->qualifications);
@@ -85,6 +85,8 @@ class JobController extends Controller
             'validUntil' => $job->valid_until ? $job->valid_until->format('Y-m-d') : null,
             'accepts_disability' => (bool)$job->accepts_disability,
             'acceptsDisability' => (bool)$job->accepts_disability,
+            'resume_required' => (bool)$job->resume_required,
+            'resumeRequired' => (bool)$job->resume_required,
             'disability_type' => $job->disability_type,
             'status' => $job->status,
             'created_at' => $job->created_at ? $job->created_at->format('Y-m-d') : now()->format('Y-m-d'),
@@ -104,8 +106,8 @@ class JobController extends Controller
     {
         $jobseeker = $this->resolveJobseeker($request);
         $userSkills = $jobseeker ? $this->matchingService->getJobseekerSkills($jobseeker) : null;
-        $appliedJobIds = $jobseeker 
-            ? JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->pluck('job_id')->toArray() 
+        $appliedJobIds = $jobseeker
+            ? JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->pluck('job_id')->toArray()
             : [];
 
         $query = JobPosting::with('employer')->availableForJobseekers();
@@ -114,11 +116,11 @@ class JobController extends Controller
         if (!empty($searchTerm)) {
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('title', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('description', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('qualifications', 'LIKE', "%{$searchTerm}%")
-                  ->orWhereHas('employer', function ($empQuery) use ($searchTerm) {
-                      $empQuery->where('company_name', 'LIKE', "%{$searchTerm}%");
-                  });
+                    ->orWhere('description', 'LIKE', "%{$searchTerm}%")
+                    ->orWhere('qualifications', 'LIKE', "%{$searchTerm}%")
+                    ->orWhereHas('employer', function ($empQuery) use ($searchTerm) {
+                        $empQuery->where('company_name', 'LIKE', "%{$searchTerm}%");
+                    });
             });
         }
 
@@ -183,7 +185,7 @@ class JobController extends Controller
             $recommendedTrainings = TrainingProgram::where(function ($q) use ($match) {
                 foreach ($match['missingSkills'] as $missing) {
                     $q->orWhere('title', 'LIKE', "%{$missing}%")
-                      ->orWhere('description', 'LIKE', "%{$missing}%");
+                        ->orWhere('description', 'LIKE', "%{$missing}%");
                 }
             })->take(2)->get()->map(function ($t) {
                 return [
@@ -217,14 +219,14 @@ class JobController extends Controller
         $userSkills = $jobseeker ? $this->matchingService->getJobseekerSkills($jobseeker) : [];
 
         $allJobs = JobPosting::with('employer')->availableForJobseekers()->orderByDesc('job_id')->get();
-        
+
         $rankedJobs = [];
         if ($jobseeker) {
             $rankedJobs = $this->matchingService->rankJobsForJobseeker($allJobs, $jobseeker);
         }
 
-        $appliedJobIds = $jobseeker 
-            ? JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->pluck('job_id')->toArray() 
+        $appliedJobIds = $jobseeker
+            ? JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)->pluck('job_id')->toArray()
             : [];
 
         // Format top ranked jobs

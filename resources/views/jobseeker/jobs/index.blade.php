@@ -4,17 +4,21 @@
 
 @section('content')
 @php
-$currentUser = Auth::user();
-$isApproved = (bool) ($currentUser->is_approved ?? false);
+$isProfileComplete = $jobseeker->isProfileAndDocumentsComplete();
 @endphp
+
 <div x-data="{ 
     selectedJobId: null,
+    selectedJobResumeRequired: false,
+    hasSavedResume: @js($hasSavedResume),
     previewOpen: false,
     applyModalOpen: false,
     approvalWarningOpen: false,
+    profileWarningOpen: false,
     selectedJobTitle: '',
     selectedJobCompany: ''
 }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
+
     <div class="w-full max-w-[1680px] mx-auto space-y-6">
 
         <!-- Header & Search Controls -->
@@ -102,31 +106,42 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
                 $job = $item['job'];
                 $match = $item['match'];
                 $company = $job->employer->company_name ?? 'Partner Employer';
+                $companyLogo = $job->employer->company_logo ?? null;
                 $hasApplied = in_array($job->job_id, $appliedJobIds);
                 @endphp
-                <div @click="selectedJobId = '{{ $job->job_id }}'; selectedJobTitle = '{{ addslashes($job->title) }}'; selectedJobCompany = '{{ addslashes($company) }}'; previewOpen = true;"
+                <div @click="selectedJobId = '{{ $job->job_id }}'; selectedJobResumeRequired = {{ $job->resume_required ? 'true' : 'false' }}; selectedJobTitle = '{{ addslashes($job->title) }}'; selectedJobCompany = '{{ addslashes($company) }}'; previewOpen = true;"
                     class="cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-emerald-400 transition-all relative overflow-hidden flex flex-col justify-between group">
 
                     @if($hasApplied)
-                    <span class="absolute top-0 right-0 rounded-bl-xl bg-emerald-700 text-white text-[9px] font-black px-2.5 py-1 shadow-xs">
+                    <span class="absolute top-0 right-0 rounded-bl-xl bg-emerald-700 text-white text-[9px] font-black px-2.5 py-1 shadow-xs z-10">
                         APPLIED
                     </span>
                     @endif
 
                     <div>
                         <div class="flex items-start justify-between gap-2">
-                            <div class="min-w-0 pr-2">
-                                <span class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">{{ $company }}</span>
-                                <h3 class="text-base font-black text-slate-900 group-hover:text-emerald-700 transition-colors leading-snug mt-0.5">
-                                    {{ $job->title }}
-                                </h3>
+                            <div class="flex items-center gap-3 min-w-0 pr-2">
+                                <!-- Employer Logo -->
+                                <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white text-sm font-black shrink-0 shadow-sm overflow-hidden border border-emerald-500/20">
+                                    @if($companyLogo)
+                                    <img src="{{ \Storage::url($companyLogo) }}" alt="{{ $company }}" class="h-full w-full object-cover">
+                                    @else
+                                    🏢
+                                    @endif
+                                </div>
+                                <div class="min-w-0">
+                                    <span class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block truncate">{{ $company }}</span>
+                                    <h3 class="text-base font-black text-slate-900 group-hover:text-emerald-700 transition-colors leading-snug mt-0.5 line-clamp-2">
+                                        {{ $job->title }}
+                                    </h3>
+                                </div>
                             </div>
                             <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black border shrink-0 {{ $match['badgeClass'] ?? 'bg-emerald-50 text-emerald-700 border-emerald-200' }}">
                                 {{ $match['percentage'] ?? 0 }}% Match
                             </span>
                         </div>
 
-                        <p class="text-xs text-slate-500 mt-2 flex items-center gap-2">
+                        <p class="text-xs text-slate-500 mt-3 flex items-center gap-2">
                             <span>{{ $job->location ?: 'Location not specified' }}</span>
                             <span>&bull;</span>
                             <span>{{ $job->salary_range ?: 'Salary not specified' }}</span>
@@ -193,6 +208,7 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
                 $job = $item['job'];
                 $match = $item['match'];
                 $company = $job->employer->company_name ?? 'Partner Employer';
+                $companyLogo = $job->employer->company_logo ?? null;
                 $hasApplied = in_array($job->job_id, $appliedJobIds);
                 @endphp
 
@@ -208,22 +224,29 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
 
                         <!-- Drawer Header -->
                         <div class="flex items-start justify-between pb-5 border-b border-slate-100">
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">{{ $company }}</span>
-                                    @if ($job->accepts_disability)
-                                    <span class="rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold inline-flex items-center gap-1">
-                                        <span>PWD Inclusive</span>
-                                    </span>
+                            <div class="flex items-start gap-3">
+                                <!-- Employer Logo in Drawer -->
+                                <div class="h-12 w-12 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white text-lg font-black shrink-0 shadow-sm overflow-hidden border border-emerald-500/20">
+                                    @if($companyLogo)
+                                    <img src="{{ \Storage::url($companyLogo) }}" alt="{{ $company }}" class="h-full w-full object-cover">
+                                    @else
+                                    🏢
                                     @endif
                                 </div>
-                                <h2 class="text-xl sm:text-2xl font-black text-slate-900 mt-1">{{ $job->title }}</h2>
-                                <p class="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
-                                    <span>{{ $job->location ?: 'Location not specified' }} &bull; {{ $job->job_type ?: 'Job type not specified' }} &bull; {{ $job->salary_range ?: 'Salary not specified' }}</span>
-                                    @if($job->valid_until)
-                                    <span>&bull; Available until {{ $job->valid_until->format('M d, Y') }}</span>
-                                    @endif
-                                </p>
+                                <div>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">{{ $company }}</span>
+                                        @if ($job->accepts_disability)
+                                        <span class="rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold inline-flex items-center gap-1">
+                                            <span>PWD Inclusive</span>
+                                        </span>
+                                        @endif
+                                    </div>
+                                    <h2 class="text-xl sm:text-2xl font-black text-slate-900 mt-1">{{ $job->title }}</h2>
+                                    <p class="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
+                                        <span>{{ $job->location ?: 'Location not specified' }} &bull; {{ $job->job_type ?: 'Job type not specified' }} &bull; {{ $job->salary_range ?: 'Salary not specified' }}</span>
+                                    </p>
+                                </div>
                             </div>
                             <button @click="previewOpen = false" class="rounded-full bg-slate-100 p-2 text-slate-500 hover:bg-slate-200 font-bold text-lg leading-none">&times;</button>
                         </div>
@@ -315,6 +338,7 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
                             Full Page &rarr;
                         </a>
 
+                        {{-- THE CORRECTED LOGIC BLOCK --}}
                         @if($hasApplied)
                         <button disabled class="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-5 py-2.5 text-xs font-bold text-white opacity-90 cursor-not-allowed">
                             Applied
@@ -323,19 +347,10 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
                         <button disabled class="inline-flex items-center gap-2 rounded-xl bg-slate-200 px-5 py-2.5 text-xs font-bold text-slate-600 cursor-not-allowed">
                             Expired
                         </button>
-                        @elseif(!$isApproved)
-                        <button type="button" @click="approvalWarningOpen = true" class="inline-flex items-center gap-2 rounded-xl bg-amber-100 border border-amber-300 px-5 py-2.5 text-xs font-black text-amber-900">
-                            <span>⚠️</span> Approval Required
-                        </button>
-                        @elseif(!auth()->user()->is_approved)
-                        <button type="button" onclick="alert('Your jobseeker account is pending approval by DMDP.')"
-                            class="inline-flex items-center gap-1.5 rounded-xl bg-slate-200 px-4 py-2 text-xs font-bold text-slate-600 cursor-not-allowed">
-                            Pending Approval
-                        </button>
-                        @elseif(!$jobseeker->isProfileAndDocumentsComplete())
-                        <button type="button" onclick="alert('Please complete your profile and upload required documents.')"
-                            class="inline-flex items-center gap-1.5 rounded-xl bg-amber-100 px-4 py-2 text-xs font-bold text-amber-900">
-                            Incomplete
+
+                        @elseif(!$isProfileComplete)
+                        <button type="button" @click="profileWarningOpen = true" class="inline-flex items-center gap-2 rounded-xl bg-rose-100 border border-rose-300 px-5 py-2.5 text-xs font-black text-rose-900">
+                            <span>⚠️</span> Profile Incomplete
                         </button>
                         @else
                         <button @click="applyModalOpen = true" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-6 py-3 text-xs font-black text-white shadow-md transition-all">
@@ -380,12 +395,22 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
 
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Attach Resume / CV (Optional)</label>
-                        <span class="text-[11px] text-emerald-700 font-bold">Profile auto-attached</span>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                            Attach Resume / CV <span x-text="selectedJobResumeRequired ? '(Required)' : '(Optional)'">(Optional)</span>
+                        </label>
+                        <span class="text-[11px] text-emerald-700 font-bold">{{ $hasSavedResume ? 'Resume on file' : 'No resume on file' }}</span>
                     </div>
-                    <input type="file" name="resume" accept=".pdf,.doc,.docx"
+                    <input type="file" name="resume" accept=".pdf,.doc,.docx" :required="selectedJobResumeRequired && !hasSavedResume"
                         class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100">
-                    <p class="text-[11px] text-slate-400">Accepted formats: PDF, DOC, DOCX (Max 5MB). If omitted, the employer will evaluate your application using your verified TrabaGo profile details and skills matrix.</p>
+                    <p class="text-[11px] text-slate-400">Accepted formats: PDF, DOC, DOCX (Max 5MB).
+                        @if($hasSavedResume)
+                            <span x-show="selectedJobResumeRequired">Your saved Document Hub resume satisfies this requirement; attach a new file to replace it for this application.</span>
+                            <span x-show="!selectedJobResumeRequired">A resume is on file. Attach a new file to replace it for this application.</span>
+                        @else
+                            <span x-show="selectedJobResumeRequired">This posting requires a resume.</span>
+                            <span x-show="!selectedJobResumeRequired">A resume is optional for this posting.</span>
+                        @endif
+                    </p>
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
@@ -412,12 +437,56 @@ $isApproved = (bool) ($currentUser->is_approved ?? false);
                 </div>
             </div>
             <p class="text-sm text-slate-600 leading-relaxed">
-                Your jobseeker account is still pending admin approval. Please wait for approval before you can submit any job application.
+                Your jobseeker account is still pending admin approval. Please wait for approval or upload a valid ID in the Document Hub for automatic verification.
             </p>
             <div class="flex justify-end">
                 <button type="button" @click="approvalWarningOpen = false" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-black">
                     OK
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROFILE INCOMPLETE WARNING MODAL -->
+    <div x-show="profileWarningOpen" x-cloak class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+        <div @click.away="profileWarningOpen = false" class="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl border border-rose-200 space-y-5 max-h-[85vh] overflow-y-auto">
+            <div class="flex items-start gap-3">
+                <div class="h-12 w-12 rounded-2xl bg-rose-100 border border-rose-200 text-rose-800 flex items-center justify-center text-2xl shrink-0">📝</div>
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-rose-700">Action required</p>
+                    <h3 class="text-xl font-black text-slate-900 mt-1">Complete Your Profile First</h3>
+                </div>
+            </div>
+
+            <p class="text-sm text-slate-600 leading-relaxed">
+                Your account is approved, but you need to complete the following before you can apply:
+            </p>
+
+            @php
+            $missing = $jobseeker->getMissingRequirements();
+            @endphp
+
+            @if(!empty($missing))
+            <div class="rounded-2xl bg-rose-50 border border-rose-200 p-4 space-y-2">
+                <p class="text-xs font-bold text-rose-900 uppercase tracking-wider">Missing Requirements ({{ count($missing) }}):</p>
+                <ul class="space-y-1.5">
+                    @foreach($missing as $key => $label)
+                    <li class="flex items-start gap-2 text-xs text-rose-800">
+                        <span class="text-rose-600 mt-0.5">✕</span>
+                        <span>{{ $label }}</span>
+                    </li>
+                    @endforeach
+                </ul>
+            </div>
+            @endif
+
+            <div class="flex justify-end gap-3 pt-2 border-t border-slate-100">
+                <button type="button" @click="profileWarningOpen = false" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold">
+                    Close
+                </button>
+                <a href="{{ route('jobseeker.profile') }}" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black">
+                    Go to Profile →
+                </a>
             </div>
         </div>
     </div>

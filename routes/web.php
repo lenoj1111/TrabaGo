@@ -254,6 +254,10 @@ Route::prefix('employer')->name('employer.')->group(function () {
 
         // 7. Official Accreditation Certificate
         Route::get('/certificate', [EmployerPortalController::class, 'certificate'])->name('certificate');
+        Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+            Route::get('/evaluations/jobseekers', [ApprovalsController::class, 'evaluateJobseekers'])->name('evaluations.jobseekers');
+            Route::post('/evaluations/jobseekers/{id}/refer', [ApprovalsController::class, 'referJobseeker'])->name('evaluations.refer');
+        });
     });
 });
 

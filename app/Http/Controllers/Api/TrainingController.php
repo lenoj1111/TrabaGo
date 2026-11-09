@@ -27,9 +27,10 @@ class TrainingController extends Controller
      */
     private function formatProgram(TrainingProgram $program, ?int $jobseekerId = null): array
     {
-        $programQuestions = array_map(static fn ($question) => [
+        $programQuestions = array_map(static fn($question) => [
             'id' => $question['id'],
             'question' => $question['question'],
+            'image_url' => $question['image_url'],
             'question_type' => $question['type'],
             'choices' => $question['choices'],
             'options' => $question['choices'],
@@ -97,6 +98,9 @@ class TrainingController extends Controller
             'durationMonths' => $program->duration_months ?? 1,
             'duration_months' => $program->duration_months ?? 1,
             'duration' => ($program->duration_months ?? 1) . ' month(s)',
+            'training_start_date' => $program->training_start_date,
+            'training_end_date' => $program->training_end_date,
+            'trainee_capacity' => $program->trainee_capacity,
             'description' => $program->description ?? '',
             'topics' => $topics,
             'modulesCount' => count($topics),
@@ -113,7 +117,7 @@ class TrainingController extends Controller
             'review_status' => $reviewStatus,
             'passed' => $enrollment ? (bool)$enrollment->passed : false,
             'enrolled_skills' => $enrollment ? $enrollment->enrolled_skills : null,
-            'skills' => !empty($program->skills) 
+            'skills' => !empty($program->skills)
                 ? array_values(array_filter(array_map('trim', explode(',', $program->skills))))
                 : [trim($program->title)],
         ];
@@ -174,7 +178,7 @@ class TrainingController extends Controller
         $jobseeker = $this->resolveJobseeker($request);
         if (!$jobseeker) {
             return response()->json([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Please sign in to your jobseeker account to enroll in courses.',
                 'requires_auth' => true
             ], 401);
@@ -197,6 +201,25 @@ class TrainingController extends Controller
                 'message' => "You are already enrolled in '{$training->title}'.",
                 'enrollment_id' => $enrollment->enrollment_id,
             ]);
+        }
+
+        if (!$jobseeker->isProfileAndDocumentsComplete() || !$user || !$user->isAccountVerified()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Complete your jobseeker profile and verify your account with a valid Government ID before applying for training.',
+            ], 403);
+        }
+
+        $eligibilityIssues = $training->demographicEligibilityIssues($jobseeker);
+        if ($eligibilityIssues) {
+            return response()->json([
+                'success' => false,
+                'message' => implode(' ', $eligibilityIssues),
+            ], 422);
+        }
+
+        if ($training->trainee_capacity !== null && TrainingEnrollment::where('training_id', $id)->count() >= $training->trainee_capacity) {
+            return response()->json(['success' => false, 'message' => 'This training program has reached its trainee capacity.'], 409);
         }
 
         $newEnrollment = TrainingEnrollment::create([
@@ -256,6 +279,9 @@ class TrainingController extends Controller
             'jobseeker_id' => $jobseeker->jobseeker_id,
             'training_id' => $training->training_id,
         ]);
+        if (!$enrollment->exists && $training->trainee_capacity !== null && TrainingEnrollment::where('training_id', $training->training_id)->count() >= $training->trainee_capacity) {
+            return response()->json(['success' => false, 'message' => 'This training program has reached its trainee capacity.'], 409);
+        }
         $existingAnswers = is_array($enrollment->answers)
             ? $enrollment->answers
             : (json_decode($enrollment->answers ?? '[]', true) ?: []);

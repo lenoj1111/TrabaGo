@@ -174,8 +174,44 @@ class JobseekerEnhancementsTest extends TestCase
     {
         $response = $this->actingAs($this->jobseekerUser)->get(route('jobseeker.jobs'));
         $response->assertStatus(200);
-        $response->assertSee('Attach Resume / CV (Optional)');
-        $response->assertSee('If omitted, the employer will evaluate your application using your verified TrabaGo profile details and skills matrix.');
+        $response->assertSee('Attach Resume / CV');
+        $response->assertSee('(Optional)');
+        $response->assertSee('A resume is on file. Attach a new file to replace it for this application.');
+    }
+
+    public function test_required_resume_can_be_satisfied_by_saved_document_hub_resume(): void
+    {
+        $this->jobPosting->update(['resume_required' => true]);
+
+        $response = $this->actingAs($this->jobseekerUser)
+            ->post(route('jobseeker.jobs.apply', $this->jobPosting->job_id));
+
+        $response->assertRedirect(route('jobseeker.applications'));
+        $response->assertSessionHas('success');
+        $this->assertDatabaseHas('job_applications', [
+            'job_id' => $this->jobPosting->job_id,
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+        ]);
+    }
+
+    public function test_required_resume_blocks_application_when_no_saved_resume_exists(): void
+    {
+        $details = $this->jobseeker->details;
+        $details->training_certificates = array_values(array_filter(
+            $details->training_certificates,
+            fn($document) => ($document['category'] ?? '') !== 'resume'
+        ));
+        $details->save();
+        $this->jobPosting->update(['resume_required' => true]);
+
+        $response = $this->actingAs($this->jobseekerUser)
+            ->post(route('jobseeker.jobs.apply', $this->jobPosting->job_id));
+
+        $response->assertSessionHasErrors(['resume']);
+        $this->assertDatabaseMissing('job_applications', [
+            'job_id' => $this->jobPosting->job_id,
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+        ]);
     }
 
     /**
@@ -206,9 +242,26 @@ class JobseekerEnhancementsTest extends TestCase
             'education_level' => 'College Degree',
             'education_course' => 'BS Computer Science',
             'education_school' => 'University of San Carlos',
-            'experience_company' => 'Cebu IT Park Innovations',
-            'experience_position' => 'Web Developer',
-            'experience_duration' => '3 - 5 Years',
+            'work_experience' => [
+                [
+                    'employer' => 'Cebu IT Park Innovations',
+                    'employer_reference' => 'Maria 09170000000',
+                    'position' => 'Regular',
+                    'job_title' => 'Web Developer',
+                    'start_date' => '2022-01-03',
+                    'end_date' => '2024-06-30',
+                    'responsibilities' => 'Built internal web tools.',
+                ],
+                [
+                    'employer' => 'Cebu Digital Studio',
+                    'employer_reference' => 'HR Office',
+                    'position' => 'Contract',
+                    'job_title' => 'PHP Developer',
+                    'start_date' => '2024-07-01',
+                    'end_date' => '',
+                    'responsibilities' => 'Maintains client applications.',
+                ],
+            ],
         ]);
 
         $updateResponse->assertRedirect(route('jobseeker.profile'));
@@ -217,6 +270,12 @@ class JobseekerEnhancementsTest extends TestCase
             'last_name' => 'Penduko Jr.',
             'civil_status' => 'Married',
         ]);
+        $storedExperience = json_decode(
+            \Illuminate\Support\Facades\DB::table('jobseeker_details')->where('jobseeker_id', $this->jobseeker->jobseeker_id)->value('work_experience'),
+            true
+        );
+        $this->assertCount(2, $storedExperience['entries']);
+        $this->assertSame('PHP Developer', $storedExperience['entries'][1]['job_title']);
 
         // 3. Reset Password (with invalid current password fails)
         $badPasswordResponse = $this->actingAs($this->jobseekerUser)->post(route('jobseeker.password.change'), [

@@ -324,10 +324,12 @@ class EmployerPortalController extends Controller
             'other_instructions' => 'nullable|string',
             'qualifications' => 'nullable|string',
             'skills' => 'nullable|string',
+            'company_logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'vacancy_count' => 'required|integer|min:1',
             'valid_until' => ['nullable', 'date', 'after_or_equal:today'],
             'accepts_disability' => 'nullable|boolean',
             'disability_type' => 'nullable|string|max:100',
+            'resume_required' => 'nullable|boolean',
         ], [
             'valid_until.after_or_equal' => 'The valid until date cannot be in the past.',
         ]);
@@ -347,6 +349,7 @@ class EmployerPortalController extends Controller
             'valid_until' => $request->input('valid_until', now()->addMonths(2)->toDateString()),
             'accepts_disability' => $request->boolean('accepts_disability'),
             'disability_type' => $request->input('disability_type'),
+            'resume_required' => $request->boolean('resume_required'),
             'status' => 'pending',
             'created_by' => 'employer',
             'created_at' => now()->toDateString(),
@@ -420,6 +423,7 @@ class EmployerPortalController extends Controller
             'valid_until' => ['nullable', 'date', 'after_or_equal:today'],
             'accepts_disability' => 'nullable|boolean',
             'disability_type' => 'nullable|string|max:100',
+            'resume_required' => 'nullable|boolean',
         ], [
             'valid_until.after_or_equal' => 'The valid until date cannot be in the past.',
         ]);
@@ -443,6 +447,7 @@ class EmployerPortalController extends Controller
             'valid_until' => $request->input('valid_until'),
             'accepts_disability' => $request->boolean('accepts_disability'),
             'disability_type' => $request->input('disability_type'),
+            'resume_required' => $request->boolean('resume_required'),
             'status' => $status,
         ]);
 
@@ -1169,6 +1174,28 @@ class EmployerPortalController extends Controller
             'company_address' => $office,
             'pending_updates' => $pendingUpdates,
         ]);
+
+        // Handle company logo upload
+        if ($request->hasFile('company_logo')) {
+            $file = $request->file('company_logo');
+
+            // Delete old logo if it exists
+            if ($employer->company_logo && Storage::disk('public')->exists($employer->company_logo)) {
+                Storage::disk('public')->delete($employer->company_logo);
+            }
+
+            // Store new logo
+            $path = $file->store('employer_logos', 'public');
+            $employer->update(['company_logo' => $path]);
+        }
+
+        // Optional: allow removing the logo
+        if ($request->boolean('remove_logo') && $employer->company_logo) {
+            if (Storage::disk('public')->exists($employer->company_logo)) {
+                Storage::disk('public')->delete($employer->company_logo);
+            }
+            $employer->update(['company_logo' => null]);
+        }
 
         $profile = $user->profile ?: new UserProfile(['user_id' => $user->user_id]);
         $profile->full_name = $contactPerson;
