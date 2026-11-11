@@ -41,6 +41,9 @@
                     @endif
                 </div>
             </form>
+            @if(request('month'))
+                <p class="mt-3 text-xs font-semibold text-slate-500">{{ \Carbon\Carbon::createFromFormat('!Y-m', request('month'))->format('F Y') }}</p>
+            @endif
         </div>
 
         <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
@@ -58,7 +61,8 @@
                             <th class="px-3 pb-3">Enrolled</th>
                             <th class="px-3 pb-3">Status</th>
                             <th class="px-3 pb-3">Score</th>
-                            <th class="px-3 pb-3">Review</th>
+                            <th class="px-3 pb-3">Certificate</th>
+                            <th class="px-3 pb-3 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
@@ -79,22 +83,50 @@
                                         {{ $reviewStatus === 'pending' ? 'Pending Review' : ($reviewStatus === 'needs_retake' || $enrollment->status === 'failed' ? 'Needs Retake' : ucfirst(str_replace('_', ' ', $enrollment->status))) }}
                                     </span>
                                 </td>
-                                <td class="px-3 py-4">{{ is_null($enrollment->score) ? '-' : $enrollment->score . '%' }}</td>
+                                <td class="px-3 py-4 font-bold">
+                                    @if($reviewStatus === 'pending' && !empty($assessmentData['objective_score']['question_count']))
+                                        <span class="text-indigo-700">{{ $assessmentData['objective_score']['correct_count'] ?? 0 }}/{{ $assessmentData['objective_score']['question_count'] }} correct</span>
+                                    @elseif(!is_null($enrollment->score))
+                                        {{ $enrollment->score }}%
+                                    @else
+                                        <span class="text-slate-400">Ungraded</span>
+                                    @endif
+                                </td>
                                 <td class="px-3 py-4">
+                                    @if($enrollment->certificate_issued)
+                                        <a href="{{ route('trainer.certificates.preview', $enrollment->enrollment_id) }}" target="_blank" rel="noopener" class="font-bold text-emerald-700 hover:underline">View certificate</a>
+                                    @else
+                                        <span class="text-slate-400">Not issued</span>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-4 text-right">
                                     @if($reviewStatus === 'pending')
                                         <a href="{{ route('trainer.enrollments.evaluate', $enrollment->enrollment_id) }}" class="rounded-lg bg-indigo-600 px-3 py-2 text-[11px] font-bold text-white hover:bg-indigo-500">Review Answers</a>
                                     @elseif($reviewStatus === 'needs_retake')
                                         <span class="text-[11px] font-bold text-rose-700">Awaiting Retake</span>
-                                    @elseif($reviewStatus === 'passed')
-                                        <span class="text-[11px] font-bold text-emerald-700">{{ $enrollment->certificate_issued ? 'Certificate issued' : 'Passed' }}</span>
                                     @else
-                                        <span class="text-[11px] text-slate-400">-</span>
+                                        <div class="flex flex-col items-end gap-2">
+                                            @if(!in_array($reviewStatus, ['passed', 'needs_retake'], true))
+                                                <a href="{{ route('trainer.enrollments.assessment', $enrollment->enrollment_id) }}" class="rounded-lg bg-slate-900 px-3 py-2 text-[11px] font-bold text-white hover:bg-emerald-600">Assess</a>
+                                            @endif
+                                            @if(!$enrollment->certificate_issued && $enrollment->status === 'completed' && $reviewStatus === 'passed')
+                                                <form action="{{ route('trainer.enrollments.certificate', $enrollment->enrollment_id) }}" method="POST">
+                                                    @csrf
+                                                    <button type="submit" class="rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white hover:bg-emerald-500">Issue Certificate</button>
+                                                </form>
+                                            @endif
+                                            @if($reviewStatus === 'passed')
+                                                <span class="text-[11px] font-bold text-emerald-700">Passed</span>
+                                            @elseif($enrollment->certificate_issued)
+                                                <span class="text-[11px] font-bold text-emerald-700">Certificate issued</span>
+                                            @endif
+                                        </div>
                                     @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-3 py-12 text-center text-slate-400">No enrolled jobseekers match these filters.</td>
+                                <td colspan="7" class="px-3 py-12 text-center text-slate-400">No enrolled jobseekers match these filters.</td>
                             </tr>
                         @endforelse
                     </tbody>

@@ -39,6 +39,11 @@ class SocialStatus extends Model
         'is_ofw',
         'is_pwd',
         'pwd_type',
+        'is_lgbtq',
+        'is_senior_citizen',
+        'is_immigrant',
+        'immigrant_origin',
+        'region',
     ];
 
     /**
@@ -52,6 +57,9 @@ class SocialStatus extends Model
             'is_4ps' => 'boolean',
             'is_ofw' => 'boolean',
             'is_pwd' => 'boolean',
+            'is_lgbtq' => 'boolean',
+            'is_senior_citizen' => 'boolean',
+            'is_immigrant' => 'boolean',
         ];
     }
 

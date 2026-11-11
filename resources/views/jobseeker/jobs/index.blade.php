@@ -9,6 +9,8 @@ $isProfileComplete = $jobseeker->isProfileAndDocumentsComplete();
 
 <div x-data="{ 
     selectedJobId: null,
+    selectedJobResumeRequired: false,
+    hasSavedResume: @js($hasSavedResume),
     previewOpen: false,
     applyModalOpen: false,
     approvalWarningOpen: false,
@@ -107,7 +109,7 @@ $isProfileComplete = $jobseeker->isProfileAndDocumentsComplete();
                 $companyLogo = $job->employer->company_logo ?? null;
                 $hasApplied = in_array($job->job_id, $appliedJobIds);
                 @endphp
-                <div @click="selectedJobId = '{{ $job->job_id }}'; selectedJobTitle = '{{ addslashes($job->title) }}'; selectedJobCompany = '{{ addslashes($company) }}'; previewOpen = true;"
+                <div @click="selectedJobId = '{{ $job->job_id }}'; selectedJobResumeRequired = {{ $job->resume_required ? 'true' : 'false' }}; selectedJobTitle = '{{ addslashes($job->title) }}'; selectedJobCompany = '{{ addslashes($company) }}'; previewOpen = true;"
                     class="cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-emerald-400 transition-all relative overflow-hidden flex flex-col justify-between group">
 
                     @if($hasApplied)
@@ -143,6 +145,10 @@ $isProfileComplete = $jobseeker->isProfileAndDocumentsComplete();
                             <span>{{ $job->location ?: 'Location not specified' }}</span>
                             <span>&bull;</span>
                             <span>{{ $job->salary_range ?: 'Salary not specified' }}</span>
+                            @if($job->valid_until)
+                            <span>&bull;</span>
+                            <span>Available until {{ $job->valid_until->format('M d, Y') }}</span>
+                            @endif
                         </p>
                     </div>
 
@@ -389,11 +395,22 @@ $isProfileComplete = $jobseeker->isProfileAndDocumentsComplete();
 
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Attach Resume / CV (Optional)</label>
-                        <span class="text-[11px] text-emerald-700 font-bold">Profile auto-attached</span>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                            Attach Resume / CV <span x-text="selectedJobResumeRequired ? '(Required)' : '(Optional)'">(Optional)</span>
+                        </label>
+                        <span class="text-[11px] text-emerald-700 font-bold">{{ $hasSavedResume ? 'Resume on file' : 'No resume on file' }}</span>
                     </div>
-                    <input type="file" name="resume" accept=".pdf,.doc,.docx"
+                    <input type="file" name="resume" accept=".pdf,.doc,.docx" :required="selectedJobResumeRequired && !hasSavedResume"
                         class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100">
+                    <p class="text-[11px] text-slate-400">Accepted formats: PDF, DOC, DOCX (Max 5MB).
+                        @if($hasSavedResume)
+                            <span x-show="selectedJobResumeRequired">Your saved Document Hub resume satisfies this requirement; attach a new file to replace it for this application.</span>
+                            <span x-show="!selectedJobResumeRequired">A resume is on file. Attach a new file to replace it for this application.</span>
+                        @else
+                            <span x-show="selectedJobResumeRequired">This posting requires a resume.</span>
+                            <span x-show="!selectedJobResumeRequired">A resume is optional for this posting.</span>
+                        @endif
+                    </p>
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">

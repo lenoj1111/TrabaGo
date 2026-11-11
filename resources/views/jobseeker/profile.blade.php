@@ -24,10 +24,35 @@
     $eduYear = is_array($edu) ? ($edu['year_graduated'] ?? '') : '';
 
     // Experience fallbacks
-    $expCompany = is_array($exp) ? ($exp['company'] ?? '') : '';
-    $expPosition = is_array($exp) ? ($exp['position'] ?? '') : '';
-    $expDuration = is_array($exp) ? ($exp['duration'] ?? '') : '';
-    $expDesc = is_array($exp) ? ($exp['description'] ?? '') : '';
+    $legacyExperience = [
+        'employer' => $exp['employer'] ?? $exp['company'] ?? '',
+        'employer_reference' => $exp['employer_reference'] ?? $exp['reference'] ?? '',
+        'position' => $exp['position'] ?? '',
+        'job_title' => $exp['job_title'] ?? $exp['title'] ?? ($exp['position'] ?? ''),
+        'start_date' => $exp['start_date'] ?? '',
+        'end_date' => $exp['end_date'] ?? '',
+        'responsibilities' => $exp['responsibilities'] ?? $exp['description'] ?? '',
+    ];
+    $hasLegacyExperience = count(array_filter($legacyExperience, fn ($value) => trim((string) $value) !== '')) > 0;
+    $workExperiences = $exp['entries'] ?? ($exp !== [] && array_keys($exp) === range(0, count($exp) - 1)
+        ? $exp
+        : ($hasLegacyExperience ? [$legacyExperience] : []));
+    $workExperiences = array_values(array_map(function ($experience) {
+        return [
+            'employer' => $experience['employer'] ?? $experience['company'] ?? '',
+            'employer_reference' => $experience['employer_reference'] ?? $experience['reference'] ?? '',
+            'position' => $experience['position'] ?? '',
+            'job_title' => $experience['job_title'] ?? $experience['title'] ?? ($experience['position'] ?? ''),
+            'start_date' => $experience['start_date'] ?? '',
+            'end_date' => $experience['end_date'] ?? '',
+            'responsibilities' => $experience['responsibilities'] ?? $experience['description'] ?? '',
+        ];
+    }, array_filter($workExperiences, 'is_array')));
+    $workExperiences = old('work_experience', $workExperiences);
+    if ($workExperiences === []) {
+        $workExperiences[] = ['employer' => '', 'employer_reference' => '', 'position' => '', 'job_title' => '', 'start_date' => '', 'end_date' => '', 'responsibilities' => ''];
+    }
+    $savedWorkExperiences = array_values(array_filter($workExperiences, fn ($experience) => collect($experience)->filter(fn ($value) => trim((string) $value) !== '')->isNotEmpty()));
     $expBio = is_array($exp) ? ($exp['summary'] ?? '') : ($details->bio ?? '');
 
     // Eligibility fallbacks
@@ -42,6 +67,17 @@
     showCurrentPass: false,
     showNewPass: false,
     showConfirmPass: false,
+    workExperiences: @js($workExperiences),
+    addWorkExperience() {
+        this.workExperiences.push({ employer: '', employer_reference: '', position: '', job_title: '', start_date: '', end_date: '', responsibilities: '' });
+    },
+    removeWorkExperience(index) {
+        if (this.workExperiences.length === 1) {
+            this.workExperiences[0] = { employer: '', employer_reference: '', position: '', job_title: '', start_date: '', end_date: '', responsibilities: '' };
+            return;
+        }
+        this.workExperiences.splice(index, 1);
+    },
     skills: ({{ json_encode($skills) }} || []).map(s => (typeof s === 'object' && s !== null) ? (s.skill_name || '') : String(s)).filter(s => s && s.trim() !== '' && s !== '[object Object]' && s !== 'object Object'),
     newSkill: '',
     addSkill(skillName) {
@@ -70,7 +106,8 @@
         return this.skills.some(s => s.toLowerCase() === trimmed);
     },
     isPwd: {{ ($socialStatus->is_pwd ?? false) ? 'true' : 'false' }},
-    is4ps: {{ ($socialStatus->is_4ps ?? false) ? 'true' : 'false' }}
+    is4ps: {{ ($socialStatus->is_4ps ?? false) ? 'true' : 'false' }},
+    isImmigrant: {{ ($socialStatus->is_immigrant ?? false) ? 'true' : 'false' }}
 }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-5xl space-y-8">
         
@@ -425,28 +462,33 @@
                         </div>
                     </div>
 
-                    <dl class="space-y-3 text-xs">
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <dt class="text-[10px] font-bold text-slate-400 uppercase">Recent Company</dt>
-                                <dd class="font-bold text-slate-900 mt-0.5">{{ $expCompany ?: 'None listed' }}</dd>
+                    <div class="space-y-3 text-xs">
+                        @forelse($savedWorkExperiences as $experience)
+                            <div class="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-1.5">
+                                <div class="flex flex-wrap items-start justify-between gap-2">
+                                    <div>
+                                        <h4 class="font-bold text-slate-900">{{ $experience['job_title'] ?: ($experience['position'] ?: 'Work experience') }}</h4>
+                                        <p class="text-slate-600">{{ $experience['employer'] ?: 'Employer not listed' }}{{ $experience['employer_reference'] ? ' · ' . $experience['employer_reference'] : '' }}</p>
+                                    </div>
+                                    <span class="text-[11px] text-slate-500">{{ $experience['start_date'] ?: 'Start date not listed' }} – {{ $experience['end_date'] ?: 'Present' }}</span>
+                                </div>
+                                @if($experience['position'])
+                                    <p class="text-slate-600">Position: {{ $experience['position'] }}</p>
+                                @endif
+                                @if($experience['responsibilities'])
+                                    <p class="text-slate-700 whitespace-pre-line">{{ $experience['responsibilities'] }}</p>
+                                @endif
                             </div>
-                            <div>
-                                <dt class="text-[10px] font-bold text-slate-400 uppercase">Role / Position</dt>
-                                <dd class="font-bold text-slate-900 mt-0.5">{{ $expPosition ?: 'Entry-level' }}</dd>
-                            </div>
-                        </div>
-                        <div>
-                            <dt class="text-[10px] font-bold text-slate-400 uppercase">Total Experience</dt>
-                            <dd class="font-bold text-slate-900 mt-0.5">{{ $expDuration ?: 'Fresh graduate' }}</dd>
-                        </div>
+                        @empty
+                            <p class="text-slate-500">No work experience listed.</p>
+                        @endforelse
                         <div>
                             <dt class="text-[10px] font-bold text-slate-400 uppercase">Professional Summary / Bio</dt>
                             <dd class="font-medium text-slate-700 mt-0.5 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
                                 {{ $expBio ?: 'No professional bio added yet.' }}
                             </dd>
                         </div>
-                    </dl>
+                    </div>
                 </div>
 
             </div>
@@ -847,35 +889,49 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                        <div class="space-y-1.5">
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Most Recent Company / Employer</label>
-                            <input type="text" name="experience_company" value="{{ old('experience_company', $expCompany) }}" placeholder="e.g. Qualfon Cebu, Concentrix, City Gov"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
-                        </div>
-
-                        <div class="space-y-1.5">
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Job Title / Role</label>
-                            <input type="text" name="experience_position" value="{{ old('experience_position', $expPosition) }}" placeholder="e.g. Customer Service Rep, Junior Developer"
-                                   class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
-                        </div>
-
-                        <div class="space-y-1.5">
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Duration / Total Experience</label>
-                            <select name="experience_duration" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">
-                                <option value="Fresh Graduate / No Experience" {{ old('experience_duration', $expDuration) === 'Fresh Graduate / No Experience' ? 'selected' : '' }}>Fresh Graduate / No Experience</option>
-                                <option value="Less than 1 Year" {{ old('experience_duration', $expDuration) === 'Less than 1 Year' ? 'selected' : '' }}>Less than 1 Year</option>
-                                <option value="1 - 2 Years" {{ old('experience_duration', $expDuration) === '1 - 2 Years' ? 'selected' : '' }}>1 - 2 Years</option>
-                                <option value="3 - 5 Years" {{ old('experience_duration', $expDuration) === '3 - 5 Years' ? 'selected' : '' }}>3 - 5 Years</option>
-                                <option value="More than 5 Years" {{ old('experience_duration', $expDuration) === 'More than 5 Years' ? 'selected' : '' }}>More than 5 Years</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="space-y-1.5">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Key Duties & Achievements</label>
-                        <textarea name="experience_description" rows="2" placeholder="Summary of major responsibilities and skills used..."
-                                  class="w-full rounded-xl border border-slate-200 p-4 text-xs text-slate-900 focus:border-emerald-500 focus:ring-emerald-400">{{ old('experience_description', $expDesc) }}</textarea>
+                    <input type="hidden" name="work_experience_submitted" value="1">
+                    <div class="space-y-4">
+                        <template x-for="(experience, index) in workExperiences" :key="index">
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-xs font-black uppercase tracking-wider text-slate-700" x-text="'Experience ' + (index + 1)"></h3>
+                                    <button type="button" @click="removeWorkExperience(index)" class="text-xs font-bold text-rose-700 hover:text-rose-900">Remove</button>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Employer / Organization</label>
+                                        <input type="text" :name="'work_experience[' + index + '][employer]'" x-model="experience.employer" maxlength="150" placeholder="Employer or organization name" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Employer Reference / Contact</label>
+                                        <input type="text" :name="'work_experience[' + index + '][employer_reference]'" x-model="experience.employer_reference" maxlength="150" placeholder="Reference name or contact details" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Position</label>
+                                        <input type="text" :name="'work_experience[' + index + '][position]'" x-model="experience.position" maxlength="150" placeholder="e.g. Full-time, Contract, OJT" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Job Title</label>
+                                        <input type="text" :name="'work_experience[' + index + '][job_title]'" x-model="experience.job_title" maxlength="150" placeholder="e.g. Customer Service Representative" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Start Date</label>
+                                        <input type="date" :name="'work_experience[' + index + '][start_date]'" x-model="experience.start_date" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">End Date</label>
+                                        <input type="date" :name="'work_experience[' + index + '][end_date]'" x-model="experience.end_date" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
+                                    </div>
+                                    <div class="space-y-1.5 sm:col-span-2">
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Responsibilities</label>
+                                        <textarea :name="'work_experience[' + index + '][responsibilities]'" x-model="experience.responsibilities" maxlength="3000" rows="3" placeholder="Describe your responsibilities and achievements..." class="w-full rounded-xl border border-slate-200 p-4 text-xs text-slate-900 focus:border-emerald-500"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        <button type="button" @click="addWorkExperience()" class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100">
+                            <span aria-hidden="true">+</span> Add Work Experience
+                        </button>
                     </div>
 
                     <div class="space-y-1.5">
@@ -1008,6 +1064,52 @@
                                 </label>
                                 <p class="text-[11px] text-slate-400 mt-1 pl-7">Qualifies for DMDP local reintegration and skills bridging programs.</p>
                             </div>
+
+                            <!-- LGBTQ+ Membership -->
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" name="is_lgbtq" value="1" {{ ($socialStatus->is_lgbtq ?? false) ? 'checked' : '' }}
+                                           class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                                    <span class="text-xs font-bold text-slate-900">LGBTQ+ Community Member</span>
+                                </label>
+                                <p class="text-[11px] text-slate-400 mt-1 pl-7">Equal employment opportunity and diversity tracking under Region 7 PESO.</p>
+                            </div>
+
+                            <!-- Senior Citizen -->
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" name="is_senior_citizen" value="1" {{ ($socialStatus->is_senior_citizen ?? false) ? 'checked' : '' }}
+                                           class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                                    <span class="text-xs font-bold text-slate-900">Senior Citizen (60 years old and above)</span>
+                                </label>
+                                <p class="text-[11px] text-slate-400 mt-1 pl-7">Priority inclusion for active community workforce and elder livelihood under RA 10911.</p>
+                            </div>
+
+                            <!-- Immigrant / Migrant Worker -->
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 sm:col-span-2">
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" name="is_immigrant" value="1" x-model="isImmigrant"
+                                           class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                                    <span class="text-xs font-bold text-slate-900">Immigrant / Migrant Worker / Foreign National</span>
+                                </label>
+                                <p class="text-[11px] text-slate-400 pl-7">Support & monitoring for immigrant laborers and inter-regional transferees to Region 7 (Central Visayas).</p>
+                                <div x-show="isImmigrant" x-cloak class="pt-2 border-t border-slate-200 pl-7">
+                                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Country / Province of Origin or Visa/AEP Details</label>
+                                    <input type="text" name="immigrant_origin" value="{{ old('immigrant_origin', $socialStatus->immigrant_origin ?? '') }}" placeholder="Country of Origin, Alien Employment Permit (AEP), or Transferee Province"
+                                           class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:border-emerald-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Region Scope Badge -->
+                        <div class="p-3 bg-emerald-50/70 border border-emerald-200 rounded-2xl flex items-center justify-between text-xs">
+                            <span class="font-bold text-emerald-950 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+                                Coverage Scope: <strong>{{ $socialStatus->region ?: 'Region VII - Central Visayas (Cebu City DMDP Hub)' }}</strong>
+                            </span>
+                            <input type="hidden" name="region" value="{{ $socialStatus->region ?: 'Region VII - Central Visayas' }}">
+                            <span class="text-[10px] text-emerald-700 font-bold bg-white px-2 py-0.5 rounded-lg border border-emerald-200">Central Visayas</span>
+                        </div>
                         </div>
                     </div>
                 </section>

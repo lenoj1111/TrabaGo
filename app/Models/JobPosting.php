@@ -50,6 +50,7 @@ class JobPosting extends Model
         'valid_until',
         'accepts_disability',
         'disability_type',
+        'resume_required',
         'status',
         'created_by',
         'created_at',
@@ -101,6 +102,7 @@ class JobPosting extends Model
     {
         return [
             'accepts_disability' => 'boolean',
+            'resume_required' => 'boolean',
             'vacancy_count' => 'integer',
             'valid_until' => 'date',
             'created_at' => 'date',
@@ -144,7 +146,7 @@ class JobPosting extends Model
         return $query->where('status', 'approved')
             ->where(function ($q) {
                 $q->whereNull('valid_until')
-                  ->orWhere('valid_until', '>=', now()->toDateString());
+                    ->orWhere('valid_until', '>=', now()->toDateString());
             });
     }
 

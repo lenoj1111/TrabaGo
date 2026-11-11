@@ -54,6 +54,10 @@ class EmployerAccreditation extends Model
          'admin_approved_at',
          'submitted_at',
          'approved_at',
+         'certificate_no',
+         'certificate_issued_at',
+         'certificate_issued_by',
+         'admin_rejection_remarks',
      ];
 
     /**

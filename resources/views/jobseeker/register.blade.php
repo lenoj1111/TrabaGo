@@ -425,37 +425,64 @@
                         <!-- Barangay -->
                         <div class="md:col-span-2">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="address_barangay">
-                                Barangay (Cebu City) <span class="text-rose-500" aria-hidden="true">*</span>
+                                Barangay <span class="text-rose-500">*</span>
                             </label>
                             @php
                                 $cebuBarangays = \App\Services\BarangayDistributionService::getBarangayNames();
                             @endphp
-                            <div class="relative" id="barangaySelectWrapper">
-                                <input type="text" id="address_barangay" name="address[barangay]" value="{{ old('address.barangay') }}" placeholder="Start typing your Cebu City barangay..." required autocomplete="off"
-                                       role="combobox" aria-expanded="false" aria-controls="barangayListbox" aria-autocomplete="list"
-                                       class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border @error('address.barangay') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-600 transition" />
-                                <div id="barangayListbox" role="listbox" class="hidden absolute z-30 mt-1 w-full max-h-56 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg"></div>
+                            <div class="relative">
+                                <input list="cebu_barangays_list" id="address_barangay" name="address[barangay]" value="{{ old('address.barangay') }}" placeholder="Start typing your barangay..." required autocomplete="off"
+                                       class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border @error('address.barangay') border-rose-400 @else border-slate-200 @enderror rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                                <datalist id="cebu_barangays_list">
+                                    @foreach($cebuBarangays as $bName)
+                                        <option value="{{ $bName }}">{{ $bName }}</option>
+                                    @endforeach
+                                </datalist>
                             </div>
-                            <p class="text-[11px] text-slate-500 mt-1" id="barangayHelp">Select from the 80 official Cebu City barangays for localized manpower distribution.</p>
-                            <p class="text-[11px] font-semibold text-rose-600 mt-1 hidden" id="barangayError">Please select a valid Cebu City barangay from the list.</p>
+                            <p class="text-[11px] text-slate-500 mt-1">Select or type your barangay for localized manpower distribution across Region 7.</p>
                         </div>
 
                         <!-- City -->
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="address_city">
-                                City
+                                City / Municipality <span class="text-rose-500">*</span>
                             </label>
-                            <input type="text" id="address_city" name="address[city]" value="{{ old('address.city', 'Cebu City') }}" readonly
-                                   class="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-700 font-medium cursor-not-allowed" />
+                            <input list="region7_cities_list" type="text" id="address_city" name="address[city]" value="{{ old('address.city', 'Cebu City') }}" placeholder="e.g. Cebu City, Mandaue, Tagbilaran" required
+                                   class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                            <datalist id="region7_cities_list">
+                                <option value="Cebu City">
+                                <option value="Mandaue City">
+                                <option value="Lapu-Lapu City">
+                                <option value="Talisay City">
+                                <option value="Toledo City">
+                                <option value="Danao City">
+                                <option value="City of Naga">
+                                <option value="Carcar City">
+                                <option value="Bogo City">
+                                <option value="Tagbilaran City">
+                                <option value="Dumaguete City">
+                                <option value="Bayawan City">
+                                <option value="Bais City">
+                                <option value="Tanjay City">
+                                <option value="Guihulngan City">
+                                <option value="Canlaon City">
+                                <option value="Siquijor">
+                            </datalist>
                         </div>
 
                         <!-- Province -->
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="address_province">
-                                Province
+                                Province <span class="text-rose-500">*</span>
                             </label>
-                            <input type="text" id="address_province" name="address[province]" value="{{ old('address.province', 'Cebu') }}" readonly
-                                   class="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-700 font-medium cursor-not-allowed" />
+                            <input list="region7_provinces_list" type="text" id="address_province" name="address[province]" value="{{ old('address.province', 'Cebu') }}" placeholder="e.g. Cebu, Bohol, Negros Oriental, Siquijor" required
+                                   class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition" />
+                            <datalist id="region7_provinces_list">
+                                <option value="Cebu">
+                                <option value="Bohol">
+                                <option value="Negros Oriental">
+                                <option value="Siquijor">
+                            </datalist>
                         </div>
 
                         <!-- Postal Code -->
@@ -653,21 +680,30 @@
                             Target Occupations <span class="text-slate-400 font-normal lowercase">(ranked by preference)</span>
                         </label>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div>
+                            <label class="block">
                                 <span class="text-[11px] font-semibold text-emerald-700 block mb-1">Primary Choice</span>
-                                <input type="text" name="occupation1" value="{{ old('occupation1') }}" placeholder="e.g. Call Center Agent" list="occupationSuggestions"
-                                       class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-600 transition" />
-                            </div>
-                            <div>
+                                <div class="preference-suggestion relative">
+                                    <input type="text" name="occupation1" value="{{ old('occupation1') }}" placeholder="e.g. Call Center Agent" data-suggestion-list="occupationSuggestions" autocomplete="off"
+                                           class="w-full pl-4 pr-10 py-3 bg-white hover:border-slate-300 border border-slate-200 rounded-xl text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition" />
+                                    <svg class="preference-suggestion-icon absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
+                                </div>
+                            </label>
+                            <label class="block">
                                 <span class="text-[11px] font-semibold text-slate-600 block mb-1">Secondary Choice</span>
-                                <input type="text" name="occupation2" value="{{ old('occupation2') }}" placeholder="e.g. Administrative Clerk" list="occupationSuggestions"
-                                       class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-600 transition" />
-                            </div>
-                            <div>
+                                <div class="preference-suggestion relative">
+                                    <input type="text" name="occupation2" value="{{ old('occupation2') }}" placeholder="e.g. Administrative Clerk" data-suggestion-list="occupationSuggestions" autocomplete="off"
+                                           class="w-full pl-4 pr-10 py-3 bg-white hover:border-slate-300 border border-slate-200 rounded-xl text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition" />
+                                    <svg class="preference-suggestion-icon absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
+                                </div>
+                            </label>
+                            <label class="block">
                                 <span class="text-[11px] font-semibold text-slate-600 block mb-1">Tertiary Choice</span>
-                                <input type="text" name="occupation3" value="{{ old('occupation3') }}" placeholder="e.g. Sales Associate" list="occupationSuggestions"
-                                       class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-600 transition" />
-                            </div>
+                                <div class="preference-suggestion relative">
+                                    <input type="text" name="occupation3" value="{{ old('occupation3') }}" placeholder="e.g. Sales Associate" data-suggestion-list="occupationSuggestions" autocomplete="off"
+                                           class="w-full pl-4 pr-10 py-3 bg-white hover:border-slate-300 border border-slate-200 rounded-xl text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition" />
+                                    <svg class="preference-suggestion-icon absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
+                                </div>
+                            </label>
                         </div>
                         <datalist id="occupationSuggestions">
                             @foreach(['Call Center Agent','Customer Service Representative','Administrative Clerk','Sales Associate','Cashier','Warehouse Staff','Delivery Driver','Security Guard','Electrician','Plumber','Welder','Carpenter','Mason','Auto Mechanic','Cook / Chef','Baker','Barista','Waiter / Waitress','Hotel Front Desk','Housekeeping','Caregiver','Nurse','Medical Technologist','Pharmacist Assistant','Teacher','Tutor','Accounting Staff','Bookkeeper','HR Assistant','IT Support','Web Developer','Graphic Designer','Encoder','Data Entry','Production Worker','Quality Control','Machine Operator','Forklift Operator','Truck Driver'] as $occ)
@@ -682,17 +718,57 @@
                             Industry Sectors
                         </label>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <input type="text" name="industry1" value="{{ old('industry1') }}" placeholder="e.g. BPO / Customer Care" list="industrySuggestions"
-                                   class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-600 transition" />
-                            <input type="text" name="industry2" value="{{ old('industry2') }}" placeholder="e.g. Hospitality / Tourism" list="industrySuggestions"
-                                   class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-600 transition" />
-                            <input type="text" name="industry3" value="{{ old('industry3') }}" placeholder="e.g. Construction / Trades" list="industrySuggestions"
-                                   class="w-full px-4 py-2.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-600 transition" />
+                            <label class="block">
+                                <span class="text-[11px] font-semibold text-slate-600 block mb-1">First Choice</span>
+                                <div class="preference-suggestion relative">
+                                    <input type="text" name="industry1" value="{{ old('industry1') }}" placeholder="Search industry sectors" data-suggestion-list="industrySuggestions" autocomplete="off"
+                                           class="w-full pl-4 pr-10 py-3 bg-white hover:border-slate-300 border border-slate-200 rounded-xl text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition" />
+                                    <svg class="preference-suggestion-icon absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
+                                </div>
+                            </label>
+                            <label class="block">
+                                <span class="text-[11px] font-semibold text-slate-600 block mb-1">Second Choice</span>
+                                <div class="preference-suggestion relative">
+                                    <input type="text" name="industry2" value="{{ old('industry2') }}" placeholder="Search industry sectors" data-suggestion-list="industrySuggestions" autocomplete="off"
+                                           class="w-full pl-4 pr-10 py-3 bg-white hover:border-slate-300 border border-slate-200 rounded-xl text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition" />
+                                    <svg class="preference-suggestion-icon absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
+                                </div>
+                            </label>
+                            <label class="block">
+                                <span class="text-[11px] font-semibold text-slate-600 block mb-1">Third Choice</span>
+                                <div class="preference-suggestion relative">
+                                    <input type="text" name="industry3" value="{{ old('industry3') }}" placeholder="Search industry sectors" data-suggestion-list="industrySuggestions" autocomplete="off"
+                                           class="w-full pl-4 pr-10 py-3 bg-white hover:border-slate-300 border border-slate-200 rounded-xl text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition" />
+                                    <svg class="preference-suggestion-icon absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
+                                </div>
+                            </label>
                         </div>
                         <datalist id="industrySuggestions">
-                            @foreach(['BPO / Customer Care','Hospitality / Tourism','Retail / Sales','Construction / Trades','Manufacturing','Information Technology','Healthcare','Education','Logistics / Transport','Food & Beverage','Real Estate','Finance / Banking','Government','Maritime','Agriculture','Automotive','Beauty & Wellness','Media / Creative'] as $ind)
-                                <option value="{{ $ind }}"></option>
-                            @endforeach
+                            @foreach([
+                            'Agriculture, Forestry and Fishing',
+                            'Mining and Quarrying',
+                            'Manufacturing',
+                            'Electricity, Gas, Steam and Air Conditioning Supply',
+                            'Water Supply; Sewerage, Waste Management and Remediation Activities',
+                            'Construction',
+                            'Wholesale and Retail Trade; Repair of Motor Vehicles and Motorcycles',
+                            'Transportation and Storage',
+                            'Accommodation and Food Service Activities',
+                            'Information and Communication',
+                            'Financial and Insurance Activities',
+                            'Real Estate Activities',
+                            'Professional, Scientific and Technical Activities',
+                            'Administrative and Support Service Activities',
+                            'Public Administration and Defense; Compulsory Social Security',
+                            'Education',
+                            'Human Health and Social Work Activities',
+                            'Arts, Entertainment and Recreation',
+                            'Other Service Activities',
+                            'Activities of Households as Employers; Undifferentiated Goods- and Services-Producing Activities of Households for Own Use',
+                            'Activities of Extraterritorial Organizations and Bodies',
+                        ] as $ind)
+                            <option value="{{ $ind }}" {{ old('industry') == $ind ? 'selected' : '' }}>{{ $ind }}</option>
+                        @endforeach
                         </datalist>
                     </div>
 
@@ -799,6 +875,44 @@
                         </div>
                     </div>
 
+                    <!-- LGBTQ+ Membership Card -->
+                    <div class="p-4 rounded-2xl border border-slate-200 bg-white hover:border-emerald-300 transition-colors">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="checkbox" id="is_lgbtq_checkbox" name="is_lgbtq" value="1" {{ old('is_lgbtq') ? 'checked' : '' }} class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 border-slate-300" />
+                            <div class="flex-1">
+                                <span class="text-sm font-bold text-slate-900 block">LGBTQ+ Community Member</span>
+                                <span class="text-xs text-slate-500">Equal employment opportunity and anti-discrimination tracking under Region 7 PESO</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Senior Citizen Card -->
+                    <div class="p-4 rounded-2xl border border-slate-200 bg-white hover:border-emerald-300 transition-colors">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="checkbox" id="is_senior_checkbox" name="is_senior_citizen" value="1" {{ old('is_senior_citizen') ? 'checked' : '' }} class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 border-slate-300" />
+                            <div class="flex-1">
+                                <span class="text-sm font-bold text-slate-900 block">Senior Citizen (60 years old and above)</span>
+                                <span class="text-xs text-slate-500">Elderly workforce inclusion and active productivity opportunities under RA 10911</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Immigrant Worker Card -->
+                    <div class="p-4 rounded-2xl border border-slate-200 bg-white hover:border-emerald-300 transition-colors">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="checkbox" id="is_immigrant_checkbox" name="is_immigrant" value="1" {{ old('is_immigrant') ? 'checked' : '' }} class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 border-slate-300" />
+                            <div class="flex-1">
+                                <span class="text-sm font-bold text-slate-900 block">Immigrant / Migrant Worker / Foreign National</span>
+                                <span class="text-xs text-slate-500">Support &amp; monitoring for immigrant laborers and inter-regional transferees to Region 7</span>
+                            </div>
+                        </label>
+                        <div id="immigrantOriginField" class="mt-3 pt-3 border-t border-slate-100 {{ old('is_immigrant') ? '' : 'hidden' }}">
+                            <label class="block text-xs font-semibold text-slate-700 mb-1" for="immigrant_origin">Country / Province of Origin or Visa/Permit Details</label>
+                            <input type="text" id="immigrant_origin" name="immigrant_origin" value="{{ old('immigrant_origin') }}" placeholder="e.g. Country of Origin, Alien Employment Permit (AEP), or Transferee Province"
+                                   class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                        </div>
+                    </div>
+
                     <!-- Note about next step -->
                     <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-2.5 text-[11px] text-slate-600">
                         <svg class="w-4 h-4 text-slate-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -831,7 +945,10 @@
                             <p class="text-sm font-bold text-slate-900">Almost done!</p>
                             <p class="text-xs text-slate-600 mt-0.5">Review each section below. Click "Edit" to fix anything before submitting.</p>
                         </div>
+
                     </div>
+
+                    <input type="hidden" name="region" value="Region VII - Central Visayas" />
 
                     <!-- Review Panel -->
                     <div class="rounded-2xl border border-slate-200 overflow-hidden">
@@ -991,6 +1108,10 @@
 }
 .step-line.completed { background-color: #10b981; }
 
+.preference-suggestion.is-open { z-index: 30; }
+.preference-suggestion.is-open .preference-suggestion-icon { transform: translateY(-50%) rotate(180deg); }
+.preference-suggestion-list { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+
 /* Skill card selection */
 .skill-card:has(input:checked) {
     border-color: #10b981;
@@ -1044,6 +1165,123 @@ document.addEventListener('DOMContentLoaded', function() {
         'Review & Confirm'
     ];
     const barangayOptions = @json($cebuBarangays);
+
+    // ---------- Job preference suggestions ----------
+    document.querySelectorAll('[data-suggestion-list]').forEach((input, inputIndex) => {
+        const source = document.getElementById(input.dataset.suggestionList);
+        const wrapper = input.closest('.preference-suggestion');
+        if (!source || !wrapper) return;
+
+        const suggestions = Array.from(source.querySelectorAll('option'))
+            .map(option => option.value.trim())
+            .filter(Boolean);
+        const list = document.createElement('div');
+        const listId = `preference-suggestions-${inputIndex}`;
+        list.id = listId;
+        list.className = 'preference-suggestion-list absolute left-0 right-0 top-full z-40 mt-2 hidden max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10';
+        list.setAttribute('role', 'listbox');
+        input.setAttribute('role', 'combobox');
+        input.setAttribute('aria-autocomplete', 'list');
+        input.setAttribute('aria-haspopup', 'listbox');
+        input.setAttribute('aria-controls', listId);
+        input.setAttribute('aria-expanded', 'false');
+        wrapper.appendChild(list);
+
+        let visibleOptions = [];
+        let activeIndex = -1;
+
+        function closeList() {
+            list.classList.add('hidden');
+            wrapper.classList.remove('is-open');
+            input.setAttribute('aria-expanded', 'false');
+            input.removeAttribute('aria-activedescendant');
+            activeIndex = -1;
+        }
+
+        function renderList() {
+            const query = input.value.trim().toLocaleLowerCase();
+            const matches = suggestions.filter(option => option.toLocaleLowerCase().includes(query));
+            visibleOptions = matches.slice(0, 8);
+            activeIndex = -1;
+            list.replaceChildren();
+
+            const heading = document.createElement('div');
+            heading.className = 'px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400';
+            heading.textContent = query ? 'Matching suggestions' : 'Popular choices';
+            list.appendChild(heading);
+
+            if (!visibleOptions.length) {
+                const emptyMessage = document.createElement('p');
+                emptyMessage.className = 'px-3 py-3 text-xs leading-relaxed text-slate-500';
+                emptyMessage.textContent = 'No matching suggestions. You can keep your custom entry.';
+                list.appendChild(emptyMessage);
+            } else {
+                visibleOptions.forEach((option, optionIndex) => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.id = `${listId}-option-${optionIndex}`;
+                    button.className = 'block w-full rounded-lg px-3 py-2.5 text-left text-xs leading-relaxed text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-900';
+                    button.setAttribute('role', 'option');
+                    button.setAttribute('aria-selected', 'false');
+                    button.textContent = option;
+                    button.addEventListener('pointerdown', event => event.preventDefault());
+                    button.addEventListener('click', () => {
+                        input.value = option;
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        closeList();
+                    });
+                    list.appendChild(button);
+                });
+            }
+
+            if (matches.length > visibleOptions.length) {
+                const moreMessage = document.createElement('p');
+                moreMessage.className = 'px-3 py-2 text-[10px] text-slate-400';
+                moreMessage.textContent = 'Keep typing to narrow the results.';
+                list.appendChild(moreMessage);
+            }
+
+            list.classList.remove('hidden');
+            wrapper.classList.add('is-open');
+            input.setAttribute('aria-expanded', 'true');
+        }
+
+        function setActiveOption(nextIndex) {
+            const options = list.querySelectorAll('[role="option"]');
+            if (!options.length) return;
+            activeIndex = (nextIndex + options.length) % options.length;
+            options.forEach((option, optionIndex) => {
+                const isActive = optionIndex === activeIndex;
+                option.setAttribute('aria-selected', String(isActive));
+                option.classList.toggle('bg-emerald-50', isActive);
+                option.classList.toggle('text-emerald-900', isActive);
+            });
+            input.setAttribute('aria-activedescendant', options[activeIndex].id);
+            options[activeIndex].scrollIntoView({ block: 'nearest' });
+        }
+
+        input.addEventListener('focus', renderList);
+        input.addEventListener('click', renderList);
+        input.addEventListener('input', renderList);
+        input.addEventListener('keydown', event => {
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                if (list.classList.contains('hidden')) renderList();
+                setActiveOption(activeIndex + 1);
+            } else if (event.key === 'ArrowUp') {
+                if (!list.classList.contains('hidden')) {
+                    event.preventDefault();
+                    setActiveOption(activeIndex < 0 ? visibleOptions.length - 1 : activeIndex - 1);
+                }
+            } else if (event.key === 'Enter' && activeIndex >= 0 && !list.classList.contains('hidden')) {
+                event.preventDefault();
+                list.querySelectorAll('[role="option"]')[activeIndex]?.click();
+            } else if (event.key === 'Escape') {
+                closeList();
+            }
+        });
+        input.addEventListener('blur', () => setTimeout(closeList, 120));
+    });
 
     // ---------- Elements ----------
     let currentStep = 1;
@@ -1187,13 +1425,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (step === 3) {
             const brgy = document.getElementById('address_barangay');
             const err = document.getElementById('barangayError');
-            if (brgy.value.trim() && !barangayOptions.includes(brgy.value.trim())) {
+            const cityInput = document.getElementById('address_city')?.value?.trim() || '';
+            const isCebuCity = cityInput.toLowerCase() === 'cebu city';
+            if (brgy.value.trim() && isCebuCity && !barangayOptions.includes(brgy.value.trim())) {
                 isValid = false;
                 brgy.classList.add('border-rose-400');
                 err?.classList.remove('hidden');
                 if (!firstInvalid) firstInvalid = brgy;
             } else {
                 err?.classList.add('hidden');
+                brgy.classList.remove('border-rose-400');
             }
         }
 
@@ -1446,7 +1687,9 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(hideBrgyList, 150);
         const v = brgyInput.value.trim();
         const err = document.getElementById('barangayError');
-        if (v && !barangayOptions.includes(v)) {
+        const cityInput = document.getElementById('address_city')?.value?.trim() || '';
+        const isCebuCity = cityInput.toLowerCase() === 'cebu city';
+        if (v && isCebuCity && !barangayOptions.includes(v)) {
             err?.classList.remove('hidden');
             brgyInput.classList.add('border-rose-400');
         } else {
@@ -1499,16 +1742,30 @@ document.addEventListener('DOMContentLoaded', function() {
         if (el) el.textContent = value && value.trim() ? value : '—';
     }
 
+    // Immigrant toggle
+    const isImmigrant = document.getElementById('is_immigrant_checkbox');
+    const immigrantOriginField = document.getElementById('immigrantOriginField');
+    if (isImmigrant && immigrantOriginField) {
+        isImmigrant.addEventListener('change', function() {
+            immigrantOriginField.classList.toggle('hidden', !this.checked);
+        });
+    }
+
+    // Summary Review in Step 7
     function updateSummaryReview() {
         setReview('email', document.getElementById('email')?.value || '');
         const fn = document.getElementById('first_name')?.value || '';
         const mn = document.getElementById('middle_name')?.value || '';
         const ln = document.getElementById('last_name')?.value || '';
+        const em = document.getElementById('email')?.value || '';
+        const brgy = document.getElementById('address_barangay')?.value || '';
+        const edu = document.getElementById('education_level')?.value || '';
+
         setReview('name', [fn, mn, ln].filter(Boolean).join(' '));
         setReview('birth_date', document.getElementById('birth_date')?.value || '');
         setReview('mobile', document.getElementById('mobile_number')?.value ? `+63 ${document.getElementById('mobile_number').value}` : '');
-        setReview('barangay', document.getElementById('address_barangay')?.value || '');
-        setReview('education', document.getElementById('education_level')?.value || '');
+        setReview('barangay', brgy || '');
+        setReview('education', edu || '');
         const skills = [...document.querySelectorAll('.century-checkbox:checked')].map(c => c.value);
         setReview('skills', skills.join(', '));
         setReview('occupation', document.getElementById('occupation1')?.value || '');
@@ -1519,7 +1776,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (document.getElementById('is_4ps_checkbox')?.checked) social.push('4Ps');
         if (document.querySelector('input[name="is_ofw"]')?.checked) social.push('OFW');
         if (document.getElementById('is_pwd_checkbox')?.checked) social.push('PWD');
+        if (document.getElementById('is_lgbtq_checkbox')?.checked) social.push('LGBTQ+');
+        if (document.getElementById('is_senior_checkbox')?.checked) social.push('Senior Citizen');
+        if (document.getElementById('is_immigrant_checkbox')?.checked) social.push('Immigrant Worker');
         setReview('social', social.length ? social.join(', ') : 'None selected');
+
+        const sName = document.getElementById('summaryName');
+        const sEmail = document.getElementById('summaryEmail');
+        const sBrgy = document.getElementById('summaryBarangay');
+        const sEdu = document.getElementById('summaryEdu');
+
+        if (sName) sName.textContent = (fn || ln) ? `${fn} ${ln}` : 'Not provided';
+        if (sEmail) sEmail.textContent = em || 'Not provided';
+        if (sBrgy) sBrgy.textContent = brgy || 'Not specified';
+        if (sEdu) sEdu.textContent = edu || 'Not provided';
     }
 
     // ---------- Draft save/restore ----------

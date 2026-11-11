@@ -150,27 +150,33 @@
                 </div>
 
                 <!-- Responsive Graph -->
-                <div class="h-56 flex items-end justify-between gap-4 pt-4 px-2">
+                <div class="relative h-56 flex items-end justify-between gap-4 px-2">
                     @php
                         $maxTrn = 1;
                         foreach($monthlyTrainingTrends as $t) {
-                            if($t['enrolled'] > $maxTrn) $maxTrn = $t['enrolled'];
+                            $maxTrn = max($maxTrn, $t['enrolled'], $t['completed']);
                         }
                     @endphp
 
+                    <div aria-hidden="true" class="pointer-events-none absolute left-2 right-2 top-6 flex h-44 flex-col justify-between">
+                        @for($line = 0; $line < 5; $line++)
+                            <div class="border-t border-slate-100"></div>
+                        @endfor
+                    </div>
+
                     @foreach($monthlyTrainingTrends as $t)
                         @php
-                            $enrHeight = max(8, round(($t['enrolled'] / $maxTrn) * 160));
-                            $gradHeight = max(6, round(($t['completed'] / $maxTrn) * 160));
+                            $enrHeight = ($t['enrolled'] / $maxTrn) * 100;
+                            $gradHeight = ($t['completed'] / $maxTrn) * 100;
                         @endphp
-                        <div class="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                            <div class="w-full flex items-end justify-center gap-1.5 h-44">
-                                <div class="w-4 sm:w-6 bg-emerald-600 rounded-t transition-all group-hover:bg-emerald-700 relative" style="height: {{ $enrHeight }}px;">
+                        <div class="relative z-10 flex h-full flex-1 flex-col items-center justify-end gap-2 group">
+                            <div class="flex h-44 w-full items-end justify-center gap-1.5">
+                                <div title="{{ $t['enrolled'] }} enrolled" class="relative w-4 rounded-t bg-emerald-600 transition-all group-hover:bg-emerald-700 sm:w-6" style="height: {{ $enrHeight }}%;">
                                     <span class="opacity-0 group-hover:opacity-100 absolute -top-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-0.5 rounded shadow pointer-events-none whitespace-nowrap transition-opacity">
                                         {{ $t['enrolled'] }} enrolled
                                     </span>
                                 </div>
-                                <div class="w-4 sm:w-6 bg-slate-900 rounded-t transition-all group-hover:bg-slate-800 relative" style="height: {{ $gradHeight }}px;">
+                                <div title="{{ $t['completed'] }} graduated" class="relative w-4 rounded-t bg-slate-900 transition-all group-hover:bg-slate-800 sm:w-6" style="height: {{ $gradHeight }}%;">
                                     <span class="opacity-0 group-hover:opacity-100 absolute -top-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-0.5 rounded shadow pointer-events-none whitespace-nowrap transition-opacity">
                                         {{ $t['completed'] }} graduated
                                     </span>

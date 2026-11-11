@@ -299,10 +299,19 @@ $company = $job->employer->company_name ?? 'Partner Employer';
 
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Attach Updated Resume (Optional)</label>
-                        <span class="text-[11px] text-emerald-700 font-bold">Profile auto-attached</span>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                            Attach Resume / CV ({{ $job->resume_required ? 'Required' : 'Optional' }})
+                        </label>
+                        <span class="text-[11px] text-emerald-700 font-bold">{{ $hasSavedResume ? 'Resume on file' : 'No resume on file' }}</span>
                     </div>
-                    <input type="file" name="resume" accept=".pdf,.doc,.docx" class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100">
+                    <input type="file" name="resume" accept=".pdf,.doc,.docx" {{ $job->resume_required && !$hasSavedResume ? 'required' : '' }} class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100">
+                    @if($hasSavedResume)
+                        <p class="text-[11px] text-slate-500">Your saved Document Hub resume satisfies this requirement. Attach another file to replace it for this application.</p>
+                    @elseif($job->resume_required)
+                        <p class="text-[11px] text-amber-700">This posting requires a resume. Accepted formats: PDF, DOC, or DOCX (max 5 MB).</p>
+                    @else
+                        <p class="text-[11px] text-slate-500">Accepted formats: PDF, DOC, or DOCX (max 5 MB). A resume is optional for this posting.</p>
+                    @endif
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">

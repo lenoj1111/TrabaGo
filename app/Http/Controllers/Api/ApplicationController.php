@@ -79,7 +79,13 @@ class ApplicationController extends Controller
             return response()->json([
                 'applications' => [],
                 'counts' => [
-                    'all' => 0, 'offered' => 0, 'pending' => 0, 'reviewed' => 0, 'interview' => 0, 'hired' => 0, 'rejected' => 0
+                    'all' => 0,
+                    'offered' => 0,
+                    'pending' => 0,
+                    'reviewed' => 0,
+                    'interview' => 0,
+                    'hired' => 0,
+                    'rejected' => 0
                 ]
             ]);
         }
@@ -157,25 +163,7 @@ class ApplicationController extends Controller
 
         $jobseeker = $this->resolveJobseeker($request, true);
 
-        // Employed check: cannot apply for another job while currently hired/employed (identical to web)
-        if ($jobseeker->isEmployed()) {
-            $company = $jobseeker->hired_company ?: 'your current employer';
-            return response()->json([
-                'success' => false,
-                'message' => "You cannot apply for another job while currently employed at {$company}. You must request a resignation and have it approved before applying for other positions.",
-            ], 403);
-        }
-
-        // Profile and Documents Completeness Check (Enforced on Mobile & Web)
-        $missingRequirements = $jobseeker->getMissingRequirements();
-        if (!empty($missingRequirements)) {
-            $missingList = implode(', ', $missingRequirements);
-            return response()->json([
-                'success' => false,
-                'message' => "Application blocked: You cannot apply for a job posting until your profile details and required documents are completed. Missing: {$missingList}. Please complete your profile and upload required documents in the Document Vault.",
-                'missing_requirements' => array_values($missingRequirements),
-            ], 422);
-        }
+        // Employment Flexibility: Jobseekers remain "Open to all" for opportunities even if currently employed.
 
         // Check if already applied
         $existing = JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)
@@ -190,6 +178,13 @@ class ApplicationController extends Controller
                 'application' => $formatted,
                 'data' => $formatted,
             ]);
+        }
+
+        if ($job->resume_required && !$jobseeker->hasDocument('resume')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This job posting requires a resume. Upload one to your Document Hub before applying.',
+            ], 422);
         }
 
         $app = JobApplication::create([
@@ -222,7 +217,7 @@ class ApplicationController extends Controller
     /**
      * Accept a job offer.
      */
-    public function acceptOffer(Request $request, $id)
+    public function acceptOffer(Request $request, int $id)
     {
         $user = $this->resolveUser($request);
         $jobseeker = $this->resolveJobseeker($request, false);
@@ -297,7 +292,7 @@ class ApplicationController extends Controller
     /**
      * Decline a job offer.
      */
-    public function declineOffer(Request $request, $id)
+    public function declineOffer(Request $request, int $id)
     {
         $jobseeker = $this->resolveJobseeker($request, false);
         if (!$jobseeker) {
@@ -390,7 +385,7 @@ class ApplicationController extends Controller
     /**
      * Withdraw an application.
      */
-    public function withdraw(Request $request, $id)
+    public function withdraw(Request $request, int $id)
     {
         $jobseeker = $this->resolveJobseeker($request, false);
 

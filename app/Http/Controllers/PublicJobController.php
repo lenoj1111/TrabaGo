@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\JobApplication;
 use App\Models\JobPosting;
+use App\Models\Jobseeker;
 use App\Services\SkillMatchingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -56,19 +58,60 @@ class PublicJobController extends Controller
             $query->orderByDesc('job_id');
         }
 
-        $jobs = $query->paginate(12)->withQueryString();
-
-        // Process skill tags for each job
-        $jobs->getCollection()->transform(function ($job) {
-            $job->skill_tags = $this->matchingService->getJobSkills($job);
-            return $job;
-        });
-
         $user = Auth::user();
-        $isJobseeker = $user && $user->role === 'jobseeker';
-        $selectedJobId = $request->input('job_id');
+        $isJobseeker = $user?->role === 'jobseeker';
+        $jobseeker = $isJobseeker
+            ? Jobseeker::with(['skills', 'details'])->where('user_id', $user->user_id)->first()
+            : null;
+        $jobs = $query->get();
+        $rankedJobs = $this->matchingService->rankJobsForJobseeker($jobs, $jobseeker);
 
-        return view('jobs.explore', compact('jobs', 'user', 'isJobseeker', 'selectedJobId'));
+        if ($request->input('sort', 'match') === 'latest') {
+            usort($rankedJobs, fn ($a, $b) => $b['job']->job_id <=> $a['job']->job_id);
+        }
+
+        $appliedJobIds = $jobseeker
+            ? JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)
+                ->get()
+                ->reject(function ($application) {
+                    if (in_array($application->status, ['withdrawn', 'rejected'], true)) {
+                        return true;
+                    }
+
+                    return $application->status === 'hired'
+                        && $application->resignation_status === 'approved';
+                })
+                ->pluck('job_id')
+                ->all()
+            : [];
+        $userSkills = $this->matchingService->getJobseekerSkills($jobseeker);
+        $selectedJobId = $request->input('selected_job', $request->input('job_id'));
+        $selectedItem = null;
+
+        foreach ($rankedJobs as $item) {
+            if ($selectedJobId && (string) $item['job_id'] === (string) $selectedJobId) {
+                $selectedItem = $item;
+                break;
+            }
+        }
+
+        $selectedItem ??= $rankedJobs[0] ?? null;
+        $isApproved = $isJobseeker && (bool) $user->is_approved;
+        $jobsRoute = $isJobseeker ? 'jobseeker.jobs' : 'jobs.index';
+        $jobShowRoute = $isJobseeker ? 'jobseeker.jobs.show' : 'jobs.show';
+
+        return view('jobs.explore', compact(
+            'rankedJobs',
+            'selectedItem',
+            'userSkills',
+            'appliedJobIds',
+            'jobseeker',
+            'user',
+            'isJobseeker',
+            'isApproved',
+            'jobsRoute',
+            'jobShowRoute'
+        ));
     }
 
     /**

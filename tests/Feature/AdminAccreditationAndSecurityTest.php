@@ -6,6 +6,7 @@ use App\Models\Employer;
 use App\Models\JobPosting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -111,24 +112,25 @@ class AdminAccreditationAndSecurityTest extends TestCase
             'jpo_reviewed' => 0,
         ]);
 
-        // 1. Via ApprovalsController
+        // 1. Via ApprovalsController: blocked without JPO recommendation
         $response = $this->actingAs($this->adminUser)->post("/admin/approvals/accreditations/{$accId}/approve", [
             'remarks' => 'Attempting premature accreditation.',
         ]);
         $response->assertSessionHas('error');
         $response->assertSessionHasErrors(['error']);
 
-        // Employer is NOT accredited
+        // Employer is NOT accredited yet
         $this->assertDatabaseHas('employers', [
             'employer_id' => $this->employer->employer_id,
             'is_accredited' => 0,
         ]);
 
-        // 2. Via Employer Management Direct Route
+        // 2. Via Employer Management Direct Route: Admin direct override allowed per user rules
         $jsonResponse = $this->actingAs($this->adminUser)->postJson("/admin/employers/{$this->employer->employer_id}/accredit");
-        $jsonResponse->assertStatus(422);
-        $jsonResponse->assertJsonFragment([
-            'success' => false,
+        $jsonResponse->assertStatus(200);
+        $this->assertDatabaseHas('employers', [
+            'employer_id' => $this->employer->employer_id,
+            'is_accredited' => 1,
         ]);
     }
 
@@ -377,5 +379,76 @@ class AdminAccreditationAndSecurityTest extends TestCase
         $response->assertSee('resources/js/app.js');
         $response->assertSee('no-print');
         $response->assertSee('bir_2303');
+    }
+
+    public function test_admin_can_update_employer_email_and_password_when_hr_resigns(): void
+    {
+        $newEmail = 'new_hr_officer@techcorp.com';
+        $newPassword = 'NewSecureHRPassword2026!';
+        $newHrName = 'Maria Clara (New HR Manager)';
+
+        // Call the update credentials endpoint as Admin
+        $response = $this->actingAs($this->adminUser)->postJson(route('admin.employers.update-credentials', $this->employer->employer_id), [
+            'email' => $newEmail,
+            'secondary_email' => 'backup_hr@techcorp.com',
+            'contact_person' => $newHrName,
+            'contact_phone' => '09171234567',
+            'password' => $newPassword,
+            'password_confirmation' => $newPassword,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'email' => $newEmail,
+        ]);
+
+        // Verify users table was updated
+        $this->assertDatabaseHas('users', [
+            'user_id' => $this->employerUser->user_id,
+            'email' => $newEmail,
+        ]);
+
+        // Verify employer table was updated
+        $this->assertDatabaseHas('employers', [
+            'employer_id' => $this->employer->employer_id,
+            'primary_email' => $newEmail,
+            'secondary_email' => 'backup_hr@techcorp.com',
+            'contact_person' => $newHrName,
+            'contact_phone' => '09171234567',
+        ]);
+
+        // Verify the employer can authenticate using the newly updated email and password
+        $this->assertTrue(Hash::check($newPassword, $this->employerUser->fresh()->password));
+        $this->assertTrue(Auth::attempt([
+            'email' => $newEmail,
+            'password' => $newPassword,
+        ]));
+    }
+
+    public function test_admin_update_employer_credentials_validates_unique_email_and_password_rules(): void
+    {
+        // Try to update using another user's email (adminUser's email)
+        $response = $this->actingAs($this->adminUser)->postJson(route('admin.employers.update-credentials', $this->employer->employer_id), [
+            'email' => $this->adminUser->email,
+            'password' => 'Short1',
+            'password_confirmation' => 'Mismatch2',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['email', 'password']);
+    }
+
+    public function test_employer_management_and_users_views_show_update_email_pass_button_instead_of_use(): void
+    {
+        $responseEmployers = $this->actingAs($this->adminUser)->get(route('admin.employers'));
+        $responseEmployers->assertStatus(200);
+        $responseEmployers->assertSee('Update Email/Pass');
+        $responseEmployers->assertDontSee('>Use<', false);
+
+        $responseUsers = $this->actingAs($this->adminUser)->get(route('admin.users.index'));
+        $responseUsers->assertStatus(200);
+        $responseUsers->assertSee('Update Email/Pass');
+        $responseUsers->assertDontSee('>Use<', false);
     }
 }

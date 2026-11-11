@@ -25,7 +25,7 @@ class Employer extends Model
      *
      * @var bool
      */
-    public $timestamps = false;
+    public $timestamps = true;
 
     /**
      * The attributes that are mass assignable.
@@ -50,6 +50,7 @@ class Employer extends Model
         return [
             'is_accredited' => 'boolean',
             'accredited_at' => 'date',
+            'pending_updates' => 'array',
         ];
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Employer;
 use App\Models\EmployerAccreditation;
+use App\Models\JobApplication;
 use App\Models\JobPosting;
 use App\Models\Jobseeker;
 use App\Models\JobseekerDetail;
@@ -13,8 +14,11 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class ApprovalsController extends Controller
 {
@@ -25,6 +29,7 @@ class ApprovalsController extends Controller
         $accreditation = DB::table('employer_accreditation')
             ->where('accreditation_id', $accreditationId)
             ->first();
+
         abort_unless($accreditation, 404);
 
         if (Auth::user()?->role === 'employer') {
@@ -37,9 +42,11 @@ class ApprovalsController extends Controller
 
         $document = $documents[$documentKey];
         $disk = Storage::disk('public');
+
         $candidates = is_array($document)
-            ? array_map(fn($key) => $document[$key] ?? null, ['file_path', 'path', 'file_url', 'url'])
+            ? array_map(fn ($key) => $document[$key] ?? null, ['file_path', 'path', 'file_url', 'url'])
             : [$document];
+
         $path = null;
 
         foreach ($candidates as $candidate) {
@@ -50,10 +57,13 @@ class ApprovalsController extends Controller
             $urlPath = parse_url($candidate, PHP_URL_PATH);
             $candidatePath = is_string($urlPath) && $urlPath !== '' ? $urlPath : $candidate;
             $candidatePath = rawurldecode(str_replace('\\', '/', $candidatePath));
+
             if (($storagePosition = strrpos($candidatePath, '/storage/')) !== false) {
                 $candidatePath = substr($candidatePath, $storagePosition + strlen('/storage/'));
             }
+
             $candidatePath = ltrim($candidatePath, '/');
+
             foreach (['storage/app/public/', 'app/public/', 'storage/', 'public/'] as $prefix) {
                 if (str_starts_with($candidatePath, $prefix)) {
                     $candidatePath = substr($candidatePath, strlen($prefix));
@@ -64,6 +74,7 @@ class ApprovalsController extends Controller
             $segments = explode('/', $candidatePath);
             $isAccreditationDocument = str_starts_with($candidatePath, 'accreditation_docs/')
                 || str_starts_with($candidatePath, 'employer_documents/');
+
             if (
                 $isAccreditationDocument
                 && !in_array('..', $segments, true)
@@ -74,6 +85,7 @@ class ApprovalsController extends Controller
                 break;
             }
         }
+
         abort_unless(is_string($path), 404);
 
         $filename = is_array($document) && !empty($document['original_name'])
@@ -90,7 +102,6 @@ class ApprovalsController extends Controller
 
     public function index()
     {
-        // 1. Pending Job Postings with employer & accreditation details
         $pendingJobs = JobPosting::with(['employer.user', 'employer.accreditation'])
             ->withCount('applications')
             ->where('status', 'pending')
@@ -113,7 +124,6 @@ class ApprovalsController extends Controller
             }
         }
 
-        // 2. Pending Employer Accreditations (recommended by JPO or direct)
         $pendingAccreditations = DB::table('employer_accreditation')
             ->join('employers', 'employer_accreditation.employer_id', '=', 'employers.employer_id')
             ->select('employer_accreditation.*', 'employers.company_name')
@@ -121,7 +131,6 @@ class ApprovalsController extends Controller
             ->latest('submitted_at')
             ->get();
 
-        // 3. Pending Placement Reports (evaluated by JPO)
         $pendingPlacementReports = DB::table('placement_reports')
             ->join('employers', 'placement_reports.employer_id', '=', 'employers.employer_id')
             ->select('placement_reports.*', 'employers.company_name')
@@ -129,7 +138,6 @@ class ApprovalsController extends Controller
             ->latest('report_month')
             ->get();
 
-        // 4. Pending Collaborator Trainer Accounts
         $pendingTrainers = DB::table('users')
             ->join('user_profiles', 'users.user_id', '=', 'user_profiles.user_id')
             ->select(
@@ -148,7 +156,6 @@ class ApprovalsController extends Controller
             ->latest('users.created_at')
             ->get();
 
-        // 5. Pending Jobseekers (Awaiting Account & Government ID Verification)
         $hasAccountStatusColumn = Schema::hasColumn('users', 'account_status');
 
         $pendingJobseekers = DB::table('jobseekers')
@@ -188,6 +195,7 @@ class ApprovalsController extends Controller
                 $raw = is_array($js->training_certificates)
                     ? $js->training_certificates
                     : json_decode($js->training_certificates, true);
+
                 if (is_array($raw)) {
                     foreach ($raw as $d) {
                         $cat = $d['category'] ?? '';
@@ -195,6 +203,7 @@ class ApprovalsController extends Controller
                     }
                 }
             }
+
             $js->parsed_docs = $docs;
             $js->has_valid_id = !empty($docs['valid_id']);
             $js->valid_id_doc = $docs['valid_id'] ?? null;
@@ -211,10 +220,6 @@ class ApprovalsController extends Controller
         ));
     }
 
-    // =========================================================================
-    // PILLAR 1: JOB POSTING APPROVAL
-    // =========================================================================
-
     public function approveJobPosting(int $id)
     {
         $job = JobPosting::with('employer.user')->findOrFail($id);
@@ -223,7 +228,6 @@ class ApprovalsController extends Controller
             'approved_at' => now()->toDateString(),
         ]);
 
-        // Notify employer
         if ($job->employer && $job->employer->user) {
             Notification::create([
                 'user_id' => $job->employer->user->user_id,
@@ -257,10 +261,6 @@ class ApprovalsController extends Controller
         return redirect()->back()->with('info', "Job posting '{$job->title}' rejected.");
     }
 
-    // =========================================================================
-    // PILLAR 2: EMPLOYER ACCREDITATION FINAL APPROVAL
-    // =========================================================================
-
     public function approveAccreditation(Request $request, int $id)
     {
         $accreditation = DB::table('employer_accreditation')->where('accreditation_id', $id)->first();
@@ -268,44 +268,47 @@ class ApprovalsController extends Controller
             return redirect()->back()->withErrors(['error' => 'Accreditation record not found.']);
         }
 
-        // Enforce: Admin cannot accredit an employer without the recommending approval of the JPO
-        if (!$accreditation->jpo_reviewed || !in_array($accreditation->status, ['jpo_approved', 'supervisor_approved'])) {
-            return redirect()->back()
-                ->withErrors([
-                    'error' => 'Cannot accredit employer without the recommending approval of the JPO. JPO evaluation is required first.'
-                ])
-                ->with('error', 'Cannot accredit employer without the recommending approval of the JPO. JPO evaluation is required first.');
+        if (!$request->boolean('direct_override')) {
+            if (!$accreditation->jpo_reviewed || !in_array($accreditation->status, ['jpo_approved', 'supervisor_approved'])) {
+                return redirect()->back()
+                    ->withErrors([
+                        'error' => 'Cannot accredit employer without the recommending approval of the JPO. JPO evaluation is required first.'
+                    ])
+                    ->with('error', 'Cannot accredit employer without the recommending approval of the JPO. JPO evaluation is required first.');
+            }
+
+            if (($accreditation->document_status ?? 'pending') !== 'complete') {
+                $reason = !empty($accreditation->document_incomplete_reason)
+                    ? " (Reason: {$accreditation->document_incomplete_reason})"
+                    : "";
+
+                return redirect()->back()
+                    ->withErrors([
+                        'error' => "Cannot accredit employer: Required legal documents are marked as " . ucfirst($accreditation->document_status ?? 'pending') . "{$reason}. Employer documents must be verified as Complete first."
+                    ])
+                    ->with('error', "Cannot accredit employer: Required legal documents are incomplete or unverified.");
+            }
         }
 
-        // Enforce: Admin and JPO cannot recommend or approve accreditation if required documents are incomplete
-        if (($accreditation->document_status ?? 'pending') !== 'complete') {
-            $reason = !empty($accreditation->document_incomplete_reason)
-                ? " (Reason: {$accreditation->document_incomplete_reason})"
-                : "";
-            return redirect()->back()
-                ->withErrors([
-                    'error' => "Cannot accredit employer: Required legal documents are marked as " . ucfirst($accreditation->document_status ?? 'pending') . "{$reason}. Employer documents must be verified as Complete first."
-                ])
-                ->with('error', "Cannot accredit employer: Required legal documents are incomplete or unverified.");
-        }
+        $isDirectOverride = $request->boolean('direct_override') || !$accreditation->jpo_reviewed || !in_array($accreditation->status, ['jpo_approved', 'supervisor_approved']);
+        $certNo = $accreditation->certificate_no ?: ('DMDP-EMP-' . date('Y') . '-' . str_pad($accreditation->employer_id, 5, '0', STR_PAD_LEFT));
 
-        $remarks = $request->input('remarks', 'Officially accredited by DMDP City Administrator.');
-
-        // Update accreditation table
         DB::table('employer_accreditation')->where('accreditation_id', $id)->update([
             'status' => 'admin_approved',
             'admin_approved' => 1,
             'admin_approved_at' => now(),
             'approved_at' => now()->toDateString(),
+            'certificate_no' => $certNo,
+            'certificate_issued_at' => now(),
+            'certificate_issued_by' => Auth::id(),
+            'admin_rejection_remarks' => null,
         ]);
 
-        // Update employer table to mark accredited
         DB::table('employers')->where('employer_id', $accreditation->employer_id)->update([
             'is_accredited' => 1,
             'accredited_at' => now()->toDateString(),
         ]);
 
-        // Notify employer and verify account
         $employer = Employer::with('user')->find($accreditation->employer_id);
         if ($employer && $employer->user) {
             DB::table('users')->where('user_id', $employer->user->user_id)->update([
@@ -316,47 +319,244 @@ class ApprovalsController extends Controller
 
             Notification::create([
                 'user_id' => $employer->user->user_id,
-                'title' => 'Official Accreditation Granted!',
-                'message' => "Congratulations! {$employer->company_name} is now officially accredited with the Cebu City Department of Manpower Development and Placement (DMDP). Job posting is now unlocked.",
+                'title' => 'Official Accreditation Granted & Certificate Issued!',
+                'message' => "Congratulations! {$employer->company_name} is now officially accredited with DMDP Cebu City (Certificate No: {$certNo}). You can view your Certificate of Accreditation in your dashboard.",
                 'type' => 'approval',
                 'is_read' => false,
                 'related_id' => $employer->employer_id,
             ]);
         }
 
-        return redirect()->back()->with('success', "Employer '{$employer->company_name}' successfully accredited.");
+        $msg = $isDirectOverride
+            ? "Employer '{$employer->company_name}' directly accredited by Administrator (Direct Override). Certificate {$certNo} generated."
+            : "Employer '{$employer->company_name}' successfully accredited. Certificate {$certNo} issued.";
+
+        return redirect()->back()->with('success', $msg);
     }
 
     public function rejectAccreditation(Request $request, int $id)
     {
+        $request->validate([
+            'remarks' => 'required|string|min:5',
+        ], [
+            'remarks.required' => 'Mandatory administrative remarks are required to explain why this accreditation application is rejected/returned to JPO.',
+        ]);
+
         $accreditation = DB::table('employer_accreditation')->where('accreditation_id', $id)->first();
         if (!$accreditation) {
             return redirect()->back()->withErrors(['error' => 'Accreditation record not found.']);
         }
 
+        $remarks = $request->input('remarks');
+
         DB::table('employer_accreditation')->where('accreditation_id', $id)->update([
-            'status' => 'rejected',
+            'status' => 'submitted_to_jpo',
             'admin_approved' => 0,
+            'jpo_reviewed' => 0,
+            'admin_rejection_remarks' => $remarks,
+        ]);
+
+        DB::table('employers')->where('employer_id', $accreditation->employer_id)->update([
+            'is_accredited' => 0,
         ]);
 
         $employer = Employer::with('user')->find($accreditation->employer_id);
+
+        $jpos = User::where('role', 'jpo')->get();
+        foreach ($jpos as $jpo) {
+            Notification::create([
+                'user_id' => $jpo->user_id,
+                'title' => 'Accreditation Returned by Admin for Re-evaluation',
+                'message' => "Employer '{$employer->company_name}' was rejected by DMDP Admin and returned to JPO queue. Mandatory Remarks: \"{$remarks}\"",
+                'type' => 'rejection',
+                'is_read' => false,
+                'related_id' => $id,
+            ]);
+        }
+
         if ($employer && $employer->user) {
             Notification::create([
                 'user_id' => $employer->user->user_id,
-                'title' => 'Accreditation Papers Need Revision',
-                'message' => "Your accreditation application requires additional verification: " . $request->input('remarks', 'Please contact DMDP.'),
+                'title' => 'Accreditation Returned for Revision',
+                'message' => "Your accreditation application was reviewed by DMDP Admin and returned to JPO for re-evaluation. Admin Remarks: {$remarks}",
                 'type' => 'rejection',
                 'is_read' => false,
                 'related_id' => $employer->employer_id,
             ]);
         }
 
-        return redirect()->back()->with('info', "Accreditation returned for revision.");
+        return redirect()->back()->with('info', "Accreditation application for '{$employer->company_name}' has been rejected and returned to JPO queue with administrative remarks.");
     }
 
-    // =========================================================================
-    // PILLAR 3: PLACEMENT REPORT APPROVAL
-    // =========================================================================
+    public function disaccreditEmployer(Request $request, int $id)
+    {
+        $employer = Employer::with('user')->findOrFail($id);
+
+        $employer->update([
+            'is_accredited' => 0,
+        ]);
+
+        DB::table('employer_accreditation')->where('employer_id', $id)->update([
+            'status' => 'disaccredited',
+            'admin_approved' => 0,
+        ]);
+
+        if ($employer->user) {
+            Notification::create([
+                'user_id' => $employer->user->user_id,
+                'title' => 'Employer Accreditation Revoked',
+                'message' => 'Your official accreditation has been revoked by DMDP Administration. Please contact the DMDP office for further details.',
+                'type' => 'rejection',
+                'is_read' => false,
+                'related_id' => $employer->employer_id,
+            ]);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => "Employer '{$employer->company_name}' has been disaccredited."]);
+        }
+
+        return redirect()->back()->with('info', "Employer '{$employer->company_name}' has been disaccredited.");
+    }
+
+    public function employerCertificate(int $id)
+    {
+        $employer = DB::table('employers')->where('employer_id', $id)->first();
+        if (!$employer) {
+            abort(404, 'Employer not found');
+        }
+
+        $accreditation = DB::table('employer_accreditation')->where('employer_id', $id)->first();
+
+        return view('reports.employer-certificate', compact('employer', 'accreditation'));
+    }
+
+    public function updateEmployerCredentials(Request $request, int $id)
+    {
+        $employer = DB::table('employers')->where('employer_id', $id)->first();
+        if (!$employer) {
+            $employer = DB::table('employers')->where('user_id', $id)->first();
+        }
+
+        if (!$employer) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'error' => 'Employer record not found.'], 404);
+            }
+
+            return redirect()->back()->with('error', 'Employer record not found.');
+        }
+
+        $userId = $employer->user_id;
+
+        $validator = Validator::make($request->all(), [
+            'email' => [
+                'required',
+                'email',
+                'max:150',
+                $userId ? Rule::unique('users', 'email')->ignore($userId, 'user_id') : 'nullable',
+            ],
+            'secondary_email' => 'nullable|email|max:150',
+            'contact_person' => 'nullable|string|max:150',
+            'contact_phone' => 'nullable|string|max:30',
+            'password' => 'nullable|string|min:8|confirmed',
+        ], [
+            'email.required' => 'The login email address is required.',
+            'email.email' => 'Please provide a valid email address.',
+            'email.unique' => 'This email address is already in use by another user account.',
+            'password.min' => 'The new password must be at least 8 characters long.',
+            'password.confirmed' => 'The password confirmation does not match.',
+        ]);
+
+        if ($validator->fails()) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()->first(),
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        $validated = $validator->validated();
+
+        if ($userId) {
+            $userUpdate = [
+                'email' => $validated['email'],
+                'updated_at' => now(),
+            ];
+
+            if (!empty($validated['password'])) {
+                $userUpdate['password'] = Hash::make($validated['password']);
+            }
+
+            DB::table('users')->where('user_id', $userId)->update($userUpdate);
+
+            if (!empty($validated['contact_person']) || !empty($validated['contact_phone'])) {
+                $userProfile = DB::table('user_profiles')->where('user_id', $userId)->first();
+                if ($userProfile) {
+                    $profileUpdate = ['updated_at' => now()];
+                    if (!empty($validated['contact_person'])) {
+                        $profileUpdate['full_name'] = $validated['contact_person'];
+                    }
+                    if (!empty($validated['contact_phone'])) {
+                        $profileUpdate['phone'] = $validated['contact_phone'];
+                    }
+
+                    DB::table('user_profiles')->where('user_id', $userId)->update($profileUpdate);
+                } elseif (!empty($validated['contact_person'])) {
+                    DB::table('user_profiles')->insert([
+                        'user_id' => $userId,
+                        'full_name' => $validated['contact_person'],
+                        'phone' => $validated['contact_phone'] ?? null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+        }
+
+        $employerUpdate = [
+            'primary_email' => $validated['email'],
+            'updated_at' => now(),
+        ];
+
+        if (array_key_exists('secondary_email', $validated)) {
+            $employerUpdate['secondary_email'] = $validated['secondary_email'];
+        }
+        if (array_key_exists('contact_person', $validated)) {
+            $employerUpdate['contact_person'] = $validated['contact_person'];
+        }
+        if (array_key_exists('contact_phone', $validated)) {
+            $employerUpdate['contact_phone'] = $validated['contact_phone'];
+        }
+
+        DB::table('employers')->where('employer_id', $employer->employer_id)->update($employerUpdate);
+
+        if ($userId) {
+            Notification::create([
+                'user_id' => $userId,
+                'title' => 'Employer Login Credentials Updated',
+                'message' => "The login credentials for {$employer->company_name} were updated by DMDP Administration. Login email: {$validated['email']}.",
+                'type' => 'security',
+                'is_read' => false,
+                'related_id' => $employer->employer_id,
+            ]);
+        }
+
+        $successMessage = "Login credentials for '{$employer->company_name}' have been updated successfully. The new HR can now log in using '{$validated['email']}'.";
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $successMessage,
+                'email' => $validated['email'],
+            ]);
+        }
+
+        return redirect()->back()->with('success', $successMessage);
+    }
 
     public function approvePlacementReport(Request $request, int $id)
     {
@@ -374,7 +574,6 @@ class ApprovalsController extends Controller
             'admin_remarks' => $remarks,
         ]);
 
-        // Notify employer
         $employer = Employer::with('user')->find($report->employer_id);
         if ($employer && $employer->user) {
             Notification::create([
@@ -457,10 +656,6 @@ class ApprovalsController extends Controller
         return view('reports.establishment-registration-printable', compact('accreditation', 'employer', 'jobPostings'));
     }
 
-    // =========================================================================
-    // VIEW JOBSEEKER STATUS DIRECTORY
-    // =========================================================================
-
     public function jobseekers(Request $request)
     {
         $query = DB::table('jobseekers')
@@ -471,6 +666,8 @@ class ApprovalsController extends Controller
                 'users.user_id',
                 'users.email as user_email',
                 'users.status as account_status',
+                'users.is_approved as user_is_approved',
+                'users.created_at as registered_at',
                 'social_status.is_pwd',
                 'social_status.pwd_type',
                 'social_status.is_4ps'
@@ -517,7 +714,6 @@ class ApprovalsController extends Controller
 
         $jobseekers = $query->orderBy('jobseekers.jobseeker_id', 'desc')->paginate(15)->withQueryString();
 
-        // Attach is_verified, missing_requirements, skills_text, location_text, education_text
         $jobseekerIds = collect($jobseekers->items())->pluck('jobseeker_id');
         $models = \App\Models\Jobseeker::with(['user', 'details', 'socialStatus', 'skills'])
             ->whereIn('jobseeker_id', $jobseekerIds)
@@ -529,6 +725,29 @@ class ApprovalsController extends Controller
             $item->is_verified = $model ? $model->isVerified() : false;
             $item->missing_requirements = $model ? array_values($model->getMissingRequirements()) : [];
             $item->skills_text = $model && $model->skills ? $model->skills->pluck('skill_name')->implode(', ') : '';
+
+            $documents = $model && $model->details ? $model->details->training_certificates : [];
+            if (is_string($documents)) {
+                $documents = json_decode($documents, true) ?: [];
+            }
+
+            $validIdDocument = collect(is_array($documents) ? $documents : [])->first(
+                fn ($document) => is_array($document) && ($document['category'] ?? null) === 'valid_id'
+            );
+
+            $item->valid_id_url = $validIdDocument
+                ? route('admin.jobseekers.valid-id', $item->jobseeker_id)
+                : null;
+
+            $item->valid_id_name = $validIdDocument['name'] ?? null;
+            $validIdSource = (string) ($validIdDocument['file_path'] ?? $validIdDocument['path'] ?? $validIdDocument['name'] ?? '');
+            $validIdPath = parse_url($validIdSource, PHP_URL_PATH);
+
+            $item->valid_id_is_image = in_array(
+                strtolower(pathinfo(is_string($validIdPath) ? $validIdPath : $validIdSource, PATHINFO_EXTENSION)),
+                ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+                true
+            );
 
             $address = $model && $model->details ? ($model->details->address ?? []) : [];
             $education = $model && $model->details ? ($model->details->education ?? []) : [];
@@ -560,9 +779,120 @@ class ApprovalsController extends Controller
         ));
     }
 
-    // =========================================================================
-    // PILLAR 4: COLLABORATOR TRAINER ACCOUNT APPROVAL
-    // =========================================================================
+    public function viewJobseekerValidId(int $id)
+    {
+        $jobseeker = Jobseeker::with('details')->findOrFail($id);
+        $documents = $jobseeker->details?->training_certificates ?? [];
+        if (is_string($documents)) {
+            $documents = json_decode($documents, true) ?: [];
+        }
+
+        abort_unless(is_array($documents), 404);
+
+        $document = collect($documents)->first(
+            fn ($item) => is_array($item) && ($item['category'] ?? null) === 'valid_id'
+        );
+
+        abort_unless($document, 404);
+
+        $disk = Storage::disk('public');
+
+        foreach (['file_path', 'path', 'file_url', 'url'] as $key) {
+            $candidate = $document[$key] ?? null;
+            if (!is_string($candidate) || trim($candidate) === '') {
+                continue;
+            }
+
+            $urlPath = parse_url($candidate, PHP_URL_PATH);
+            $path = rawurldecode(str_replace('\\', '/', is_string($urlPath) && $urlPath !== '' ? $urlPath : $candidate));
+
+            if (($storagePosition = strrpos($path, '/storage/')) !== false) {
+                $path = substr($path, $storagePosition + strlen('/storage/'));
+            }
+
+            $path = ltrim($path, '/');
+
+            foreach (['storage/app/public/', 'app/public/', 'storage/', 'public/'] as $prefix) {
+                if (str_starts_with($path, $prefix)) {
+                    $path = substr($path, strlen($prefix));
+                    break;
+                }
+            }
+
+            $segments = explode('/', $path);
+            $isJobseekerDocument = str_starts_with($path, "documents/{$jobseeker->jobseeker_id}/")
+                || str_starts_with($path, 'ids/')
+                || str_starts_with($path, 'valid_ids/');
+
+            if (
+                $isJobseekerDocument
+                && !in_array('..', $segments, true)
+                && !in_array('.', $segments, true)
+                && $disk->exists($path)
+            ) {
+                return $disk->response($path, $document['name'] ?? basename($path), [], 'inline');
+            }
+        }
+
+        abort(404, 'Valid ID file not found on storage.');
+    }
+
+    public function disapproveJobseeker(Request $request, int $id)
+    {
+        $validated = $request->validate([
+            'remarks' => 'required|string|max:1000',
+        ]);
+
+        $jobseeker = Jobseeker::with('user', 'details')->findOrFail($id);
+
+        $user = $jobseeker->user;
+        abort_unless($user, 404);
+        $remarks = trim($validated['remarks']);
+
+        DB::transaction(function () use ($jobseeker, $user, $remarks) {
+            $user->update([
+                'is_approved' => 0,
+                'account_status' => 'unverified',
+            ]);
+
+            $details = $jobseeker->details;
+            if ($details && !empty($details->training_certificates)) {
+                $documents = is_array($details->training_certificates)
+                    ? $details->training_certificates
+                    : (json_decode($details->training_certificates, true) ?: []);
+
+                foreach ($documents as &$document) {
+                    if (is_array($document) && ($document['category'] ?? null) === 'valid_id') {
+                        $document['status'] = 'rejected';
+                        $document['rejection_reason'] = $remarks;
+                        $document['reviewed_by'] = Auth::id();
+                        $document['reviewed_at'] = now()->toIso8601String();
+                    }
+                }
+                unset($document);
+
+                $details->training_certificates = array_values($documents);
+                $details->save();
+            }
+
+            Notification::create([
+                'user_id' => $user->user_id,
+                'title' => 'Jobseeker Account Requires Revision',
+                'message' => "Your account approval was revoked. Admin remarks: {$remarks}",
+                'type' => 'rejection',
+                'is_read' => false,
+                'related_id' => $jobseeker->jobseeker_id,
+            ]);
+        });
+
+        $message = "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' has been disapproved. The remarks were sent to the jobseeker.";
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => $message]);
+        }
+
+        return redirect()->back()->with('success', $message);
+    }
 
     public function approveTrainer(Request $request, int $id)
     {
@@ -605,10 +935,6 @@ class ApprovalsController extends Controller
         return redirect()->back()->with('info', "Collaborator trainer account for '{$user->email}' was rejected.");
     }
 
-    // =========================================================================
-    // PILLAR 5: JOBSEEKER IDENTITY & VERIFICATION APPROVAL
-    // =========================================================================
-
     public function approveJobseeker(Request $request, int $id)
     {
         $jobseeker = Jobseeker::with('user', 'details')->find($id);
@@ -625,7 +951,6 @@ class ApprovalsController extends Controller
             ]);
         }
 
-        // Update document status in details if present
         $details = $jobseeker->details;
         if ($details && !empty($details->training_certificates)) {
             $docs = is_array($details->training_certificates)
@@ -639,6 +964,8 @@ class ApprovalsController extends Controller
                     $doc['reviewed_at'] = now()->toIso8601String();
                 }
             }
+            unset($doc);
+
             $details->training_certificates = array_values($docs);
             $details->save();
         }
@@ -657,14 +984,63 @@ class ApprovalsController extends Controller
         return redirect()->back()->with('success', "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' has been approved and verified successfully.");
     }
 
-    // ... existing rejectJobseeker method ...
     public function rejectJobseeker(Request $request, int $id)
     {
-        // ... existing body ...
-        return redirect()->back()->with('info', "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' returned for document revision.");
+        $validated = $request->validate([
+            'remarks' => 'required|string|max:1000',
+        ]);
+
+        $jobseeker = Jobseeker::with('user', 'details')->findOrFail($id);
+
+        $user = $jobseeker->user;
+        abort_unless($user, 404);
+        $remarks = trim($validated['remarks']);
+
+        DB::transaction(function () use ($jobseeker, $user, $remarks) {
+            $user->update([
+                'is_approved' => 0,
+                'account_status' => 'unverified',
+            ]);
+
+            $details = $jobseeker->details;
+            if ($details && !empty($details->training_certificates)) {
+                $documents = is_array($details->training_certificates)
+                    ? $details->training_certificates
+                    : (json_decode($details->training_certificates, true) ?: []);
+
+                foreach ($documents as &$document) {
+                    if (is_array($document) && ($document['category'] ?? null) === 'valid_id') {
+                        $document['status'] = 'rejected';
+                        $document['rejection_reason'] = $remarks;
+                        $document['reviewed_by'] = Auth::id();
+                        $document['reviewed_at'] = now()->toIso8601String();
+                    }
+                }
+                unset($document);
+
+                $details->training_certificates = array_values($documents);
+                $details->save();
+            }
+
+            Notification::create([
+                'user_id' => $user->user_id,
+                'title' => 'Jobseeker Account Requires Revision',
+                'message' => "Your account approval was revoked. Admin remarks: {$remarks}",
+                'type' => 'rejection',
+                'is_read' => false,
+                'related_id' => $jobseeker->jobseeker_id,
+            ]);
+        });
+
+        $message = "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' has been disapproved. The remarks were sent to the jobseeker.";
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => $message]);
+        }
+
+        return redirect()->back()->with('success', $message);
     }
 
-    // ✅ New method goes INSIDE the class
     public function evaluateJobseekers(Request $request)
     {
         $query = JobApplication::with([
@@ -690,7 +1066,6 @@ class ApprovalsController extends Controller
         return view('admin.evaluations.jobseekers', compact('applications'));
     }
 
-    // ✅ Reject method also inside
     public function referJobseeker(Request $request, int $id)
     {
         $application = JobApplication::with(['jobseeker.user', 'jobPosting.employer.user'])->findOrFail($id);
@@ -791,4 +1166,4 @@ class ApprovalsController extends Controller
 
         return redirect()->back()->with('info', 'Application marked as Not Qualified.');
     }
-}   // ← final class closing brace
+}

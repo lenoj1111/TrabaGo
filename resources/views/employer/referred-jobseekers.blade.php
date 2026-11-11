@@ -214,6 +214,28 @@
                 ];
                 }
 
+                $storedExperience = is_array($jobseeker->details?->work_experience)
+                    ? $jobseeker->details->work_experience
+                    : (json_decode($jobseeker->details?->work_experience ?? '[]', true) ?: []);
+                if (!is_array($storedExperience)) {
+                    $storedExperience = [];
+                }
+                $experienceEntries = $storedExperience['entries'] ?? [];
+                if ($experienceEntries === [] && $storedExperience && !array_key_exists('entries', $storedExperience) && !array_is_list($storedExperience)) {
+                    $experienceEntries = [$storedExperience];
+                }
+                $workHistory = array_values(array_map(function ($experience) {
+                    return [
+                        'employer' => $experience['employer'] ?? $experience['company'] ?? '',
+                        'employer_reference' => $experience['employer_reference'] ?? $experience['reference'] ?? '',
+                        'position' => $experience['position'] ?? '',
+                        'job_title' => $experience['job_title'] ?? $experience['title'] ?? ($experience['position'] ?? ''),
+                        'start_date' => !empty($experience['start_date']) ? \Carbon\Carbon::parse($experience['start_date'])->format('M j, Y') : '',
+                        'end_date' => !empty($experience['end_date']) ? \Carbon\Carbon::parse($experience['end_date'])->format('M j, Y') : '',
+                        'responsibilities' => $experience['responsibilities'] ?? $experience['description'] ?? '',
+                    ];
+                }, array_filter($experienceEntries, 'is_array')));
+
                 $appData = [
                 'id' => $app->application_id,
                 'name' => $fullName ?: 'Candidate #' . $app->application_id,
@@ -225,6 +247,7 @@
                 'applied_at' => $app->created_at ? $app->created_at->format('M d, Y') : 'N/A',
                 'hired_date' => $app->hired_date,
                 'skills' => $jobseeker->skills ? $jobseeker->skills->pluck('skill_name')->toArray() : [],
+                'work_experience' => $workHistory,
                 'jpo_notes' => $app->jpo_notes,
                 'docs' => $employerSafeDocs,
                 'completed_certificates' => $completedCertificates,
@@ -343,27 +366,28 @@
     <!-- ============================================================ -->
     <!-- VIEW PROFILE MODAL                                            -->
     <!-- ============================================================ -->
-    <div x-show="viewModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
-        <div @click.away="viewModal = false" class="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6 max-h-[92vh] overflow-y-auto">
+    <div x-show="viewModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-slate-900/70 backdrop-blur-sm">
+        <div class="flex min-h-full items-center justify-center p-3 sm:p-6">
+        <div @click.away="viewModal = false" class="flex h-[calc(100dvh-1.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:h-[calc(100dvh-3rem)]">
 
             <template x-if="selectedApp">
-                <div class="space-y-6">
+                <div class="flex min-h-0 flex-1 flex-col">
                     <!-- Header -->
-                    <div class="flex items-start justify-between border-b border-slate-100 pb-4">
+                    <div class="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-7">
                         <div class="flex items-start gap-4">
-                            <div class="h-14 w-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white text-xl font-black shrink-0 shadow-md">
+                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-lg font-black text-white">
                                 <span x-text="selectedApp.name ? selectedApp.name.charAt(0).toUpperCase() : 'C'"></span>
                             </div>
                             <div>
-                                <h3 class="text-2xl font-black text-slate-900" x-text="selectedApp.name"></h3>
-                                <p class="text-xs text-slate-500 mt-1" x-text="selectedApp.email + ' • ' + selectedApp.phone"></p>
-                                <p class="text-xs text-slate-400 mt-0.5">
-                                    Applied for <span class="font-bold text-slate-700" x-text="selectedApp.job_title"></span> on <span x-text="selectedApp.applied_at"></span>
-                                </p>
+                                <h3 class="text-lg font-black text-slate-900 sm:text-xl" x-text="selectedApp.name"></h3>
+                                <p class="mt-1 text-xs text-slate-500" x-text="selectedApp.email + ' · ' + selectedApp.phone"></p>
+                                <p class="mt-0.5 text-[11px] text-slate-400"><span x-text="selectedApp.job_title"></span> · Applied <span x-text="selectedApp.applied_at"></span></p>
                             </div>
                         </div>
-                        <button @click="viewModal = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
+                        <button type="button" @click="viewModal = false" aria-label="Close applicant details" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-slate-900">&times;</button>
                     </div>
+
+                    <div class="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain px-5 py-5 sm:px-7">
 
                     <!-- Skills -->
                     <div class="space-y-2">
@@ -377,6 +401,50 @@
                             </template>
                         </div>
                     </div>
+
+                    <!-- Work Experience -->
+                    <section class="space-y-4">
+                        <div class="flex flex-wrap items-end justify-between gap-2 border-b border-slate-200 pb-2">
+                            <h4 class="text-xs font-black uppercase tracking-wider text-slate-700">Work Experience</h4>
+                            <span class="text-[11px] font-semibold text-slate-400" x-text="selectedApp.work_experience.length + (selectedApp.work_experience.length === 1 ? ' record' : ' records')"></span>
+                        </div>
+                        <template x-if="selectedApp.work_experience.length === 0">
+                            <div class="rounded-lg border border-dashed border-slate-300 px-4 py-6 text-center text-xs text-slate-400">No work experience listed.</div>
+                        </template>
+                        <div class="space-y-3">
+                            <template x-for="(experience, index) in selectedApp.work_experience" :key="index">
+                                <article class="rounded-lg border border-slate-200 bg-white p-4 sm:p-5">
+                                    <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
+                                        <div class="flex min-w-0 items-start gap-3">
+                                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-100 text-xs font-black text-slate-600" x-text="String(index + 1).padStart(2, '0')"></span>
+                                            <div class="min-w-0">
+                                                <h5 class="text-sm font-bold text-slate-900" x-text="experience.job_title || 'Job title not listed'"></h5>
+                                                <p class="mt-0.5 text-xs font-semibold text-slate-700" x-text="experience.employer || 'Employer not listed'"></p>
+                                                <p x-show="experience.position" class="mt-1 text-[11px] text-slate-500" x-text="'Position: ' + experience.position"></p>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-3 sm:min-w-[220px] sm:text-right">
+                                            <div>
+                                                <span class="block text-[9px] font-bold uppercase text-slate-400">Started</span>
+                                                <span class="text-[11px] font-semibold text-slate-700" x-text="experience.start_date || 'Not listed'"></span>
+                                            </div>
+                                            <div>
+                                                <span class="block text-[9px] font-bold uppercase text-slate-400">Ended</span>
+                                                <span class="text-[11px] font-semibold text-slate-700" x-text="experience.end_date || 'Present'"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div x-show="experience.employer_reference || experience.responsibilities" class="mt-4 border-t border-slate-100 pt-3">
+                                        <p x-show="experience.employer_reference" class="text-[11px] text-slate-500"><span class="font-bold text-slate-600">Employer reference:</span> <span x-text="experience.employer_reference"></span></p>
+                                        <div x-show="experience.responsibilities" class="mt-2">
+                                            <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Responsibilities & Achievements</span>
+                                            <p class="mt-1 whitespace-pre-line text-xs leading-relaxed text-slate-700" x-text="experience.responsibilities"></p>
+                                        </div>
+                                    </div>
+                                </article>
+                            </template>
+                        </div>
+                    </section>
 
                     <!-- JPO Endorsement Note -->
                     <template x-if="selectedApp.jpo_notes">
@@ -447,13 +515,16 @@
                     </div>
 
                     <!-- Footer -->
-                    <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
-                        <button type="button" @click="viewModal = false" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
+                    </div>
+
+                    <div class="flex shrink-0 items-center justify-end border-t border-slate-200 bg-slate-50 px-5 py-3 sm:px-7">
+                        <button type="button" @click="viewModal = false" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100">
                             Close
                         </button>
                     </div>
                 </div>
             </template>
+        </div>
         </div>
     </div>
 

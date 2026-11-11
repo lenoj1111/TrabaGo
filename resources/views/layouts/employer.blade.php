@@ -140,6 +140,25 @@ $layoutEmployer = Auth::check()
     x-data="employerSidebar()"
     x-init="init()">
 
+    @if(session()->has('admin_impersonator_id'))
+        <!-- Admin Impersonation Notice Bar -->
+        <div class="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 px-4 py-2 font-bold text-xs flex items-center justify-between shadow-md relative z-50 border-b border-amber-600">
+            <div class="flex items-center gap-2">
+                <span class="p-1 rounded-md bg-amber-600 text-white">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                </span>
+                <span>Administrator Direct Account Control: Operating as <strong>{{ Auth::user()->email }}</strong></span>
+            </div>
+            <form method="POST" action="{{ route('impersonate.leave') }}">
+                @csrf
+                <button type="submit" class="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-black shadow-sm transition-colors flex items-center gap-1">
+                    <span>Return to Admin Portal</span>
+                    <span>&rarr;</span>
+                </button>
+            </form>
+        </div>
+    @endif
+
     {{-- ============================================================ --}}
     {{-- MOBILE BACKDROP                                               --}}
     {{-- ============================================================ --}}
@@ -214,7 +233,7 @@ $layoutEmployer = Auth::check()
                 <span class="emp-sidebar-label flex-1">Job Postings</span>
             </a>
 
-            {{-- Applicants --}}
+            {{-- Applicants
             <a href="{{ route('employer.applications') }}"
                 class="nav-item {{ request()->routeIs('employer.applications*') ? 'nav-item-active' : '' }}"
                 :title="collapsed ? 'Applicants' : ''">
@@ -223,7 +242,7 @@ $layoutEmployer = Auth::check()
                         d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 <span class="emp-sidebar-label flex-1">Applicants</span>
-            </a>
+            </a> --}}
 
             {{-- Referred Candidates --}}
             <a href="{{ route('employer.referred-jobseekers') }}"

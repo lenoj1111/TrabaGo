@@ -249,7 +249,7 @@
                         </div>
 
                         <div class="sm:col-span-2 space-y-1.5">
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Account Email Address (Login Identity)</label>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Account System Login Email</label>
                             <input type="text" value="{{ $user->email }}" disabled
                                 class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs bg-slate-100 text-slate-500 cursor-not-allowed">
                             <span class="text-[10px] text-slate-400">Primary login credential managed by system administrator.</span>

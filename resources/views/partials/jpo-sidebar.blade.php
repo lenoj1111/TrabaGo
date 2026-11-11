@@ -99,6 +99,25 @@
         </a>
     </div>
 
+    <!-- Group: CLIENT ACCOUNTS -->
+    <div class="space-y-1">
+        <p class="px-3 text-xs font-bold uppercase tracking-wider text-slate-400">Account Provisioning</p>
+        
+        <!-- Provision Client Tab -->
+        <a href="{{ route('jpo.users.create') }}" 
+           class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 {{ request()->routeIs('jpo.users.*') ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-950/30' : 'text-slate-300 hover:text-white hover:bg-slate-800/80' }}">
+            <div class="flex items-center gap-3">
+                <svg class="h-4 w-4 shrink-0 {{ request()->routeIs('jpo.users.*') ? 'text-white' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                </svg>
+                <span>Provision Account</span>
+            </div>
+            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold {{ request()->routeIs('jpo.users.*') ? 'bg-emerald-800 text-emerald-100' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' }}">
+                New
+            </span>
+        </a>
+    </div>
+
     <!-- Group: ACCOUNT & SYSTEM -->
     <div class="space-y-1">
         <p class="px-3 text-xs font-bold uppercase tracking-wider text-slate-400">Account & System</p>

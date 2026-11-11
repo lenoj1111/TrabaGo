@@ -224,9 +224,9 @@ class OfferAcceptanceFlowTest extends TestCase
         $this->assertEquals('Employed', $this->jobseeker->employment_status);
         $this->assertEquals('Acme Corporation', $this->jobseeker->hired_company);
 
-        // Application B is automatically withdrawn
+        // Application B remains open in accordance with Region 7 Employment Flexibility & Status Privacy rules
         $appB->refresh();
-        $this->assertEquals('withdrawn', $appB->status);
+        $this->assertEquals('interview', $appB->status);
 
         // Notifications checked
         // 1. Acme Corporation notified of offer acceptance
@@ -235,13 +235,7 @@ class OfferAcceptanceFlowTest extends TestCase
             'title' => 'Job Offer Accepted!',
         ]);
 
-        // 2. Beta Technologies notified that application was withdrawn
-        $this->assertDatabaseHas('notifications', [
-            'user_id' => $this->employerUserB->user_id,
-            'title' => 'Application Withdrawn (Candidate Accepted Another Offer)',
-        ]);
-
-        // 3. Jobseeker congratulated
+        // 2. Jobseeker congratulated
         $this->assertDatabaseHas('notifications', [
             'user_id' => $this->jobseekerUser->user_id,
             'title' => 'Congratulations on Your New Job!',

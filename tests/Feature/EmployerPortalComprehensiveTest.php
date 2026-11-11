@@ -186,6 +186,7 @@ class EmployerPortalComprehensiveTest extends TestCase
             'valid_until' => $futureDate,
             'accepts_disability' => 1,
             'disability_type' => 'Mobility Accessible',
+            'resume_required' => 1,
         ]);
 
         $response->assertRedirect(route('employer.job-postings'));
@@ -197,6 +198,7 @@ class EmployerPortalComprehensiveTest extends TestCase
             'vacancy_count' => 2,
             'status' => 'pending',
             'created_by' => 'employer',
+            'resume_required' => 1,
         ]);
     }
 
@@ -236,6 +238,7 @@ class EmployerPortalComprehensiveTest extends TestCase
                 'vacancy_count' => 4,
                 'valid_until' => $goodDate,
                 'accepts_disability' => 0,
+                'resume_required' => 1,
             ]);
 
         $goodUpdateResponse->assertRedirect(route('employer.job-postings'));
@@ -245,7 +248,51 @@ class EmployerPortalComprehensiveTest extends TestCase
             'job_id' => $job->job_id,
             'title' => 'Senior Cloud Architect',
             'vacancy_count' => 4,
+            'resume_required' => 1,
         ]);
+    }
+
+    public function test_employer_can_view_jobseeker_work_experience_with_application(): void
+    {
+        $job = JobPosting::create([
+            'employer_id' => $this->employer->employer_id,
+            'title' => 'Systems Analyst',
+            'description' => 'Analyze business systems.',
+            'vacancy_count' => 1,
+            'valid_until' => now()->addMonth()->toDateString(),
+            'status' => 'approved',
+            'created_by' => 'employer',
+        ]);
+
+        DB::table('jobseeker_details')->insert([
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'work_experience' => json_encode([
+                'entries' => [[
+                    'employer' => 'Cebu Manufacturing Group',
+                    'employer_reference' => 'HR Office',
+                    'position' => 'Full-time',
+                    'job_title' => 'Systems Analyst',
+                    'start_date' => '2021-03-01',
+                    'end_date' => '2024-02-29',
+                    'responsibilities' => 'Documented business workflows and requirements.',
+                ]],
+                'summary' => '',
+            ]),
+        ]);
+        JobApplication::create([
+            'job_id' => $job->job_id,
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'status' => 'pending',
+            'referred_by_jpo' => false,
+        ]);
+
+        $response = $this->actingAs($this->employerUser)->get(route('employer.referred-jobseekers'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Work Experience');
+        $response->assertSee('Cebu Manufacturing Group');
+        $response->assertSee('Systems Analyst');
+        $response->assertSee('Documented business workflows and requirements.');
     }
 
     /**
@@ -306,6 +353,17 @@ class EmployerPortalComprehensiveTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
+        // Offer is extended
+        $this->assertDatabaseHas('job_applications', [
+            'application_id' => $application->application_id,
+            'status' => 'offered',
+        ]);
+
+        // Jobseeker accepts offer (Rule 2: Offer Acceptance -> Hired)
+        $acceptResponse = $this->actingAs($this->jobseekerUser)
+            ->post(route('jobseeker.applications.accept_offer', $application->application_id));
+        $acceptResponse->assertRedirect();
+
         $this->assertDatabaseHas('job_applications', [
             'application_id' => $application->application_id,
             'status' => 'hired',
@@ -321,7 +379,7 @@ class EmployerPortalComprehensiveTest extends TestCase
         // Verify notification sent to jobseeker
         $this->assertDatabaseHas('notifications', [
             'user_id' => $this->jobseekerUser->user_id,
-            'title' => 'Congratulations! You Have Been Hired!',
+            'title' => 'Congratulations on Your New Job!',
         ]);
 
         // Verify jobseeker profile displays Employed and the company they applied to

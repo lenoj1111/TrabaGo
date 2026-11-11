@@ -27,6 +27,7 @@ class TrainingQuizService
                 $questions[] = [
                     'id' => $item->assessment_id,
                     'question' => $item->question,
+                    'image_url' => $item->image_path ? asset('storage/' . ltrim($item->image_path, '/')) : null,
                     'type' => $type,
                     'choices' => $type === 'essay' ? [] : array_values($choices),
                     'answer' => $type === 'essay' ? null : (int) $item->correct_answer,

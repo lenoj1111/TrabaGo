@@ -1,70 +1,51 @@
-<?php
-// Raw paths (no Laravel helpers needed)
-$pythonScript = __DIR__ . '/../app/scripts/ocr_engine.py';
-$imagePath    = __DIR__ . '/nationalid.png';
-$typedName    = 'MYKA NICHOLE CABRERA';
+#!/usr/bin/env python3
+import sys
+import os
 
-echo "==================================================\n";
-echo "TEST: PaddleOCR PHP Integration\n";
-echo "Image: " . basename($imagePath) . "\n";
-echo "Typed Name: \"$typedName\"\n";
-echo "--------------------------------------------------\n";
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: ocr_engine.py <image_path>", file=sys.stderr)
+        sys.exit(2)
 
-if (!file_exists($imagePath)) {
-    die("❌ Image not found at: $imagePath\n");
-}
+    image_path = sys.argv[1]
+    if not os.path.isfile(image_path):
+        print(f"ERROR: image not found: {image_path}", file=sys.stderr)
+        sys.exit(2)
 
-if (!file_exists($pythonScript)) {
-    die("❌ Python script not found at: $pythonScript\n");
-}
+    try:
+        from paddleocr import PaddleOCR
+    except ImportError as e:
+        print(f"ERROR: PaddleOCR not installed: {e}", file=sys.stderr)
+        sys.exit(3)
 
-// Build the command to run Python 3.12
-$command = 'py -3.12 ' . escapeshellarg($pythonScript) . ' ' . escapeshellarg($imagePath) . ' 2>&1';
+    # Key fix: enable_mkldnn=False avoids the PaddlePaddle 3.3.x oneDNN bug
+    # use_textline_orientation=True replaces the old use_angle_cls / cls=True
+    ocr = PaddleOCR(
+        use_doc_orientation_classify=False,
+        use_doc_unwarping=False,
+        use_textline_orientation=True,
+        enable_mkldnn=False,          # 👈 disables oneDNN, resolves the crash
+        lang="en",
+    )
 
-echo "Running PaddleOCR... (This may take a few seconds)\n";
+    lines = []
 
-// Execute the Python script
-$output = shell_exec($command);
+    try:
+        # 3.x uses predict(); completely remove cls=True
+        result = ocr.predict(image_path)
+        for res in result:
+            texts = res.get("rec_texts") if hasattr(res, "get") else None
+            if texts:
+                lines.extend(texts)
+    except Exception as e:
+        print(f"ERROR: predict failed: {e}", file=sys.stderr)
 
-if (empty(trim($output))) {
-    die("❌ OCR returned no text. Check that Python 3.12 and PaddleOCR are installed.\n");
-}
+    if not lines:
+        print("ERROR: no text detected", file=sys.stderr)
+        sys.exit(5)
 
-echo "✅ OCR Successful.\n\n";
-echo "--- RAW OCR TEXT ---\n";
-echo $output . "\n";
-echo "--------------------\n\n";
+    for line in lines:
+        print(line)
 
-// Normalize and match
-function normalizeName(string $s): string
-{
-    $s = strtoupper($s);
-    $s = preg_replace('/[^A-Z\s]/', '', $s);
-    $s = preg_replace('/\s+/', ' ', $s);
-    return trim($s);
-}
-
-$normalizedTyped = normalizeName($typedName);
-$normalizedOcr   = normalizeName($output);
-
-$words   = explode(' ', $normalizedTyped);
-$found   = [];
-$missing = [];
-
-foreach ($words as $word) {
-    if ($word === '') continue;
-    if (strpos($normalizedOcr, $word) !== false) {
-        $found[] = $word;
-    } else {
-        $missing[] = $word;
-    }
-}
-
-if (count($missing) === 0) {
-    echo "✅ MATCH — Name found on ID.\n";
-    echo "   Found words: " . implode(', ', $found) . "\n";
-} else {
-    echo "❌ MISMATCH — Name not found on ID.\n";
-    echo "   Found: "   . implode(', ', $found) . "\n";
-    echo "   Missing: " . implode(', ', $missing) . "\n";
-}
+if __name__ == "__main__":
+    main()

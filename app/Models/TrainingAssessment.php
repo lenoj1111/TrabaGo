@@ -35,6 +35,7 @@ class TrainingAssessment extends Model
     protected $fillable = [
         'training_id',
         'question',
+        'image_path',
         'question_type',
         'options',
         'correct_answer',

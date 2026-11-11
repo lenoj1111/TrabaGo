@@ -174,8 +174,44 @@ class JobseekerEnhancementsTest extends TestCase
     {
         $response = $this->actingAs($this->jobseekerUser)->get(route('jobseeker.jobs'));
         $response->assertStatus(200);
-        $response->assertSee('Attach Resume / CV (Optional)');
-        $response->assertSee('If omitted, the employer will evaluate your application using your verified TrabaGo profile details and skills matrix.');
+        $response->assertSee('Attach Resume / CV');
+        $response->assertSee('(Optional)');
+        $response->assertSee('A resume is on file. Attach a new file to replace it for this application.');
+    }
+
+    public function test_required_resume_can_be_satisfied_by_saved_document_hub_resume(): void
+    {
+        $this->jobPosting->update(['resume_required' => true]);
+
+        $response = $this->actingAs($this->jobseekerUser)
+            ->post(route('jobseeker.jobs.apply', $this->jobPosting->job_id));
+
+        $response->assertRedirect(route('jobseeker.applications'));
+        $response->assertSessionHas('success');
+        $this->assertDatabaseHas('job_applications', [
+            'job_id' => $this->jobPosting->job_id,
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+        ]);
+    }
+
+    public function test_required_resume_blocks_application_when_no_saved_resume_exists(): void
+    {
+        $details = $this->jobseeker->details;
+        $details->training_certificates = array_values(array_filter(
+            $details->training_certificates,
+            fn($document) => ($document['category'] ?? '') !== 'resume'
+        ));
+        $details->save();
+        $this->jobPosting->update(['resume_required' => true]);
+
+        $response = $this->actingAs($this->jobseekerUser)
+            ->post(route('jobseeker.jobs.apply', $this->jobPosting->job_id));
+
+        $response->assertSessionHasErrors(['resume']);
+        $this->assertDatabaseMissing('job_applications', [
+            'job_id' => $this->jobPosting->job_id,
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+        ]);
     }
 
     /**
@@ -186,7 +222,8 @@ class JobseekerEnhancementsTest extends TestCase
         // 1. View Profile
         $viewResponse = $this->actingAs($this->jobseekerUser)->get(route('jobseeker.profile', ['tab' => 'view']));
         $viewResponse->assertStatus(200);
-        $viewResponse->assertSee('Pedro Penduko');
+        $viewResponse->assertSee('Pedro');
+        $viewResponse->assertSee('Penduko');
         $viewResponse->assertSee('Personal Information');
         $viewResponse->assertSee('Residential Address');
 
@@ -205,9 +242,26 @@ class JobseekerEnhancementsTest extends TestCase
             'education_level' => 'College Degree',
             'education_course' => 'BS Computer Science',
             'education_school' => 'University of San Carlos',
-            'experience_company' => 'Cebu IT Park Innovations',
-            'experience_position' => 'Web Developer',
-            'experience_duration' => '3 - 5 Years',
+            'work_experience' => [
+                [
+                    'employer' => 'Cebu IT Park Innovations',
+                    'employer_reference' => 'Maria 09170000000',
+                    'position' => 'Regular',
+                    'job_title' => 'Web Developer',
+                    'start_date' => '2022-01-03',
+                    'end_date' => '2024-06-30',
+                    'responsibilities' => 'Built internal web tools.',
+                ],
+                [
+                    'employer' => 'Cebu Digital Studio',
+                    'employer_reference' => 'HR Office',
+                    'position' => 'Contract',
+                    'job_title' => 'PHP Developer',
+                    'start_date' => '2024-07-01',
+                    'end_date' => '',
+                    'responsibilities' => 'Maintains client applications.',
+                ],
+            ],
         ]);
 
         $updateResponse->assertRedirect(route('jobseeker.profile'));
@@ -216,6 +270,12 @@ class JobseekerEnhancementsTest extends TestCase
             'last_name' => 'Penduko Jr.',
             'civil_status' => 'Married',
         ]);
+        $storedExperience = json_decode(
+            \Illuminate\Support\Facades\DB::table('jobseeker_details')->where('jobseeker_id', $this->jobseeker->jobseeker_id)->value('work_experience'),
+            true
+        );
+        $this->assertCount(2, $storedExperience['entries']);
+        $this->assertSame('PHP Developer', $storedExperience['entries'][1]['job_title']);
 
         // 3. Reset Password (with invalid current password fails)
         $badPasswordResponse = $this->actingAs($this->jobseekerUser)->post(route('jobseeker.password.change'), [
@@ -359,13 +419,18 @@ class JobseekerEnhancementsTest extends TestCase
             'referred_by_jpo' => false,
         ]);
 
-        // Employer hires the applicant
+        // Employer extends offer to the applicant
         $response = $this->actingAs($this->employerUser)->post(
             route('employer.applicants.update_status', $application->application_id),
             ['action' => 'hire']
         );
 
         $response->assertRedirect();
+
+        // Jobseeker accepts offer (Rule 2: Offer Acceptance -> Hired)
+        $acceptResponse = $this->actingAs($this->jobseekerUser)
+            ->post(route('jobseeker.applications.accept_offer', $application->application_id));
+        $acceptResponse->assertRedirect();
 
         // Refresh jobseeker model
         $this->jobseeker->refresh();
@@ -382,7 +447,7 @@ class JobseekerEnhancementsTest extends TestCase
     }
 
     /**
-     * Test an already hired/employed jobseeker cannot apply for another job.
+     * Test an already hired/employed jobseeker can still apply for another job per Region 7 Employment Flexibility rules.
      */
     public function test_employed_jobseeker_cannot_apply_to_another_job(): void
     {
@@ -428,19 +493,17 @@ class JobseekerEnhancementsTest extends TestCase
             'accepts_disability' => false,
         ]);
 
-        // 3. Visiting the job page displays employed restriction
+        // 3. Visiting the job page succeeds
         $showResponse = $this->actingAs($this->jobseekerUser)->get(route('jobseeker.jobs.show', $secondJob->job_id));
         $showResponse->assertStatus(200);
-        $showResponse->assertSee('Currently Employed at Tech Solutions Cebu');
-        $showResponse->assertSee('Employed candidates cannot apply for another job');
 
-        // 4. Attempting to apply via POST is blocked and redirects with error
+        // 4. Region 7 Employment Flexibility: Jobseeker remains "Open to all" even if employed
         $applyResponse = $this->actingAs($this->jobseekerUser)->post(route('jobseeker.jobs.apply', $secondJob->job_id));
-        $applyResponse->assertRedirect(route('jobseeker.jobs'));
-        $applyResponse->assertSessionHas('error');
+        $applyResponse->assertRedirect(route('jobseeker.applications'));
+        $applyResponse->assertSessionHas('success');
 
-        // Verify NO new application was created for the second job
-        $this->assertDatabaseMissing('job_applications', [
+        // Verify application was created for the second job
+        $this->assertDatabaseHas('job_applications', [
             'jobseeker_id' => $this->jobseeker->jobseeker_id,
             'job_id' => $secondJob->job_id,
         ]);
@@ -494,11 +557,6 @@ class JobseekerEnhancementsTest extends TestCase
         $this->assertEquals('requested', $hiredApplication->resignation_status);
         $this->assertEquals('Pursuing higher education and career progression.', $hiredApplication->resignation_reason);
         $this->assertNotNull($hiredApplication->resignation_requested_at);
-
-        // Jobseeker still cannot apply while resignation is only pending approval
-        $prematureApplyResponse = $this->actingAs($this->jobseekerUser)->post(route('jobseeker.jobs.apply', $secondJob->job_id));
-        $prematureApplyResponse->assertRedirect(route('jobseeker.jobs'));
-        $prematureApplyResponse->assertSessionHas('error');
 
         // 4. Employer views candidates and sees resignation request
         $employerCandidatesResponse = $this->actingAs($this->employerUser)->get(route('employer.referred-jobseekers'));

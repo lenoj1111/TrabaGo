@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Image,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -396,6 +397,10 @@ export default function TrainingDetailScreen() {
 
             <Text style={styles.questionText}>{currentQ.question}</Text>
 
+            {currentQ.image_url ? (
+              <Image source={{ uri: currentQ.image_url }} style={{ width: '100%', height: 220, marginBottom: SPACING.md }} resizeMode="contain" />
+            ) : null}
+
             <View style={styles.choicesList}>
               {choices.map((choice, cIndex) => {
                 const isSelected = selectedAnswers[currentQuestionIndex] === cIndex;
@@ -492,7 +497,11 @@ export default function TrainingDetailScreen() {
           </View>
           <Text style={styles.courseTitle}>{training.title}</Text>
           <Text style={styles.courseMeta}>
-            Duration: {training.durationMonths || training.duration_months || 1} Month(s) • Passing Score: {training.passing_score ?? 80}%
+            Training dates: {training.training_start_date && training.training_end_date
+              ? `${training.training_start_date} - ${training.training_end_date}`
+              : `${training.durationMonths || training.duration_months || 1} Month(s)`}
+            {' • '}Capacity: {training.trainee_capacity ?? 'Unlimited'}
+            {' • '}Passing Score: {training.passing_score ?? 80}%
           </Text>
         </View>
 

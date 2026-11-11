@@ -15,7 +15,7 @@ class AdminMiddleware
             return redirect()->route('login');
         }
 
-        // Check if the authenticated user has the admin role
+        // Check if the authenticated user has the admin role - if (!in_array(Auth::user()->role, ['admin', 'jpo']))
         if (Auth::user()->role !== 'admin') {
             abort(403, 'Unauthorized access. Admin only.');
         }

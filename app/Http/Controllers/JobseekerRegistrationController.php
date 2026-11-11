@@ -183,6 +183,11 @@ class JobseekerRegistrationController extends Controller
                 'is_ofw' => $request->has('is_ofw'),
                 'is_pwd' => $request->has('is_pwd'),
                 'pwd_type' => $request->pwd_type,
+                'is_lgbtq' => $request->has('is_lgbtq'),
+                'is_senior_citizen' => $request->has('is_senior_citizen'),
+                'is_immigrant' => $request->has('is_immigrant'),
+                'immigrant_origin' => $request->immigrant_origin,
+                'region' => $request->input('region', 'Region VII - Central Visayas'),
             ]);
 
             // 7. Create notification for admin (only if admin exists)

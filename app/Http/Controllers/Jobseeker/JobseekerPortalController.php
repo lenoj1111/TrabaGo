@@ -184,6 +184,7 @@ class JobseekerPortalController extends Controller
         $savedDocuments = $jobseeker->details && $jobseeker->details->training_certificates
             ? (is_array($jobseeker->details->training_certificates) ? $jobseeker->details->training_certificates : json_decode($jobseeker->details->training_certificates, true))
             : [];
+        $hasSavedResume = $jobseeker->hasDocument('resume');
 
         return view('jobseeker.jobs.index', compact(
             'rankedJobs',
@@ -191,6 +192,7 @@ class JobseekerPortalController extends Controller
             'userSkills',
             'appliedJobIds',
             'savedDocuments',
+            'hasSavedResume',
             'jobseeker'
         ));
     }
@@ -205,6 +207,7 @@ class JobseekerPortalController extends Controller
         }
 
         $jobseeker = $this->getOrCreateJobseeker();
+        $hasSavedResume = $jobseeker->hasDocument('resume');
         $userSkills = $this->matchingService->getJobseekerSkills($jobseeker);
         $jobSkills = $this->matchingService->getJobSkills($job);
         $match = $this->matchingService->calculateMatch($userSkills, $jobSkills);
@@ -242,7 +245,8 @@ class JobseekerPortalController extends Controller
             'match',
             'hasApplied',
             'recommendedTrainings',
-            'jobseeker'
+            'jobseeker',
+            'hasSavedResume'
         ));
     }
 
@@ -302,6 +306,13 @@ class JobseekerPortalController extends Controller
         if ($existing) {
             return redirect()->back()->with('warning', 'You already have an active application for this position.');
         }
+
+        $resumeRules = ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:5120'];
+        if ($job->resume_required && !$jobseeker->hasDocument('resume')) {
+            $resumeRules[0] = 'required';
+        }
+        $request->validate(['resume' => $resumeRules]);
+
         // Handle resume file upload if provided
         $resumeUrl = null;
         if ($request->hasFile('resume')) {
@@ -629,6 +640,14 @@ class JobseekerPortalController extends Controller
         $allTrainings = TrainingProgram::with(['topics', 'enrollments' => function ($q) use ($jobseeker) {
             $q->where('jobseeker_id', $jobseeker->jobseeker_id);
         }])->get();
+        $accountCanEnroll = $jobseeker->isProfileAndDocumentsComplete()
+            && Auth::user()
+            && Auth::user()->isAccountVerified();
+        $allTrainings->each(function ($training) use ($jobseeker, $accountCanEnroll) {
+            $training->eligibility_issues = $training->demographicEligibilityIssues($jobseeker);
+            $training->account_can_enroll = $accountCanEnroll;
+            $training->can_enroll = $accountCanEnroll && empty($training->eligibility_issues);
+        });
 
         $enrolledCount = $allTrainings->filter(function ($t) {
             $enr = $t->enrollments->first();
@@ -674,6 +693,9 @@ class JobseekerPortalController extends Controller
         $jobseeker = $this->getOrCreateJobseeker();
         $userSkills = $this->matchingService->getJobseekerSkills($jobseeker);
         $userSkillNames = array_map('strtolower', $userSkills);
+        $accountCanEnroll = $jobseeker->isProfileAndDocumentsComplete()
+            && Auth::user()
+            && Auth::user()->isAccountVerified();
 
         $trainings = TrainingProgram::with(['trainer', 'topics', 'enrollments' => function ($q) use ($jobseeker) {
             $q->where('jobseeker_id', $jobseeker->jobseeker_id);
@@ -684,6 +706,7 @@ class JobseekerPortalController extends Controller
             $enrollment = $training->enrollments->first();
             $status = $enrollment ? $enrollment->status : 'unregistered';
             $certIssued = $enrollment ? (bool)$enrollment->certificate_issued : false;
+            $eligibilityIssues = $training->demographicEligibilityIssues($jobseeker);
 
             $skillsList = [];
             if (!empty($training->skills)) {
@@ -707,6 +730,9 @@ class JobseekerPortalController extends Controller
                     'is_earned' => $isEarned,
                     'certificate_issued' => $certIssued,
                     'enrollment_id' => $enrollment ? $enrollment->enrollment_id : null,
+                    'eligibility_issues' => $eligibilityIssues,
+                    'account_can_enroll' => $accountCanEnroll,
+                    'can_enroll' => $accountCanEnroll && empty($eligibilityIssues),
                 ];
             }
         }
@@ -754,6 +780,28 @@ class JobseekerPortalController extends Controller
         if ($enrollment) {
             return redirect()->route('jobseeker.training.show', $id)
                 ->with('info', "You are already enrolled in '{$training->title}'.");
+        }
+
+        if (!$jobseeker->isProfileAndDocumentsComplete()) {
+            return redirect()->route('jobseeker.documents')
+                ->with('error', 'You must complete your profile and upload a valid Government ID before you can apply for training.');
+        }
+
+        $user = \App\Models\User::find(Auth::id());
+        if (!$user || !$user->isAccountVerified()) {
+            return redirect()->route('jobseeker.documents')
+                ->with('error', 'Your account is unverified. Please upload a valid Government ID in your Document Hub and complete account verification before applying for training.');
+        }
+
+        $eligibilityIssues = $training->demographicEligibilityIssues($jobseeker);
+        if ($eligibilityIssues) {
+            return redirect()->route('jobseeker.training.show', $id)
+                ->with('error', implode(' ', $eligibilityIssues));
+        }
+
+        if ($training->trainee_capacity !== null && TrainingEnrollment::where('training_id', $id)->count() >= $training->trainee_capacity) {
+            return redirect()->route('jobseeker.training.show', $id)
+                ->with('error', 'This training program has reached its trainee capacity.');
         }
 
         TrainingEnrollment::create([
@@ -871,6 +919,11 @@ class JobseekerPortalController extends Controller
         $enrollment = TrainingEnrollment::where('jobseeker_id', $jobseeker->jobseeker_id)
             ->where('training_id', $id)
             ->first();
+
+        if (!$enrollment && $training->trainee_capacity !== null && TrainingEnrollment::where('training_id', $id)->count() >= $training->trainee_capacity) {
+            return redirect()->route('jobseeker.training.show', $id)
+                ->with('error', 'This training program has reached its trainee capacity.');
+        }
 
         $existingAnswers = $enrollment?->answers ?? [];
         if (!is_array($existingAnswers)) {
@@ -1073,9 +1126,6 @@ class JobseekerPortalController extends Controller
 
         abort(404, 'Document file not found on storage.');
     }
-    /**
-     * Runs PaddleOCR on an uploaded ID image and returns the raw text.
-     */
     private function runPaddleOcr(string $absolutePath): ?string
     {
         $pythonScript = base_path('app/scripts/ocr_engine.py');
@@ -1120,6 +1170,8 @@ class JobseekerPortalController extends Controller
         }
     }
 
+
+
     /**
      * Normalizes text for comparison (uppercase, letters only).
      */
@@ -1131,6 +1183,9 @@ class JobseekerPortalController extends Controller
         return trim($s);
     }
 
+    /**
+     * Extracts and normalizes a date from raw OCR text.
+     */
     /**
      * Extracts and normalizes a date from raw OCR text.
      */
@@ -1175,8 +1230,7 @@ class JobseekerPortalController extends Controller
 
         $upper = strtoupper($ocrText);
 
-        // 1. Try full/truncated month names: "MARCH 07, 2003" or "ARCH072003" or "MARCH 7 2003"
-        //    The month name can be missing its first letter.
+        // 1. Try full/truncated month names (For National IDs): "MARCH 07, 2003"
         $pattern = '/\b(' . implode('|', array_map(fn($m) => preg_quote($m, '/'), array_keys($months))) . ')\s*(\d{1,2})[,\s]*(\d{4})\b/';
         if (preg_match($pattern, $upper, $m)) {
             $mon = $months[$m[1]] ?? null;
@@ -1185,37 +1239,28 @@ class JobseekerPortalController extends Controller
             }
         }
 
-        // 2. Try "MM DD YYYY" with any 8-digit run (e.g. "072003" or "07 2003" or "07202003")
-        if (preg_match('/\b(\d{1,2})\s*(\d{4})\b/', $upper, $m)) {
-            // Can't be sure this is the DOB without month context, but if it's on a "BIRTH" line
-            // we accept it. Fall through is safer than wrong.
-        }
-
-        // 3. Look specifically for the DOB line and grab digits from it
-        if (preg_match('/(?:BIRTH|KAPANGANAKAN)[^\n]*?([A-Z]{2,10})\s*(\d{1,2})[,\s]*(\d{4})/i', $ocrText, $m)) {
-            $monKey = strtoupper($m[1]);
-            $mon = $months[$monKey] ?? null;
-            if ($mon) {
-                return sprintf('%04d-%02d-%02d', (int)$m[3], (int)$mon, (int)$m[2]);
+        // 2. Direct hit for Driver's License format: YYYY/MM/DD (e.g., 2004/09/29)
+        // This searches the whole text for the first occurrence of this exact format
+        if (preg_match('/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/', $upper, $m)) {
+            // Ensure it's a valid date (not a license number)
+            if ((int)$m[1] > 1900 && (int)$m[1] < 2100 && (int)$m[2] >= 1 && (int)$m[2] <= 12 && (int)$m[3] >= 1 && (int)$m[3] <= 31) {
+                return sprintf('%04d-%02d-%02d', (int)$m[1], (int)$m[2], (int)$m[3]);
             }
         }
 
-        // 4. Last resort: any 4-digit year on a line that also has "BIRTH" or "KAPANGANAKAN"
+        // 3. Look for DD/MM/YYYY or MM/DD/YYYY
+        if (preg_match('/\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})\b/', $upper, $m)) {
+            // Assume MM/DD/YYYY if it's a standard ID
+            if ((int)$m[3] > 1900 && (int)$m[3] < 2100) {
+                return sprintf('%04d-%02d-%02d', (int)$m[3], (int)$m[1], (int)$m[2]);
+            }
+        }
+
+        // 4. Last resort: any 4-digit year near "BIRTH"
         $lines = preg_split('/\r?\n/', $ocrText);
         foreach ($lines as $i => $line) {
             if (stripos($line, 'BIRTH') !== false || stripos($line, 'KAPANGANAKAN') !== false) {
-                // Check this line and the next line
-                $combined = $line . ' ' . ($lines[$i + 1] ?? '');
-                $combined = strtoupper($combined);
-
-                // Try MONTH DD YYYY
-                foreach ($months as $name => $num) {
-                    if (preg_match('/\b' . preg_quote($name, '/') . '\s*(\d{1,2})[,\s]*(\d{4})/', $combined, $m)) {
-                        return sprintf('%04d-%02d-%02d', (int)$m[2], (int)$num, (int)$m[1]);
-                    }
-                }
-
-                // Try a bare year (returns first day of that year — better than nothing)
+                $combined = strtoupper($line . ' ' . ($lines[$i + 1] ?? ''));
                 if (preg_match('/\b(\d{4})\b/', $combined, $m)) {
                     return sprintf('%04d-01-01', (int)$m[1]);
                 }
@@ -1274,6 +1319,8 @@ class JobseekerPortalController extends Controller
     }
     public function uploadDocument(Request $request)
     {
+        set_time_limit(120);
+
         $request->validate([
             'category' => 'required|in:resume,valid_id,certificate,certs,pwd_id',
             'document_file' => 'required|file|max:5120',
@@ -1391,7 +1438,7 @@ class JobseekerPortalController extends Controller
         $user = Auth::user();
         if ($user && $canonicalCategory === 'valid_id' && $status === 'verified') {
             DB::table('users')->where('user_id', $user->user_id)->update([
-                'account_status' => 'approved',
+                'account_status' => 'verified',
                 'is_approved'    => true,
                 'updated_at'     => now(),
             ]);
@@ -1572,7 +1619,27 @@ class JobseekerPortalController extends Controller
             'mobile_number' => 'nullable|string|max:30',
             'employment_status' => 'nullable|string|max:100',
             'hired_company' => 'nullable|string|max:150',
+            'work_experience_submitted' => 'nullable|boolean',
+            'work_experience' => 'nullable|array',
+            'work_experience.*.employer' => 'nullable|string|max:150',
+            'work_experience.*.employer_reference' => 'nullable|string|max:150',
+            'work_experience.*.position' => 'nullable|string|max:150',
+            'work_experience.*.job_title' => 'nullable|string|max:150',
+            'work_experience.*.start_date' => 'nullable|date',
+            'work_experience.*.end_date' => 'nullable|date',
+            'work_experience.*.responsibilities' => 'nullable|string|max:3000',
         ]);
+
+        foreach ((array) $request->input('work_experience', []) as $index => $experience) {
+            if (
+                is_array($experience) && !empty($experience['start_date']) && !empty($experience['end_date'])
+                && strtotime($experience['end_date']) < strtotime($experience['start_date'])
+            ) {
+                return back()->withErrors([
+                    "work_experience.{$index}.end_date" => 'The end date must be on or after the start date.',
+                ])->withInput();
+            }
+        }
 
         $jobseeker->update($request->only([
             'first_name',
@@ -1611,12 +1678,58 @@ class JobseekerPortalController extends Controller
         $details->education = $currentEdu;
 
         $currentExp = is_array($details->work_experience) ? $details->work_experience : (json_decode($details->work_experience ?? '', true) ?: []);
-        $currentExp['company'] = $request->input('experience_company', $currentExp['company'] ?? '');
-        $currentExp['position'] = $request->input('experience_position', $currentExp['position'] ?? '');
-        $currentExp['duration'] = $request->input('experience_duration', $currentExp['duration'] ?? '');
-        $currentExp['description'] = $request->input('experience_description', $currentExp['description'] ?? '');
-        $currentExp['summary'] = $request->input('bio', $currentExp['summary'] ?? '');
-        $details->work_experience = $currentExp;
+        if (!is_array($currentExp)) {
+            $currentExp = [];
+        }
+        if ($request->boolean('work_experience_submitted')) {
+            $submittedExperiences = $request->input('work_experience', []);
+        } elseif ($request->hasAny(['experience_company', 'experience_position', 'experience_duration', 'experience_description'])) {
+            $submittedExperiences = [[
+                'employer' => $request->input('experience_company'),
+                'position' => $request->input('experience_position'),
+                'job_title' => $request->input('experience_position'),
+                'responsibilities' => $request->input('experience_description'),
+            ]];
+        } else {
+            $submittedExperiences = $currentExp['entries'] ?? [];
+            if ($submittedExperiences === [] && !array_key_exists('entries', $currentExp) && !array_is_list($currentExp)) {
+                $submittedExperiences = [$currentExp];
+            }
+        }
+
+        $workExperienceEntries = [];
+        foreach ((array) $submittedExperiences as $index => $experience) {
+            if (!is_array($experience)) {
+                continue;
+            }
+
+            $entry = [
+                'employer' => trim((string) ($experience['employer'] ?? $experience['company'] ?? '')),
+                'employer_reference' => trim((string) ($experience['employer_reference'] ?? $experience['reference'] ?? '')),
+                'position' => trim((string) ($experience['position'] ?? '')),
+                'job_title' => trim((string) ($experience['job_title'] ?? $experience['title'] ?? ($experience['position'] ?? ''))),
+                'start_date' => $experience['start_date'] ?? null,
+                'end_date' => $experience['end_date'] ?? null,
+                'responsibilities' => trim((string) ($experience['responsibilities'] ?? $experience['description'] ?? '')),
+            ];
+
+            $hasExperienceData = false;
+            foreach ($entry as $value) {
+                if (trim((string) $value) !== '') {
+                    $hasExperienceData = true;
+                    break;
+                }
+            }
+
+            if ($hasExperienceData) {
+                $workExperienceEntries[] = $entry;
+            }
+        }
+
+        $details->work_experience = [
+            'entries' => array_values($workExperienceEntries),
+            'summary' => $request->input('bio', $currentExp['summary'] ?? ''),
+        ];
 
         $currentElig = is_array($details->eligibility) ? $details->eligibility : (json_decode($details->eligibility ?? '', true) ?: []);
         $currentElig['civil_service'] = $request->input('eligibility_civil_service', $currentElig['civil_service'] ?? '');

@@ -27,6 +27,7 @@ $jobsDataMap[$j->job_id] = [
 'valid_until' => $j->valid_until ? date('Y-m-d', strtotime($j->valid_until)) : '',
 'valid_until_formatted' => $j->valid_until ? date('M d, Y', strtotime($j->valid_until)) : 'Continuous',
 'accepts_disability' => (bool) $j->accepts_disability,
+'resume_required' => (bool) $j->resume_required,
 'disability_type' => $j->disability_type ?? '',
 'status' => $j->status,
 'applications_count' => (int) ($j->applications_count ?? 0),
@@ -50,6 +51,7 @@ $jobsDataMap[$editJob->job_id] = [
 'valid_until' => $editJob->valid_until ? date('Y-m-d', strtotime($editJob->valid_until)) : '',
 'valid_until_formatted' => $editJob->valid_until ? date('M d, Y', strtotime($editJob->valid_until)) : 'Continuous',
 'accepts_disability' => (bool) $editJob->accepts_disability,
+'resume_required' => (bool) $editJob->resume_required,
 'disability_type' => $editJob->disability_type ?? '',
 'status' => $editJob->status,
 'applications_count' => (int) ($editJob->applications_count ?? 0),
@@ -183,10 +185,10 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
                         @forelse($jobs as $job)
                         <tr class="hover:bg-slate-50/80 transition-colors">
                             <td class="py-4 px-3">
-                                <button type="button" @click="openView({{ $job->job_id }})" class="text-left group focus:outline-none">
+                                <a href="{{ route('employer.job-postings.show', $job->job_id) }}" class="text-left group focus:outline-none">
                                     <span class="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors block text-sm">{{ $job->title }}</span>
                                     <span class="text-[11px] text-slate-400 line-clamp-1 max-w-sm">{{ $job->description }}</span>
-                                </button>
+                                </a>
                             </td>
                             <td class="py-4 px-3 font-bold text-slate-900">
                                 <span class="inline-flex items-center gap-1.5">
@@ -243,15 +245,15 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
                                 @endif
                             </td>
                             <td class="py-4 px-3 text-right">
-                                <div class="inline-flex items-center gap-1.5">
-                                    <button type="button" @click="openView({{ $job->job_id }})"
+                                <div class="ml-auto flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
+                                    <a href="{{ route('employer.job-postings.show', $job->job_id) }}"
                                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                         </svg>
                                         <span>View</span>
-                                    </button>
+                                    </a>
 
                                     <button type="button" @click="openEdit({{ $job->job_id }})"
                                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200 transition-colors">
@@ -263,20 +265,22 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
 
                                     @if($job->status !== 'closed')
                                     <button type="button" @click="openClose({{ $job->job_id }})"
-                                        class="p-1.5 rounded-xl text-slate-400 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                                        class="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-800 transition-colors hover:bg-amber-100"
                                         title="Close Vacancy">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                         </svg>
+                                        <span>Close</span>
                                     </button>
                                     @endif
 
                                     <button type="button" @click="openDelete({{ $job->job_id }})"
-                                        class="p-1.5 rounded-xl text-slate-400 hover:text-rose-700 hover:bg-rose-50 transition-colors"
+                                        class="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-100"
                                         title="Delete Job">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
+                                        <span>Delete</span>
                                     </button>
                                 </div>
                             </td>
@@ -587,6 +591,16 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
                         class="w-full rounded-xl border border-emerald-200 px-3 py-2 text-xs bg-white text-slate-900">
                 </div>
 
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" name="resume_required" value="1" {{ old('resume_required') ? 'checked' : '' }} class="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                        <span>
+                            <span class="block text-xs font-bold text-slate-900">Require a resume with applications</span>
+                            <span class="mt-1 block text-[11px] text-slate-500">Jobseekers can attach a resume or use one already in their Document Hub.</span>
+                        </span>
+                    </label>
+                </div>
+
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
                     <button type="button" @click="createModal = false" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
                         Cancel
@@ -758,6 +772,16 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
                         class="w-full rounded-xl border border-emerald-200 px-3 py-2 text-xs bg-white text-slate-900">
                 </div>
 
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" name="resume_required" value="1" x-model="selectedJob.resume_required" class="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                        <span>
+                            <span class="block text-xs font-bold text-slate-900">Require a resume with applications</span>
+                            <span class="mt-1 block text-[11px] text-slate-500">Jobseekers can attach a resume or use one already in their Document Hub.</span>
+                        </span>
+                    </label>
+                </div>
+
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
                     <button type="button" @click="editModal = false" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
                         Cancel
@@ -911,6 +935,7 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
             valid_until: '',
             valid_until_formatted: 'Continuous',
             accepts_disability: false,
+            resume_required: false,
             disability_type: '',
             status: '',
             applications_count: 0,
@@ -920,7 +945,6 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
         return {
             createModal: hasCreateParam,
             editModal: editJobId ? true : false,
-            viewModal: false,
             deleteModal: false,
             closeModal: false,
             jobsMap: jobsMap,
@@ -933,12 +957,6 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
             },
             openCreate() {
                 this.createModal = true;
-            },
-            openView(id) {
-                if (this.jobsMap[id]) {
-                    this.selectedJob = Object.assign({}, initialJob, this.jobsMap[id]);
-                    this.viewModal = true;
-                }
             },
             openEdit(id) {
                 if (this.jobsMap[id]) {

@@ -16,13 +16,73 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class TrainerPortalController extends Controller
 {
     private function hasTrainerAuthoredAssessments(int $trainingId): bool
     {
         return TrainingAssessment::where('training_id', $trainingId)->exists();
+    }
+
+    private function validateCourseRequest(Request $request, bool $includeTopics = false): array
+    {
+        $rules = [
+            'title' => 'required|string|max:150',
+            'training_type' => 'required|in:online,laboratory_onsite',
+            'training_start_date' => 'required|date',
+            'training_end_date' => 'required|date|after_or_equal:training_start_date',
+            'trainee_capacity' => 'required|integer|min:1|max:10000',
+            'description' => 'required|string|max:2000',
+            'skills' => 'nullable|string|max:500',
+            'passing_score' => 'nullable|integer|min:50|max:100',
+            'demographics' => 'nullable|array',
+            'demographics.gender' => 'nullable|in:Male,Female',
+            'demographics.min_age' => 'nullable|integer|min:15|max:100',
+            'demographics.max_age' => 'nullable|integer|min:15|max:100',
+            'demographics.education_levels' => 'nullable|array',
+            'demographics.education_levels.*' => 'string|in:Elementary,High School,Senior High School,Vocational,College,Post Graduate',
+        ];
+
+        if ($includeTopics) {
+            $rules += [
+                'topics' => 'nullable|array',
+                'topics.*.title' => 'nullable|string|max:150',
+                'topics.*.video_url' => 'nullable|string|max:255',
+            ];
+        }
+
+        $validated = $request->validate($rules);
+        $minimumAge = data_get($validated, 'demographics.min_age');
+        $maximumAge = data_get($validated, 'demographics.max_age');
+
+        if ($minimumAge !== null && $maximumAge !== null && $maximumAge < $minimumAge) {
+            throw ValidationException::withMessages([
+                'demographics.max_age' => 'The maximum age must be greater than or equal to the minimum age.',
+            ]);
+        }
+
+        return $validated;
+    }
+
+    private function demographicRequirementsFromRequest(Request $request): ?array
+    {
+        $demographics = $request->input('demographics', []);
+        $requirements = [
+            'gender' => $demographics['gender'] ?? null,
+            'min_age' => isset($demographics['min_age']) ? (int) $demographics['min_age'] : null,
+            'max_age' => isset($demographics['max_age']) ? (int) $demographics['max_age'] : null,
+            'education_levels' => array_values(array_unique($demographics['education_levels'] ?? [])),
+        ];
+
+        return $requirements['gender'] !== null
+            || $requirements['min_age'] !== null
+            || $requirements['max_age'] !== null
+            || $requirements['education_levels'] !== []
+            ? $requirements
+            : null;
     }
 
     /**
@@ -70,8 +130,8 @@ class TrainerPortalController extends Controller
         $certificatesIssued = (int) ($enrollmentStats->certificates_issued ?? 0);
         $coursesCount = DB::table('training_programs')->count();
 
-        $completionRate = $totalEnrollments > 0 
-            ? round(($completedEnrollments / $totalEnrollments) * 100, 1) 
+        $completionRate = $totalEnrollments > 0
+            ? round(($completedEnrollments / $totalEnrollments) * 100, 1)
             : 0;
 
         // Top Courses by Enrollment
@@ -90,7 +150,7 @@ class TrainerPortalController extends Controller
                 $monthStart = now()->subMonths($i)->startOfMonth();
                 $monthEnd = now()->subMonths($i)->endOfMonth();
                 $monthLabel = $monthStart->format('M Y');
-                
+
                 $enrolledCount = DB::table('training_enrollments')
                     ->where(function ($q) use ($monthStart, $monthEnd, $i) {
                         $q->whereBetween('start_date', [$monthStart->toDateString(), $monthEnd->toDateString()]);
@@ -104,7 +164,7 @@ class TrainerPortalController extends Controller
                     ->where('status', 'completed')
                     ->where(function ($q) use ($monthStart, $monthEnd, $i) {
                         $q->whereBetween('end_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
-                          ->orWhereBetween('certificate_issued_at', [$monthStart, $monthEnd]);
+                            ->orWhereBetween('certificate_issued_at', [$monthStart, $monthEnd]);
                         if ($i === 0) {
                             $q->orWhere(function ($sub) {
                                 $sub->whereNull('end_date')->whereNull('certificate_issued_at');
@@ -188,9 +248,9 @@ class TrainerPortalController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('jobseekers.first_name', 'LIKE', "%{$search}%")
-                  ->orWhere('jobseekers.last_name', 'LIKE', "%{$search}%")
-                  ->orWhere('training_programs.title', 'LIKE', "%{$search}%")
-                  ->orWhere('training_enrollments.certificate_no', 'LIKE', "%{$search}%");
+                    ->orWhere('jobseekers.last_name', 'LIKE', "%{$search}%")
+                    ->orWhere('training_programs.title', 'LIKE', "%{$search}%")
+                    ->orWhere('training_enrollments.certificate_no', 'LIKE', "%{$search}%");
             });
         }
 
@@ -202,7 +262,7 @@ class TrainerPortalController extends Controller
     /**
      * Figure 12: Update Enrollment Status.
      */
-    public function updateEnrollmentStatus(Request $request, $id)
+    public function updateEnrollmentStatus(Request $request, int $id)
     {
         $request->validate([
             'status' => 'required|in:enrolled,in_progress,completed,failed',
@@ -217,9 +277,11 @@ class TrainerPortalController extends Controller
         if ($request->status === 'completed' && in_array($answers['review_status'] ?? null, ['pending', 'needs_retake'], true)) {
             return back()->with('error', 'Review the submitted quiz and record a passing decision before marking this learner as completed.');
         }
-        if ($request->status === 'completed'
+        if (
+            $request->status === 'completed'
             && $this->hasTrainerAuthoredAssessments((int) $enrollment->training_id)
-            && ($answers['review_status'] ?? null) !== 'passed') {
+            && ($answers['review_status'] ?? null) !== 'passed'
+        ) {
             return back()->with('error', 'The learner must submit the course quiz and receive trainer approval before completion.');
         }
 
@@ -255,7 +317,7 @@ class TrainerPortalController extends Controller
     /**
      * Figure 12: Evaluate Training Course Answer (Review answers and grade).
      */
-    public function evaluateAnswer(Request $request, $id)
+    public function evaluateAnswer(Request $request, int $id)
     {
         $enrollment = DB::table('training_enrollments')
             ->join('jobseekers', 'training_enrollments.jobseeker_id', '=', 'jobseekers.jobseeker_id')
@@ -342,7 +404,7 @@ class TrainerPortalController extends Controller
     /**
      * Conduct Assessment Interface (Theory & Practical Demonstration).
      */
-    public function conductAssessment(Request $request, $id)
+    public function conductAssessment(Request $request, int $id)
     {
         $enrollment = DB::table('training_enrollments')
             ->join('jobseekers', 'training_enrollments.jobseeker_id', '=', 'jobseekers.jobseeker_id')
@@ -386,7 +448,7 @@ class TrainerPortalController extends Controller
     /**
      * Submit Conducted Assessment.
      */
-    public function submitAssessment(Request $request, $id)
+    public function submitAssessment(Request $request, int $id)
     {
         $request->validate([
             'theory_score' => 'nullable|numeric|min:0|max:100',
@@ -474,7 +536,7 @@ class TrainerPortalController extends Controller
     /**
      * Mark Enrollment Completion & Award Verified Skills.
      */
-    public function markCompletion(Request $request, $id)
+    public function markCompletion(Request $request, int $id)
     {
         $enrollment = DB::table('training_enrollments')
             ->join('jobseekers', 'training_enrollments.jobseeker_id', '=', 'jobseekers.jobseeker_id')
@@ -497,8 +559,10 @@ class TrainerPortalController extends Controller
         if (in_array($answers['review_status'] ?? null, ['pending', 'needs_retake'], true)) {
             return back()->with('error', 'Review the submitted quiz and record a passing decision before marking this learner as completed.');
         }
-        if ($this->hasTrainerAuthoredAssessments((int) $enrollment->training_id)
-            && ($answers['review_status'] ?? null) !== 'passed') {
+        if (
+            $this->hasTrainerAuthoredAssessments((int) $enrollment->training_id)
+            && ($answers['review_status'] ?? null) !== 'passed'
+        ) {
             return back()->with('error', 'The learner must submit the course quiz and receive trainer approval before completion.');
         }
         DB::table('training_enrollments')->where('enrollment_id', $id)->update([
@@ -555,7 +619,7 @@ class TrainerPortalController extends Controller
     /**
      * Figure 12: Generate Completion Certificate.
      */
-    public function generateCertificate(Request $request, $id)
+    public function generateCertificate(Request $request, int $id)
     {
         $enrollment = DB::table('training_enrollments')
             ->join('jobseekers', 'training_enrollments.jobseeker_id', '=', 'jobseekers.jobseeker_id')
@@ -577,8 +641,10 @@ class TrainerPortalController extends Controller
         if (in_array($answers['review_status'] ?? null, ['pending', 'needs_retake'], true)) {
             return back()->with('error', 'A certificate can only be issued after the trainer approves the assessment.');
         }
-        if ($this->hasTrainerAuthoredAssessments((int) $enrollment->training_id)
-            && ($answers['review_status'] ?? null) !== 'passed') {
+        if (
+            $this->hasTrainerAuthoredAssessments((int) $enrollment->training_id)
+            && ($answers['review_status'] ?? null) !== 'passed'
+        ) {
             return back()->with('error', 'A certificate can only be issued after the trainer approves the assessment.');
         }
         if ((int) $enrollment->passed !== 1 || $enrollment->status !== 'completed') {
@@ -665,7 +731,7 @@ class TrainerPortalController extends Controller
     /**
      * Preview / Print Certificate.
      */
-    public function previewCertificate($id)
+    public function previewCertificate(int $id)
     {
         $enrollment = DB::table('training_enrollments')
             ->join('jobseekers', 'training_enrollments.jobseeker_id', '=', 'jobseekers.jobseeker_id')
@@ -706,8 +772,8 @@ class TrainerPortalController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('training_programs.title', 'LIKE', "%{$search}%")
-                  ->orWhere('training_programs.description', 'LIKE', "%{$search}%")
-                  ->orWhere('training_programs.skills', 'LIKE', "%{$search}%");
+                    ->orWhere('training_programs.description', 'LIKE', "%{$search}%")
+                    ->orWhere('training_programs.skills', 'LIKE', "%{$search}%");
             });
         }
 
@@ -716,18 +782,22 @@ class TrainerPortalController extends Controller
         }
 
         $courses = $query->groupBy(
-                'training_programs.training_id',
-                'training_programs.trainer_id',
-                'training_programs.title',
-                'training_programs.training_type',
-                'training_programs.duration_months',
-                'training_programs.description',
-                'training_programs.auto_generate_certificate',
-                'training_programs.skills',
-                'training_programs.passing_score',
-                'training_programs.created_at',
-                'training_programs.updated_at'
-            )
+            'training_programs.training_id',
+            'training_programs.trainer_id',
+            'training_programs.title',
+            'training_programs.training_type',
+            'training_programs.duration_months',
+            'training_programs.training_start_date',
+            'training_programs.training_end_date',
+            'training_programs.trainee_capacity',
+            'training_programs.description',
+            'training_programs.auto_generate_certificate',
+            'training_programs.skills',
+            'training_programs.passing_score',
+            'training_programs.demographic_requirements',
+            'training_programs.created_at',
+            'training_programs.updated_at'
+        )
             ->orderBy('training_programs.training_id', 'desc')
             ->paginate(12)
             ->withQueryString();
@@ -738,7 +808,7 @@ class TrainerPortalController extends Controller
     /**
      * Show enrolled jobseekers for a course with month and progress filters.
      */
-    public function courseEnrollments(Request $request, $id)
+    public function courseEnrollments(Request $request, int $id)
     {
         $validated = $request->validate([
             'month' => ['nullable', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
@@ -804,7 +874,7 @@ class TrainerPortalController extends Controller
     /**
      * Show detailed view of a Course, its Curriculum, Enrollees, and Assessments.
      */
-    public function showCourse($id)
+    public function showCourse(int $id)
     {
         $course = TrainingProgram::with('trainer')->findOrFail($id);
         $topics = TrainingTopic::where('training_id', $id)->orderBy('topic_order')->get();
@@ -831,32 +901,22 @@ class TrainerPortalController extends Controller
      */
     public function storeCourse(Request $request)
     {
-        $request->validate([
-            'title' => 'required|string|max:150',
-            'training_type' => 'required|in:online,laboratory_onsite',
-            'duration_months' => 'required|integer|min:1|max:24',
-            'description' => 'required|string|max:2000',
-            'skills' => 'nullable|string|max:500',
-            'passing_score' => 'nullable|integer|min:50|max:100',
-            'auto_generate_certificate' => 'nullable',
-            'topics' => 'nullable|array',
-            'topics.*.title' => 'nullable|string|max:150',
-            'topics.*.video_url' => 'nullable|string|max:255',
-        ]);
+        $this->validateCourseRequest($request, true);
 
         $trainerProfileId = $this->getProfileId();
-
-        $autoCert = $request->has('auto_generate_certificate') ? (bool) $request->auto_generate_certificate : true;
 
         $course = TrainingProgram::create([
             'trainer_id' => $trainerProfileId,
             'title' => trim($request->title),
             'training_type' => $request->training_type,
-            'duration_months' => (int) $request->duration_months,
+            'training_start_date' => $request->training_start_date,
+            'training_end_date' => $request->training_end_date,
+            'trainee_capacity' => (int) $request->trainee_capacity,
             'description' => trim($request->description),
             'skills' => $request->skills ? trim($request->skills) : null,
             'passing_score' => $request->filled('passing_score') ? (int) $request->passing_score : 80,
-            'auto_generate_certificate' => $autoCert,
+            'demographic_requirements' => $this->demographicRequirementsFromRequest($request),
+            'auto_generate_certificate' => false,
         ]);
 
         // Insert initial topics if provided (NO dummy questions generated)
@@ -875,37 +935,30 @@ class TrainerPortalController extends Controller
             }
         }
 
-        return redirect()->route('trainer.courses')
-            ->with('success', "Training course '{$course->title}' created successfully! You can now author assessment questions.");
+        return redirect()->route('trainer.courses.show', $course->training_id)
+            ->with('warning', "Training course '{$course->title}' was created. Please manage its assessments before learners begin the course.");
     }
 
     /**
      * Update an existing Training Course.
      */
-    public function updateCourse(Request $request, $id)
+    public function updateCourse(Request $request, int $id)
     {
         $course = TrainingProgram::findOrFail($id);
 
-        $request->validate([
-            'title' => 'required|string|max:150',
-            'training_type' => 'required|in:online,laboratory_onsite',
-            'duration_months' => 'required|integer|min:1|max:24',
-            'description' => 'required|string|max:2000',
-            'skills' => 'nullable|string|max:500',
-            'passing_score' => 'nullable|integer|min:50|max:100',
-            'auto_generate_certificate' => 'nullable',
-        ]);
-
-        $autoCert = $request->has('auto_generate_certificate') ? (bool) $request->auto_generate_certificate : true;
+        $this->validateCourseRequest($request);
 
         $course->update([
             'title' => trim($request->title),
             'training_type' => $request->training_type,
-            'duration_months' => (int) $request->duration_months,
+            'training_start_date' => $request->training_start_date,
+            'training_end_date' => $request->training_end_date,
+            'trainee_capacity' => (int) $request->trainee_capacity,
             'description' => trim($request->description),
             'skills' => $request->skills ? trim($request->skills) : null,
             'passing_score' => $request->filled('passing_score') ? (int) $request->passing_score : 80,
-            'auto_generate_certificate' => $autoCert,
+            'demographic_requirements' => $this->demographicRequirementsFromRequest($request),
+            'auto_generate_certificate' => false,
         ]);
 
         return back()->with('success', "Training course '{$course->title}' updated successfully.");
@@ -914,7 +967,7 @@ class TrainerPortalController extends Controller
     /**
      * Delete a Training Course.
      */
-    public function destroyCourse($id)
+    public function destroyCourse(int $id)
     {
         $course = TrainingProgram::findOrFail($id);
 
@@ -928,6 +981,10 @@ class TrainerPortalController extends Controller
         }
 
         // Clean cascade
+        $imagePaths = TrainingAssessment::where('training_id', $id)->pluck('image_path')->filter();
+        foreach ($imagePaths as $imagePath) {
+            Storage::disk('public')->delete($imagePath);
+        }
         TrainingAssessment::where('training_id', $id)->delete();
         TrainingTopic::where('training_id', $id)->delete();
         TrainingEnrollment::where('training_id', $id)->delete();
@@ -943,7 +1000,7 @@ class TrainerPortalController extends Controller
     /**
      * Store a trainer-authored Assessment Question.
      */
-    public function storeAssessment(Request $request, $id)
+    public function storeAssessment(Request $request, int $id)
     {
         $course = TrainingProgram::findOrFail($id);
 
@@ -955,6 +1012,7 @@ class TrainerPortalController extends Controller
             'correct_answer' => 'required_if:question_type,multiple_choice,true_false|integer|min:0',
             'explanation' => 'nullable|string|max:1000',
             'points' => 'nullable|integer|min:1|max:10',
+            'image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120',
         ]);
 
         $options = $validated['question_type'] === 'essay' ? [] : array_values($validated['options']);
@@ -965,6 +1023,7 @@ class TrainerPortalController extends Controller
         TrainingAssessment::create([
             'training_id' => $course->training_id,
             'question' => trim($validated['question']),
+            'image_path' => $request->file('image')?->store('training_assessments', 'public'),
             'question_type' => $validated['question_type'],
             'options' => $options,
             'correct_answer' => $validated['question_type'] === 'essay' ? 0 : (int) $validated['correct_answer'],
@@ -978,7 +1037,7 @@ class TrainerPortalController extends Controller
     /**
      * Update an existing Assessment Question.
      */
-    public function updateAssessment(Request $request, $id, $assessmentId)
+    public function updateAssessment(Request $request, int $id, int $assessmentId)
     {
         $assessment = TrainingAssessment::where('training_id', $id)->where('assessment_id', $assessmentId)->firstOrFail();
 
@@ -990,6 +1049,8 @@ class TrainerPortalController extends Controller
             'correct_answer' => 'required_if:question_type,multiple_choice,true_false|integer|min:0',
             'explanation' => 'nullable|string|max:1000',
             'points' => 'nullable|integer|min:1|max:10',
+            'image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120',
+            'remove_image' => 'nullable|boolean',
         ]);
 
         $options = $validated['question_type'] === 'essay' ? [] : array_values($validated['options']);
@@ -997,8 +1058,22 @@ class TrainerPortalController extends Controller
             return back()->withErrors(['correct_answer' => 'Choose one of the listed answer choices.'])->withInput();
         }
 
+        $imagePath = $assessment->image_path;
+        if ($request->hasFile('image')) {
+            if ($imagePath) {
+                Storage::disk('public')->delete($imagePath);
+            }
+            $imagePath = $request->file('image')->store('training_assessments', 'public');
+        } elseif ($request->boolean('remove_image')) {
+            if ($imagePath) {
+                Storage::disk('public')->delete($imagePath);
+            }
+            $imagePath = null;
+        }
+
         $assessment->update([
             'question' => trim($validated['question']),
+            'image_path' => $imagePath,
             'question_type' => $validated['question_type'],
             'options' => $options,
             'correct_answer' => $validated['question_type'] === 'essay' ? 0 : (int) $validated['correct_answer'],
@@ -1012,9 +1087,12 @@ class TrainerPortalController extends Controller
     /**
      * Delete an Assessment Question.
      */
-    public function destroyAssessment($id, $assessmentId)
+    public function destroyAssessment(int $id, int $assessmentId)
     {
         $assessment = TrainingAssessment::where('training_id', $id)->where('assessment_id', $assessmentId)->firstOrFail();
+        if ($assessment->image_path) {
+            Storage::disk('public')->delete($assessment->image_path);
+        }
         $assessment->delete();
 
         return back()->with('success', 'Assessment question deleted successfully.');
@@ -1142,8 +1220,8 @@ class TrainerPortalController extends Controller
             $s = $request->search;
             $query->where(function ($q) use ($s) {
                 $q->where('jobseekers.first_name', 'LIKE', "%{$s}%")
-                  ->orWhere('jobseekers.last_name', 'LIKE', "%{$s}%")
-                  ->orWhere('users.email', 'LIKE', "%{$s}%");
+                    ->orWhere('jobseekers.last_name', 'LIKE', "%{$s}%")
+                    ->orWhere('users.email', 'LIKE', "%{$s}%");
             });
         }
 
@@ -1228,7 +1306,7 @@ class TrainerPortalController extends Controller
     {
         $user = Auth::user();
         $profile = DB::table('user_profiles')->where('user_id', $user->user_id)->first();
-        
+
         $coursesCreatedCount = TrainingProgram::where('trainer_id', $profile->profile_id ?? 0)->count();
         $totalTraineesCount = DB::table('training_enrollments')->count();
         $certsAwardedCount = DB::table('training_enrollments')->where('certificate_issued', 1)->count();
@@ -1322,7 +1400,7 @@ class TrainerPortalController extends Controller
         return back()->with('success', 'All notifications marked as read.');
     }
 
-    public function markNotificationRead($id)
+    public function markNotificationRead(int $id)
     {
         DB::table('notifications')
             ->where('notification_id', $id)

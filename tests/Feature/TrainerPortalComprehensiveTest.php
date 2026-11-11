@@ -91,7 +91,6 @@ class TrainerPortalComprehensiveTest extends TestCase
             'description' => 'Comprehensive automotive diagnostics, maintenance, and workshop safety protocols.',
             'skills' => 'Engine Overhaul, Brake Servicing, Electrical Troubleshooting',
             'passing_score' => 85,
-            'auto_generate_certificate' => 1,
             'topics' => [
                 ['title' => 'Module 1: Engine Diagnostics', 'video_url' => 'https://example.com/engine'],
                 ['title' => 'Module 2: Brake Systems', 'video_url' => 'https://example.com/brake'],
@@ -104,12 +103,13 @@ class TrainerPortalComprehensiveTest extends TestCase
             'training_type' => 'laboratory_onsite',
             'duration_months' => 3,
             'passing_score' => 85,
-            'auto_generate_certificate' => 1,
+            'auto_generate_certificate' => 0,
         ]);
 
         $course = TrainingProgram::where('title', 'Automotive Servicing NC-II')->first();
         $this->assertNotNull($course);
-        $createResponse->assertRedirect(route('trainer.courses'));
+        $createResponse->assertRedirect(route('trainer.courses.show', $course->training_id));
+        $createResponse->assertSessionHas('warning', "Training course '{$course->title}' was created. Please manage its assessments before learners begin the course.");
 
         // Verify topics created without fake auto questions
         $topics = DB::table('training_topics')->where('training_id', $course->training_id)->get();
@@ -121,11 +121,13 @@ class TrainerPortalComprehensiveTest extends TestCase
         $indexResponse->assertStatus(200);
         $indexResponse->assertSee('Automotive Servicing NC-II');
         $indexResponse->assertSee('Engine Overhaul');
+        $indexResponse->assertDontSee('Auto-Generate Certificate upon Passing Assessment');
 
         $showResponse = $this->get(route('trainer.courses.show', $course->training_id));
         $showResponse->assertStatus(200);
         $showResponse->assertSee('Module 1: Engine Diagnostics');
         $showResponse->assertSee('85%');
+        $showResponse->assertDontSee('Auto-Generate Certificate upon Passing Assessment');
 
         // 3. Update Course
         $updateResponse = $this->put(route('trainer.courses.update', $course->training_id), [
@@ -331,13 +333,13 @@ class TrainerPortalComprehensiveTest extends TestCase
     }
 
     /**
-     * Test 3: If job seeker completes training course, certificate is automatically generated when auto_generate_certificate = true.
+     * Test 3: Certificate issuance remains pending after trainer review, regardless of legacy course settings.
      */
-    public function test_certificate_is_automatically_generated_when_course_option_is_enabled()
+    public function test_certificate_requires_explicit_trainer_issuance_even_if_legacy_course_flag_is_enabled()
     {
         $this->actingAs($this->jobseekerUser);
 
-        // Create course with auto_generate_certificate = 1
+        // Legacy courses with automatic issuance enabled must also require explicit issuance.
         $course = TrainingProgram::create([
             'trainer_id' => $this->trainerProfile->profile_id,
             'title' => 'Web Development with Laravel NC-III',
@@ -417,13 +419,13 @@ class TrainerPortalComprehensiveTest extends TestCase
     }
 
     /**
-     * Test 4: Certificate is NOT automatically generated when trainer chooses auto_generate_certificate = false.
+     * Test 4: The trainer can issue a certificate after approving the assessment.
      */
-    public function test_certificate_is_not_automatically_generated_when_trainer_chooses_manual_assessment()
+    public function test_certificate_can_be_issued_manually_after_trainer_assessment()
     {
         $this->actingAs($this->jobseekerUser);
 
-        // Create course with auto_generate_certificate = 0 (Requires trainer manual assessment)
+        // Legacy course with manual issuance configuration.
         $course = TrainingProgram::create([
             'trainer_id' => $this->trainerProfile->profile_id,
             'title' => 'Heavy Equipment Operation (Excavator NC-II)',

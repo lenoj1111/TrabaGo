@@ -78,6 +78,9 @@
                                         <h2 class="mt-1 text-base font-bold leading-relaxed text-slate-900 sm:text-lg" x-text="question.question"></h2>
                                     </div>
                                 </div>
+                                <template x-if="question.image_url">
+                                    <img :src="question.image_url" alt="Assessment question illustration" class="ml-11 max-h-80 max-w-full rounded-xl border border-slate-200 object-contain">
+                                </template>
 
                                 <template x-if="question.type === 'essay'">
                                     <div class="space-y-2 pl-11">

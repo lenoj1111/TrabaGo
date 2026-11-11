@@ -203,6 +203,16 @@ class JobseekerComprehensiveFunctionalityTest extends TestCase
         $pwdResponse->assertSee('Full-Stack PHP/Laravel Developer');
     }
 
+    public function test_public_job_explorer_loads_without_a_jobseeker_account(): void
+    {
+        $response = $this->get(route('jobs.index'));
+
+        $response->assertOk()
+            ->assertSee('Full-Stack PHP/Laravel Developer')
+            ->assertSee('Sign in to apply')
+            ->assertSee(route('jobs.show', $this->jobId));
+    }
+
     public function test_job_details_view(): void
     {
         $response = $this->actingAs($this->user)->get("/jobseeker/jobs/{$this->jobId}");
