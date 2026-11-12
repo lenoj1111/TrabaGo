@@ -1,0 +1,43 @@
+[33mbb094bf[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mzel-main[m[33m)[m HEAD@{0}: commit: minor changes
+[33m006c6bc[m[33m ([m[1;31morigin/zel-main[m[33m)[m HEAD@{1}: checkout: moving from emp-jpo-bugfixes to zel-main
+[33m30e3b98[m[33m ([m[1;32memp-jpo-bugfixes[m[33m)[m HEAD@{2}: commit (merge): Merged jonel and henry with minor updates
+[33mba1ef51[m HEAD@{3}: checkout: moving from henry-updates to emp-jpo-bugfixes
+[33m510203b[m[33m ([m[1;32mhenry-updates[m[33m)[m HEAD@{4}: commit: updated code before jonel
+[33m662d86d[m[33m ([m[1;31morigin/henry-updates[m[33m)[m HEAD@{5}: pull origin henry-updates: Fast-forward
+[33md5a6c31[m HEAD@{6}: checkout: moving from zel-main to henry-updates
+[33m006c6bc[m[33m ([m[1;31morigin/zel-main[m[33m)[m HEAD@{7}: reset: moving to HEAD
+[33m006c6bc[m[33m ([m[1;31morigin/zel-main[m[33m)[m HEAD@{8}: commit: fixed explore jobs homepage and added animation scripts
+[33mebcf8d5[m HEAD@{9}: checkout: moving from zel-main to zel-main
+[33mebcf8d5[m HEAD@{10}: pull --rebase origin zel-main (finish): returning to refs/heads/zel-main
+[33mebcf8d5[m HEAD@{11}: pull --rebase origin zel-main (pick): fixed training
+[33me541688[m HEAD@{12}: pull --rebase origin zel-main (start): checkout e54168874fe83de3495e7f8114d62cbb6138943b
+[33m82b95d8[m HEAD@{13}: commit: fixed training
+[33mba1ef51[m HEAD@{14}: checkout: moving from emp-jpo-bugfixes to zel-main
+[33mba1ef51[m HEAD@{15}: checkout: moving from zel-main to emp-jpo-bugfixes
+[33mba1ef51[m HEAD@{16}: merge emp-jpo-bugfixes: Fast-forward
+[33mc3e5733[m HEAD@{17}: checkout: moving from emp-jpo-bugfixes to zel-main
+[33mba1ef51[m HEAD@{18}: commit: fixed jonel and jimmy side
+[33m0d0067b[m HEAD@{19}: commit (merge): Merge origin/jimmy and resolve conflicts in manageusers view
+[33m3fe805a[m HEAD@{20}: merge origin/henry-updates: Merge made by the 'ort' strategy.
+[33m8964475[m HEAD@{21}: commit: Jonel side confirmed but kwangan JPO
+[33mca1d2e5[m HEAD@{22}: checkout: moving from henry-updates to emp-jpo-bugfixes
+[33md5a6c31[m HEAD@{23}: commit: Fix matching, notifications, and document previews
+[33m5a0a89d[m HEAD@{24}: pull origin henry-updates: Fast-forward
+[33m3c5798a[m HEAD@{25}: checkout: moving from henry-updates to henry-updates
+[33m3c5798a[m HEAD@{26}: commit: Fix document workflows and job matching
+[33ma3496b3[m HEAD@{27}: reset: moving to HEAD
+[33ma3496b3[m HEAD@{28}: checkout: moving from zel-main to henry-updates
+[33mc3e5733[m HEAD@{29}: checkout: moving from henry-updates to zel-main
+[33ma3496b3[m HEAD@{30}: reset: moving to HEAD
+[33ma3496b3[m HEAD@{31}: checkout: moving from zel-main to henry-updates
+[33mc3e5733[m HEAD@{32}: commit: Show saved salary details on jobseeker pages
+[33me2d388a[m HEAD@{33}: pull --rebase origin zel-main (finish): returning to refs/heads/zel-main
+[33me2d388a[m HEAD@{34}: pull --rebase origin zel-main (pick): Fix mobile job and training data consistency
+[33m9e8ebb8[m HEAD@{35}: pull --rebase origin zel-main (start): checkout 9e8ebb8e7667dcc2050006672a32da0f4b6f3b2a
+[33m69f099b[m HEAD@{36}: commit: Fix mobile job and training data consistency
+[33mbf02643[m[33m ([m[1;32mjimmy-v2[m[33m)[m HEAD@{37}: merge jimmy-v2: Fast-forward
+[33m42fa24b[m[33m ([m[1;31morigin/jimmy-v2[m[33m)[m HEAD@{38}: checkout: moving from jimmy-v2 to zel-main
+[33mbf02643[m[33m ([m[1;32mjimmy-v2[m[33m)[m HEAD@{39}: commit: Update employers page and sidebar
+[33m1dbbec8[m HEAD@{40}: commit (merge): Add Barangay Distribution to admin sidebar
+[33m42fa24b[m[33m ([m[1;31morigin/jimmy-v2[m[33m)[m HEAD@{41}: checkout: moving from main to jimmy-v2
+[33mae1b796[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{42}: clone: from https://github.com/lenoj1111/TrabaGo.git

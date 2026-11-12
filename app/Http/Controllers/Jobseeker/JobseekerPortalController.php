@@ -14,6 +14,7 @@ use App\Models\SocialStatus;
 use App\Models\TrainingEnrollment;
 use App\Models\TrainingProgram;
 use App\Models\TrainingTopic;
+use App\Services\IdDocumentVerificationService;
 use App\Services\SkillMatchingService;
 use App\Services\TrainingQuizService;
 use Illuminate\Http\Request;
@@ -29,11 +30,16 @@ class JobseekerPortalController extends Controller
 {
     protected SkillMatchingService $matchingService;
     protected TrainingQuizService $quizService;
+    protected IdDocumentVerificationService $idDocumentVerification;
 
-    public function __construct(SkillMatchingService $matchingService, TrainingQuizService $quizService)
-    {
+    public function __construct(
+        SkillMatchingService $matchingService,
+        TrainingQuizService $quizService,
+        IdDocumentVerificationService $idDocumentVerification
+    ) {
         $this->matchingService = $matchingService;
         $this->quizService = $quizService;
+        $this->idDocumentVerification = $idDocumentVerification;
     }
 
     private function getOrCreateJobseeker(): Jobseeker
@@ -1193,6 +1199,7 @@ class JobseekerPortalController extends Controller
     }
 
 
+
     /**
      * Normalizes text for comparison (uppercase, letters only).
      */
@@ -1643,9 +1650,13 @@ class JobseekerPortalController extends Controller
             'work_experience_submitted' => 'nullable|boolean',
             'work_experience' => 'nullable|array',
             'work_experience.*.employer' => 'nullable|string|max:150',
+            'work_experience.*.employer_address' => 'nullable|string|max:500',
             'work_experience.*.employer_reference' => 'nullable|string|max:150',
+            'work_experience.*.employer_contact_number' => 'nullable|string|max:30',
+            'work_experience.*.employer_contact_email' => 'nullable|email|max:150',
             'work_experience.*.position' => 'nullable|string|max:150',
             'work_experience.*.job_title' => 'nullable|string|max:150',
+            'work_experience.*.employment_type' => 'nullable|in:Full-time,Part-time,Contract/Project-based,Internship/OJT,Freelance,Temporary',
             'work_experience.*.start_date' => 'nullable|date',
             'work_experience.*.end_date' => 'nullable|date',
             'work_experience.*.responsibilities' => 'nullable|string|max:3000',
@@ -1724,11 +1735,43 @@ class JobseekerPortalController extends Controller
                 continue;
             }
 
+            $employmentTypeAliases = [
+                'full time' => 'Full-time',
+                'full-time' => 'Full-time',
+                'fulltime' => 'Full-time',
+                'regular' => 'Full-time',
+                'part time' => 'Part-time',
+                'part-time' => 'Part-time',
+                'contract' => 'Contract/Project-based',
+                'project-based' => 'Contract/Project-based',
+                'contract/project-based' => 'Contract/Project-based',
+                'internship' => 'Internship/OJT',
+                'ojt' => 'Internship/OJT',
+                'internship/ojt' => 'Internship/OJT',
+                'freelance' => 'Freelance',
+                'temporary' => 'Temporary',
+                'temp' => 'Temporary',
+            ];
+            $legacyPosition = trim((string) ($experience['position'] ?? ''));
+            $legacyTitle = trim((string) ($experience['job_title'] ?? $experience['title'] ?? ''));
+            $employmentType = trim((string) ($experience['employment_type'] ?? ''));
+            $position = $legacyPosition;
+            if ($employmentType === '' && isset($employmentTypeAliases[strtolower($legacyPosition)])) {
+                $employmentType = $employmentTypeAliases[strtolower($legacyPosition)];
+                $position = $legacyTitle;
+            } elseif ($employmentType === '' && isset($employmentTypeAliases[strtolower($legacyTitle)])) {
+                $employmentType = $employmentTypeAliases[strtolower($legacyTitle)];
+            }
+
             $entry = [
                 'employer' => trim((string) ($experience['employer'] ?? $experience['company'] ?? '')),
+                'employer_address' => trim((string) ($experience['employer_address'] ?? '')),
                 'employer_reference' => trim((string) ($experience['employer_reference'] ?? $experience['reference'] ?? '')),
-                'position' => trim((string) ($experience['position'] ?? '')),
-                'job_title' => trim((string) ($experience['job_title'] ?? $experience['title'] ?? ($experience['position'] ?? ''))),
+                'employer_contact_number' => trim((string) ($experience['employer_contact_number'] ?? '')),
+                'employer_contact_email' => trim((string) ($experience['employer_contact_email'] ?? '')),
+                'position' => $position,
+                'employment_type' => $employmentType,
+                'job_title' => $employmentType,
                 'start_date' => $experience['start_date'] ?? null,
                 'end_date' => $experience['end_date'] ?? null,
                 'responsibilities' => trim((string) ($experience['responsibilities'] ?? $experience['description'] ?? '')),

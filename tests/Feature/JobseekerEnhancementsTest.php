@@ -242,12 +242,16 @@ class JobseekerEnhancementsTest extends TestCase
             'education_level' => 'College Degree',
             'education_course' => 'BS Computer Science',
             'education_school' => 'University of San Carlos',
+            'work_experience_submitted' => 1,
             'work_experience' => [
                 [
                     'employer' => 'Cebu IT Park Innovations',
-                    'employer_reference' => 'Maria 09170000000',
-                    'position' => 'Regular',
-                    'job_title' => 'Web Developer',
+                    'employer_address' => 'Cebu IT Park, Cebu City',
+                    'employer_reference' => 'Maria Santos',
+                    'employer_contact_number' => '09170000000',
+                    'employer_contact_email' => 'hr@itpark.example.com',
+                    'position' => 'Web Developer',
+                    'employment_type' => 'Full-time',
                     'start_date' => '2022-01-03',
                     'end_date' => '2024-06-30',
                     'responsibilities' => 'Built internal web tools.',
@@ -255,8 +259,8 @@ class JobseekerEnhancementsTest extends TestCase
                 [
                     'employer' => 'Cebu Digital Studio',
                     'employer_reference' => 'HR Office',
-                    'position' => 'Contract',
-                    'job_title' => 'PHP Developer',
+                    'position' => 'PHP Developer',
+                    'employment_type' => 'Contract/Project-based',
                     'start_date' => '2024-07-01',
                     'end_date' => '',
                     'responsibilities' => 'Maintains client applications.',
@@ -275,7 +279,19 @@ class JobseekerEnhancementsTest extends TestCase
             true
         );
         $this->assertCount(2, $storedExperience['entries']);
-        $this->assertSame('PHP Developer', $storedExperience['entries'][1]['job_title']);
+        $this->assertSame('PHP Developer', $storedExperience['entries'][1]['position']);
+        $this->assertSame('Contract/Project-based', $storedExperience['entries'][1]['employment_type']);
+        $this->assertSame('Cebu IT Park, Cebu City', $storedExperience['entries'][0]['employer_address']);
+        $this->assertSame('09170000000', $storedExperience['entries'][0]['employer_contact_number']);
+        $this->assertSame('hr@itpark.example.com', $storedExperience['entries'][0]['employer_contact_email']);
+
+        $profileResponse = $this->actingAs($this->jobseekerUser)->get(route('jobseeker.profile', ['tab' => 'view']));
+        $profileResponse->assertOk();
+        $profileResponse->assertSee('Web Developer');
+        $profileResponse->assertSee('Full-time');
+        $profileResponse->assertSee('Cebu IT Park, Cebu City');
+        $profileResponse->assertSee('hr@itpark.example.com');
+        $profileResponse->assertSee('2 years 5 months');
 
         // 3. Reset Password (with invalid current password fails)
         $badPasswordResponse = $this->actingAs($this->jobseekerUser)->post(route('jobseeker.password.change'), [

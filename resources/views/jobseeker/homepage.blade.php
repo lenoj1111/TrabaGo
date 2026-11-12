@@ -54,13 +54,31 @@
         $topMatch = $bestMatch['match'];
         $topCompany = $topJob->employer->company_name ?? 'Partner Employer';
         $topCompanyLogo = $topJob->employer->company_logo ?? null;
+        $topMatchPercentage = (int) ($topMatch['percentage'] ?? 0);
+        if ($topMatchPercentage >= 75) {
+            $topMatchBadgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+            $topMatchDotClass = 'bg-emerald-500';
+            $topMatchTextClass = 'text-emerald-700';
+        } elseif ($topMatchPercentage >= 50) {
+            $topMatchBadgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
+            $topMatchDotClass = 'bg-amber-500';
+            $topMatchTextClass = 'text-amber-700';
+        } elseif ($topMatchPercentage >= 25) {
+            $topMatchBadgeClass = 'bg-orange-50 text-orange-700 border-orange-200';
+            $topMatchDotClass = 'bg-orange-500';
+            $topMatchTextClass = 'text-orange-700';
+        } else {
+            $topMatchBadgeClass = 'bg-rose-50 text-rose-700 border-rose-200';
+            $topMatchDotClass = 'bg-rose-500';
+            $topMatchTextClass = 'text-rose-700';
+        }
         @endphp
         <div class="rounded-3xl bg-white p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
 
                 <div class="max-w-2xl space-y-2.5">
-                    <div class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
-                        <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <div class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold {{ $topMatchBadgeClass }}">
+                        <span class="h-2 w-2 rounded-full {{ $topMatchDotClass }} animate-pulse"></span>
                         AI Skill-Match #1 Recommendation
                     </div>
 
@@ -77,21 +95,33 @@
                             <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
                                 {{ $topJob->title }}
                             </h1>
-                            <p class="text-xs text-slate-500 flex flex-wrap items-center gap-2 mt-1">
-                                <span class="font-bold text-slate-800">{{ $topCompany }}</span>
-                                <span>&bull;</span>
-                                <span>Cebu City</span>
-                                <span>&bull;</span>
-                                <span class="text-emerald-700 font-bold">{{ $topJob->salary_range ?: 'Salary not specified' }}</span>
-                            </p>
                         </div>
                     </div>
 
-                    @if ($topJob->valid_until)
-                    <p class="text-xs text-slate-400 pt-1">
-                        Available until {{ $topJob->valid_until->format('M d, Y') }}
-                    </p>
-                    @endif
+                    <div class="grid gap-2 pt-2 sm:grid-cols-2">
+                        <div class="rounded-xl bg-slate-50 px-3 py-2">
+                            <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Employer</span>
+                            <span class="mt-0.5 block text-xs font-semibold text-slate-700">{{ $topCompany }}</span>
+                        </div>
+                        <div class="rounded-xl bg-slate-50 px-3 py-2">
+                            <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Location</span>
+                            <span class="mt-0.5 block break-words text-xs font-semibold text-slate-700">{{ $topJob->location ?: 'Location not specified' }}</span>
+                        </div>
+                        <div class="rounded-xl bg-slate-50 px-3 py-2">
+                            <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Salary</span>
+                            <span class="mt-0.5 block text-xs font-semibold text-slate-700">{{ $topJob->salary_range ?: 'Salary not specified' }}</span>
+                        </div>
+                        <div class="rounded-xl bg-slate-50 px-3 py-2">
+                            <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Employment type</span>
+                            <span class="mt-0.5 block text-xs font-semibold text-slate-700">{{ $topJob->job_type ?: 'Not specified' }}</span>
+                        </div>
+                        @if ($topJob->valid_until)
+                        <div class="rounded-xl bg-emerald-50/70 px-3 py-2 sm:col-span-2">
+                            <span class="block text-[9px] font-bold uppercase tracking-wider text-emerald-700">Application deadline</span>
+                            <span class="mt-0.5 block text-xs font-semibold text-emerald-900">{{ $topJob->valid_until->format('M d, Y') }}</span>
+                        </div>
+                        @endif
+                    </div>
 
                     <p class="text-xs text-slate-600 leading-relaxed pt-2">
                         {{ $topJob->description ?: 'Explore this top-recommended position specifically matched to your verified skillset profile.' }}
@@ -117,7 +147,7 @@
                     <div class="text-center lg:text-right">
                         <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Compatibility Score</span>
                         <div class="flex items-baseline justify-center lg:justify-end gap-1 mt-0.5">
-                            <span class="text-4xl font-black text-emerald-700 tracking-tight">{{ $topMatch['percentage'] ?? 0 }}%</span>
+                            <span class="text-4xl font-black tracking-tight {{ $topMatchTextClass }}">{{ $topMatch['percentage'] ?? 0 }}%</span>
                         </div>
                         <span class="text-xs font-bold text-slate-700">
                             {{ $topMatch['tier'] ?? 'High Match' }}
@@ -206,9 +236,19 @@
                     $match = $item['match'];
                     $company = $job->employer->company_name ?? 'Partner Employer';
                     $companyLogo = $job->employer->company_logo ?? null;
+                    $matchPercentage = (int) ($match['percentage'] ?? 0);
+                    if ($matchPercentage >= 75) {
+                        $matchBadgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                    } elseif ($matchPercentage >= 50) {
+                        $matchBadgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
+                    } elseif ($matchPercentage >= 25) {
+                        $matchBadgeClass = 'bg-orange-50 text-orange-700 border-orange-200';
+                    } else {
+                        $matchBadgeClass = 'bg-rose-50 text-rose-700 border-rose-200';
+                    }
                     @endphp
-                    <article class="rounded-2xl border border-slate-200 bg-white p-5 hover:border-slate-300 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div class="space-y-1.5">
+                    <article class="rounded-2xl border border-slate-200 bg-white p-5 hover:border-slate-300 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                        <div class="min-w-0 flex-1 space-y-3">
                             <div class="flex items-center gap-3">
                                 <!-- List Item Employer Logo -->
                                 <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white text-sm font-black shrink-0 shadow-sm overflow-hidden border border-emerald-500/20">
@@ -220,7 +260,7 @@
                                 </div>
                                 <div>
                                     <div class="flex items-center gap-2 flex-wrap">
-                                        <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold border {{ $matchBadgeClass }}">
                                             {{ $match['percentage'] ?? 0 }}% Match
                                         </span>
                                         @if ($job->accepts_disability)
@@ -237,12 +277,30 @@
                                 </div>
                             </div>
 
-                            <p class="text-xs text-slate-500 font-medium pl-13">
-                                {{ $company }} &bull; {{ $job->location ?: 'Location not specified' }} &bull; {{ $job->salary_range ?: 'Salary not specified' }}
+                            <div class="grid gap-2 pl-13 sm:grid-cols-2">
+                                <div class="min-w-0 rounded-xl bg-slate-50 px-3 py-2">
+                                    <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Employer</span>
+                                    <span class="mt-0.5 block break-words text-xs font-semibold text-slate-700">{{ $company }}</span>
+                                </div>
+                                <div class="min-w-0 rounded-xl bg-slate-50 px-3 py-2">
+                                    <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Location</span>
+                                    <span class="mt-0.5 block break-words text-xs font-semibold leading-relaxed text-slate-700">{{ $job->location ?: 'Location not specified' }}</span>
+                                </div>
+                                <div class="rounded-xl bg-slate-50 px-3 py-2">
+                                    <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Salary</span>
+                                    <span class="mt-0.5 block text-xs font-semibold text-slate-700">{{ $job->salary_range ?: 'Salary not specified' }}</span>
+                                </div>
+                                <div class="rounded-xl bg-slate-50 px-3 py-2">
+                                    <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Employment type</span>
+                                    <span class="mt-0.5 block text-xs font-semibold text-slate-700">{{ $job->job_type ?: 'Not specified' }}</span>
+                                </div>
                                 @if ($job->valid_until)
-                                &bull; <span>Available until {{ $job->valid_until->format('M d, Y') }}</span>
+                                <div class="rounded-xl bg-emerald-50/70 px-3 py-2">
+                                    <span class="block text-[9px] font-bold uppercase tracking-wider text-emerald-700">Application deadline</span>
+                                    <span class="mt-0.5 block text-xs font-semibold text-emerald-900">{{ $job->valid_until->format('M d, Y') }}</span>
+                                </div>
                                 @endif
-                            </p>
+                            </div>
 
                             <div class="flex flex-wrap gap-1 pt-1 pl-13">
                                 @foreach (array_slice($match['matchedSkills'] ?? [], 0, 3) as $skill)

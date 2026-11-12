@@ -78,27 +78,37 @@ $company = $job->employer->company_name ?? 'Partner Employer';
 
                     <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">{{ $job->title }}</h1>
 
-                    <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500 pt-1">
+                    <div class="grid grid-cols-1 gap-2 pt-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
                         @if($job->location)
-                        <span class="flex items-center gap-1">
-                            <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="flex min-w-0 items-start gap-2 rounded-xl bg-slate-50 px-3 py-2.5 sm:col-span-2">
+                            <svg class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                            {{ $job->location ?? 'Cebu City, Philippines' }}
-                        </span>
+                            <div class="min-w-0">
+                                <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Location</span>
+                                <span class="block break-words leading-relaxed text-slate-700">{{ $job->location }}</span>
+                            </div>
+                        </div>
                         @endif
-                        <span>&bull;</span>
-                        <span class="font-bold text-slate-900">{{ $job->salary_range ?: 'Salary not specified' }}</span>
-                        <span>&bull;</span>
-                        <span>{{ $job->job_type ?: 'Job type not specified' }}</span>
+                        <div class="rounded-xl bg-slate-50 px-3 py-2.5">
+                            <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Salary</span>
+                            <span class="mt-0.5 block font-bold text-slate-900">{{ $job->salary_range ?: 'Not specified' }}</span>
+                        </div>
+                        <div class="rounded-xl bg-slate-50 px-3 py-2.5">
+                            <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Employment type</span>
+                            <span class="mt-0.5 block font-semibold text-slate-700">{{ $job->job_type ?: 'Not specified' }}</span>
+                        </div>
                         @if ($job->valid_until)
-                        <span>&bull;</span>
-                        <span class="inline-flex items-center gap-1 font-bold {{ $job->valid_until->isPast() ? 'text-rose-600' : 'text-emerald-700' }}">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="rounded-xl px-3 py-2.5 {{ $job->valid_until->isPast() ? 'bg-rose-50' : 'bg-emerald-50/70' }}">
+                            <span class="block text-[9px] font-bold uppercase tracking-wider {{ $job->valid_until->isPast() ? 'text-rose-600' : 'text-emerald-700' }}">Application deadline</span>
+                            <span class="mt-0.5 block font-bold {{ $job->valid_until->isPast() ? 'text-rose-700' : 'text-emerald-900' }}">
+                            <svg class="mr-1 inline h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            Available until {{ $job->valid_until->format('F d, Y') }}
-                        </span>
+                            {{ $job->valid_until->format('F d, Y') }}
+                            </span>
+                        </div>
                         @endif
                     </div>
                 </div>
@@ -167,11 +177,11 @@ $company = $job->employer->company_name ?? 'Partner Employer';
             <div class="space-y-3">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700">Qualifications & Requirements</h3>
                 <div class="rounded-2xl bg-slate-50 p-5 text-xs text-slate-800 leading-relaxed border border-slate-200">
-                    <ul class="list-disc list-inside space-y-1.5">
+                    <div class="divide-y divide-slate-200">
                         @foreach(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $job->qualifications))) as $qualification)
-                        <li class="pl-1">{{ $qualification }}</li>
+                        <p class="py-2 first:pt-0 last:pb-0">{{ $qualification }}</p>
                         @endforeach
-                    </ul>
+                    </div>
                 </div>
             </div>
             @endif
@@ -180,11 +190,11 @@ $company = $job->employer->company_name ?? 'Partner Employer';
             <div class="space-y-3">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-900">Benefits & Perks</h3>
                 <div class="rounded-2xl bg-emerald-50/50 p-5 text-xs text-emerald-950 leading-relaxed border border-emerald-200">
-                    <ul class="list-disc list-inside space-y-1.5">
+                    <div class="divide-y divide-emerald-200">
                         @foreach(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $job->benefits_perks))) as $benefit)
-                        <li class="pl-1 font-medium">{{ $benefit }}</li>
+                        <p class="py-2 font-medium first:pt-0 last:pb-0">{{ $benefit }}</p>
                         @endforeach
-                    </ul>
+                    </div>
                 </div>
             </div>
             @endif

@@ -8,6 +8,8 @@ export interface DocumentUploadResult {
   url?: string;
   message?: string;
   id?: string;
+  status?: string;
+  rejectionReason?: string | null;
 }
 
 export const documentService = {
@@ -51,6 +53,7 @@ export const documentService = {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 120000,
       });
 
       return {
@@ -59,6 +62,8 @@ export const documentService = {
         filePath: response.data.file_url || response.data.fileUrl,
         url: response.data.url || response.data.file_url,
         message: response.data.message || 'Document uploaded successfully to vault.',
+        status: response.data.status,
+        rejectionReason: response.data.rejection_reason ?? null,
       };
     } catch (err: any) {
       return {

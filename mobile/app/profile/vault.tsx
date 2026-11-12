@@ -89,7 +89,12 @@ export default function DocumentVaultScreen() {
         );
 
         if (res.success) {
-          Alert.alert('Upload Successful', res.message || 'Your credential has been uploaded to the DMDP Vault.');
+          const title = res.status === 'verified'
+            ? 'ID Verified'
+            : res.status === 'rejected'
+              ? 'ID Verification Failed'
+              : 'Uploaded for Review';
+          Alert.alert(title, res.message || 'Your credential has been uploaded to the DMDP Vault.');
           fetchVault();
         } else {
           Alert.alert('Upload Failed', res.message || 'Unable to upload document. Please check the file format.');

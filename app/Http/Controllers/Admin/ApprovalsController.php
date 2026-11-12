@@ -44,7 +44,7 @@ class ApprovalsController extends Controller
         $disk = Storage::disk('public');
 
         $candidates = is_array($document)
-            ? array_map(fn ($key) => $document[$key] ?? null, ['file_path', 'path', 'file_url', 'url'])
+            ? array_map(fn($key) => $document[$key] ?? null, ['file_path', 'path', 'file_url', 'url'])
             : [$document];
 
         $path = null;
@@ -732,7 +732,7 @@ class ApprovalsController extends Controller
             }
 
             $validIdDocument = collect(is_array($documents) ? $documents : [])->first(
-                fn ($document) => is_array($document) && ($document['category'] ?? null) === 'valid_id'
+                fn($document) => is_array($document) && ($document['category'] ?? null) === 'valid_id'
             );
 
             $item->valid_id_url = $validIdDocument
@@ -790,7 +790,7 @@ class ApprovalsController extends Controller
         abort_unless(is_array($documents), 404);
 
         $document = collect($documents)->first(
-            fn ($item) => is_array($item) && ($item['category'] ?? null) === 'valid_id'
+            fn($item) => is_array($item) && ($item['category'] ?? null) === 'valid_id'
         );
 
         abort_unless($document, 404);

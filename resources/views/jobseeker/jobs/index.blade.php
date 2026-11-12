@@ -100,7 +100,7 @@ $isProfileComplete = $jobseeker->isProfileAndDocumentsComplete();
                 <span class="text-xs text-emerald-700 font-bold">Click any box to inspect details & apply</span>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 gap-4">
                 @forelse ($rankedJobs as $item)
                 @php
                 $job = $item['job'];
@@ -110,7 +110,7 @@ $isProfileComplete = $jobseeker->isProfileAndDocumentsComplete();
                 $hasApplied = in_array($job->job_id, $appliedJobIds);
                 @endphp
                 <div @click="selectedJobId = '{{ $job->job_id }}'; selectedJobResumeRequired = {{ $job->resume_required ? 'true' : 'false' }}; selectedJobTitle = '{{ addslashes($job->title) }}'; selectedJobCompany = '{{ addslashes($company) }}'; previewOpen = true;"
-                    class="cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-emerald-400 transition-all relative overflow-hidden flex flex-col justify-between group">
+                    class="cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm hover:shadow-md hover:border-emerald-400 transition-all relative overflow-hidden flex flex-col justify-between gap-5 group">
 
                     @if($hasApplied)
                     <span class="absolute top-0 right-0 rounded-bl-xl bg-emerald-700 text-white text-[9px] font-black px-2.5 py-1 shadow-xs z-10">
@@ -119,8 +119,8 @@ $isProfileComplete = $jobseeker->isProfileAndDocumentsComplete();
                     @endif
 
                     <div>
-                        <div class="flex items-start justify-between gap-2">
-                            <div class="flex items-center gap-3 min-w-0 pr-2">
+                        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                            <div class="flex items-center gap-3 min-w-0 sm:pr-4">
                                 <!-- Employer Logo -->
                                 <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white text-sm font-black shrink-0 shadow-sm overflow-hidden border border-emerald-500/20">
                                     @if($companyLogo)
@@ -136,20 +136,37 @@ $isProfileComplete = $jobseeker->isProfileAndDocumentsComplete();
                                     </h3>
                                 </div>
                             </div>
-                            <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black border shrink-0 {{ $match['badgeClass'] ?? 'bg-emerald-50 text-emerald-700 border-emerald-200' }}">
+                            <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black border shrink-0 self-start {{ $match['badgeClass'] ?? 'bg-emerald-50 text-emerald-700 border-emerald-200' }}">
                                 {{ $match['percentage'] ?? 0 }}% Match
                             </span>
                         </div>
 
-                        <p class="text-xs text-slate-500 mt-3 flex items-center gap-2">
-                            <span>{{ $job->location ?: 'Location not specified' }}</span>
-                            <span>&bull;</span>
-                            <span>{{ $job->salary_range ?: 'Salary not specified' }}</span>
+                        <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            <div class="flex min-w-0 items-start gap-2 rounded-xl bg-slate-50 px-3 py-2.5 sm:col-span-2">
+                                <svg class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <div class="min-w-0">
+                                    <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Location</span>
+                                    <span class="block break-words text-xs font-semibold leading-relaxed text-slate-700">{{ $job->location ?: 'Location not specified' }}</span>
+                                </div>
+                            </div>
+                            <div class="rounded-xl bg-slate-50 px-3 py-2.5">
+                                <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Salary</span>
+                                <span class="mt-0.5 block text-xs font-semibold text-slate-700">{{ $job->salary_range ?: 'Not specified' }}</span>
+                            </div>
+                            <div class="rounded-xl bg-slate-50 px-3 py-2.5">
+                                <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Employment type</span>
+                                <span class="mt-0.5 block text-xs font-semibold text-slate-700">{{ $job->job_type ?: 'Not specified' }}</span>
+                            </div>
                             @if($job->valid_until)
-                            <span>&bull;</span>
-                            <span>Available until {{ $job->valid_until->format('M d, Y') }}</span>
+                            <div class="rounded-xl bg-emerald-50/70 px-3 py-2.5">
+                                <span class="block text-[9px] font-bold uppercase tracking-wider text-emerald-700">Application deadline</span>
+                                <span class="mt-0.5 block text-xs font-semibold text-emerald-900">{{ $job->valid_until->format('M d, Y') }}</span>
+                            </div>
                             @endif
-                        </p>
+                        </div>
                     </div>
 
                     <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
@@ -243,9 +260,26 @@ $isProfileComplete = $jobseeker->isProfileAndDocumentsComplete();
                                         @endif
                                     </div>
                                     <h2 class="text-xl sm:text-2xl font-black text-slate-900 mt-1">{{ $job->title }}</h2>
-                                    <p class="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
-                                        <span>{{ $job->location ?: 'Location not specified' }} &bull; {{ $job->job_type ?: 'Job type not specified' }} &bull; {{ $job->salary_range ?: 'Salary not specified' }}</span>
-                                    </p>
+                                    <div class="mt-3 grid gap-2 text-xs sm:grid-cols-2">
+                                        <div class="rounded-xl bg-slate-50 px-3 py-2 sm:col-span-2">
+                                            <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Location</span>
+                                            <span class="mt-0.5 block break-words leading-relaxed text-slate-700">{{ $job->location ?: 'Location not specified' }}</span>
+                                        </div>
+                                        <div class="rounded-xl bg-slate-50 px-3 py-2">
+                                            <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Employment type</span>
+                                            <span class="mt-0.5 block font-semibold text-slate-700">{{ $job->job_type ?: 'Not specified' }}</span>
+                                        </div>
+                                        <div class="rounded-xl bg-slate-50 px-3 py-2">
+                                            <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Salary</span>
+                                            <span class="mt-0.5 block font-semibold text-slate-700">{{ $job->salary_range ?: 'Not specified' }}</span>
+                                        </div>
+                                        @if($job->valid_until)
+                                        <div class="rounded-xl bg-emerald-50/70 px-3 py-2 sm:col-span-2">
+                                            <span class="block text-[9px] font-bold uppercase tracking-wider text-emerald-700">Application deadline</span>
+                                            <span class="mt-0.5 block font-semibold text-emerald-900">{{ $job->valid_until->format('M d, Y') }}</span>
+                                        </div>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                             <button @click="previewOpen = false" class="rounded-full bg-slate-100 p-2 text-slate-500 hover:bg-slate-200 font-bold text-lg leading-none">&times;</button>
@@ -305,22 +339,22 @@ $isProfileComplete = $jobseeker->isProfileAndDocumentsComplete();
                         @if($job->qualifications)
                         <div class="space-y-2">
                             <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Required Qualifications</h4>
-                            <ul class="list-disc pl-5 rounded-2xl bg-slate-50 p-4 text-xs text-slate-700 leading-relaxed border border-slate-100 space-y-1">
+                            <div class="rounded-2xl bg-slate-50 p-3 border border-slate-100 divide-y divide-slate-200">
                                 @foreach(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $job->qualifications))) as $qualification)
-                                <li>{{ $qualification }}</li>
+                                <p class="py-2 text-xs leading-relaxed text-slate-700 first:pt-0 last:pb-0">{{ $qualification }}</p>
                                 @endforeach
-                            </ul>
+                            </div>
                         </div>
                         @endif
 
                         @if($job->benefits_perks)
                         <div class="space-y-2">
                             <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Benefits & Perks</h4>
-                            <ul class="list-disc pl-5 rounded-2xl bg-emerald-50/50 p-4 text-xs text-slate-700 leading-relaxed border border-emerald-100 space-y-1">
+                            <div class="rounded-2xl bg-emerald-50/50 p-3 text-xs leading-relaxed text-slate-700 border border-emerald-100 divide-y divide-emerald-100">
                                 @foreach(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $job->benefits_perks))) as $benefit)
-                                <li>{{ $benefit }}</li>
+                                <p class="py-2 first:pt-0 last:pb-0">{{ $benefit }}</p>
                                 @endforeach
-                            </ul>
+                            </div>
                         </div>
                         @endif
 

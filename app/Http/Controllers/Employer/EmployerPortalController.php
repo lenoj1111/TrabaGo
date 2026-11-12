@@ -116,6 +116,20 @@ class EmployerPortalController extends Controller
         return $employer;
     }
 
+    private function companyAddressFor(Employer $employer): string
+    {
+        $address = trim((string) $employer->company_address);
+        if ($address !== '') {
+            return $address;
+        }
+
+        $profileOffice = trim((string) ($employer->user?->profile?->office ?? ''));
+
+        return strcasecmp($profileOffice, trim((string) $employer->company_name)) === 0
+            ? ''
+            : $profileOffice;
+    }
+
     private function employerIsAccredited(Employer $employer): bool
     {
         if ($employer->is_accredited) {
@@ -247,6 +261,7 @@ class EmployerPortalController extends Controller
     public function jobPostings(Request $request)
     {
         $employer = $this->getOrCreateEmployer();
+        $companyAddress = $this->companyAddressFor($employer);
         $accreditation = DB::table('employer_accreditation')->where('employer_id', $employer->employer_id)->first();
 
         $query = JobPosting::where('employer_id', $employer->employer_id);
@@ -264,7 +279,7 @@ class EmployerPortalController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        $jobs = $query->withCount(['applications' => function ($q) {
+        $jobs = $query->with('employer')->withCount(['applications' => function ($q) {
             $q->where('status', '!=', 'jpo_pending'); // Hides JPO pending count from employer
         }])->latest('job_id')->paginate(10)->withQueryString();
 
@@ -276,7 +291,7 @@ class EmployerPortalController extends Controller
             'closed' => JobPosting::where('employer_id', $employer->employer_id)->where('status', 'closed')->count(),
         ];
 
-        return view('employer.job-postings', compact('employer', 'jobs', 'stats', 'accreditation'));
+        return view('employer.job-postings', compact('employer', 'jobs', 'stats', 'accreditation', 'companyAddress'));
     }
 
     public function createJobPosting()
@@ -314,6 +329,8 @@ class EmployerPortalController extends Controller
             return redirect()->route('employer.accreditation')->with('error', 'You must be accredited before creating a job posting.');
         }
 
+        $companyAddress = $this->companyAddressFor($employer);
+
         $request->validate([
             'title' => 'required|string|max:150',
             'description' => 'required|string',
@@ -339,7 +356,7 @@ class EmployerPortalController extends Controller
             'title' => $request->input('title'),
             'description' => $request->input('description'),
             'job_type' => $request->input('job_type'),
-            'location' => $request->input('location'),
+            'location' => $request->input('location') ?: ($companyAddress ?: null),
             'salary_range' => $request->input('salary_range'),
             'benefits' => $request->input('benefits'),
             'other_instructions' => $request->input('other_instructions'),
@@ -396,6 +413,7 @@ class EmployerPortalController extends Controller
     {
         $employer = $this->getOrCreateEmployer();
         $job = JobPosting::where('employer_id', $employer->employer_id)->findOrFail($id);
+        $companyAddress = $this->companyAddressFor($employer);
 
         if (request()->wantsJson() || request()->ajax()) {
             return response()->json($job);
@@ -437,12 +455,12 @@ class EmployerPortalController extends Controller
             'title' => $request->input('title'),
             'description' => $request->input('description'),
             'job_type' => $request->input('job_type'),
-            'location' => $request->input('location'),
+            'location' => $request->input('location', $job->location ?: ($companyAddress ?: null)) ?: ($companyAddress ?: null),
             'salary_range' => $request->input('salary_range'),
             'benefits' => $request->input('benefits'),
             'other_instructions' => $request->input('other_instructions'),
             'qualifications' => $request->input('qualifications'),
-            'skills' => $request->input('skills'),
+            'skills' => $request->input('skills', $job->skills),
             'vacancy_count' => $request->input('vacancy_count'),
             'valid_until' => $request->input('valid_until'),
             'accepts_disability' => $request->boolean('accepts_disability'),
@@ -1107,8 +1125,9 @@ class EmployerPortalController extends Controller
         $user = Auth::user();
         $profile = $user->profile ?: new UserProfile(['user_id' => $user->user_id]);
         $accreditation = DB::table('employer_accreditation')->where('employer_id', $employer->employer_id)->first();
+        $companyAddress = $this->companyAddressFor($employer);
 
-        return view('employer.profile', compact('employer', 'user', 'profile', 'accreditation'));
+        return view('employer.profile', compact('employer', 'user', 'profile', 'accreditation', 'companyAddress'));
     }
 
     public function updateProfile(Request $request)
@@ -1138,7 +1157,7 @@ class EmployerPortalController extends Controller
         $primaryEmail = $request->input('primary_email') ?: ($employer->primary_email ?: $user->email);
         $secondaryEmail = $request->input('secondary_email', $employer->secondary_email);
         $phone = $request->input('phone', $employer->contact_phone);
-        $office = $request->input('office', $employer->company_address);
+        $office = $request->input('office', $this->companyAddressFor($employer));
 
         // Store update request audit trail
         $pendingUpdates = $employer->pending_updates ?: [];

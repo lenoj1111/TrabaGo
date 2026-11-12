@@ -36,6 +36,7 @@ class Employer extends Model
         'user_id',
         'company_name',
         'company_logo',
+        'company_address',
         'is_accredited',
         'accredited_at',
     ];
