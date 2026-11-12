@@ -57,6 +57,25 @@ class JobPosting extends Model
         'approved_at',
     ];
 
+    public function getLocationAttribute($value): ?string
+    {
+        $location = trim((string) $value);
+        if ($location !== '' && !in_array(strtolower($location), ['cebu city', 'cebu city, philippines'], true)) {
+            return $value;
+        }
+
+        $employer = $this->relationLoaded('employer') ? $this->getRelation('employer') : $this->employer;
+        $employerAddress = trim((string) ($employer?->company_address ?? ''));
+        if ($employerAddress === '') {
+            $profileOffice = trim((string) ($employer?->user?->profile?->office ?? ''));
+            $employerAddress = strcasecmp($profileOffice, trim((string) ($employer?->company_name ?? ''))) === 0
+                ? ''
+                : $profileOffice;
+        }
+
+        return $employerAddress ?: ($value ?: null);
+    }
+
     /**
      * Helper accessor to get skills formatted as an array of items for bullet points.
      */

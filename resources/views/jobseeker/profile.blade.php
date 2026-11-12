@@ -24,11 +24,62 @@
     $eduYear = is_array($edu) ? ($edu['year_graduated'] ?? '') : '';
 
     // Experience fallbacks
+    $employmentTypeOptions = ['Full-time', 'Part-time', 'Contract/Project-based', 'Internship/OJT', 'Freelance', 'Temporary'];
+    $normalizeEmploymentType = function ($value) use ($employmentTypeOptions) {
+        $normalized = strtolower(trim((string) $value));
+        $aliases = [
+            'full time' => 'Full-time',
+            'full-time' => 'Full-time',
+            'fulltime' => 'Full-time',
+            'regular' => 'Full-time',
+            'part time' => 'Part-time',
+            'part-time' => 'Part-time',
+            'contract' => 'Contract/Project-based',
+            'project-based' => 'Contract/Project-based',
+            'contract/project-based' => 'Contract/Project-based',
+            'internship' => 'Internship/OJT',
+            'ojt' => 'Internship/OJT',
+            'internship/ojt' => 'Internship/OJT',
+            'freelance' => 'Freelance',
+            'temporary' => 'Temporary',
+            'temp' => 'Temporary',
+        ];
+
+        return $aliases[$normalized] ?? (in_array($value, $employmentTypeOptions, true) ? $value : '');
+    };
+    $normalizeExperience = function ($experience) use ($normalizeEmploymentType) {
+        $storedPosition = $experience['position'] ?? '';
+        $storedTitle = $experience['job_title'] ?? $experience['title'] ?? '';
+        $employmentType = $normalizeEmploymentType($experience['employment_type'] ?? '')
+            ?: $normalizeEmploymentType($storedTitle)
+            ?: $normalizeEmploymentType($storedPosition);
+        $position = $normalizeEmploymentType($storedPosition)
+            ? ($storedTitle && !$normalizeEmploymentType($storedTitle) ? $storedTitle : '')
+            : ($storedPosition ?: ($storedTitle && !$normalizeEmploymentType($storedTitle) ? $storedTitle : ''));
+
+        return [
+            'employer' => $experience['employer'] ?? $experience['company'] ?? '',
+            'employer_address' => $experience['employer_address'] ?? '',
+            'employer_reference' => $experience['employer_reference'] ?? $experience['reference'] ?? '',
+            'employer_contact_number' => $experience['employer_contact_number'] ?? '',
+            'employer_contact_email' => $experience['employer_contact_email'] ?? '',
+            'position' => $position,
+            'employment_type' => $employmentType,
+            'job_title' => $employmentType,
+            'start_date' => $experience['start_date'] ?? '',
+            'end_date' => $experience['end_date'] ?? '',
+            'responsibilities' => $experience['responsibilities'] ?? $experience['description'] ?? '',
+        ];
+    };
     $legacyExperience = [
         'employer' => $exp['employer'] ?? $exp['company'] ?? '',
         'employer_reference' => $exp['employer_reference'] ?? $exp['reference'] ?? '',
+        'employer_address' => $exp['employer_address'] ?? '',
+        'employer_contact_number' => $exp['employer_contact_number'] ?? '',
+        'employer_contact_email' => $exp['employer_contact_email'] ?? '',
         'position' => $exp['position'] ?? '',
         'job_title' => $exp['job_title'] ?? $exp['title'] ?? ($exp['position'] ?? ''),
+        'employment_type' => $exp['employment_type'] ?? '',
         'start_date' => $exp['start_date'] ?? '',
         'end_date' => $exp['end_date'] ?? '',
         'responsibilities' => $exp['responsibilities'] ?? $exp['description'] ?? '',
@@ -37,22 +88,32 @@
     $workExperiences = $exp['entries'] ?? ($exp !== [] && array_keys($exp) === range(0, count($exp) - 1)
         ? $exp
         : ($hasLegacyExperience ? [$legacyExperience] : []));
-    $workExperiences = array_values(array_map(function ($experience) {
-        return [
-            'employer' => $experience['employer'] ?? $experience['company'] ?? '',
-            'employer_reference' => $experience['employer_reference'] ?? $experience['reference'] ?? '',
-            'position' => $experience['position'] ?? '',
-            'job_title' => $experience['job_title'] ?? $experience['title'] ?? ($experience['position'] ?? ''),
-            'start_date' => $experience['start_date'] ?? '',
-            'end_date' => $experience['end_date'] ?? '',
-            'responsibilities' => $experience['responsibilities'] ?? $experience['description'] ?? '',
-        ];
-    }, array_filter($workExperiences, 'is_array')));
+    $workExperiences = array_values(array_map($normalizeExperience, array_filter($workExperiences, 'is_array')));
     $workExperiences = old('work_experience', $workExperiences);
     if ($workExperiences === []) {
-        $workExperiences[] = ['employer' => '', 'employer_reference' => '', 'position' => '', 'job_title' => '', 'start_date' => '', 'end_date' => '', 'responsibilities' => ''];
+        $workExperiences[] = ['employer' => '', 'employer_address' => '', 'employer_reference' => '', 'employer_contact_number' => '', 'employer_contact_email' => '', 'position' => '', 'employment_type' => '', 'job_title' => '', 'start_date' => '', 'end_date' => '', 'responsibilities' => ''];
     }
-    $savedWorkExperiences = array_values(array_filter($workExperiences, fn ($experience) => collect($experience)->filter(fn ($value) => trim((string) $value) !== '')->isNotEmpty()));
+    $savedWorkExperiences = array_values(array_filter(array_map($normalizeExperience, $workExperiences), fn ($experience) => collect($experience)->filter(fn ($value) => trim((string) $value) !== '')->isNotEmpty()));
+    $formatExperienceDuration = function ($start, $end) {
+        if (!$start) {
+            return '';
+        }
+
+        $duration = \Carbon\Carbon::parse($start)->diff(\Carbon\Carbon::parse($end ?: now()->toDateString()));
+        $parts = [];
+        if ($duration->y > 0) {
+            $parts[] = $duration->y . ' ' . ($duration->y === 1 ? 'year' : 'years');
+        }
+        if ($duration->m > 0) {
+            $parts[] = $duration->m . ' ' . ($duration->m === 1 ? 'month' : 'months');
+        }
+
+        return $parts ? implode(' ', $parts) : 'Less than a month';
+    };
+    foreach ($savedWorkExperiences as &$experience) {
+        $experience['duration'] = $formatExperienceDuration($experience['start_date'], $experience['end_date']);
+    }
+    unset($experience);
     $expBio = is_array($exp) ? ($exp['summary'] ?? '') : ($details->bio ?? '');
 
     // Eligibility fallbacks
@@ -69,14 +130,26 @@
     showConfirmPass: false,
     workExperiences: @js($workExperiences),
     addWorkExperience() {
-        this.workExperiences.push({ employer: '', employer_reference: '', position: '', job_title: '', start_date: '', end_date: '', responsibilities: '' });
+        this.workExperiences.push({ employer: '', employer_address: '', employer_reference: '', employer_contact_number: '', employer_contact_email: '', position: '', employment_type: '', job_title: '', start_date: '', end_date: '', responsibilities: '' });
     },
     removeWorkExperience(index) {
         if (this.workExperiences.length === 1) {
-            this.workExperiences[0] = { employer: '', employer_reference: '', position: '', job_title: '', start_date: '', end_date: '', responsibilities: '' };
+            this.workExperiences[0] = { employer: '', employer_address: '', employer_reference: '', employer_contact_number: '', employer_contact_email: '', position: '', employment_type: '', job_title: '', start_date: '', end_date: '', responsibilities: '' };
             return;
         }
         this.workExperiences.splice(index, 1);
+    },
+    experienceDuration(experience) {
+        if (!experience.start_date) return 'Add a start date to calculate duration';
+        const start = new Date(experience.start_date + 'T00:00:00');
+        const end = experience.end_date ? new Date(experience.end_date + 'T00:00:00') : new Date();
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 'Check the date range';
+        let months = (end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth();
+        if (end.getDate() < start.getDate()) months--;
+        if (months < 1) return 'Less than a month';
+        const years = Math.floor(months / 12);
+        const remainingMonths = months % 12;
+        return [years ? years + (years === 1 ? ' year' : ' years') : '', remainingMonths ? remainingMonths + (remainingMonths === 1 ? ' month' : ' months') : ''].filter(Boolean).join(' ') || 'Less than a month';
     },
     skills: ({{ json_encode($skills) }} || []).map(s => (typeof s === 'object' && s !== null) ? (s.skill_name || '') : String(s)).filter(s => s && s.trim() !== '' && s !== '[object Object]' && s !== 'object Object'),
     newSkill: '',
@@ -467,13 +540,31 @@
                             <div class="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-1.5">
                                 <div class="flex flex-wrap items-start justify-between gap-2">
                                     <div>
-                                        <h4 class="font-bold text-slate-900">{{ $experience['job_title'] ?: ($experience['position'] ?: 'Work experience') }}</h4>
-                                        <p class="text-slate-600">{{ $experience['employer'] ?: 'Employer not listed' }}{{ $experience['employer_reference'] ? ' · ' . $experience['employer_reference'] : '' }}</p>
+                                        <h4 class="font-bold text-slate-900">{{ $experience['position'] ?: 'Position not listed' }}</h4>
+                                        <p class="text-slate-600">{{ $experience['employer'] ?: 'Employer not listed' }}</p>
                                     </div>
-                                    <span class="text-[11px] text-slate-500">{{ $experience['start_date'] ?: 'Start date not listed' }} – {{ $experience['end_date'] ?: 'Present' }}</span>
+                                    <span class="text-[11px] text-slate-500">
+                                        {{ $experience['start_date'] ? \Carbon\Carbon::parse($experience['start_date'])->format('M j, Y') : 'Start date not listed' }}
+                                        – {{ $experience['end_date'] ? \Carbon\Carbon::parse($experience['end_date'])->format('M j, Y') : 'Present' }}
+                                        @if($experience['duration']) ({{ $experience['duration'] }}) @endif
+                                    </span>
                                 </div>
-                                @if($experience['position'])
-                                    <p class="text-slate-600">Position: {{ $experience['position'] }}</p>
+                                @if($experience['employment_type'])
+                                    <p class="text-slate-600">Employment type: {{ $experience['employment_type'] }}</p>
+                                @endif
+                                @if($experience['employer_address'])
+                                    <p class="text-slate-600">Employer address: {{ $experience['employer_address'] }}</p>
+                                @endif
+                                @if($experience['employer_reference'])
+                                    <p class="text-slate-600">Contact person: {{ $experience['employer_reference'] }}</p>
+                                @endif
+                                @if($experience['employer_contact_number'] || $experience['employer_contact_email'])
+                                    <p class="text-slate-600">
+                                        Employer contact:
+                                        {{ $experience['employer_contact_number'] ?: '' }}
+                                        @if($experience['employer_contact_number'] && $experience['employer_contact_email']) · @endif
+                                        {{ $experience['employer_contact_email'] ?: '' }}
+                                    </p>
                                 @endif
                                 @if($experience['responsibilities'])
                                     <p class="text-slate-700 whitespace-pre-line">{{ $experience['responsibilities'] }}</p>
@@ -903,16 +994,33 @@
                                         <input type="text" :name="'work_experience[' + index + '][employer]'" x-model="experience.employer" maxlength="150" placeholder="Employer or organization name" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
                                     </div>
                                     <div class="space-y-1.5">
-                                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Employer Reference / Contact</label>
-                                        <input type="text" :name="'work_experience[' + index + '][employer_reference]'" x-model="experience.employer_reference" maxlength="150" placeholder="Reference name or contact details" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Employer Address</label>
+                                        <input type="text" :name="'work_experience[' + index + '][employer_address]'" x-model="experience.employer_address" maxlength="500" placeholder="Employer's business address" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
                                     </div>
                                     <div class="space-y-1.5">
-                                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Position</label>
-                                        <input type="text" :name="'work_experience[' + index + '][position]'" x-model="experience.position" maxlength="150" placeholder="e.g. Full-time, Contract, OJT" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Position / Job Role</label>
+                                        <input type="text" :name="'work_experience[' + index + '][position]'" x-model="experience.position" maxlength="150" placeholder="e.g. HR Officer, Supervisor" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
                                     </div>
                                     <div class="space-y-1.5">
-                                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Job Title</label>
-                                        <input type="text" :name="'work_experience[' + index + '][job_title]'" x-model="experience.job_title" maxlength="150" placeholder="e.g. Customer Service Representative" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Employment Type</label>
+                                        <select :name="'work_experience[' + index + '][employment_type]'" x-model="experience.employment_type" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
+                                            <option value="">-- Select employment type --</option>
+                                            @foreach($employmentTypeOptions as $employmentType)
+                                                <option value="{{ $employmentType }}">{{ $employmentType }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Employer Contact Number</label>
+                                        <input type="tel" :name="'work_experience[' + index + '][employer_contact_number]'" x-model="experience.employer_contact_number" maxlength="30" placeholder="e.g. 032-123-4567" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Employer Contact Email</label>
+                                        <input type="email" :name="'work_experience[' + index + '][employer_contact_email]'" x-model="experience.employer_contact_email" maxlength="150" placeholder="hr@example.com" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Contact Person / Reference</label>
+                                        <input type="text" :name="'work_experience[' + index + '][employer_reference]'" x-model="experience.employer_reference" maxlength="150" placeholder="HR or supervisor name" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
                                     </div>
                                     <div class="space-y-1.5">
                                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Start Date</label>
@@ -922,6 +1030,7 @@
                                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">End Date</label>
                                         <input type="date" :name="'work_experience[' + index + '][end_date]'" x-model="experience.end_date" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500">
                                     </div>
+                                    <p class="text-xs font-semibold text-emerald-800 sm:col-span-2" x-text="'Experience duration: ' + experienceDuration(experience)"></p>
                                     <div class="space-y-1.5 sm:col-span-2">
                                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Responsibilities</label>
                                         <textarea :name="'work_experience[' + index + '][responsibilities]'" x-model="experience.responsibilities" maxlength="3000" rows="3" placeholder="Describe your responsibilities and achievements..." class="w-full rounded-xl border border-slate-200 p-4 text-xs text-slate-900 focus:border-emerald-500"></textarea>

@@ -16,13 +16,13 @@ $jobsDataMap[$j->job_id] = [
 'title' => $j->title,
 'description' => $j->description ?? '',
 'job_type' => $j->job_type ?? 'Full-time',
-'location' => $j->location ?? 'Cebu City',
+'location' => $j->location ?: $companyAddress,
 'salary_range' => $j->salary_range ?? '',
 'benefits' => $j->benefits ?? '',
 'other_instructions' => $j->other_instructions ?? '',
 'qualifications' => $j->qualifications ?? '',
 'skills' => $j->skills ?? '',
-'skills_array' => $j->skills ? array_map('trim', explode(',', $j->skills)) : [],
+'skills_array' => $j->skills ? array_values(array_filter(array_map('trim', explode(',', $j->skills)), fn ($skill) => $skill !== '')) : [],
 'vacancy_count' => (int) $j->vacancy_count,
 'valid_until' => $j->valid_until ? date('Y-m-d', strtotime($j->valid_until)) : '',
 'valid_until_formatted' => $j->valid_until ? date('M d, Y', strtotime($j->valid_until)) : 'Continuous',
@@ -40,13 +40,13 @@ $jobsDataMap[$editJob->job_id] = [
 'title' => $editJob->title,
 'description' => $editJob->description ?? '',
 'job_type' => $editJob->job_type ?? 'Full-time',
-'location' => $editJob->location ?? 'Cebu City',
+'location' => $editJob->location ?: $companyAddress,
 'salary_range' => $editJob->salary_range ?? '',
 'benefits' => $editJob->benefits ?? '',
 'other_instructions' => $editJob->other_instructions ?? '',
 'qualifications' => $editJob->qualifications ?? '',
 'skills' => $editJob->skills ?? '',
-'skills_array' => $editJob->skills ? array_map('trim', explode(',', $editJob->skills)) : [],
+'skills_array' => $editJob->skills ? array_values(array_filter(array_map('trim', explode(',', $editJob->skills)), fn ($skill) => $skill !== '')) : [],
 'vacancy_count' => (int) $editJob->vacancy_count,
 'valid_until' => $editJob->valid_until ? date('Y-m-d', strtotime($editJob->valid_until)) : '',
 'valid_until_formatted' => $editJob->valid_until ? date('M d, Y', strtotime($editJob->valid_until)) : 'Continuous',
@@ -66,6 +66,7 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
 
 <div x-data="jobPostingsManager()"
     data-jobs-map='@json($jobsDataMap)'
+    data-company-address="{{ $companyAddress }}"
     data-edit-job-id="{{ $editJob ? $editJob->job_id : '' }}"
     data-has-create-param="{{ request()->has('create') && auth()->user()->is_approved ? '1' : '0' }}"
     class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
@@ -469,7 +470,7 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="space-y-1">
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Location</label>
-                        <input type="text" name="location" value="{{ old('location', 'Cebu City') }}"
+                        <input type="text" name="location" value="{{ old('location', $companyAddress) }}"
                             class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900">
                     </div>
                     <div class="space-y-1">
@@ -626,7 +627,6 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
             </div>
 
             <form :action="'/employer/job-postings/' + selectedJob.id" method="POST" class="space-y-6"
-                x-data="editSkillPicker(selectedJob.skills_array || [])"
                 x-on:submit="validateEditForm($event)">
                 @csrf
                 @method('PUT')
@@ -694,18 +694,18 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
                 <div class="space-y-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
                     <div class="flex items-center justify-between">
                         <h4 class="text-sm font-black text-slate-900">Required Skills & Competencies</h4>
-                        <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full" x-text="skills.length + ' selected'"></span>
+                        <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full" x-text="(selectedJob.skills_array || []).length + ' selected'"></span>
                     </div>
 
-                    <input type="hidden" name="skills" id="edit_skills_hidden" :value="skills.join(', ')">
+                    <input type="hidden" name="skills" id="edit_skills_hidden" :value="(selectedJob.skills_array || []).join(', ')">
 
                     <!-- Core Skills -->
                     <div class="space-y-2">
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">1. 21st Century Core Skills</label>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             @foreach($coreSkills as $skill)
-                            <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-white cursor-pointer hover:bg-slate-50 transition-colors" :class="skills.includes('{{ $skill }}') ? 'border-emerald-500 bg-emerald-50/30' : ''">
-                                <input type="checkbox" value="{{ $skill }}" x-model="skills" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-white cursor-pointer hover:bg-slate-50 transition-colors" :class="selectedJob.skills_array.includes('{{ $skill }}') ? 'border-emerald-500 bg-emerald-50/30' : ''">
+                                <input type="checkbox" value="{{ $skill }}" x-model="selectedJob.skills_array" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
                                 <span class="text-xs font-medium text-slate-800">{{ $skill }}</span>
                             </label>
                             @endforeach
@@ -717,8 +717,8 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">2. Practical Technical Skills</label>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             @foreach($techSkills as $skill)
-                            <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-white cursor-pointer hover:bg-slate-50 transition-colors" :class="skills.includes('{{ $skill }}') ? 'border-emerald-500 bg-emerald-50/30' : ''">
-                                <input type="checkbox" value="{{ $skill }}" x-model="skills" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-white cursor-pointer hover:bg-slate-50 transition-colors" :class="selectedJob.skills_array.includes('{{ $skill }}') ? 'border-emerald-500 bg-emerald-50/30' : ''">
+                                <input type="checkbox" value="{{ $skill }}" x-model="selectedJob.skills_array" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
                                 <span class="text-xs font-medium text-slate-800">{{ $skill }}</span>
                             </label>
                             @endforeach
@@ -729,18 +729,18 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
                     <div class="space-y-2 pt-4 border-t border-slate-200 mt-4">
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">3. Specialized / Custom Skills</label>
                         <div class="flex gap-2">
-                            <input type="text" x-model="newSkill" x-on:keydown.enter.prevent="addSkill()" placeholder="Type skill and press Enter or Add..."
+                            <input type="text" x-model="newEditSkill" x-on:keydown.enter.prevent="addEditSkill()" placeholder="Type skill and press Enter or Add..."
                                 class="flex-1 rounded-xl border border-slate-300 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none">
-                            <button type="button" x-on:click="addSkill()" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-xs font-bold transition-colors">
+                            <button type="button" x-on:click="addEditSkill()" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-xs font-bold transition-colors">
                                 Add
                             </button>
                         </div>
                         <div class="flex flex-wrap gap-2 mt-2">
-                            <template x-for="(skill, idx) in skills" :key="idx">
+                            <template x-for="(skill, idx) in selectedJob.skills_array" :key="idx">
                                 <template x-if="!['Innovation', 'Work Ethics', 'Problem Solving', 'Stress Tolerance', 'English Functional Skills', 'Team Work', 'Self Motivation', 'Critical Thinking', 'Planning and Organizing', 'English Comprehension', 'Multitasking', 'Creative Problem Solving', 'Decision Making', 'Social Perceptiveness', 'Math Functional Skill', 'Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Hairdressing', 'Welding', 'Gardening', 'Cooking', 'Auto Mechanic', 'Tailoring', 'Baking'].includes(skill)">
                                     <span class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 text-indigo-900 border border-indigo-200 px-3 py-1 text-xs font-bold shadow-sm">
                                         <span x-text="skill"></span>
-                                        <button type="button" x-on:click="removeSkill(idx)" class="text-indigo-400 hover:text-indigo-700 font-black text-sm leading-none">&times;</button>
+                                        <button type="button" x-on:click="removeEditSkill(idx)" class="text-indigo-400 hover:text-indigo-700 font-black text-sm leading-none">&times;</button>
                                     </span>
                                 </template>
                             </template>
@@ -882,40 +882,10 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
         };
     }
 
-    function editSkillPicker(initial) {
-        return {
-            skills: initial || [],
-            newSkill: '',
-            addSkill() {
-                const s = this.newSkill.trim();
-                if (s && !this.skills.some(x => x.toLowerCase() === s.toLowerCase())) {
-                    this.skills.push(s);
-                }
-                this.newSkill = '';
-            },
-            removeSkill(i) {
-                this.skills.splice(i, 1);
-            },
-            validateEditForm(e) {
-                const vDate = e.target.querySelector('[name=valid_until]').value;
-                if (vDate) {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const chosen = new Date(vDate + 'T00:00:00');
-                    if (chosen < today) {
-                        alert('The valid until date cannot be in the past.');
-                        e.preventDefault();
-                        return false;
-                    }
-                }
-                document.getElementById('edit_skills_hidden').value = this.skills.join(', ');
-            }
-        };
-    }
-
     function jobPostingsManager() {
         const root = document.querySelector('[data-jobs-map]');
         const jobsMap = JSON.parse(root.dataset.jobsMap || '{}');
+        const companyAddress = root.dataset.companyAddress || '';
         const editJobId = root.dataset.editJobId ? parseInt(root.dataset.editJobId, 10) : null;
         const hasCreateParam = root.dataset.hasCreateParam === '1';
 
@@ -924,7 +894,7 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
             title: '',
             description: '',
             job_type: 'Full-time',
-            location: 'Cebu City',
+            location: companyAddress,
             salary_range: '',
             benefits: '',
             other_instructions: '',
@@ -947,11 +917,14 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
             editModal: editJobId ? true : false,
             deleteModal: false,
             closeModal: false,
+            newEditSkill: '',
             jobsMap: jobsMap,
             selectedJob: Object.assign({}, initialJob),
             init() {
                 if (editJobId && this.jobsMap[editJobId]) {
-                    this.selectedJob = Object.assign({}, initialJob, this.jobsMap[editJobId]);
+                    this.selectedJob = Object.assign({}, initialJob, this.jobsMap[editJobId], {
+                        skills_array: [...(this.jobsMap[editJobId].skills_array || [])]
+                    });
                     this.editModal = true;
                 }
             },
@@ -960,9 +933,34 @@ $techSkills = ['Carpentry', 'Plumbing', 'Photography', 'Masonry', 'Driving', 'Ha
             },
             openEdit(id) {
                 if (this.jobsMap[id]) {
-                    this.selectedJob = Object.assign({}, initialJob, this.jobsMap[id]);
+                    this.selectedJob = Object.assign({}, initialJob, this.jobsMap[id], {
+                        skills_array: [...(this.jobsMap[id].skills_array || [])]
+                    });
                     this.editModal = true;
                 }
+            },
+            addEditSkill() {
+                const skill = this.newEditSkill.trim();
+                if (skill && !this.selectedJob.skills_array.some(existing => existing.toLowerCase() === skill.toLowerCase())) {
+                    this.selectedJob.skills_array.push(skill);
+                }
+                this.newEditSkill = '';
+            },
+            removeEditSkill(index) {
+                this.selectedJob.skills_array.splice(index, 1);
+            },
+            validateEditForm(event) {
+                const validUntil = event.target.querySelector('[name=valid_until]').value;
+                if (validUntil) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    if (new Date(validUntil + 'T00:00:00') < today) {
+                        alert('The valid until date cannot be in the past.');
+                        event.preventDefault();
+                        return false;
+                    }
+                }
+                event.target.querySelector('[name=skills]').value = this.selectedJob.skills_array.join(', ');
             },
             openDelete(id) {
                 if (this.jobsMap[id]) {

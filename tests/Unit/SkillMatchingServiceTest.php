@@ -20,6 +20,7 @@ class SkillMatchingServiceTest extends TestCase
 
         $this->assertEquals(100, $result['percentage']);
         $this->assertEquals('Excellent Match', $result['tier']);
+        $this->assertSame('bg-emerald-50 text-emerald-700 border-emerald-200', $result['badgeClass']);
         $this->assertCount(3, $result['matchedSkills']);
         $this->assertEmpty($result['missingSkills']);
     }
@@ -37,6 +38,7 @@ class SkillMatchingServiceTest extends TestCase
         // Cosine = 2 / (sqrt(2) * 2) = 1 / sqrt(2) ≈ 0.7071 => 71%
         $this->assertEquals(71, $result['percentage']);
         $this->assertEquals('High Match', $result['tier']);
+        $this->assertSame('bg-amber-50 text-amber-700 border-amber-200', $result['badgeClass']);
         $this->assertContains('PHP', $result['matchedSkills']);
         $this->assertContains('Laravel', $result['matchedSkills']);
         $this->assertContains('Vue.js', $result['missingSkills']);
@@ -53,7 +55,19 @@ class SkillMatchingServiceTest extends TestCase
 
         $this->assertEquals(0, $result['percentage']);
         $this->assertEquals('Low Match', $result['tier']);
+        $this->assertSame('bg-rose-50 text-rose-700 border-rose-200', $result['badgeClass']);
         $this->assertCount(2, $result['missingSkills']);
+    }
+
+    public function test_match_between_25_and_49_percent_uses_orange_badge()
+    {
+        $service = new SkillMatchingService();
+        $jobSkills = ['PHP', 'Laravel', 'Vue.js', 'SQL', 'HTML', 'CSS', 'JavaScript', 'React', 'Git'];
+
+        $result = $service->calculateMatch(['PHP'], $jobSkills);
+
+        $this->assertSame(33, $result['percentage']);
+        $this->assertSame('bg-orange-50 text-orange-700 border-orange-200', $result['badgeClass']);
     }
 
     public function test_job_required_skills_are_included_even_when_qualifications_are_present()

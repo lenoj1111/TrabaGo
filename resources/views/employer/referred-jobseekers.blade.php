@@ -224,14 +224,52 @@
                 if ($experienceEntries === [] && $storedExperience && !array_key_exists('entries', $storedExperience) && !array_is_list($storedExperience)) {
                     $experienceEntries = [$storedExperience];
                 }
-                $workHistory = array_values(array_map(function ($experience) {
+                $normalizeEmploymentType = function ($value) {
+                    $normalized = strtolower(trim((string) $value));
+                    $aliases = [
+                        'full time' => 'Full-time', 'full-time' => 'Full-time', 'fulltime' => 'Full-time', 'regular' => 'Full-time',
+                        'part time' => 'Part-time', 'part-time' => 'Part-time',
+                        'contract' => 'Contract/Project-based', 'project-based' => 'Contract/Project-based', 'contract/project-based' => 'Contract/Project-based',
+                        'internship' => 'Internship/OJT', 'ojt' => 'Internship/OJT', 'internship/ojt' => 'Internship/OJT',
+                        'freelance' => 'Freelance', 'temporary' => 'Temporary', 'temp' => 'Temporary',
+                    ];
+
+                    return $aliases[$normalized] ?? '';
+                };
+                $workHistory = array_values(array_map(function ($experience) use ($normalizeEmploymentType) {
+                    $storedPosition = $experience['position'] ?? '';
+                    $storedTitle = $experience['job_title'] ?? $experience['title'] ?? '';
+                    $employmentType = $experience['employment_type'] ?? '';
+                    if (!$employmentType) {
+                        $employmentType = $normalizeEmploymentType($storedTitle)
+                            ?: $normalizeEmploymentType($storedPosition);
+                    }
+                    $position = $normalizeEmploymentType($storedPosition)
+                        ? ($storedTitle && !$normalizeEmploymentType($storedTitle) ? $storedTitle : '')
+                        : ($storedPosition ?: ($storedTitle && !$normalizeEmploymentType($storedTitle) ? $storedTitle : ''));
+                    $startDate = !empty($experience['start_date']) ? \Carbon\Carbon::parse($experience['start_date']) : null;
+                    $endDate = !empty($experience['end_date']) ? \Carbon\Carbon::parse($experience['end_date']) : null;
+                    $duration = '';
+                    if ($startDate) {
+                        $dateDiff = $startDate->diff($endDate ?: now());
+                        $durationParts = [];
+                        if ($dateDiff->y > 0) $durationParts[] = $dateDiff->y . ' ' . ($dateDiff->y === 1 ? 'year' : 'years');
+                        if ($dateDiff->m > 0) $durationParts[] = $dateDiff->m . ' ' . ($dateDiff->m === 1 ? 'month' : 'months');
+                        $duration = $durationParts ? implode(' ', $durationParts) : 'Less than a month';
+                    }
+
                     return [
                         'employer' => $experience['employer'] ?? $experience['company'] ?? '',
+                        'employer_address' => $experience['employer_address'] ?? '',
                         'employer_reference' => $experience['employer_reference'] ?? $experience['reference'] ?? '',
-                        'position' => $experience['position'] ?? '',
-                        'job_title' => $experience['job_title'] ?? $experience['title'] ?? ($experience['position'] ?? ''),
-                        'start_date' => !empty($experience['start_date']) ? \Carbon\Carbon::parse($experience['start_date'])->format('M j, Y') : '',
-                        'end_date' => !empty($experience['end_date']) ? \Carbon\Carbon::parse($experience['end_date'])->format('M j, Y') : '',
+                        'employer_contact_number' => $experience['employer_contact_number'] ?? '',
+                        'employer_contact_email' => $experience['employer_contact_email'] ?? '',
+                        'position' => $position,
+                        'employment_type' => $employmentType,
+                        'job_title' => $employmentType,
+                        'start_date' => $startDate?->format('M j, Y') ?? '',
+                        'end_date' => $endDate?->format('M j, Y') ?? '',
+                        'duration' => $duration,
                         'responsibilities' => $experience['responsibilities'] ?? $experience['description'] ?? '',
                     ];
                 }, array_filter($experienceEntries, 'is_array')));
@@ -418,9 +456,9 @@
                                         <div class="flex min-w-0 items-start gap-3">
                                             <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-100 text-xs font-black text-slate-600" x-text="String(index + 1).padStart(2, '0')"></span>
                                             <div class="min-w-0">
-                                                <h5 class="text-sm font-bold text-slate-900" x-text="experience.job_title || 'Job title not listed'"></h5>
+                                                <h5 class="text-sm font-bold text-slate-900" x-text="experience.position || 'Position not listed'"></h5>
                                                 <p class="mt-0.5 text-xs font-semibold text-slate-700" x-text="experience.employer || 'Employer not listed'"></p>
-                                                <p x-show="experience.position" class="mt-1 text-[11px] text-slate-500" x-text="'Position: ' + experience.position"></p>
+                                                <p x-show="experience.employment_type" class="mt-1 text-[11px] text-slate-500" x-text="'Employment type: ' + experience.employment_type"></p>
                                             </div>
                                         </div>
                                         <div class="grid grid-cols-2 gap-3 sm:min-w-[220px] sm:text-right">
@@ -432,10 +470,17 @@
                                                 <span class="block text-[9px] font-bold uppercase text-slate-400">Ended</span>
                                                 <span class="text-[11px] font-semibold text-slate-700" x-text="experience.end_date || 'Present'"></span>
                                             </div>
+                                            <div class="col-span-2 sm:text-right">
+                                                <span class="block text-[9px] font-bold uppercase text-slate-400">Duration</span>
+                                                <span class="text-[11px] font-semibold text-slate-700" x-text="experience.duration || 'Not calculated'"></span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div x-show="experience.employer_reference || experience.responsibilities" class="mt-4 border-t border-slate-100 pt-3">
+                                    <div x-show="experience.employer_address || experience.employer_reference || experience.employer_contact_number || experience.employer_contact_email || experience.responsibilities" class="mt-4 border-t border-slate-100 pt-3">
+                                        <p x-show="experience.employer_address" class="text-[11px] text-slate-500"><span class="font-bold text-slate-600">Employer address:</span> <span x-text="experience.employer_address"></span></p>
                                         <p x-show="experience.employer_reference" class="text-[11px] text-slate-500"><span class="font-bold text-slate-600">Employer reference:</span> <span x-text="experience.employer_reference"></span></p>
+                                        <p x-show="experience.employer_contact_number" class="text-[11px] text-slate-500"><span class="font-bold text-slate-600">Contact number:</span> <span x-text="experience.employer_contact_number"></span></p>
+                                        <p x-show="experience.employer_contact_email" class="text-[11px] text-slate-500"><span class="font-bold text-slate-600">Contact email:</span> <span x-text="experience.employer_contact_email"></span></p>
                                         <div x-show="experience.responsibilities" class="mt-2">
                                             <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Responsibilities & Achievements</span>
                                             <p class="mt-1 whitespace-pre-line text-xs leading-relaxed text-slate-700" x-text="experience.responsibilities"></p>

@@ -176,8 +176,9 @@ class SkillMatchingService
                 'score' => 100,
                 'percentage' => 100,
                 'tier' => 'Excellent Match',
-                'badgeClass' => 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                'badgeClass' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
                 'dotColor' => 'bg-emerald-500',
+                'textClass' => 'text-emerald-700',
                 'matchedSkills' => $userSkills,
                 'missingSkills' => [],
                 'matchedCount' => count($userSkills),
@@ -190,8 +191,9 @@ class SkillMatchingService
                 'score' => 0,
                 'percentage' => 0,
                 'tier' => 'Low Match',
-                'badgeClass' => 'bg-slate-100 text-slate-700 border-slate-300',
-                'dotColor' => 'bg-slate-400',
+                'badgeClass' => 'bg-rose-50 text-rose-700 border-rose-200',
+                'dotColor' => 'bg-rose-500',
+                'textClass' => 'text-rose-700',
                 'matchedSkills' => [],
                 'missingSkills' => $jobSkills,
                 'matchedCount' => 0,
@@ -231,23 +233,32 @@ class SkillMatchingService
         $similarity = $magnitude > 0 ? count($matchedSkills) / $magnitude : 0;
         $percentage = (int) round(min(1, $similarity) * 100);
 
-        // Tier classification
         if ($percentage >= 90) {
             $tier = 'Excellent Match';
-            $badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-            $dotColor = 'bg-emerald-500';
         } elseif ($percentage >= 70) {
             $tier = 'High Match';
-            $badgeClass = 'bg-blue-50 text-blue-700 border-blue-200';
-            $dotColor = 'bg-blue-500';
         } elseif ($percentage >= 50) {
             $tier = 'Moderate Match';
-            $badgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
-            $dotColor = 'bg-amber-500';
         } else {
             $tier = 'Low Match';
-            $badgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
-            $dotColor = 'bg-slate-400';
+        }
+
+        if ($percentage >= 75) {
+            $badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+            $dotColor = 'bg-emerald-500';
+            $textClass = 'text-emerald-700';
+        } elseif ($percentage >= 50) {
+            $badgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
+            $dotColor = 'bg-amber-500';
+            $textClass = 'text-amber-700';
+        } elseif ($percentage >= 25) {
+            $badgeClass = 'bg-orange-50 text-orange-700 border-orange-200';
+            $dotColor = 'bg-orange-500';
+            $textClass = 'text-orange-700';
+        } else {
+            $badgeClass = 'bg-rose-50 text-rose-700 border-rose-200';
+            $dotColor = 'bg-rose-500';
+            $textClass = 'text-rose-700';
         }
 
         return [
@@ -256,6 +267,7 @@ class SkillMatchingService
             'tier' => $tier,
             'badgeClass' => $badgeClass,
             'dotColor' => $dotColor,
+            'textClass' => $textClass,
             'matchedSkills' => array_values(array_unique($matchedSkills)),
             'missingSkills' => array_values(array_unique($missingSkills)),
             'matchedCount' => count($matchedSkills),

@@ -51,7 +51,7 @@
                         @endif
                     </div>
                     <p class="text-xs text-slate-300">{{ $user->email }} &bull; Employer ID #{{ $employer->employer_id }}</p>
-                    <p class="text-xs text-emerald-300 font-semibold">{{ $profile->position ?? 'Corporate Partner' }} {{ $profile->office ? '&bull; ' . $profile->office : '' }}</p>
+                    <p class="text-xs text-emerald-300 font-semibold">{{ $profile->position ?? 'Corporate Partner' }} {{ $companyAddress ? '&bull; ' . $companyAddress : '' }}</p>
                 </div>
             </div>
 
@@ -208,7 +208,7 @@
 
                         <div class="sm:col-span-2 space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Headquarters / Cebu Branch Address</label>
-                            <input type="text" name="office" value="{{ old('office', $profile->office ?? '') }}" placeholder="e.g. 8th Floor, Cebu IT Park, Lahug, Cebu City"
+                            <input type="text" name="office" value="{{ old('office', $companyAddress) }}" placeholder="Enter your registered business address"
                                 class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                         </div>
                     </div>

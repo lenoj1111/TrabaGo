@@ -104,6 +104,20 @@ $isApproved = $isJobseeker && (bool) ($currentUser->is_approved ?? false);
                     $job = $item['job'];
                     $match = $item['match'];
                     $company = $job->employer->company_name ?? 'Partner Employer';
+                    $matchPercentage = (int) ($match['percentage'] ?? 0);
+                    if ($matchPercentage >= 75) {
+                        $matchBadgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                        $matchDotClass = 'bg-emerald-500';
+                    } elseif ($matchPercentage >= 50) {
+                        $matchBadgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
+                        $matchDotClass = 'bg-amber-500';
+                    } elseif ($matchPercentage >= 25) {
+                        $matchBadgeClass = 'bg-orange-50 text-orange-700 border-orange-200';
+                        $matchDotClass = 'bg-orange-500';
+                    } else {
+                        $matchBadgeClass = 'bg-rose-50 text-rose-700 border-rose-200';
+                        $matchDotClass = 'bg-rose-500';
+                    }
 
                     // Uses the array passed from the controller!
                     $hasApplied = in_array($job->job_id, $appliedJobIds);
@@ -127,8 +141,8 @@ $isApproved = $isJobseeker && (bool) ($currentUser->is_approved ?? false);
                                     {{ $company }}
                                 </p>
                             </div>
-                            <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-extrabold border shrink-0 {{ $match['badgeClass'] ?? 'bg-emerald-50 text-emerald-700 border-emerald-200' }}">
-                                <span class="h-1.5 w-1.5 rounded-full {{ $match['dotColor'] ?? 'bg-emerald-500' }}"></span>
+                            <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-extrabold border shrink-0 {{ $matchBadgeClass }}">
+                                <span class="h-1.5 w-1.5 rounded-full {{ $matchDotClass }}"></span>
                                 {{ $match['percentage'] ?? 0 }}%
                             </span>
                         </div>
@@ -202,6 +216,20 @@ $isApproved = $isJobseeker && (bool) ($currentUser->is_approved ?? false);
                 $job = $item['job'];
                 $match = $item['match'];
                 $company = $job->employer->company_name ?? 'Partner Employer';
+                $matchPercentage = (int) ($match['percentage'] ?? 0);
+                if ($matchPercentage >= 75) {
+                    $matchPanelClass = 'bg-emerald-50 border-emerald-200';
+                    $matchTextClass = 'text-emerald-700';
+                } elseif ($matchPercentage >= 50) {
+                    $matchPanelClass = 'bg-amber-50 border-amber-200';
+                    $matchTextClass = 'text-amber-700';
+                } elseif ($matchPercentage >= 25) {
+                    $matchPanelClass = 'bg-orange-50 border-orange-200';
+                    $matchTextClass = 'text-orange-700';
+                } else {
+                    $matchPanelClass = 'bg-rose-50 border-rose-200';
+                    $matchTextClass = 'text-rose-700';
+                }
 
                 // Uses the array passed from the controller!
                 $hasApplied = in_array($job->job_id, $appliedJobIds);
@@ -239,12 +267,12 @@ $isApproved = $isJobseeker && (bool) ($currentUser->is_approved ?? false);
                             </p>
                         </div>
 
-                        <div class="shrink-0 flex sm:flex-col items-center sm:items-end justify-between bg-emerald-50/70 rounded-2xl p-4 border border-emerald-100">
+                        <div class="shrink-0 flex sm:flex-col items-center sm:items-end justify-between rounded-2xl p-4 border {{ $matchPanelClass }}">
                             <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">AI Skill Match</span>
                             <div class="flex items-baseline gap-1 mt-0.5">
-                                <span class="text-3xl font-black text-emerald-700">{{ $match['percentage'] ?? 0 }}%</span>
+                                <span class="text-3xl font-black {{ $matchTextClass }}">{{ $match['percentage'] ?? 0 }}%</span>
                             </div>
-                            <span class="text-xs font-extrabold text-emerald-800">
+                            <span class="text-xs font-extrabold {{ $matchTextClass }}">
                                 {{ $match['tier'] ?? 'Match Calculated' }}
                             </span>
                         </div>

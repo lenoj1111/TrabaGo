@@ -49,6 +49,7 @@ class EmployerPortalComprehensiveTest extends TestCase
         $this->employer = Employer::create([
             'user_id' => $this->employerUser->user_id,
             'company_name' => 'Cebu Tech Innovation Hub',
+            'company_address' => '8th Floor, Cebu IT Park, Lahug, Cebu City',
             'is_accredited' => 1,
             'accredited_at' => now()->toDateString(),
         ]);
@@ -211,11 +212,49 @@ class EmployerPortalComprehensiveTest extends TestCase
             'employer_id' => $this->employer->employer_id,
             'title' => 'Original Role',
             'description' => 'Original Description',
+            'location' => 'Cebu City',
+            'skills' => 'Innovation, Welding, AutoCAD',
             'vacancy_count' => 1,
             'valid_until' => now()->addDays(20)->toDateString(),
             'status' => 'approved',
             'created_by' => 'employer',
         ]);
+
+        $this->assertSame('8th Floor, Cebu IT Park, Lahug, Cebu City', $job->location);
+
+        $otherEmployerUser = User::create([
+            'email' => 'other-employer@example.com',
+            'password' => Hash::make('secret123'),
+            'role' => 'employer',
+            'status' => 'active',
+            'is_approved' => 1,
+        ]);
+        $otherEmployer = Employer::create([
+            'user_id' => $otherEmployerUser->user_id,
+            'company_name' => 'Mandaue Manufacturing',
+            'company_address' => 'Industrial Road, Mandaue City',
+            'is_accredited' => 1,
+        ]);
+        $otherEmployerJob = JobPosting::create([
+            'employer_id' => $otherEmployer->employer_id,
+            'title' => 'Assembly Technician',
+            'description' => 'Work at the Mandaue facility.',
+            'location' => 'Cebu City',
+            'vacancy_count' => 1,
+            'status' => 'approved',
+            'created_by' => 'employer',
+        ]);
+        $this->assertSame('Industrial Road, Mandaue City', $otherEmployerJob->location);
+
+        $editPageResponse = $this->actingAs($this->employerUser)->get(route('employer.job-postings'));
+        $editPageResponse->assertOk();
+        $editPageResponse->assertSee('"skills_array":["Innovation","Welding","AutoCAD"]', false);
+        $editPageResponse->assertSee('value="8th Floor, Cebu IT Park, Lahug, Cebu City"', false);
+
+        $jobseekerJobResponse = $this->actingAs($this->jobseekerUser)
+            ->get(route('jobseeker.jobs.show', $job->job_id));
+        $jobseekerJobResponse->assertOk();
+        $jobseekerJobResponse->assertSee('8th Floor, Cebu IT Park, Lahug, Cebu City');
 
         // Attempt update with past date
         $badUpdateResponse = $this->actingAs($this->employerUser)
@@ -249,6 +288,8 @@ class EmployerPortalComprehensiveTest extends TestCase
             'title' => 'Senior Cloud Architect',
             'vacancy_count' => 4,
             'resume_required' => 1,
+            'skills' => 'Innovation, Welding, AutoCAD',
+            'location' => '8th Floor, Cebu IT Park, Lahug, Cebu City',
         ]);
     }
 
@@ -269,7 +310,10 @@ class EmployerPortalComprehensiveTest extends TestCase
             'work_experience' => json_encode([
                 'entries' => [[
                     'employer' => 'Cebu Manufacturing Group',
+                    'employer_address' => 'Mandaue City, Cebu',
                     'employer_reference' => 'HR Office',
+                    'employer_contact_number' => '032-123-4567',
+                    'employer_contact_email' => 'hr@manufacturing.example.com',
                     'position' => 'Full-time',
                     'job_title' => 'Systems Analyst',
                     'start_date' => '2021-03-01',
@@ -292,6 +336,11 @@ class EmployerPortalComprehensiveTest extends TestCase
         $response->assertSee('Work Experience');
         $response->assertSee('Cebu Manufacturing Group');
         $response->assertSee('Systems Analyst');
+        $response->assertSee('Mandaue City, Cebu');
+        $response->assertSee('032-123-4567');
+        $response->assertSee('hr@manufacturing.example.com');
+        $response->assertSee('Employment type');
+        $response->assertSee('Duration');
         $response->assertSee('Documented business workflows and requirements.');
     }
 
@@ -520,6 +569,7 @@ class EmployerPortalComprehensiveTest extends TestCase
         $this->assertDatabaseHas('employers', [
             'employer_id' => $this->employer->employer_id,
             'company_name' => 'Cebu Global Innovation Corp',
+            'company_address' => '12th Floor, Skyrise 4, Cebu IT Park',
         ]);
 
         $this->assertDatabaseHas('user_profiles', [
@@ -528,6 +578,7 @@ class EmployerPortalComprehensiveTest extends TestCase
             'phone' => '09998887766',
             'position' => 'Head of Human Capital',
             'department' => 'People & Culture',
+            'office' => '12th Floor, Skyrise 4, Cebu IT Park',
         ]);
     }
 
