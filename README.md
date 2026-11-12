@@ -216,13 +216,21 @@ npm run build
 php artisan reverb:start --host=0.0.0.0 --port=8080
 ```
 
-### Terminal 4: Mobile Application (Expo Go - Optional)
+### Terminal 4: ID OCR Service (Required for automatic ID verification)
+Use the Python environment that has PaddleOCR installed:
+```powershell
+py -3.12 app\scripts\ocr_server.py
+```
+Wait for **"Models loaded! Server is ready."** before uploading an ID. The service listens on `127.0.0.1:5000`; Laravel calls it using `OCR_SERVER_URL` in `.env`. Keep it running while testing. The initial start loads the OCR models and may take longer than subsequent scans.
+
+### Terminal 5: Mobile Application (Expo Go - Optional)
 ```bash
 cd mobile
 npx expo start -c
 ```
 - Press **`w`** for web browser preview (`http://localhost:8081`).
 - Scan the terminal QR code with the **Expo Go** mobile app.
+- Set `EXPO_PUBLIC_API_URL` in `mobile/.env` to the Laravel computer's current LAN IP when testing on a physical phone.
 
 ---
 

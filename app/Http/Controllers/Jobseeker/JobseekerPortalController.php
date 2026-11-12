@@ -14,6 +14,7 @@ use App\Models\SocialStatus;
 use App\Models\TrainingEnrollment;
 use App\Models\TrainingProgram;
 use App\Models\TrainingTopic;
+use App\Services\IdDocumentVerificationService;
 use App\Services\SkillMatchingService;
 use App\Services\TrainingQuizService;
 use Illuminate\Http\Request;
@@ -22,16 +23,22 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class JobseekerPortalController extends Controller
 {
     protected SkillMatchingService $matchingService;
     protected TrainingQuizService $quizService;
+    protected IdDocumentVerificationService $idDocumentVerification;
 
-    public function __construct(SkillMatchingService $matchingService, TrainingQuizService $quizService)
-    {
+    public function __construct(
+        SkillMatchingService $matchingService,
+        TrainingQuizService $quizService,
+        IdDocumentVerificationService $idDocumentVerification
+    ) {
         $this->matchingService = $matchingService;
         $this->quizService = $quizService;
+        $this->idDocumentVerification = $idDocumentVerification;
     }
 
     private function getOrCreateJobseeker(): Jobseeker
@@ -182,6 +189,7 @@ class JobseekerPortalController extends Controller
         $savedDocuments = $jobseeker->details && $jobseeker->details->training_certificates
             ? (is_array($jobseeker->details->training_certificates) ? $jobseeker->details->training_certificates : json_decode($jobseeker->details->training_certificates, true))
             : [];
+        $hasSavedResume = $jobseeker->hasDocument('resume');
 
         return view('jobseeker.jobs.index', compact(
             'rankedJobs',
@@ -189,6 +197,7 @@ class JobseekerPortalController extends Controller
             'userSkills',
             'appliedJobIds',
             'savedDocuments',
+            'hasSavedResume',
             'jobseeker'
         ));
     }
@@ -203,6 +212,7 @@ class JobseekerPortalController extends Controller
         }
 
         $jobseeker = $this->getOrCreateJobseeker();
+        $hasSavedResume = $jobseeker->hasDocument('resume');
         $userSkills = $this->matchingService->getJobseekerSkills($jobseeker);
         $jobSkills = $this->matchingService->getJobSkills($job);
         $match = $this->matchingService->calculateMatch($userSkills, $jobSkills);
@@ -240,7 +250,8 @@ class JobseekerPortalController extends Controller
             'match',
             'hasApplied',
             'recommendedTrainings',
-            'jobseeker'
+            'jobseeker',
+            'hasSavedResume'
         ));
     }
 
@@ -261,10 +272,10 @@ class JobseekerPortalController extends Controller
         $jobseeker = $this->getOrCreateJobseeker();
         $job = JobPosting::findOrFail($jobId);
 
-        $user = Auth::user();
-        if (!$user || !$user->is_approved) {
-            return redirect()->route('jobseeker.jobs')
-                ->with('error', 'Your account is pending approval. You must be approved before you can apply for a job.');
+        // Check if the OCR verification passed (valid_id is present and not rejected)
+        if (!$jobseeker->isProfileAndDocumentsComplete()) {
+            return redirect()->route('jobseeker.documents')
+                ->with('error', 'You must upload a valid, verified Government ID before you can apply for jobs.');
         }
 
         if ($job->status !== 'approved' || $job->isExpired()) {
@@ -274,10 +285,11 @@ class JobseekerPortalController extends Controller
 
         // Employment Flexibility: Jobseekers remain "Open to all" for opportunities even if currently employed.
 
-        $user = Auth::user();
+        // Read fresh from DB — session-cached user can be stale after OCR auto-verify
+        $user = \App\Models\User::find(Auth::id());
         if (!$user || !$user->isAccountVerified()) {
             return redirect()->route('jobseeker.documents')
-                ->with('error', 'Your account is unverified. Please submit your valid documents in your Document Hub and wait for Admin/JPO verification before applying for jobs.');
+                ->with('error', 'Your account is unverified. Please upload a valid Government ID in your Document Hub so it can be verified automatically before applying for jobs.');
         }
 
         // Check if the user has an ACTIVE application for this job
@@ -299,6 +311,13 @@ class JobseekerPortalController extends Controller
         if ($existing) {
             return redirect()->back()->with('warning', 'You already have an active application for this position.');
         }
+
+        $resumeRules = ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:5120'];
+        if ($job->resume_required && !$jobseeker->hasDocument('resume')) {
+            $resumeRules[0] = 'required';
+        }
+        $request->validate(['resume' => $resumeRules]);
+
         // Handle resume file upload if provided
         $resumeUrl = null;
         if ($request->hasFile('resume')) {
@@ -342,18 +361,31 @@ class JobseekerPortalController extends Controller
         $application = JobApplication::create([
             'job_id' => $jobId,
             'jobseeker_id' => $jobseeker->jobseeker_id,
-            'status' => 'pending',
+            'status' => 'jpo_pending',   // ← was 'pending'
             'referred_by_jpo' => false,
         ]);
 
         Notification::create([
             'user_id' => Auth::id(),
             'title' => 'Application Submitted',
-            'message' => "Your application for {$job->title} at " . ($job->employer->company_name ?? 'Partner Employer') . " was successfully submitted.",
+            'message' => "Your application for {$job->title} at " . ($job->employer->company_name ?? 'Partner Employer') . " has been submitted and is pending DMDP evaluation.",
             'type' => 'approval',
             'is_read' => false,
             'related_id' => $application->application_id,
         ]);
+
+        // Notify all JPOs and Admins — either can evaluate
+        $reviewers = \App\Models\User::whereIn('role', ['jpo', 'admin'])->get();
+        foreach ($reviewers as $reviewer) {
+            Notification::create([
+                'user_id' => $reviewer->user_id,
+                'title' => 'New Application Awaiting Evaluation',
+                'message' => "{$jobseeker->first_name} {$jobseeker->last_name} applied for '{$job->title}' at " . ($job->employer->company_name ?? 'Partner Employer') . ". Pending JPO/Admin review.",
+                'type' => 'manual_review',
+                'is_read' => false,
+                'related_id' => $application->application_id,
+            ]);
+        }
 
         return redirect()->route('jobseeker.applications')
             ->with('success', "Your application for '{$job->title}' has been submitted successfully!");
@@ -402,20 +434,18 @@ class JobseekerPortalController extends Controller
 
         $counts = [
             'all' => $allApps->count(),
-
             'offered' => $allApps->where('status', 'offered')->count(),
 
-            // Combine JPO Pending, Training, and Employer Pending into "Pending"
-            'pending' => $allApps->whereIn('status', ['jpo_pending', 'pending', 'reviewed', 'training_recommended'])->count(),
+            // Pending DMDP review (JPO hasn't acted yet)
+            'jpo_pending' => $allApps->where('status', 'jpo_pending')->count(),
 
-            'interview' => $allApps->where('status', 'interview')->count(),
-
-            // Only count ACTIVE hires (resignation not approved)
-            'hired' => $allApps->filter(function ($app) {
-                return $app->status === 'hired' && $app->resignation_status !== 'approved';
+            // Endorsed by JPO — waiting for employer (status pending or reviewed AFTER referral)
+            'pending' => $allApps->filter(function ($a) {
+                return $a->referred_by_jpo == 1 && in_array($a->status, ['pending', 'reviewed']);
             })->count(),
 
-            // Count rejected
+            'interview' => $allApps->where('status', 'interview')->count(),
+            'hired' => $allApps->filter(fn($app) => $app->status === 'hired' && $app->resignation_status !== 'approved')->count(),
             'rejected' => $allApps->where('status', 'rejected')->count(),
         ];
 
@@ -615,6 +645,14 @@ class JobseekerPortalController extends Controller
         $allTrainings = TrainingProgram::with(['topics', 'enrollments' => function ($q) use ($jobseeker) {
             $q->where('jobseeker_id', $jobseeker->jobseeker_id);
         }])->get();
+        $accountCanEnroll = $jobseeker->isProfileAndDocumentsComplete()
+            && Auth::user()
+            && Auth::user()->isAccountVerified();
+        $allTrainings->each(function ($training) use ($jobseeker, $accountCanEnroll) {
+            $training->eligibility_issues = $training->demographicEligibilityIssues($jobseeker);
+            $training->account_can_enroll = $accountCanEnroll;
+            $training->can_enroll = $accountCanEnroll && empty($training->eligibility_issues);
+        });
 
         $enrolledCount = $allTrainings->filter(function ($t) {
             $enr = $t->enrollments->first();
@@ -660,6 +698,9 @@ class JobseekerPortalController extends Controller
         $jobseeker = $this->getOrCreateJobseeker();
         $userSkills = $this->matchingService->getJobseekerSkills($jobseeker);
         $userSkillNames = array_map('strtolower', $userSkills);
+        $accountCanEnroll = $jobseeker->isProfileAndDocumentsComplete()
+            && Auth::user()
+            && Auth::user()->isAccountVerified();
 
         $trainings = TrainingProgram::with(['trainer', 'topics', 'enrollments' => function ($q) use ($jobseeker) {
             $q->where('jobseeker_id', $jobseeker->jobseeker_id);
@@ -670,6 +711,7 @@ class JobseekerPortalController extends Controller
             $enrollment = $training->enrollments->first();
             $status = $enrollment ? $enrollment->status : 'unregistered';
             $certIssued = $enrollment ? (bool)$enrollment->certificate_issued : false;
+            $eligibilityIssues = $training->demographicEligibilityIssues($jobseeker);
 
             $skillsList = [];
             if (!empty($training->skills)) {
@@ -693,6 +735,9 @@ class JobseekerPortalController extends Controller
                     'is_earned' => $isEarned,
                     'certificate_issued' => $certIssued,
                     'enrollment_id' => $enrollment ? $enrollment->enrollment_id : null,
+                    'eligibility_issues' => $eligibilityIssues,
+                    'account_can_enroll' => $accountCanEnroll,
+                    'can_enroll' => $accountCanEnroll && empty($eligibilityIssues),
                 ];
             }
         }
@@ -740,6 +785,28 @@ class JobseekerPortalController extends Controller
         if ($enrollment) {
             return redirect()->route('jobseeker.training.show', $id)
                 ->with('info', "You are already enrolled in '{$training->title}'.");
+        }
+
+        if (!$jobseeker->isProfileAndDocumentsComplete()) {
+            return redirect()->route('jobseeker.documents')
+                ->with('error', 'You must complete your profile and upload a valid Government ID before you can apply for training.');
+        }
+
+        $user = \App\Models\User::find(Auth::id());
+        if (!$user || !$user->isAccountVerified()) {
+            return redirect()->route('jobseeker.documents')
+                ->with('error', 'Your account is unverified. Please upload a valid Government ID in your Document Hub and complete account verification before applying for training.');
+        }
+
+        $eligibilityIssues = $training->demographicEligibilityIssues($jobseeker);
+        if ($eligibilityIssues) {
+            return redirect()->route('jobseeker.training.show', $id)
+                ->with('error', implode(' ', $eligibilityIssues));
+        }
+
+        if ($training->trainee_capacity !== null && TrainingEnrollment::where('training_id', $id)->count() >= $training->trainee_capacity) {
+            return redirect()->route('jobseeker.training.show', $id)
+                ->with('error', 'This training program has reached its trainee capacity.');
         }
 
         TrainingEnrollment::create([
@@ -840,8 +907,10 @@ class JobseekerPortalController extends Controller
                 if (!is_string($response) || trim($response) === '' || mb_strlen($response) > 5000) {
                     return back()->withErrors(['responses' => 'Essay answers are required and must be 5,000 characters or fewer.']);
                 }
-            } elseif (filter_var($response, FILTER_VALIDATE_INT) === false
-                || !array_key_exists((int) $response, $question['choices'])) {
+            } elseif (
+                filter_var($response, FILTER_VALIDATE_INT) === false
+                || !array_key_exists((int) $response, $question['choices'])
+            ) {
                 return back()->withErrors(['responses' => 'Please select a valid answer for each multiple-choice question.']);
             }
         }
@@ -855,6 +924,11 @@ class JobseekerPortalController extends Controller
         $enrollment = TrainingEnrollment::where('jobseeker_id', $jobseeker->jobseeker_id)
             ->where('training_id', $id)
             ->first();
+
+        if (!$enrollment && $training->trainee_capacity !== null && TrainingEnrollment::where('training_id', $id)->count() >= $training->trainee_capacity) {
+            return redirect()->route('jobseeker.training.show', $id)
+                ->with('error', 'This training program has reached its trainee capacity.');
+        }
 
         $existingAnswers = $enrollment?->answers ?? [];
         if (!is_array($existingAnswers)) {
@@ -1057,9 +1131,10 @@ class JobseekerPortalController extends Controller
 
         abort(404, 'Document file not found on storage.');
     }
-
     public function uploadDocument(Request $request)
     {
+        set_time_limit(120);
+
         $request->validate([
             'category' => 'required|in:resume,valid_id,certificate,certs,pwd_id',
             'document_file' => 'required|file|max:5120',
@@ -1126,6 +1201,19 @@ class JobseekerPortalController extends Controller
             return false;
         });
 
+        // ---------------------------------------------------------
+        // AUTO-VERIFICATION LOGIC (Name + DOB)
+        // ---------------------------------------------------------
+        $status = 'under_review';
+        $rejectionReason = null;
+
+        if ($canonicalCategory === 'valid_id' && in_array($extension, ['jpg', 'jpeg', 'png'])) {
+            $absolutePath = Storage::disk('public')->path($filePath);
+            $verification = $this->idDocumentVerification->verify($jobseeker, $absolutePath);
+            $status = $verification['status'];
+            $rejectionReason = $verification['rejection_reason'];
+        }
+
         $newDoc = [
             'id' => 'doc_' . uniqid(),
             'category' => $canonicalCategory,
@@ -1135,10 +1223,10 @@ class JobseekerPortalController extends Controller
             'file_path' => $filePath,
             'file_size' => $file->getSize(),
             'mime_type' => $file->getMimeType(),
-            'status' => 'under_review',
-            'rejection_reason' => null,
-            'reviewed_by' => null,
-            'reviewed_at' => null,
+            'status' => $status,
+            'rejection_reason' => $rejectionReason,
+            'reviewed_by' => $status === 'verified' ? 'auto_ocr' : null,
+            'reviewed_at' => $status === 'verified' ? now()->toIso8601String() : null,
             'uploaded_at' => now()->toIso8601String(),
         ];
 
@@ -1146,24 +1234,48 @@ class JobseekerPortalController extends Controller
         $details->training_certificates = array_values($filtered);
         $details->save();
 
+        // ---------------------------------------------------------
+        // UPDATE USER ACCOUNT STATUS
+        // ---------------------------------------------------------
         $user = Auth::user();
-        if ($user && $user->account_status === 'unverified') {
+        if ($user && $canonicalCategory === 'valid_id' && $status === 'verified') {
             DB::table('users')->where('user_id', $user->user_id)->update([
-                'account_status' => 'pending_review',
-                'updated_at' => now(),
+                'account_status' => 'verified',
+                'is_approved'    => true,
+                'updated_at'     => now(),
             ]);
+
+            // ✅ Reload the user into the current session so is_approved = true is seen
+            //    on the very next page load (Jobs page, Apply button, etc.)
+            Auth::setUser($user->fresh());
         }
+
+        // ---------------------------------------------------------
+        // NOTIFICATION & REDIRECT
+        // ---------------------------------------------------------
+        $notifyTitle = match (true) {
+            $status === 'verified' => 'ID Automatically Verified',
+            $status === 'rejected' => 'ID Could Not Be Verified',
+            default                => 'Document Uploaded',
+        };
+
+        $notifyMessage = match (true) {
+            $status === 'verified' => 'Your Government ID matched your registered name and date of birth. Your account is now verified!',
+            $status === 'rejected' => $rejectionReason,
+            default                => ucfirst(str_replace('_', ' ', $canonicalCategory)) . ' uploaded and is under review.',
+        };
 
         Notification::create([
             'user_id' => Auth::id(),
-            'title' => 'Document Uploaded',
-            'message' => "Your " . ucfirst(str_replace('_', ' ', $canonicalCategory)) . " has been uploaded and is under review.",
-            'type' => 'approval',
+            'title'   => $notifyTitle,
+            'message' => $notifyMessage,
+            'type'    => $status === 'rejected' ? 'rejection' : 'approval',
             'is_read' => false,
         ]);
 
-        return redirect()->route('jobseeker.documents')
-            ->with('success', ucfirst(str_replace('_', ' ', $canonicalCategory)) . ' uploaded successfully to your vault.');
+        $flashType = $status === 'rejected' ? 'error' : 'success';
+
+        return redirect()->route('jobseeker.documents')->with($flashType, $notifyMessage);
     }
 
     public function deleteDocument(Request $request, string $category)
@@ -1209,14 +1321,22 @@ class JobseekerPortalController extends Controller
         $query = Notification::where('user_id', $user->user_id);
 
         if ($filter !== 'all') {
-            if ($filter === 'application') {
-                $query->whereIn('type', ['application', 'approval', 'rejection', 'interview', 'manual_review', 'referral', 'hired']);
-            } elseif ($filter === 'training') {
-                $query->whereIn('type', ['training', 'certificate', 'course', 'quiz']);
-            } elseif ($filter === 'interview') {
-                $query->where('type', 'interview');
+            if ($filter === 'jpo_pending') {
+                // Still waiting for DMDP / JPO
+                $query->where('status', 'jpo_pending')->where('referred_by_jpo', 0);
+            } elseif ($filter === 'pending') {
+                // Endorsed by JPO — waiting for employer
+                $query->where('referred_by_jpo', 1)->whereIn('status', ['pending', 'reviewed']);
+            } elseif ($filter === 'hired') {
+                $query->where('status', 'hired')
+                    ->where(function ($q) {
+                        $q->whereNull('resignation_status')
+                            ->orWhere('resignation_status', '!=', 'approved');
+                    });
+            } elseif ($filter === 'rejected') {
+                $query->where('status', 'rejected');
             } else {
-                $query->where('type', $filter);
+                $query->where('status', $filter);
             }
         }
 
@@ -1301,7 +1421,27 @@ class JobseekerPortalController extends Controller
             'mobile_number' => 'nullable|string|max:30',
             'employment_status' => 'nullable|string|max:100',
             'hired_company' => 'nullable|string|max:150',
+            'work_experience_submitted' => 'nullable|boolean',
+            'work_experience' => 'nullable|array',
+            'work_experience.*.employer' => 'nullable|string|max:150',
+            'work_experience.*.employer_reference' => 'nullable|string|max:150',
+            'work_experience.*.position' => 'nullable|string|max:150',
+            'work_experience.*.job_title' => 'nullable|string|max:150',
+            'work_experience.*.start_date' => 'nullable|date',
+            'work_experience.*.end_date' => 'nullable|date',
+            'work_experience.*.responsibilities' => 'nullable|string|max:3000',
         ]);
+
+        foreach ((array) $request->input('work_experience', []) as $index => $experience) {
+            if (
+                is_array($experience) && !empty($experience['start_date']) && !empty($experience['end_date'])
+                && strtotime($experience['end_date']) < strtotime($experience['start_date'])
+            ) {
+                return back()->withErrors([
+                    "work_experience.{$index}.end_date" => 'The end date must be on or after the start date.',
+                ])->withInput();
+            }
+        }
 
         $jobseeker->update($request->only([
             'first_name',
@@ -1340,12 +1480,58 @@ class JobseekerPortalController extends Controller
         $details->education = $currentEdu;
 
         $currentExp = is_array($details->work_experience) ? $details->work_experience : (json_decode($details->work_experience ?? '', true) ?: []);
-        $currentExp['company'] = $request->input('experience_company', $currentExp['company'] ?? '');
-        $currentExp['position'] = $request->input('experience_position', $currentExp['position'] ?? '');
-        $currentExp['duration'] = $request->input('experience_duration', $currentExp['duration'] ?? '');
-        $currentExp['description'] = $request->input('experience_description', $currentExp['description'] ?? '');
-        $currentExp['summary'] = $request->input('bio', $currentExp['summary'] ?? '');
-        $details->work_experience = $currentExp;
+        if (!is_array($currentExp)) {
+            $currentExp = [];
+        }
+        if ($request->boolean('work_experience_submitted')) {
+            $submittedExperiences = $request->input('work_experience', []);
+        } elseif ($request->hasAny(['experience_company', 'experience_position', 'experience_duration', 'experience_description'])) {
+            $submittedExperiences = [[
+                'employer' => $request->input('experience_company'),
+                'position' => $request->input('experience_position'),
+                'job_title' => $request->input('experience_position'),
+                'responsibilities' => $request->input('experience_description'),
+            ]];
+        } else {
+            $submittedExperiences = $currentExp['entries'] ?? [];
+            if ($submittedExperiences === [] && !array_key_exists('entries', $currentExp) && !array_is_list($currentExp)) {
+                $submittedExperiences = [$currentExp];
+            }
+        }
+
+        $workExperienceEntries = [];
+        foreach ((array) $submittedExperiences as $index => $experience) {
+            if (!is_array($experience)) {
+                continue;
+            }
+
+            $entry = [
+                'employer' => trim((string) ($experience['employer'] ?? $experience['company'] ?? '')),
+                'employer_reference' => trim((string) ($experience['employer_reference'] ?? $experience['reference'] ?? '')),
+                'position' => trim((string) ($experience['position'] ?? '')),
+                'job_title' => trim((string) ($experience['job_title'] ?? $experience['title'] ?? ($experience['position'] ?? ''))),
+                'start_date' => $experience['start_date'] ?? null,
+                'end_date' => $experience['end_date'] ?? null,
+                'responsibilities' => trim((string) ($experience['responsibilities'] ?? $experience['description'] ?? '')),
+            ];
+
+            $hasExperienceData = false;
+            foreach ($entry as $value) {
+                if (trim((string) $value) !== '') {
+                    $hasExperienceData = true;
+                    break;
+                }
+            }
+
+            if ($hasExperienceData) {
+                $workExperienceEntries[] = $entry;
+            }
+        }
+
+        $details->work_experience = [
+            'entries' => array_values($workExperienceEntries),
+            'summary' => $request->input('bio', $currentExp['summary'] ?? ''),
+        ];
 
         $currentElig = is_array($details->eligibility) ? $details->eligibility : (json_decode($details->eligibility ?? '', true) ?: []);
         $currentElig['civil_service'] = $request->input('eligibility_civil_service', $currentElig['civil_service'] ?? '');
