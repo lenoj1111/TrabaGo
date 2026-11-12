@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\Process\Process;
 
 class JobseekerPortalController extends Controller
 {
@@ -1131,6 +1132,197 @@ class JobseekerPortalController extends Controller
 
         abort(404, 'Document file not found on storage.');
     }
+    private function runPaddleOcr(string $absolutePath): ?string
+    {
+        $pythonScript = base_path('app/scripts/ocr_engine.py');
+
+        if (!file_exists($pythonScript) || !file_exists($absolutePath)) {
+            Log::error("OCR failed: Script or image missing.", [
+                'script_exists' => file_exists($pythonScript),
+                'image_exists'  => file_exists($absolutePath),
+                'image_path'    => $absolutePath,
+            ]);
+            return null;
+        }
+
+        try {
+            // PHP-FPM on Windows does not pass USERPROFILE/HOME to subprocesses.
+            // PaddleOCR's ModelScope dependency requires a home directory to
+            // locate its cache, so we pass the env vars explicitly.
+            $home = getenv('USERPROFILE') ?: ('C:\\Users\\' . getenv('USERNAME'));
+            $env = [
+                'USERPROFILE' => $home,
+                'HOME'        => $home,
+                'PATH'        => getenv('PATH'),
+                'SYSTEMROOT'  => getenv('SYSTEMROOT') ?: 'C:\\Windows',
+                'TEMP'        => getenv('TEMP') ?: 'C:\\Windows\\Temp',
+                'TMP'         => getenv('TMP')  ?: 'C:\\Windows\\Temp',
+            ];
+
+            $process = new Process(['py', '-3.12', $pythonScript, $absolutePath], null, $env);
+            $process->setTimeout(60);
+            $process->run();
+
+            if (!$process->isSuccessful()) {
+                Log::warning('PaddleOCR exited non-zero: ' . $process->getErrorOutput());
+                return null;
+            }
+
+            $output = trim($process->getOutput());
+            return $output === '' ? null : $output;
+        } catch (\Throwable $e) {
+            Log::error('PaddleOCR exception: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+
+
+    /**
+     * Normalizes text for comparison (uppercase, letters only).
+     */
+    private function normalizeIdText(string $s): string
+    {
+        $s = strtoupper($s);
+        $s = preg_replace('/[^A-Z\s]/', '', $s);
+        $s = preg_replace('/\s+/', ' ', $s);
+        return trim($s);
+    }
+
+    /**
+     * Extracts and normalizes a date from raw OCR text.
+     */
+    /**
+     * Extracts and normalizes a date from raw OCR text.
+     */
+    private function extractOcrDate(string $ocrText): ?string
+    {
+        $months = [
+            'JANUARY' => '01',
+            'JANUAR' => '01',
+            'ANUARY' => '01',
+            'FEBRUARY' => '02',
+            'FEBRUAR' => '02',
+            'EBRUARY' => '02',
+            'MARCH' => '03',
+            'MARC' => '03',
+            'ARCH' => '03',
+            'APRIL' => '04',
+            'APRI' => '04',
+            'PRIL' => '04',
+            'MAY' => '05',
+            'JUNE' => '06',
+            'JUN' => '06',
+            'UNE' => '06',
+            'JULY' => '07',
+            'JUL' => '07',
+            'ULY' => '07',
+            'AUGUST' => '08',
+            'AUGUS' => '08',
+            'UGUST' => '08',
+            'SEPTEMBER' => '09',
+            'SEPTEMBE' => '09',
+            'EPTEMBER' => '09',
+            'OCTOBER' => '10',
+            'OCTOBE' => '10',
+            'CTOBER' => '10',
+            'NOVEMBER' => '11',
+            'NOVEMBE' => '11',
+            'OVEMBER' => '11',
+            'DECEMBER' => '12',
+            'DECEMBE' => '12',
+            'ECEMBER' => '12',
+        ];
+
+        $upper = strtoupper($ocrText);
+
+        // 1. Try full/truncated month names (For National IDs): "MARCH 07, 2003"
+        $pattern = '/\b(' . implode('|', array_map(fn($m) => preg_quote($m, '/'), array_keys($months))) . ')\s*(\d{1,2})[,\s]*(\d{4})\b/';
+        if (preg_match($pattern, $upper, $m)) {
+            $mon = $months[$m[1]] ?? null;
+            if ($mon) {
+                return sprintf('%04d-%02d-%02d', (int)$m[3], (int)$mon, (int)$m[2]);
+            }
+        }
+
+        // 2. Direct hit for Driver's License format: YYYY/MM/DD (e.g., 2004/09/29)
+        // This searches the whole text for the first occurrence of this exact format
+        if (preg_match('/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/', $upper, $m)) {
+            // Ensure it's a valid date (not a license number)
+            if ((int)$m[1] > 1900 && (int)$m[1] < 2100 && (int)$m[2] >= 1 && (int)$m[2] <= 12 && (int)$m[3] >= 1 && (int)$m[3] <= 31) {
+                return sprintf('%04d-%02d-%02d', (int)$m[1], (int)$m[2], (int)$m[3]);
+            }
+        }
+
+        // 3. Look for DD/MM/YYYY or MM/DD/YYYY
+        if (preg_match('/\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})\b/', $upper, $m)) {
+            // Assume MM/DD/YYYY if it's a standard ID
+            if ((int)$m[3] > 1900 && (int)$m[3] < 2100) {
+                return sprintf('%04d-%02d-%02d', (int)$m[3], (int)$m[1], (int)$m[2]);
+            }
+        }
+
+        // 4. Last resort: any 4-digit year near "BIRTH"
+        $lines = preg_split('/\r?\n/', $ocrText);
+        foreach ($lines as $i => $line) {
+            if (stripos($line, 'BIRTH') !== false || stripos($line, 'KAPANGANAKAN') !== false) {
+                $combined = strtoupper($line . ' ' . ($lines[$i + 1] ?? ''));
+                if (preg_match('/\b(\d{4})\b/', $combined, $m)) {
+                    return sprintf('%04d-01-01', (int)$m[1]);
+                }
+            }
+        }
+
+        return null;
+    }
+    /**
+     * Checks if the OCR text matches the jobseeker's registered Name AND Date of Birth.
+     */
+    private function idMatchesJobseeker(Jobseeker $jobseeker, string $ocrText): array
+    {
+        $registeredName = trim(implode(' ', array_filter([
+            $jobseeker->first_name,
+            $jobseeker->middle_name,
+            $jobseeker->last_name,
+        ])));
+
+        $registeredDob = $jobseeker->birth_date ? \Carbon\Carbon::parse($jobseeker->birth_date)->format('Y-m-d') : null;
+
+        if ($registeredName === '' || trim($ocrText) === '') {
+            return ['match' => false, 'reason' => 'Could not read the ID clearly.'];
+        }
+
+        // 1. Check Name
+        $normRegistered = $this->normalizeIdText($registeredName);
+        $normOcr = $this->normalizeIdText($ocrText);
+
+        $nameMatch = true;
+        foreach (explode(' ', $normRegistered) as $word) {
+            if ($word !== '' && strpos($normOcr, $word) === false) {
+                $nameMatch = false;
+                break;
+            }
+        }
+
+        if (!$nameMatch) {
+            return ['match' => false, 'reason' => 'The name on this ID does not match your registered profile name.'];
+        }
+
+        // 2. Check DOB (if the jobseeker has a DOB set)
+        if ($registeredDob) {
+            $ocrDob = $this->extractOcrDate($ocrText);
+
+            if (!$ocrDob) {
+                return ['match' => false, 'reason' => 'We could not read the date of birth on this ID. Please upload a clearer photo.'];
+            }
+
+            if ($ocrDob !== $registeredDob) {
+                return ['match' => false, 'reason' => 'The date of birth on this ID does not match your registered profile.'];
+            }
+        }
+
+        return ['match' => true, 'reason' => null];
+    }
     public function uploadDocument(Request $request)
     {
         set_time_limit(120);
@@ -1209,9 +1401,21 @@ class JobseekerPortalController extends Controller
 
         if ($canonicalCategory === 'valid_id' && in_array($extension, ['jpg', 'jpeg', 'png'])) {
             $absolutePath = Storage::disk('public')->path($filePath);
-            $verification = $this->idDocumentVerification->verify($jobseeker, $absolutePath);
-            $status = $verification['status'];
-            $rejectionReason = $verification['rejection_reason'];
+            $ocrText = $this->runPaddleOcr($absolutePath);
+
+            if ($ocrText === null) {
+                $status = 'rejected';
+                $rejectionReason = 'We could not read your ID. Please upload a clearer, well-lit photo.';
+            } else {
+                $verification = $this->idMatchesJobseeker($jobseeker, $ocrText);
+
+                if ($verification['match']) {
+                    $status = 'verified'; // 🎉 Auto-verified!
+                } else {
+                    $status = 'rejected';
+                    $rejectionReason = $verification['reason'];
+                }
+            }
         }
 
         $newDoc = [

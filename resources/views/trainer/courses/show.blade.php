@@ -43,7 +43,8 @@
                             {{ $course->training_type === 'laboratory_onsite' ? 'Laboratory / Onsite Hands-on' : 'Online Track' }}
                         </span>
                         <span class="rounded-full bg-white/10 px-3 py-0.5 text-xs font-semibold text-slate-300">
-                            {{ $course->duration_months ?: 1 }} Month Track
+                            {{ $course->training_start_date ? \Carbon\Carbon::parse($course->training_start_date)->format('M j, Y') : 'Date unset' }}
+                            to {{ $course->training_end_date ? \Carbon\Carbon::parse($course->training_end_date)->format('M j, Y') : 'Date unset' }}
                         </span>
                         <span class="rounded-full bg-amber-400/20 border border-amber-300/30 px-3 py-0.5 text-xs font-bold text-amber-300 inline-flex items-center gap-1.5">
                             <svg class="h-3.5 w-3.5 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -77,7 +78,7 @@
                     </div>
                     <div class="rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 p-4 text-center">
                         <div class="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Trainees Enrolled</div>
-                        <div class="text-2xl font-black text-white">{{ count($enrollments) }}</div>
+                        <div class="text-2xl font-black text-white">{{ count($enrollments) }} / {{ $course->trainee_capacity ?: 'Unlimited' }}</div>
                     </div>
                 </div>
             </div>
@@ -136,7 +137,8 @@
                                             type: '{{ $item->question_type ?: 'multiple_choice' }}',
                                             correct_answer: {{ (int) $item->correct_answer }},
                                             explanation: '{{ addslashes($item->explanation ?? '') }}',
-                                            points: {{ (int) ($item->points ?? 1) }}
+                                            points: {{ (int) ($item->points ?? 1) }},
+                                            image_url: @js($item->image_path ? asset('storage/' . $item->image_path) : '')
                                         }; editQuestionModal = true;" type="button" class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-200" title="Edit Question">
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                             <span>Edit</span>
@@ -153,6 +155,10 @@
                                         </form>
                                     </div>
                                 </div>
+
+                                @if($item->image_path)
+                                    <img src="{{ asset('storage/' . $item->image_path) }}" alt="Assessment question illustration" class="ml-8 max-h-64 max-w-full rounded-xl border border-slate-200 object-contain">
+                                @endif
 
                                 <!-- Choices -->
                                 @if($item->question_type === 'essay')
@@ -336,8 +342,8 @@
                             <span class="font-bold text-slate-800">{{ $course->training_type }}</span>
                         </div>
                         <div class="flex justify-between py-1">
-                            <span class="text-slate-400">Duration:</span>
-                            <span class="font-bold text-slate-800">{{ $course->duration_months ?: 1 }} Months</span>
+                            <span class="text-slate-400">Schedule:</span>
+                            <span class="font-bold text-slate-800">{{ $course->training_start_date }} - {{ $course->training_end_date }}</span>
                         </div>
                     </div>
                 </div>
@@ -355,7 +361,7 @@
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
             <div x-show="addQuestionModal" x-transition class="relative inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full border border-slate-200">
-                <form action="{{ route('trainer.courses.assessments.store', $course->training_id) }}" method="POST">
+                <form action="{{ route('trainer.courses.assessments.store', $course->training_id) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 px-6 py-5 text-white flex items-center justify-between border-b border-emerald-500/20">
                         <div class="flex items-center gap-3">
@@ -385,6 +391,11 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Question Prompt <span class="text-rose-500">*</span></label>
                             <textarea name="question" rows="3" required placeholder="State the question clearly..." class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Question Image (Optional)</label>
+                            <input type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-700">
+                            <p class="mt-1 text-[11px] text-slate-400">JPEG, PNG, GIF, or WebP; maximum 5 MB.</p>
                         </div>
 
                         <!-- Choices -->
@@ -437,7 +448,7 @@
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
             <div x-show="editQuestionModal" x-transition class="relative inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full border border-slate-200">
-                <form :action="'/trainer/courses/{{ $course->training_id }}/assessments/' + activeQuestion.id" method="POST">
+                <form :action="'/trainer/courses/{{ $course->training_id }}/assessments/' + activeQuestion.id" method="POST" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
                     <div class="bg-slate-900 px-6 py-5 text-white flex items-center justify-between border-b border-slate-800">
@@ -467,6 +478,19 @@
                                 <option value="multiple_choice">Multiple Choice</option>
                                 <option value="essay">Essay</option>
                             </select>
+                        </div>
+                        <div>
+                            <template x-if="activeQuestion.image_url">
+                                <div class="mb-2 space-y-2">
+                                    <img :src="activeQuestion.image_url" alt="Current assessment question illustration" class="max-h-40 rounded-xl border border-slate-200 object-contain">
+                                    <label class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600">
+                                        <input type="checkbox" name="remove_image" value="1" class="rounded border-slate-300 text-rose-600 focus:ring-rose-500">
+                                        Remove current image
+                                    </label>
+                                </div>
+                            </template>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Replace Image (Optional)</label>
+                            <input type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-700">
                         </div>
 
                         <fieldset class="space-y-3" x-show="activeQuestion.type !== 'essay'" :disabled="activeQuestion.type === 'essay'">

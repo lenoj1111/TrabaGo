@@ -37,10 +37,14 @@ class TrainingProgram extends Model
         'title',
         'training_type',
         'duration_months',
+        'training_start_date',
+        'training_end_date',
+        'trainee_capacity',
         'description',
         'auto_generate_certificate',
         'skills',
         'passing_score',
+        'demographic_requirements',
     ];
 
     /**
@@ -53,8 +57,52 @@ class TrainingProgram extends Model
         return [
             'auto_generate_certificate' => 'boolean',
             'duration_months' => 'integer',
+            'trainee_capacity' => 'integer',
             'passing_score' => 'integer',
+            'demographic_requirements' => 'array',
         ];
+    }
+
+    public function demographicEligibilityIssues(Jobseeker $jobseeker): array
+    {
+        $requirements = $this->demographic_requirements ?? [];
+        $issues = [];
+
+        if (!empty($requirements['gender']) && strcasecmp(trim((string) $jobseeker->sex), $requirements['gender']) !== 0) {
+            $issues[] = 'This course is limited to ' . strtolower($requirements['gender']) . ' applicants.';
+        }
+
+        $minimumAge = $requirements['min_age'] ?? null;
+        $maximumAge = $requirements['max_age'] ?? null;
+        if ($minimumAge !== null || $maximumAge !== null) {
+            $age = $jobseeker->birth_date?->age;
+            if ($age === null) {
+                $issues[] = 'Your birth date is required to confirm the course age requirement.';
+            } elseif (($minimumAge !== null && $age < $minimumAge) || ($maximumAge !== null && $age > $maximumAge)) {
+                $range = $minimumAge !== null && $maximumAge !== null
+                    ? "ages {$minimumAge}-{$maximumAge}"
+                    : ($minimumAge !== null ? "age {$minimumAge} or older" : "age {$maximumAge} or younger");
+                $issues[] = "This course is limited to applicants {$range}.";
+            }
+        }
+
+        $requiredEducation = $requirements['education_levels'] ?? [];
+        if ($requiredEducation) {
+            $education = $jobseeker->details?->education ?? [];
+            if (is_string($education)) {
+                $education = json_decode($education, true) ?: [];
+            }
+            $attainment = is_array($education) ? ($education['level'] ?? '') : '';
+            $matchesEducation = collect($requiredEducation)->contains(
+                fn($level) => strcasecmp(trim((string) $level), trim((string) $attainment)) === 0
+            );
+
+            if (!$matchesEducation) {
+                $issues[] = 'Your recorded educational attainment does not meet this course requirement.';
+            }
+        }
+
+        return $issues;
     }
 
     // =============================================

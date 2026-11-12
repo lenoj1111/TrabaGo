@@ -119,7 +119,7 @@
                         <div class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100 text-center">
                             <div class="rounded-xl bg-slate-50 p-2">
                                 <div class="text-[10px] text-slate-400 font-bold uppercase">Trainees</div>
-                                <div class="text-xs font-black text-slate-900">{{ $course->enrolled_count }}</div>
+                                <div class="text-xs font-black text-slate-900">{{ $course->enrolled_count }} / {{ $course->trainee_capacity ?: 'Unlimited' }}</div>
                             </div>
                             <div class="rounded-xl bg-slate-50 p-2">
                                 <div class="text-[10px] text-slate-400 font-bold uppercase">Certified</div>
@@ -131,6 +131,11 @@
                                     {{ $course->assessments_count ?? 0 }} Qs
                                 </div>
                             </div>
+                        </div>
+                        <div class="text-[11px] font-semibold text-slate-500">
+                            {{ $course->training_start_date ? \Carbon\Carbon::parse($course->training_start_date)->format('M j, Y') : 'Start date unset' }}
+                            <span class="px-1 text-slate-300">to</span>
+                            {{ $course->training_end_date ? \Carbon\Carbon::parse($course->training_end_date)->format('M j, Y') : 'End date unset' }}
                         </div>
                     </div>
 
@@ -151,10 +156,14 @@
                                 id: {{ $course->training_id }},
                                 title: '{{ addslashes($course->title) }}',
                                 training_type: '{{ $course->training_type }}',
-                                duration_months: {{ $course->duration_months ?: 1 }},
+                                training_start_date: '{{ $course->training_start_date }}',
+                                training_end_date: '{{ $course->training_end_date }}',
+                                trainee_capacity: {{ $course->trainee_capacity ?: 1 }},
                                 description: '{{ addslashes($course->description ?? '') }}',
                                 skills: '{{ addslashes($course->skills ?? '') }}',
-                                passing_score: {{ $course->passing_score ?: 80 }}
+                                passing_score: {{ $course->passing_score ?: 80 }},
+                                demographics: @js($course->demographic_requirements ?? ['education_levels' => []]),
+                                auto_generate_certificate: {{ ($course->auto_generate_certificate ?? true) ? 1 : 0 }}
                             }; editModal = true;" type="button" class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-200" title="Edit Course">
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                 <span>Edit</span>
@@ -235,10 +244,17 @@
                                 </select>
                             </div>
 
-                            <!-- Duration -->
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Duration (Months) <span class="text-rose-500">*</span></label>
-                                <input type="number" name="duration_months" value="1" min="1" max="24" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none">
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Training Start Date <span class="text-rose-500">*</span></label>
+                                <input type="date" name="training_start_date" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Training End Date <span class="text-rose-500">*</span></label>
+                                <input type="date" name="training_end_date" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Trainee Capacity <span class="text-rose-500">*</span></label>
+                                <input type="number" name="trainee_capacity" min="1" max="10000" required placeholder="Maximum number of trainees" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none">
                             </div>
                         </div>
 
@@ -247,6 +263,40 @@
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Target Skills (Comma-Separated)</label>
                             <input type="text" name="skills" placeholder="e.g. Arc Welding, Blueprint Reading, Safety Compliance" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none">
                             <p class="text-[11px] text-slate-400 mt-1">These skills will be tagged to enrolled jobseekers and credited upon course certification.</p>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100 space-y-3">
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Optional Demographic Eligibility</h4>
+                                <p class="text-[11px] text-slate-400">Leave every field blank to accept all applicants.</p>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Gender</label>
+                                    <select name="demographics[gender]" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:border-emerald-500 outline-none">
+                                        <option value="">Open to all</option>
+                                        <option value="Male">Men only</option>
+                                        <option value="Female">Women only</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Minimum Age</label>
+                                    <input type="number" name="demographics[min_age]" min="15" max="100" placeholder="No minimum" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:border-emerald-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Maximum Age</label>
+                                    <input type="number" name="demographics[max_age]" min="15" max="100" placeholder="No maximum" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:border-emerald-500 outline-none">
+                                </div>
+                            </div>
+                            <fieldset>
+                                <legend class="block text-xs font-bold text-slate-700 mb-2">Educational Attainment</legend>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-slate-700">
+                                    @foreach(['Elementary', 'High School', 'Senior High School', 'Vocational', 'College', 'Post Graduate'] as $level)
+                                        <label class="inline-flex items-center gap-2"><input type="checkbox" name="demographics[education_levels][]" value="{{ $level }}" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">{{ $level }}</label>
+                                    @endforeach
+                                </div>
+                                <p class="text-[11px] text-slate-400 mt-1">Applicants matching any selected level can enroll.</p>
+                            </fieldset>
                         </div>
 
                         <!-- Passing Score -->
@@ -342,14 +392,56 @@
                             </div>
 
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Duration (Months) <span class="text-rose-500">*</span></label>
-                                <input type="number" name="duration_months" x-model="activeCourse.duration_months" min="1" max="24" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Training Start Date <span class="text-rose-500">*</span></label>
+                                <input type="date" name="training_start_date" x-model="activeCourse.training_start_date" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Training End Date <span class="text-rose-500">*</span></label>
+                                <input type="date" name="training_end_date" x-model="activeCourse.training_end_date" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Trainee Capacity <span class="text-rose-500">*</span></label>
+                                <input type="number" name="trainee_capacity" x-model="activeCourse.trainee_capacity" min="1" max="10000" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
                             </div>
                         </div>
 
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Target Skills (Comma-Separated)</label>
                             <input type="text" name="skills" x-model="activeCourse.skills" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100 space-y-3">
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Optional Demographic Eligibility</h4>
+                                <p class="text-[11px] text-slate-400">Leave every field blank to accept all applicants.</p>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Gender</label>
+                                    <select name="demographics[gender]" x-model="activeCourse.demographics.gender" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:border-emerald-500 outline-none">
+                                        <option value="">Open to all</option>
+                                        <option value="Male">Men only</option>
+                                        <option value="Female">Women only</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Minimum Age</label>
+                                    <input type="number" name="demographics[min_age]" x-model="activeCourse.demographics.min_age" min="15" max="100" placeholder="No minimum" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:border-emerald-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Maximum Age</label>
+                                    <input type="number" name="demographics[max_age]" x-model="activeCourse.demographics.max_age" min="15" max="100" placeholder="No maximum" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:border-emerald-500 outline-none">
+                                </div>
+                            </div>
+                            <fieldset>
+                                <legend class="block text-xs font-bold text-slate-700 mb-2">Educational Attainment</legend>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-slate-700">
+                                    @foreach(['Elementary', 'High School', 'Senior High School', 'Vocational', 'College', 'Post Graduate'] as $level)
+                                        <label class="inline-flex items-center gap-2"><input type="checkbox" name="demographics[education_levels][]" value="{{ $level }}" x-model="activeCourse.demographics.education_levels" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">{{ $level }}</label>
+                                    @endforeach
+                                </div>
+                                <p class="text-[11px] text-slate-400 mt-1">Applicants matching any selected level can enroll.</p>
+                            </fieldset>
                         </div>
 
                         <div>

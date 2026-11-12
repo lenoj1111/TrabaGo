@@ -1,25 +1,26 @@
 @php
-    $jobseekerUnreadCount = Auth::check()
-        ? \Illuminate\Support\Facades\DB::table('notifications')
-            ->where('user_id', Auth::id())
-            ->where('is_read', 0)
-            ->count()
-        : 0;
+$jobseekerUnreadCount = Auth::check()
+? \Illuminate\Support\Facades\DB::table('notifications')
+->where('user_id', Auth::id())
+->where('is_read', 0)
+->count()
+: 0;
 
-    // Applications count — uses jobseeker_id (per your schema)
-    $myApplicationsCount = 0;
-    if (Auth::check() && \Illuminate\Support\Facades\Schema::hasTable('job_applications')) {
-        try {
-            $myApplicationsCount = \Illuminate\Support\Facades\DB::table('job_applications')
-                ->where('jobseeker_id', Auth::id())
-                ->count();
-        } catch (\Throwable $e) {
-            $myApplicationsCount = 0;
-        }
-    }
+// Applications count — uses jobseeker_id (per your schema)
+$myApplicationsCount = 0;
+if (Auth::check() && \Illuminate\Support\Facades\Schema::hasTable('job_applications')) {
+try {
+$myApplicationsCount = \Illuminate\Support\Facades\DB::table('job_applications')
+->where('jobseeker_id', Auth::id())
+->count();
+} catch (\Throwable $e) {
+$myApplicationsCount = 0;
+}
+}
 @endphp
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-slate-50">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -41,23 +42,48 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        [x-cloak] { display: none !important; }
-        ::selection { background-color: #059669; color: #ffffff; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #10b981; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        [x-cloak] {
+            display: none !important;
+        }
+
+        ::selection {
+            background-color: #059669;
+            color: #ffffff;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #10b981;
+        }
 
         /* Sidebar width transition */
         .js-sidebar {
             transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1),
-                        transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+                transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         .js-sidebar-label {
             transition: opacity 180ms ease, transform 180ms ease;
             white-space: nowrap;
         }
+
         .js-sidebar--collapsed .js-sidebar-label {
             opacity: 0;
             transform: translateX(-6px);
@@ -76,58 +102,43 @@
             color: #cbd5e1;
             transition: background-color 150ms ease, color 150ms ease;
         }
+
         .nav-item:hover {
             background-color: #1e293b;
             color: #ffffff;
         }
+
         .nav-item-active {
             background-color: #10b981;
             color: #020617 !important;
             box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.25);
         }
+
         .nav-item-active:hover {
             background-color: #10b981;
             color: #020617 !important;
         }
-
-        .subnav-item {
-            display: block;
-            padding: 0.4rem 0.75rem;
-            border-radius: 0.375rem;
-            font-size: 0.75rem;
-            font-weight: 500;
-            color: #94a3b8;
-            transition: background-color 150ms ease, color 150ms ease;
-        }
-        .subnav-item:hover {
-            background-color: #1e293b;
-            color: #e2e8f0;
-        }
-        .subnav-item-active {
-            background-color: #1e293b;
-            color: #10b981;
-            font-weight: 700;
-        }
     </style>
     @stack('styles')
 </head>
+
 <body class="h-full bg-slate-50 text-slate-900 antialiased"
-      x-data="jobseekerSidebar()"
-      x-init="init()">
+    x-data="jobseekerSidebar()"
+    x-init="init()">
 
     {{-- ============================================================ --}}
     {{-- MOBILE BACKDROP                                               --}}
     {{-- ============================================================ --}}
     <div id="js-backdrop"
-         onclick="closeJsSidebar()"
-         class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden"></div>
+        onclick="closeJsSidebar()"
+        class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden"></div>
 
     {{-- ============================================================ --}}
     {{-- SIDEBAR                                                       --}}
     {{-- ============================================================ --}}
     <aside id="js-sidebar"
-           :class="collapsed ? 'lg:w-20 js-sidebar--collapsed' : 'lg:w-64'"
-           class="js-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-slate-950 text-slate-100
+        :class="collapsed ? 'lg:w-20 js-sidebar--collapsed' : 'lg:w-64'"
+        class="js-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-slate-950 text-slate-100
                   flex flex-col border-r border-slate-800
                   -translate-x-full lg:translate-x-0">
 
@@ -148,14 +159,14 @@
 
             {{-- Collapse toggle (desktop only) --}}
             <button type="button"
-                    @click="toggleCollapse()"
-                    class="hidden lg:flex items-center justify-center w-7 h-7 rounded-lg
+                @click="toggleCollapse()"
+                class="hidden lg:flex items-center justify-center w-7 h-7 rounded-lg
                            text-slate-400 hover:text-emerald-400 hover:bg-slate-800 transition-colors shrink-0"
-                    :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+                :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
                 <svg class="w-4 h-4 transition-transform duration-300"
-                     :class="collapsed ? 'rotate-180' : ''"
-                     fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    :class="collapsed ? 'rotate-180' : ''"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
             </button>
         </div>
@@ -170,84 +181,49 @@
 
             {{-- Dashboard --}}
             <a href="{{ route('jobseeker.home') }}"
-               class="nav-item {{ request()->routeIs('jobseeker.home') ? 'nav-item-active' : '' }}"
-               :title="collapsed ? 'Dashboard' : ''">
+                class="nav-item {{ request()->routeIs('jobseeker.home') ? 'nav-item-active' : '' }}"
+                :title="collapsed ? 'Dashboard' : ''">
                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
                 <span class="js-sidebar-label flex-1">Dashboard</span>
             </a>
 
             {{-- Explore Jobs --}}
             <a href="{{ route('jobseeker.jobs') }}"
-               class="nav-item {{ request()->routeIs('jobseeker.jobs*') ? 'nav-item-active' : '' }}"
-               :title="collapsed ? 'Explore Jobs' : ''">
+                class="nav-item {{ request()->routeIs('jobseeker.jobs*') ? 'nav-item-active' : '' }}"
+                :title="collapsed ? 'Explore Jobs' : ''">
                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <span class="js-sidebar-label flex-1">Explore Jobs</span>
             </a>
 
-            {{-- My Applications (expandable group) --}}
-            @php
-                $appsActive = request()->routeIs('jobseeker.applications*');
-            @endphp
-            <div>
-                <button type="button"
-                        @click="toggleGroup('applications')"
-                        class="nav-item w-full {{ $appsActive ? 'nav-item-active' : '' }}"
-                        :title="collapsed ? 'My Applications' : ''">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <span class="js-sidebar-label flex-1 text-left">My Applications</span>
+            {{-- My Applications (Direct Link, No Submenu) --}}
+            <a href="{{ route('jobseeker.applications') }}"
+                class="nav-item {{ request()->routeIs('jobseeker.applications*') ? 'nav-item-active' : '' }}"
+                :title="collapsed ? 'My Applications' : ''">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span class="js-sidebar-label flex-1">My Applications</span>
 
-                    @if($myApplicationsCount > 0)
-                        <span class="js-sidebar-label px-2 py-0.5 rounded-full text-[10px] font-black
-                                     {{ $appsActive ? 'bg-slate-950/15 text-slate-950' : 'bg-emerald-500/20 text-emerald-300' }}">
-                            {{ $myApplicationsCount > 99 ? '99+' : $myApplicationsCount }}
-                        </span>
-                    @endif
-
-                    <svg class="js-sidebar-label w-3.5 h-3.5 shrink-0 transition-transform duration-200"
-                         :class="openGroups.applications ? 'rotate-180' : ''"
-                         fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-                    </svg>
-                </button>
-
-                {{-- Submenu --}}
-                <div class="js-submenu js-sidebar-label pl-11 pr-2 space-y-0.5"
-                     x-show="openGroups.applications && !collapsed"
-                     x-collapse
-                     x-cloak>
-                    <a href="{{ route('jobseeker.applications') }}?filter=all"
-                       class="subnav-item {{ request('filter', 'all') === 'all' ? 'subnav-item-active' : '' }}">
-                        All Applications
-                    </a>
-                    <a href="{{ route('jobseeker.applications') }}?filter=shortlisted"
-                       class="subnav-item {{ request('filter') === 'shortlisted' ? 'subnav-item-active' : '' }}">
-                        Shortlisted
-                    </a>
-                    <a href="{{ route('jobseeker.applications') }}?filter=interview"
-                       class="subnav-item {{ request('filter') === 'interview' ? 'subnav-item-active' : '' }}">
-                        Interviews
-                    </a>
-                    <a href="{{ route('jobseeker.applications') }}?filter=rejected"
-                       class="subnav-item {{ request('filter') === 'rejected' ? 'subnav-item-active' : '' }}">
-                        Rejected
-                    </a>
-                </div>
-            </div>
+                @if($myApplicationsCount > 0)
+                <span class="js-sidebar-label px-2 py-0.5 rounded-full text-[10px] font-black
+                                 {{ request()->routeIs('jobseeker.applications*') ? 'bg-slate-950/15 text-slate-950' : 'bg-emerald-500/20 text-emerald-300' }}">
+                    {{ $myApplicationsCount > 99 ? '99+' : $myApplicationsCount }}
+                </span>
+                @endif
+            </a>
 
             {{-- Training Courses --}}
             <a href="{{ route('jobseeker.training') }}"
-               class="nav-item {{ request()->routeIs('jobseeker.training*') ? 'nav-item-active' : '' }}"
-               :title="collapsed ? 'Training Courses' : ''">
+                class="nav-item {{ request()->routeIs('jobseeker.training*') ? 'nav-item-active' : '' }}"
+                :title="collapsed ? 'Training Courses' : ''">
                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
+                        d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
                 </svg>
                 <span class="js-sidebar-label flex-1">Training Courses</span>
             </a>
@@ -257,28 +233,27 @@
                 Profile
             </p>
 
-            @php
-                $profileActive = request()->routeIs('jobseeker.profile*');
-                $documentsActive = request()->routeIs('jobseeker.documents*');
-            @endphp
-            <div>
-                <a href="{{ route('jobseeker.profile') }}"
-                   class="nav-item {{ $profileActive || $documentsActive ? 'nav-item-active' : '' }}"
-                   :title="collapsed ? 'Skills Matrix & Profile' : ''">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                    </svg>
-                    <span class="js-sidebar-label flex-1">Skills Matrix & Profile</span>
-                </a>
+            {{-- Profile --}}
+            <a href="{{ route('jobseeker.profile') }}"
+                class="nav-item {{ request()->routeIs('jobseeker.profile*') ? 'nav-item-active' : '' }}"
+                :title="collapsed ? 'Skills Matrix & Profile' : ''">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span class="js-sidebar-label flex-1">Skills Matrix & Profile</span>
+            </a>
 
-                <div class="js-submenu js-sidebar-label pl-11 pr-2 space-y-0.5">
-                    <a href="{{ route('jobseeker.documents') }}"
-                       class="subnav-item {{ $documentsActive ? 'subnav-item-active' : '' }}">
-                        Documents
-                    </a>
-                </div>
-            </div>
+            {{-- Documents (Properly styled as a main nav item now) --}}
+            <a href="{{ route('jobseeker.documents') }}"
+                class="nav-item {{ request()->routeIs('jobseeker.documents*') ? 'nav-item-active' : '' }}"
+                :title="collapsed ? 'Document Hub' : ''">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                <span class="js-sidebar-label flex-1">Document Hub</span>
+            </a>
 
             {{-- ============ COMMUNICATION ============ --}}
             <p class="js-sidebar-label px-3 pt-5 pb-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
@@ -286,18 +261,18 @@
             </p>
 
             <a href="{{ route('jobseeker.notifications') }}"
-               class="nav-item {{ request()->routeIs('jobseeker.notifications*') ? 'nav-item-active' : '' }}"
-               :title="collapsed ? 'Notifications' : ''">
+                class="nav-item {{ request()->routeIs('jobseeker.notifications*') ? 'nav-item-active' : '' }}"
+                :title="collapsed ? 'Notifications' : ''">
                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
                 <span class="js-sidebar-label flex-1">Notifications</span>
 
                 @if($jobseekerUnreadCount > 0)
-                    <span class="js-sidebar-label px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-600 text-white">
-                        {{ $jobseekerUnreadCount > 9 ? '9+' : $jobseekerUnreadCount }}
-                    </span>
+                <span class="js-sidebar-label px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-600 text-white">
+                    {{ $jobseekerUnreadCount > 9 ? '9+' : $jobseekerUnreadCount }}
+                </span>
                 @endif
             </a>
         </nav>
@@ -318,12 +293,12 @@
             <form method="POST" action="{{ route('logout') }}" class="mt-1">
                 @csrf
                 <button type="submit"
-                        class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold
+                    class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold
                                text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors"
-                        :title="collapsed ? 'Log Out' : ''">
+                    :title="collapsed ? 'Log Out' : ''">
                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round"
-                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
                     <span class="js-sidebar-label">Log Out</span>
                 </button>
@@ -335,7 +310,7 @@
     {{-- MAIN CONTENT                                                  --}}
     {{-- ============================================================ --}}
     <div :class="collapsed ? 'lg:pl-20' : 'lg:pl-64'"
-         class="transition-all duration-300 min-h-screen flex flex-col">
+        class="transition-all duration-300 min-h-screen flex flex-col">
 
         {{-- Topbar --}}
         <header class="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-emerald-100 shadow-sm">
@@ -344,11 +319,11 @@
                 <div class="flex items-center gap-3 min-w-0">
                     {{-- ☰ Hamburger left of logo (mobile only) --}}
                     <button type="button"
-                            onclick="openJsSidebar()"
-                            class="lg:hidden p-2 -ml-1 rounded-lg hover:bg-slate-100 text-slate-700 shrink-0"
-                            aria-label="Open menu">
+                        onclick="openJsSidebar()"
+                        class="lg:hidden p-2 -ml-1 rounded-lg hover:bg-slate-100 text-slate-700 shrink-0"
+                        aria-label="Open menu">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
 
@@ -373,20 +348,20 @@
                     </span>
 
                     <a href="{{ route('jobseeker.notifications') }}"
-                       class="relative p-2 rounded-xl text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors {{ request()->routeIs('jobseeker.notifications*') ? 'text-emerald-700 bg-emerald-50' : '' }}"
-                       title="Notifications"
-                       aria-label="Notifications">
+                        class="relative p-2 rounded-xl text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors {{ request()->routeIs('jobseeker.notifications*') ? 'text-emerald-700 bg-emerald-50' : '' }}"
+                        title="Notifications"
+                        aria-label="Notifications">
                         <i class="bi bi-bell text-lg"></i>
                         @if($jobseekerUnreadCount > 0)
-                            <span class="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[10px] font-black text-white ring-2 ring-white">
-                                {{ $jobseekerUnreadCount > 9 ? '9+' : $jobseekerUnreadCount }}
-                            </span>
+                        <span class="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[10px] font-black text-white ring-2 ring-white">
+                            {{ $jobseekerUnreadCount > 9 ? '9+' : $jobseekerUnreadCount }}
+                        </span>
                         @endif
                     </a>
 
                     <div class="relative" x-data="{ profileOpen: false }" @click.away="profileOpen = false">
                         <button @click="profileOpen = !profileOpen" type="button"
-                                class="flex items-center gap-2 p-1 rounded-xl hover:bg-emerald-50 transition-colors focus:outline-none">
+                            class="flex items-center gap-2 p-1 rounded-xl hover:bg-emerald-50 transition-colors focus:outline-none">
                             <div class="h-8 w-8 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center justify-center ring-2 ring-emerald-500 shadow-sm">
                                 {{ strtoupper(substr(Auth::user()->email ?? 'J', 0, 1)) }}
                             </div>
@@ -394,24 +369,24 @@
                         </button>
 
                         <div x-show="profileOpen" x-cloak
-                             class="absolute right-0 mt-2 w-60 rounded-2xl bg-white p-2 shadow-2xl border border-emerald-100 z-50">
+                            class="absolute right-0 mt-2 w-60 rounded-2xl bg-white p-2 shadow-2xl border border-emerald-100 z-50">
                             <div class="px-3 py-2.5 bg-emerald-50/70 rounded-xl mb-1.5 border border-emerald-100/60">
                                 <p class="text-xs font-bold text-slate-900 truncate">{{ Auth::user()->email ?? '' }}</p>
                                 <p class="text-[10px] text-emerald-700 font-bold">Registered Jobseeker</p>
                             </div>
                             <a href="{{ route('jobseeker.profile') }}"
-                               class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors">
+                                class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors">
                                 <i class="bi bi-person"></i> My Profile
                             </a>
                             <a href="{{ route('jobseeker.applications') }}"
-                               class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors">
+                                class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors">
                                 <i class="bi bi-file-earmark-text"></i> My Applications
                             </a>
                             <div class="border-t border-slate-100 my-1"></div>
                             <form action="{{ route('logout') }}" method="POST">
                                 @csrf
                                 <button type="submit"
-                                        class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors">
+                                    class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors">
                                     <i class="bi bi-box-arrow-right"></i> Log Out
                                 </button>
                             </form>
@@ -424,24 +399,24 @@
         {{-- Flash toasts --}}
         <div class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-md w-full px-4 pointer-events-none">
             @if (session('success'))
-                <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
-                     class="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-slate-900 text-white p-4 shadow-2xl border border-emerald-500/40">
-                    <div class="flex items-center gap-2.5">
-                        <span class="h-8 w-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black">✓</span>
-                        <p class="text-xs font-bold">{{ session('success') }}</p>
-                    </div>
-                    <button @click="show = false" class="text-slate-400 hover:text-white">&times;</button>
+            <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
+                class="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-slate-900 text-white p-4 shadow-2xl border border-emerald-500/40">
+                <div class="flex items-center gap-2.5">
+                    <span class="h-8 w-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black">✓</span>
+                    <p class="text-xs font-bold">{{ session('success') }}</p>
                 </div>
+                <button @click="show = false" class="text-slate-400 hover:text-white">&times;</button>
+            </div>
             @endif
             @if (session('error') || (isset($errors) && $errors->any()))
-                <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 7000)"
-                     class="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-rose-950 text-white p-4 shadow-2xl border border-rose-600/40">
-                    <div class="flex items-center gap-2.5">
-                        <span class="h-8 w-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-black">!</span>
-                        <p class="text-xs font-bold">{{ session('error') ?: (isset($errors) ? $errors->first() : '') }}</p>
-                    </div>
-                    <button @click="show = false" class="text-rose-300 hover:text-white">&times;</button>
+            <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 7000)"
+                class="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-rose-950 text-white p-4 shadow-2xl border border-rose-600/40">
+                <div class="flex items-center gap-2.5">
+                    <span class="h-8 w-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-black">!</span>
+                    <p class="text-xs font-bold">{{ session('error') ?: (isset($errors) ? $errors->first() : '') }}</p>
                 </div>
+                <button @click="show = false" class="text-rose-300 hover:text-white">&times;</button>
+            </div>
             @endif
         </div>
 
@@ -467,44 +442,23 @@
     {{-- ============================================================ --}}
     {{-- SCRIPTS                                                       --}}
     {{-- ============================================================ --}}
-    <script data-applications-active="{{ request()->routeIs('jobseeker.applications*') ? 'true' : 'false' }}">
-        const applicationsRouteActive = document.currentScript.dataset.applicationsActive === 'true';
-
+    <script>
         function jobseekerSidebar() {
             return {
                 collapsed: false,
-                openGroups: {
-                    applications: applicationsRouteActive,
-                },
 
                 init() {
                     try {
                         const saved = localStorage.getItem('js_sidebar_collapsed');
                         if (saved === '1') this.collapsed = true;
                     } catch (e) {}
-
-                    this.$watch('collapsed', (val) => {
-                        try { localStorage.setItem('js_sidebar_collapsed', val ? '1' : '0'); } catch (e) {}
-                    });
                 },
 
                 toggleCollapse() {
                     this.collapsed = !this.collapsed;
-
-                    if (!this.collapsed) {
-                        if (applicationsRouteActive) {
-                            this.openGroups.applications = true;
-                        }
-                    }
-                },
-
-                toggleGroup(name) {
-                    if (this.collapsed) {
-                        this.collapsed = false;
-                        this.openGroups[name] = true;
-                    } else {
-                        this.openGroups[name] = !this.openGroups[name];
-                    }
+                    try {
+                        localStorage.setItem('js_sidebar_collapsed', this.collapsed ? '1' : '0');
+                    } catch (e) {}
                 }
             };
         }
@@ -521,15 +475,16 @@
             document.body.style.overflow = '';
         }
 
-        window.addEventListener('resize', function () {
+        window.addEventListener('resize', function() {
             if (window.innerWidth >= 1024) closeJsSidebar();
         });
 
-        document.addEventListener('keydown', function (e) {
+        document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') closeJsSidebar();
         });
     </script>
 
     @stack('scripts')
 </body>
+
 </html>

@@ -77,9 +77,17 @@
                 </span>
             </a>
 
+            <a href="{{ route('jobseeker.applications', ['status' => 'jpo_pending']) }}"
+                class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 {{ $filter === 'jpo_pending' ? 'bg-amber-600 text-white shadow-sm' : 'bg-white text-amber-700 border border-amber-200 hover:bg-amber-50' }}">
+                <span>⏳ Pending DMDP</span>
+                <span class="px-1.5 py-0.5 rounded-full text-[10px] {{ $filter === 'jpo_pending' ? 'bg-amber-800 text-white' : 'bg-amber-50 text-amber-800' }} font-bold">
+                    {{ $counts['jpo_pending'] ?? 0 }}
+                </span>
+            </a>
+
             <a href="{{ route('jobseeker.applications', ['status' => 'pending']) }}"
-                class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 {{ $filter === 'pending' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' }}">
-                <span>Pending</span>
+                class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 {{ $filter === 'pending' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white text-emerald-700 border border-emerald-200 hover:bg-emerald-50' }}">
+                <span>✅ Endorsed</span>
                 <span class="px-1.5 py-0.5 rounded-full text-[10px] {{ $filter === 'pending' ? 'bg-emerald-800 text-white' : 'bg-emerald-50 text-emerald-800' }} font-bold">
                     {{ $counts['pending'] }}
                 </span>
@@ -116,11 +124,13 @@
             @php
             $job = $app->jobPosting;
             $company = $job && $job->employer ? $job->employer->company_name : 'Partner Employer';
-            $match = $app->match_details ?? ['percentage' => 85, 'tier' => 'High Match'];
+            $match = $app->match_details ?? ['percentage' => 0, 'tier' => 'Match Calculated'];
+
             $appData = [
             // application
             'id' => $app->application_id,
             'status' => $app->status,
+            'referred_by_jpo' => (int) $app->referred_by_jpo,
             'resignation_status' => $app->resignation_status,
             'applied_date' => $app->created_at ? $app->created_at->format('M d, Y') : 'Recently',
             'interview_schedule' => $app->interview_schedule,
@@ -134,27 +144,28 @@
             'resignation_reason' => $app->resignation_reason,
             'resignation_remarks' => $app->resignation_remarks,
             'match' => $match['percentage'] ?? 0,
-            // job posting details
+
+            // job posting
             'title' => $job ? $job->title : 'Job Position',
             'company' => $company,
+            'job_id' => $job->job_id ?? null,
             'job_description' => $job->description ?? null,
-            'job_requirements' => $job->requirements ?? null,
-            'job_responsibilities' => $job->responsibilities ?? null,
+            'job_qualifications' => $job->qualifications ?? null,
+            'job_skills' => $job->skills ?? null,
+            'job_benefits' => $job->benefits ?? null,
+            'job_other_instructions' => $job->other_instructions ?? null,
             'job_location' => $job->location ?? null,
-            'job_type' => $job->employment_type ?? $job->job_type ?? null,
-            'job_category' => $job->category ?? null,
-            'job_salary_min' => $job->salary_min ?? null,
-            'job_salary_max' => $job->salary_max ?? null,
-            'job_salary_currency' => $job->salary_currency ?? '₱',
-            'job_vacancies' => $job->vacancies ?? null,
-            'job_deadline' => $job->deadline ?? $job->application_deadline ?? null,
+            'job_type' => $job->job_type ?? null,
+            'job_salary_range' => $job->salary_range ?? null,
+            'job_vacancy_count' => $job->vacancy_count ?? null,
+            'job_valid_until' => $job->valid_until ? \Carbon\Carbon::parse($job->valid_until)->format('M d, Y') : null,
+            'job_accepts_disability' => (bool) ($job->accepts_disability ?? false),
+            'job_disability_type' => $job->disability_type ?? null,
             'job_company_logo' => $job->employer->company_logo ?? null,
             'job_company_industry' => $job->employer->industry ?? null,
             'job_company_location' => $job->employer->company_address ?? null,
-            'job_id' => $job->job_id ?? null,
             ];
             @endphp
-
             <div class="group relative aspect-square rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col p-4 overflow-hidden">
 
                 @if($app->status === 'offered')
@@ -186,39 +197,64 @@
                 </div>
 
                 <div class="mt-2">
-                    @if($app->status === 'pending')
-                    <span class="inline-flex items-center rounded-md bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">Pending Review</span>
+                    @if($app->status === 'jpo_pending')
+                    <span class="inline-flex items-center rounded-md bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">
+                        ⏳ Pending DMDP Review
+                    </span>
+                    @elseif($app->referred_by_jpo == 1 && in_array($app->status, ['pending', 'reviewed']))
+                    <span class="inline-flex items-center rounded-md bg-emerald-50 text-emerald-900 border border-emerald-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">
+                        ✅ Endorsed — Awaiting Employer
+                    </span>
                     @elseif($app->status === 'reviewed')
-                    <span class="inline-flex items-center rounded-md bg-emerald-50 text-emerald-900 border border-emerald-200 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">Under Evaluation</span>
+                    <span class="inline-flex items-center rounded-md bg-emerald-50 text-emerald-900 border border-emerald-200 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">
+                        Under Evaluation
+                    </span>
                     @elseif($app->status === 'interview')
-                    <span class="inline-flex items-center rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">Interview Stage</span>
+                    <span class="inline-flex items-center rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">
+                        Interview Stage
+                    </span>
                     @elseif($app->status === 'offered')
-                    <span class="inline-flex items-center rounded-md bg-blue-600 text-white px-2 py-0.5 text-[9px] font-black uppercase tracking-wide shadow-sm">Formal Job Offer from {{ $company }}</span>
-                    @if($app->offer_salary)
-                    <p class="text-[10px] font-bold text-blue-900 mt-1">₱{{ number_format((float)$app->offer_salary, 2) }}</p>
-                    @endif
+                    <span class="inline-flex items-center rounded-md bg-blue-600 text-white px-2 py-0.5 text-[9px] font-black uppercase tracking-wide shadow-sm">
+                        Offer Received
+                    </span>
                     @elseif($app->status === 'declined')
-                    <span class="inline-flex items-center rounded-md bg-slate-100 text-slate-700 border border-slate-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">Offer Declined</span>
+                    <span class="inline-flex items-center rounded-md bg-slate-100 text-slate-700 border border-slate-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">
+                        Offer Declined
+                    </span>
                     @elseif($app->status === 'withdrawn')
-                    <span class="inline-flex items-center rounded-md bg-slate-100 text-slate-500 border border-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide">Withdrawn</span>
+                    <span class="inline-flex items-center rounded-md bg-slate-100 text-slate-500 border border-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide">
+                        Withdrawn
+                    </span>
                     @elseif($app->status === 'hired')
                     @if($app->resignation_status === 'requested')
-                    <span class="inline-flex items-center rounded-md bg-amber-50 text-amber-900 border border-amber-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide animate-pulse">Resignation Pending</span>
+                    <span class="inline-flex items-center rounded-md bg-amber-50 text-amber-900 border border-amber-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide animate-pulse">
+                        Resignation Pending
+                    </span>
                     @elseif($app->resignation_status === 'approved')
-                    <span class="inline-flex items-center rounded-md bg-slate-100 text-slate-700 border border-slate-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">Resigned / Released</span>
-                    <p class="text-[9px] text-slate-500 mt-0.5 truncate">Resignation Approved by {{ $company }}</p>
+                    <span class="inline-flex items-center rounded-md bg-slate-100 text-slate-700 border border-slate-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">
+                        Resigned / Released
+                    </span>
                     @elseif($app->resignation_status === 'rejected')
-                    <span class="inline-flex items-center rounded-md bg-rose-50 text-rose-900 border border-rose-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">Resignation Request Declined</span>
-                    @if($app->resignation_remarks)
-                    <p class="text-[9px] text-rose-700 mt-0.5 line-clamp-1" title="{{ $app->resignation_remarks }}">{{ $app->resignation_remarks }}</p>
-                    @endif
+                    <span class="inline-flex items-center rounded-md bg-rose-50 text-rose-900 border border-rose-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">
+                        Resignation Declined
+                    </span>
                     @else
-                    <span class="inline-flex items-center rounded-md bg-emerald-600 text-white px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide shadow-sm">Hired & Employed</span>
+                    <span class="inline-flex items-center rounded-md bg-emerald-600 text-white px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide shadow-sm">
+                        Hired & Employed
+                    </span>
                     @endif
                     @elseif($app->status === 'training_recommended')
-                    <span class="inline-flex items-center rounded-lg bg-blue-100 text-blue-900 border border-blue-300 px-2.5 py-1 text-[11px] font-extrabold">Training Recommended</span>
+                    <span class="inline-flex items-center rounded-lg bg-blue-100 text-blue-900 border border-blue-300 px-2.5 py-1 text-[11px] font-extrabold">
+                        Training Recommended
+                    </span>
                     @elseif($app->status === 'rejected')
-                    <span class="inline-flex items-center rounded-lg bg-rose-100 text-rose-900 border border-rose-200 px-2.5 py-1 text-[11px] font-extrabold">Not Qualified</span>
+                    <span class="inline-flex items-center rounded-lg bg-rose-100 text-rose-900 border border-rose-200 px-2.5 py-1 text-[11px] font-extrabold">
+                        Not Qualified
+                    </span>
+                    @else
+                    <span class="inline-flex items-center rounded-md bg-slate-100 text-slate-700 border border-slate-300 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">
+                        {{ ucfirst(str_replace('_', ' ', $app->status)) }}
+                    </span>
                     @endif
                 </div>
 
@@ -317,24 +353,24 @@
                                 💼 <span x-text="selectedApp.job_type"></span>
                             </span>
                         </template>
-                        <template x-if="selectedApp.job_category">
-                            <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
-                                🏷️ <span x-text="selectedApp.job_category"></span>
-                            </span>
-                        </template>
-                        <template x-if="selectedApp.job_salary_min || selectedApp.job_salary_max">
+                        <template x-if="selectedApp.job_salary_range">
                             <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                                💰 <span x-text="(selectedApp.job_salary_currency || '₱') + (selectedApp.job_salary_min ? parseInt(selectedApp.job_salary_min).toLocaleString() : '0') + ' – ' + (selectedApp.job_salary_max ? parseInt(selectedApp.job_salary_max).toLocaleString() : 'Negotiable')"></span>
+                                💰 <span x-text="selectedApp.job_salary_range"></span>
                             </span>
                         </template>
-                        <template x-if="selectedApp.job_vacancies">
+                        <template x-if="selectedApp.job_vacancy_count">
                             <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
-                                👥 <span x-text="selectedApp.job_vacancies + ' vacancy(ies)'"></span>
+                                👥 <span x-text="selectedApp.job_vacancy_count + ' opening(s)'"></span>
                             </span>
                         </template>
-                        <template x-if="selectedApp.job_deadline">
+                        <template x-if="selectedApp.job_valid_until">
                             <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
-                                ⏰ Deadline: <span x-text="new Date(selectedApp.job_deadline).toLocaleDateString()"></span>
+                                ⏰ Apply until <span x-text="selectedApp.job_valid_until"></span>
+                            </span>
+                        </template>
+                        <template x-if="selectedApp.job_accepts_disability">
+                            <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                                ♿ PWD Inclusive
                             </span>
                         </template>
                         <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
@@ -342,20 +378,54 @@
                         </span>
                     </div>
 
-                    <!-- Application status pipeline -->
+                    <!-- Application status summary -->
                     <div>
-                        <p class="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Your Application Status</p>
-                        <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 mb-2">
-                            <span :class="['pending', 'reviewed', 'interview', 'offered', 'hired', 'rejected', 'declined'].includes(selectedApp.status) ? 'text-emerald-600' : ''">Submitted</span>
-                            <span :class="['reviewed', 'interview', 'offered', 'hired'].includes(selectedApp.status) ? 'text-emerald-600' : ''">Review</span>
-                            <span :class="['interview', 'offered', 'hired'].includes(selectedApp.status) ? 'text-emerald-600' : ''">Interview</span>
-                            <span :class="['offered', 'hired'].includes(selectedApp.status) ? 'text-blue-600' : ''">Offer</span>
-                            <span :class="['hired'].includes(selectedApp.status) ? 'text-emerald-600' : (selectedApp.status === 'rejected' ? 'text-rose-600' : '')">
-                                <span x-text="selectedApp.status === 'rejected' ? 'Not Qualified' : (selectedApp.status === 'hired' ? 'Hired' : 'Employed')"></span>
+                        <p class="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Current Application Status</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span x-show="selectedApp.status === 'jpo_pending'"
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold">
+                                ⏳ Awaiting DMDP Evaluation
                             </span>
-                        </div>
-                        <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex">
-                            <div class="h-full bg-emerald-500 transition-all duration-500" :style="`width: ${['pending', 'reviewed', 'interview', 'offered', 'hired', 'rejected'].includes(selectedApp.status) ? (selectedApp.status === 'pending' ? '20%' : selectedApp.status === 'reviewed' ? '40%' : selectedApp.status === 'interview' ? '60%' : selectedApp.status === 'offered' ? '80%' : '100%') : '0%'}`"></div>
+
+                            <span x-show="selectedApp.status === 'pending' || selectedApp.status === 'reviewed'"
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-bold">
+                                ✅ Endorsed — Awaiting Employer Review
+                            </span>
+
+                            <span x-show="selectedApp.status === 'interview'"
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-100 border border-blue-300 text-blue-900 text-xs font-bold">
+                                📅 Interview Scheduled
+                            </span>
+
+                            <span x-show="selectedApp.status === 'offered'"
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-100 border border-indigo-300 text-indigo-900 text-xs font-bold">
+                                💼 Formal Job Offer Received
+                            </span>
+
+                            <span x-show="selectedApp.status === 'hired'"
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-sm">
+                                🎉 Hired & Employed
+                            </span>
+
+                            <span x-show="selectedApp.status === 'declined'"
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-200 border border-slate-300 text-slate-700 text-xs font-bold">
+                                Offer Declined
+                            </span>
+
+                            <span x-show="selectedApp.status === 'withdrawn'"
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-200 border border-slate-300 text-slate-600 text-xs font-bold">
+                                Application Withdrawn
+                            </span>
+
+                            <span x-show="selectedApp.status === 'training_recommended'"
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-100 border border-blue-300 text-blue-900 text-xs font-bold">
+                                📚 Training Recommended
+                            </span>
+
+                            <span x-show="selectedApp.status === 'rejected'"
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-100 border border-rose-300 text-rose-900 text-xs font-bold">
+                                ❌ Not Qualified
+                            </span>
                         </div>
                     </div>
 
@@ -443,44 +513,75 @@
 
                     <!-- ===== JOB POSTING DETAILS ===== -->
                     <div class="border-t border-slate-100 pt-5 space-y-5">
-                        <p class="text-xs font-black uppercase tracking-wider text-slate-500">Job Posting Details</p>
+                        <p class="text-xs font-black uppercase tracking-wider text-slate-500">Full Job Posting Details</p>
 
+                        {{-- Description --}}
                         <template x-if="selectedApp.job_description">
                             <div>
-                                <p class="text-[11px] font-bold text-slate-700 uppercase mb-1">Description</p>
+                                <p class="text-[11px] font-bold text-slate-700 uppercase mb-1">Job Description</p>
                                 <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line" x-text="selectedApp.job_description"></p>
                             </div>
                         </template>
 
-                        <template x-if="selectedApp.job_responsibilities">
+                        {{-- Required Skills --}}
+                        <template x-if="selectedApp.job_skills">
                             <div>
-                                <p class="text-[11px] font-bold text-slate-700 uppercase mb-1">Responsibilities</p>
-                                <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line" x-text="selectedApp.job_responsibilities"></p>
+                                <p class="text-[11px] font-bold text-slate-700 uppercase mb-1">Required Skills</p>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <template x-for="(skill, i) in selectedApp.job_skills.split(',').map(s => s.trim()).filter(s => s)" :key="i">
+                                        <span class="rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200 px-2.5 py-1 text-[11px] font-bold" x-text="skill"></span>
+                                    </template>
+                                </div>
                             </div>
                         </template>
 
-                        <template x-if="selectedApp.job_requirements">
+                        {{-- Qualifications --}}
+                        <template x-if="selectedApp.job_qualifications">
                             <div>
-                                <p class="text-[11px] font-bold text-slate-700 uppercase mb-1">Requirements</p>
-                                <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line" x-text="selectedApp.job_requirements"></p>
+                                <p class="text-[11px] font-bold text-slate-700 uppercase mb-1">Qualifications & Requirements</p>
+                                <ul class="list-disc list-inside space-y-1 rounded-xl bg-slate-50 p-3 border border-slate-200">
+                                    <template x-for="(line, i) in selectedApp.job_qualifications.split(/\r?\n/).filter(l => l.trim())" :key="i">
+                                        <li class="text-xs text-slate-700" x-text="line.trim()"></li>
+                                    </template>
+                                </ul>
                             </div>
                         </template>
 
+                        {{-- Benefits --}}
+                        <template x-if="selectedApp.job_benefits">
+                            <div>
+                                <p class="text-[11px] font-bold text-slate-700 uppercase mb-1">Benefits & Perks</p>
+                                <ul class="list-disc list-inside space-y-1 rounded-xl bg-emerald-50/60 p-3 border border-emerald-200">
+                                    <template x-for="(line, i) in selectedApp.job_benefits.split(/\r?\n/).filter(l => l.trim())" :key="i">
+                                        <li class="text-xs text-slate-700" x-text="line.trim()"></li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </template>
+
+                        {{-- Other Instructions --}}
+                        <template x-if="selectedApp.job_other_instructions">
+                            <div>
+                                <p class="text-[11px] font-bold text-slate-700 uppercase mb-1">Application Instructions</p>
+                                <p class="text-xs text-slate-700 leading-relaxed whitespace-pre-line rounded-xl bg-amber-50 p-3 border border-amber-200" x-text="selectedApp.job_other_instructions"></p>
+                            </div>
+                        </template>
+
+                        {{-- About the Company --}}
                         <template x-if="selectedApp.job_company_industry || selectedApp.job_company_location">
                             <div>
                                 <p class="text-[11px] font-bold text-slate-700 uppercase mb-1">About the Company</p>
-                                <p class="text-xs text-slate-600">
+                                <div class="rounded-xl bg-slate-50 p-3 border border-slate-200 text-xs text-slate-600 space-y-1">
                                     <template x-if="selectedApp.job_company_industry">
-                                        <span x-text="'Industry: ' + selectedApp.job_company_industry"></span>
+                                        <p><span class="font-semibold text-slate-800">Industry:</span> <span x-text="selectedApp.job_company_industry"></span></p>
                                     </template>
                                     <template x-if="selectedApp.job_company_location">
-                                        <span x-text="' • Location: ' + selectedApp.job_company_location"></span>
+                                        <p><span class="font-semibold text-slate-800">Location:</span> <span x-text="selectedApp.job_company_location"></span></p>
                                     </template>
-                                </p>
+                                </div>
                             </div>
                         </template>
                     </div>
-
                     <!-- Footer -->
                     <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
                         <button type="button" @click="viewModal = false" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">

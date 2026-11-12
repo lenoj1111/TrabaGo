@@ -37,14 +37,20 @@ class TrainingSkillsFlowTest extends TestCase
             'user_id' => $this->jobseekerUser->user_id,
             'first_name' => 'Carlos',
             'last_name' => 'Mendoza',
+            'birth_date' => '2000-06-15',
+            'sex' => 'Male',
+            'civil_status' => 'Single',
             'email' => $this->jobseekerUser->email,
             'mobile_number' => '09123456789',
         ]);
 
         DB::table('jobseeker_details')->insert([
             'jobseeker_id' => $this->jobseeker->jobseeker_id,
-            'education' => json_encode(['level' => 'Vocational Diploma']),
-            'training_certificates' => json_encode([]),
+            'address' => json_encode(['barangay' => 'Lahug']),
+            'education' => json_encode(['level' => 'Vocational']),
+            'training_certificates' => json_encode([
+                ['category' => 'valid_id', 'status' => 'verified'],
+            ]),
         ]);
 
         DB::table('jobseeker_skills')->insert([
@@ -151,6 +157,98 @@ class TrainingSkillsFlowTest extends TestCase
             'training_id' => $this->trainingCourse->training_id,
             'status' => 'enrolled',
         ]);
+    }
+
+    public function test_unverified_jobseeker_cannot_enroll_in_training(): void
+    {
+        $this->jobseekerUser->update([
+            'is_approved' => false,
+            'account_status' => 'unverified',
+        ]);
+
+        $response = $this->actingAs($this->jobseekerUser)
+            ->post(route('jobseeker.training.enroll', $this->trainingCourse->training_id));
+
+        $response->assertRedirect(route('jobseeker.documents'));
+        $response->assertSessionHas('error');
+        $this->assertDatabaseMissing('training_enrollments', [
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'training_id' => $this->trainingCourse->training_id,
+        ]);
+    }
+
+    public function test_demographic_requirements_reject_non_matching_jobseeker(): void
+    {
+        $this->trainingCourse->update([
+            'demographic_requirements' => [
+                'gender' => 'Female',
+                'min_age' => 40,
+                'max_age' => null,
+                'education_levels' => ['College'],
+            ],
+        ]);
+
+        $response = $this->actingAs($this->jobseekerUser)
+            ->post(route('jobseeker.training.enroll', $this->trainingCourse->training_id));
+
+        $response->assertRedirect(route('jobseeker.training.show', $this->trainingCourse->training_id));
+        $response->assertSessionHas('error');
+        $this->assertDatabaseMissing('training_enrollments', [
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'training_id' => $this->trainingCourse->training_id,
+        ]);
+    }
+
+    public function test_demographic_requirements_allow_matching_jobseeker(): void
+    {
+        $this->trainingCourse->update([
+            'demographic_requirements' => [
+                'gender' => 'Male',
+                'min_age' => 18,
+                'max_age' => 35,
+                'education_levels' => ['Vocational'],
+            ],
+        ]);
+
+        $response = $this->actingAs($this->jobseekerUser)
+            ->post(route('jobseeker.training.enroll', $this->trainingCourse->training_id));
+
+        $response->assertRedirect(route('jobseeker.training.show', $this->trainingCourse->training_id));
+        $response->assertSessionHas('success');
+        $this->assertDatabaseHas('training_enrollments', [
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'training_id' => $this->trainingCourse->training_id,
+            'status' => 'enrolled',
+        ]);
+    }
+
+    public function test_trainer_can_create_course_with_demographic_requirements(): void
+    {
+        $response = $this->actingAs($this->trainerUser)->post(route('trainer.courses.store'), [
+            'title' => 'Women in Industrial Automation',
+            'training_type' => 'laboratory_onsite',
+            'training_start_date' => now()->toDateString(),
+            'training_end_date' => now()->addMonth()->toDateString(),
+            'trainee_capacity' => 20,
+            'description' => 'Hands-on industrial automation training.',
+            'demographics' => [
+                'gender' => 'Female',
+                'min_age' => 18,
+                'max_age' => 35,
+                'education_levels' => ['Vocational', 'College'],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('warning');
+
+        $course = TrainingProgram::where('title', 'Women in Industrial Automation')->firstOrFail();
+        $this->assertSame([
+            'gender' => 'Female',
+            'min_age' => 18,
+            'max_age' => 35,
+            'education_levels' => ['Vocational', 'College'],
+        ], $course->demographic_requirements);
     }
 
     /**

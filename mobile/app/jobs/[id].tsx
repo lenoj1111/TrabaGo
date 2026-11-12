@@ -199,6 +199,16 @@ export default function JobDetailsScreen() {
           )}
         </View>
 
+        {job.resume_required && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="document-text-outline" size={18} color={COLORS.warning} />
+              <Text style={styles.sectionTitle}>Resume required</Text>
+            </View>
+            <Text style={styles.bodyText}>Upload a resume to your Document Vault before applying for this job.</Text>
+          </View>
+        )}
+
         {/* DMDP Accreditation Badge */}
         <View style={styles.verifiedCard}>
           <View style={styles.verifiedIconWrap}>
