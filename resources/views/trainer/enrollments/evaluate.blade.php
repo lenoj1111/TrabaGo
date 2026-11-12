@@ -44,46 +44,51 @@
                 <p class="text-xs text-slate-500">Review student answers submitted during training.</p>
             </div>
 
-            @if(is_array($answers) && count($answers) > 0)
+            @if(!empty($answers['responses']))
+                @php($objectiveScore = $answers['objective_score'] ?? [])
+                <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm font-bold text-indigo-950">
+                    @if(($objectiveScore['question_count'] ?? 0) > 0)
+                        Auto-scored: {{ $objectiveScore['correct_count'] }}/{{ $objectiveScore['question_count'] }} multiple-choice questions
+                        ({{ $objectiveScore['earned_points'] }}/{{ $objectiveScore['total_points'] }} points, {{ $objectiveScore['percentage'] }}%).
+                    @else
+                        This assessment contains essay responses only; review them below and choose the final outcome.
+                    @endif
+                </div>
                 <div class="space-y-4">
-                    @foreach($answers as $idx => $ans)
-                        <div class="p-4 rounded-2xl border border-slate-100 bg-slate-50/60 space-y-2">
-                            <div class="flex items-center justify-between text-xs font-bold">
-                                <span class="text-slate-900">Question {{ is_numeric($idx) ? ($idx + 1) : $idx }}</span>
-                                @if(is_array($ans) && isset($ans['is_correct']))
-                                    <span class="{{ $ans['is_correct'] ? 'text-emerald-700' : 'text-rose-600' }} inline-flex items-center gap-1">
-                                        @if($ans['is_correct'])
-                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                                            </svg>
-                                            <span>Auto-Validated Correct</span>
-                                        @else
-                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
-                                            </svg>
-                                            <span>Incorrect</span>
-                                        @endif
-                                    </span>
-                                @endif
+                    @foreach($answers['responses'] as $idx => $answer)
+                        <article class="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <span class="text-xs font-black text-slate-900">Question {{ $idx + 1 }}: {{ $answer['question'] }}</span>
+                                <span class="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase text-slate-600">{{ $answer['question_type'] === 'essay' ? 'Essay' : 'Multiple choice' }} · {{ $answer['points'] }} pt(s)</span>
                             </div>
-                            
-                            @if(is_array($ans))
-                                <p class="text-xs text-slate-700 font-semibold">{{ $ans['question'] ?? 'Answer detail:' }}</p>
-                                <p class="text-xs text-slate-900 bg-white p-3 rounded-xl border border-slate-200">
-                                    <strong class="text-emerald-800">Student Response:</strong> {{ $ans['selected_answer'] ?? ($ans['answer'] ?? json_encode($ans)) }}
-                                </p>
+                            @if($answer['question_type'] === 'essay')
+                                <div class="rounded-xl border border-indigo-200 bg-white p-4">
+                                    <p class="mb-1 text-[10px] font-black uppercase tracking-wider text-indigo-700">Jobseeker essay response</p>
+                                    <p class="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{{ $answer['response'] }}</p>
+                                </div>
                             @else
-                                <p class="text-xs text-slate-900 bg-white p-3 rounded-xl border border-slate-200">
-                                    {{ $ans }}
+                                <div class="grid gap-3 sm:grid-cols-2">
+                                    <p class="rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-800">
+                                        <strong>Your answer:</strong> {{ $answer['response'] }}
+                                    </p>
+                                    <p class="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900">
+                                        <strong>Correct answer:</strong> {{ $answer['correct_answer'] }}
+                                    </p>
+                                </div>
+                                <p class="text-xs font-bold {{ $answer['is_correct'] ? 'text-emerald-700' : 'text-rose-700' }}">
+                                    {{ $answer['is_correct'] ? 'Correct' : 'Incorrect' }}
+                                    @if($answer['is_correct']) · {{ $answer['awarded_points'] }}/{{ $answer['points'] }} points @endif
                                 </p>
                             @endif
-                        </div>
+                            @if(!empty($answer['explanation']))
+                                <p class="text-xs text-slate-600"><strong>Trainer rationale:</strong> {{ $answer['explanation'] }}</p>
+                            @endif
+                        </article>
                     @endforeach
                 </div>
             @else
                 <div class="p-8 rounded-2xl bg-amber-50/60 border border-amber-200 text-center text-xs text-amber-900 space-y-1">
-                    <p class="font-bold">No digital quiz breakdown recorded for this enrollment yet.</p>
-                    <p class="text-amber-700">You can grade the student based on laboratory performance, attendance, and practical demonstrations below.</p>
+                    <p class="font-bold">No submitted quiz answers are recorded for this enrollment.</p>
                 </div>
             @endif
 
@@ -91,24 +96,17 @@
             <form action="{{ route('trainer.enrollments.evaluate.submit', $enrollment->enrollment_id) }}" method="POST" class="pt-6 border-t border-slate-100 space-y-6">
                 @csrf
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div class="space-y-1">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Final Assessment Score (%) *</label>
-                        <input type="number" name="score" min="0" max="100" step="0.1" value="{{ $enrollment->score ?? 85 }}" required
-                               class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                        <p class="text-[11px] text-slate-400">Passing threshold is 80.0% or higher.</p>
-                    </div>
-
-                    <div class="space-y-1">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Qualification Outcome</label>
-                        <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-950 flex items-center gap-2">
-                            <svg class="h-4 w-4 text-emerald-700 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path d="M12 14l9-5-9-5-9 5 9 5z"/>
-                                <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
-                            </svg>
-                            <span>Scores &ge; 80% mark as Completed & qualify for Certificate.</span>
-                        </div>
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Trainer Decision *</label>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                            <input type="radio" name="outcome" value="passed" required class="mt-0.5 text-emerald-600">
+                            <span><strong class="block text-sm text-emerald-900">Passed</strong><small class="text-xs text-emerald-800">Approve course completion and certificate eligibility.</small></span>
+                        </label>
+                        <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                            <input type="radio" name="outcome" value="needs_retake" required class="mt-0.5 text-amber-600">
+                            <span><strong class="block text-sm text-amber-900">Needs Retake</strong><small class="text-xs text-amber-800">Keep the certificate pending and allow a new quiz submission.</small></span>
+                        </label>
                     </div>
                 </div>
 

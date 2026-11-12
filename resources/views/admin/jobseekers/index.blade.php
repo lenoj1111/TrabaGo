@@ -86,12 +86,14 @@
 
                 <div class="lg:col-span-3 space-y-1">
                     <label class="text-xs font-bold text-slate-700">Employment Status</label>
-                    <select name="employment_status" onchange="this.form.submit()"
-                            class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                        <select name="employment_status" onchange="this.form.submit()"
+                            class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs ...">
                         <option value="">All Statuses</option>
-                        <option value="Looking for job" {{ request('employment_status') == 'Looking for job' ? 'selected' : '' }}>Actively Seeking</option>
-                        <option value="Employed" {{ request('employment_status') == 'Employed' ? 'selected' : '' }}>Employed</option>
-                        <option value="Wage Employed" {{ request('employment_status') == 'Wage Employed' ? 'selected' : '' }}>Wage Employed</option>
+                        <option value="Unemployed"      {{ request('employment_status') == 'Unemployed'      ? 'selected' : '' }}>Unemployed (Looking for work)</option>
+                        <option value="Fresh Graduate"  {{ request('employment_status') == 'Fresh Graduate'  ? 'selected' : '' }}>Fresh Graduate</option>
+                        <option value="Employed"        {{ request('employment_status') == 'Employed'        ? 'selected' : '' }}>Employed</option>
+                        <option value="Underemployed"   {{ request('employment_status') == 'Underemployed'   ? 'selected' : '' }}>Underemployed</option>
+                        <option value="Self-employed"   {{ request('employment_status') == 'Self-employed'   ? 'selected' : '' }}>Self-employed / Freelancer</option>
                     </select>
                 </div>
 
@@ -245,7 +247,7 @@
                                     @endif
                                 </td>
                                 <td class="py-4 px-6 text-right">
-                                    <div class="flex items-center justify-end gap-1.5">
+                                    <div class="flex flex-col items-end justify-end gap-1.5">
                                         <button type="button"
                                                 data-action="approve-user"
                                                 data-approve-url="{{ route('admin.approvals.jobseekers.approve', $js->jobseeker_id) }}"
@@ -419,7 +421,7 @@
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
                     <div>
-                        <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex flex-col items-start gap-2">
                             <button type="button"
                                     data-action="approve-user"
                                     :data-approve-url="'{{ url('/admin/approvals/jobseekers') }}/' + selectedJobseeker.id + '/approve'"

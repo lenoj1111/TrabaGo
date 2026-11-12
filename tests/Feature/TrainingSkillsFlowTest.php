@@ -37,14 +37,20 @@ class TrainingSkillsFlowTest extends TestCase
             'user_id' => $this->jobseekerUser->user_id,
             'first_name' => 'Carlos',
             'last_name' => 'Mendoza',
+            'birth_date' => '2000-06-15',
+            'sex' => 'Male',
+            'civil_status' => 'Single',
             'email' => $this->jobseekerUser->email,
             'mobile_number' => '09123456789',
         ]);
 
         DB::table('jobseeker_details')->insert([
             'jobseeker_id' => $this->jobseeker->jobseeker_id,
-            'education' => json_encode(['level' => 'Vocational Diploma']),
-            'training_certificates' => json_encode([]),
+            'address' => json_encode(['barangay' => 'Lahug']),
+            'education' => json_encode(['level' => 'Vocational']),
+            'training_certificates' => json_encode([
+                ['category' => 'valid_id', 'status' => 'verified'],
+            ]),
         ]);
 
         DB::table('jobseeker_skills')->insert([
@@ -153,6 +159,98 @@ class TrainingSkillsFlowTest extends TestCase
         ]);
     }
 
+    public function test_unverified_jobseeker_cannot_enroll_in_training(): void
+    {
+        $this->jobseekerUser->update([
+            'is_approved' => false,
+            'account_status' => 'unverified',
+        ]);
+
+        $response = $this->actingAs($this->jobseekerUser)
+            ->post(route('jobseeker.training.enroll', $this->trainingCourse->training_id));
+
+        $response->assertRedirect(route('jobseeker.documents'));
+        $response->assertSessionHas('error');
+        $this->assertDatabaseMissing('training_enrollments', [
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'training_id' => $this->trainingCourse->training_id,
+        ]);
+    }
+
+    public function test_demographic_requirements_reject_non_matching_jobseeker(): void
+    {
+        $this->trainingCourse->update([
+            'demographic_requirements' => [
+                'gender' => 'Female',
+                'min_age' => 40,
+                'max_age' => null,
+                'education_levels' => ['College'],
+            ],
+        ]);
+
+        $response = $this->actingAs($this->jobseekerUser)
+            ->post(route('jobseeker.training.enroll', $this->trainingCourse->training_id));
+
+        $response->assertRedirect(route('jobseeker.training.show', $this->trainingCourse->training_id));
+        $response->assertSessionHas('error');
+        $this->assertDatabaseMissing('training_enrollments', [
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'training_id' => $this->trainingCourse->training_id,
+        ]);
+    }
+
+    public function test_demographic_requirements_allow_matching_jobseeker(): void
+    {
+        $this->trainingCourse->update([
+            'demographic_requirements' => [
+                'gender' => 'Male',
+                'min_age' => 18,
+                'max_age' => 35,
+                'education_levels' => ['Vocational'],
+            ],
+        ]);
+
+        $response = $this->actingAs($this->jobseekerUser)
+            ->post(route('jobseeker.training.enroll', $this->trainingCourse->training_id));
+
+        $response->assertRedirect(route('jobseeker.training.show', $this->trainingCourse->training_id));
+        $response->assertSessionHas('success');
+        $this->assertDatabaseHas('training_enrollments', [
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'training_id' => $this->trainingCourse->training_id,
+            'status' => 'enrolled',
+        ]);
+    }
+
+    public function test_trainer_can_create_course_with_demographic_requirements(): void
+    {
+        $response = $this->actingAs($this->trainerUser)->post(route('trainer.courses.store'), [
+            'title' => 'Women in Industrial Automation',
+            'training_type' => 'laboratory_onsite',
+            'training_start_date' => now()->toDateString(),
+            'training_end_date' => now()->addMonth()->toDateString(),
+            'trainee_capacity' => 20,
+            'description' => 'Hands-on industrial automation training.',
+            'demographics' => [
+                'gender' => 'Female',
+                'min_age' => 18,
+                'max_age' => 35,
+                'education_levels' => ['Vocational', 'College'],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('warning');
+
+        $course = TrainingProgram::where('title', 'Women in Industrial Automation')->firstOrFail();
+        $this->assertSame([
+            'gender' => 'Female',
+            'min_age' => 18,
+            'max_age' => 35,
+            'education_levels' => ['Vocational', 'College'],
+        ], $course->demographic_requirements);
+    }
+
     /**
      * Job Seeker Flow - Step 3: Training Enrollment Dashboard
      */
@@ -227,7 +325,7 @@ class TrainingSkillsFlowTest extends TestCase
     /**
      * Trainer Flow - Step 3: Conduct Assessment
      */
-    public function test_trainer_conducts_assessment(): void
+    public function test_trainer_reviews_submitted_quiz_answers(): void
     {
         $enrollment = TrainingEnrollment::create([
             'jobseeker_id' => $this->jobseeker->jobseeker_id,
@@ -236,32 +334,46 @@ class TrainingSkillsFlowTest extends TestCase
             'status' => 'in_progress',
             'start_date' => now()->toDateString(),
         ]);
+        $assessmentId = DB::table('training_assessments')
+            ->where('training_id', $this->trainingCourse->training_id)
+            ->value('assessment_id');
 
-        // 1. Trainer views conduct assessment view
+        $submissionResponse = $this->actingAs($this->jobseekerUser)
+            ->post(route('jobseeker.training.quiz.submit', $this->trainingCourse->training_id), [
+                'responses' => json_encode([(string) $assessmentId => '0']),
+            ]);
+        $submissionResponse->assertSessionHasNoErrors();
+
+        $enrollment->refresh();
+        $this->assertSame('in_progress', $enrollment->status);
+        $this->assertNull($enrollment->passed);
+        $this->assertFalse((bool) $enrollment->certificate_issued);
+        $this->assertSame('pending', $enrollment->answers['review_status']);
+
+        // The trainer reviews the learner's response and records the outcome.
         $viewResponse = $this->actingAs($this->trainerUser)
-            ->get(route('trainer.enrollments.assessment', $enrollment->enrollment_id));
+            ->get(route('trainer.enrollments.evaluate', $enrollment->enrollment_id));
         $viewResponse->assertStatus(200);
-        $viewResponse->assertSee('Conduct Learner Assessment');
+        $viewResponse->assertSee('Submitted Course Answers');
+        $viewResponse->assertSee('Correct answer:');
         $viewResponse->assertSee('Carlos Mendoza');
         $viewResponse->assertSee('Which PLC instruction represents a normally open contact?');
 
-        // 2. Trainer submits conducted assessment
         $submitResponse = $this->actingAs($this->trainerUser)
-            ->post(route('trainer.enrollments.assessment.submit', $enrollment->enrollment_id), [
-                'theory_score' => 90,
-                'practical_score' => 95,
-                'score' => 93,
+            ->post(route('trainer.enrollments.evaluate.submit', $enrollment->enrollment_id), [
+                'outcome' => 'passed',
                 'trainer_feedback' => 'Demonstrated high competence in PLC ladder wiring and safety precautions.',
-                'lab_remarks' => 'Full workshop attendance verified.',
             ]);
 
         $submitResponse->assertSessionHasNoErrors();
         $submitResponse->assertRedirect(route('trainer.enrollments.index'));
 
         $enrollment->refresh();
-        $this->assertEquals(93, (int) $enrollment->score);
-        $this->assertEquals(1, $enrollment->passed);
+        $this->assertEquals(100, (int) $enrollment->score);
+        $this->assertTrue((bool) $enrollment->passed);
         $this->assertEquals('completed', $enrollment->status);
+        $this->assertSame('passed', $enrollment->answers['review_status']);
+        $this->assertFalse((bool) $enrollment->certificate_issued);
         $this->assertNotNull($enrollment->end_date);
     }
 
@@ -276,6 +388,7 @@ class TrainingSkillsFlowTest extends TestCase
             'training_type' => 'laboratory_onsite',
             'status' => 'in_progress',
             'start_date' => now()->toDateString(),
+            'answers' => ['review_status' => 'passed'],
         ]);
 
         $response = $this->actingAs($this->trainerUser)
@@ -309,6 +422,7 @@ class TrainingSkillsFlowTest extends TestCase
             'score' => 95,
             'start_date' => now()->toDateString(),
             'end_date' => now()->toDateString(),
+            'answers' => ['review_status' => 'passed'],
         ]);
 
         $response = $this->actingAs($this->trainerUser)

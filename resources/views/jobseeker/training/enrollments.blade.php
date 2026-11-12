@@ -96,9 +96,11 @@
             @forelse($enrollments as $enrollment)
                 @php
                     $course = $enrollment->trainingProgram;
+                    $assessmentData = is_array($enrollment->answers) ? $enrollment->answers : (json_decode($enrollment->answers ?? '[]', true) ?: []);
+                    $reviewStatus = $assessmentData['review_status'] ?? null;
                     $isCompleted = $enrollment->status === 'completed';
                     $isInProgress = $enrollment->status === 'in_progress';
-                    $isFailed = $enrollment->status === 'failed';
+                    $isNeedsRetake = $reviewStatus === 'needs_retake' || $enrollment->status === 'failed';
                 @endphp
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm hover:border-emerald-300 transition-all space-y-6">
                     
@@ -110,7 +112,19 @@
                                     {{ $course ? ucfirst($course->training_type ?: 'Online') : 'Online' }}
                                 </span>
 
-                                @if($isCompleted)
+                                @if($reviewStatus === 'pending')
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 px-3 py-0.5 text-xs font-bold">
+                                        Assessment Pending Review
+                                    </span>
+                                @elseif($isNeedsRetake)
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300 px-3 py-0.5 text-xs font-bold">
+                                        Assessment Needs Retake
+                                    </span>
+                                @elseif($reviewStatus === 'passed')
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 px-3 py-0.5 text-xs font-extrabold">
+                                        Assessment Passed
+                                    </span>
+                                @elseif($isCompleted)
                                     <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 px-3 py-0.5 text-xs font-extrabold">
                                         <span class="h-2 w-2 rounded-full bg-emerald-600"></span>
                                         Completed & Qualified
@@ -119,10 +133,6 @@
                                     <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 px-3 py-0.5 text-xs font-bold">
                                         <span class="h-2 w-2 rounded-full bg-emerald-600 animate-pulse"></span>
                                         In Progress (Active Training)
-                                    </span>
-                                @elseif($isFailed)
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300 px-3 py-0.5 text-xs font-bold">
-                                        Needs Retake
                                     </span>
                                 @else
                                     <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 px-3 py-0.5 text-xs font-bold">
@@ -188,14 +198,10 @@
                     <!-- Evaluation & Remarks Details -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 rounded-2xl p-4 border border-slate-100 text-xs">
                         <div>
-                            <span class="text-slate-400 font-bold uppercase tracking-wider block text-[10px]">Assessment Score</span>
-                            @if(!is_null($enrollment->score))
-                                <p class="text-base font-black {{ $enrollment->passed ? 'text-emerald-700' : 'text-rose-600' }} mt-0.5">
-                                    {{ $enrollment->score }}% &bull; {{ $enrollment->passed ? 'PASSED' : 'FAILED' }}
-                                </p>
-                            @else
-                                <p class="text-slate-500 italic mt-0.5">Pending Assessment</p>
-                            @endif
+                            <span class="text-slate-400 font-bold uppercase tracking-wider block text-[10px]">Assessment Status</span>
+                            <p class="text-base font-black mt-0.5 {{ $reviewStatus === 'passed' ? 'text-emerald-700' : ($reviewStatus === 'needs_retake' ? 'text-rose-600' : 'text-amber-700') }}">
+                                {{ $reviewStatus === 'passed' ? 'Passed' : ($reviewStatus === 'needs_retake' || $isNeedsRetake ? 'Needs Retake' : ($reviewStatus === 'pending' ? 'Pending Trainer Review' : 'Not Yet Submitted')) }}
+                            </p>
                         </div>
 
                         <div>
@@ -216,7 +222,7 @@
                                 </p>
                             @else
                                 <p class="text-slate-500 italic mt-0.5">
-                                    {{ $isCompleted ? 'Awaiting Trainer Issuance' : 'Requires Course Completion' }}
+                                    {{ $reviewStatus === 'pending' ? 'Pending trainer review' : ($reviewStatus === 'passed' ? 'Awaiting Trainer Issuance' : 'Available after passing') }}
                                 </p>
                             @endif
                         </div>
@@ -252,13 +258,19 @@
                                     <span>Course Lessons</span>
                                 </a>
 
+                                @if(in_array($reviewStatus, ['pending', 'passed'], true))
+                                    <span class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-bold text-slate-500">
+                                        {{ $reviewStatus === 'pending' ? 'Quiz pending review' : 'Quiz passed' }}
+                                    </span>
+                                @else
                                 <a href="{{ route('jobseeker.training.quiz', $course->training_id) }}" 
                                    class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 text-xs font-black shadow-md shadow-emerald-600/20 transition-all">
                                     <svg class="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                     </svg>
-                                    <span>{{ !is_null($enrollment->score) ? 'Retake Quiz' : 'Take Assessment Quiz' }} &rarr;</span>
+                                    <span>{{ $reviewStatus === 'needs_retake' || $isNeedsRetake ? 'Retake Quiz' : 'Take Assessment Quiz' }} &rarr;</span>
                                 </a>
+                                @endif
                             @endif
                         </div>
                     </div>

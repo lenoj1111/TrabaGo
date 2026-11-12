@@ -118,6 +118,7 @@ export interface JobItem {
   vacancy_count: number;
   valid_until?: string | null;
   accepts_disability: boolean;
+  resume_required?: boolean;
   disability_type?: string | null;
   status: string;
   created_at: string;
@@ -188,7 +189,9 @@ export interface ApplicationCounts {
 }
 
 export interface QuizQuestion {
+  id?: number;
   question: string;
+  image_url?: string | null;
   choices: string[];
   options: string[];
   answer: number;
@@ -213,6 +216,9 @@ export interface TrainingProgramItem {
   durationMonths: number;
   duration_months: number;
   duration?: string;
+  training_start_date?: string | null;
+  training_end_date?: string | null;
+  trainee_capacity?: number | null;
   description?: string;
   topics?: TrainingTopic[];
   modulesCount?: number;

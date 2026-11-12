@@ -119,6 +119,9 @@ export default function TrainingScreen() {
   const renderTrainingCard = ({ item }: { item: TrainingProgramItem }) => {
     const courseId = item.id || item.training_id;
     const duration = item.durationMonths || item.duration_months || 1;
+    const schedule = item.training_start_date && item.training_end_date
+      ? `${item.training_start_date} - ${item.training_end_date}`
+      : `${duration} ${duration === 1 ? 'Month' : 'Months'}`;
     const type = item.trainingType || item.training_type || 'Online';
     const topicsCount = item.topics?.length || 0;
     const isEnrolled = !!item.is_enrolled;
@@ -226,7 +229,7 @@ export default function TrainingScreen() {
         <View style={styles.metaRow}>
           <View style={styles.metaItem}>
             <Ionicons name="calendar-outline" size={14} color={COLORS.textSecondary} />
-            <Text style={styles.metaText}>{duration} {duration === 1 ? 'Month' : 'Months'}</Text>
+            <Text style={styles.metaText} numberOfLines={1}>{schedule}</Text>
           </View>
           {topicsCount > 0 && (
             <View style={styles.metaItem}>

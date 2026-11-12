@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\JobseekerDetail;
 use App\Models\Notification;
+use App\Services\IdDocumentVerificationService;
 use App\Traits\ResolvesJobseeker;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -66,7 +68,7 @@ class DocumentController extends Controller
     /**
      * Upload a document (e.g. Resume, Valid ID, Certificate, PWD ID).
      */
-    public function upload(Request $request)
+    public function upload(Request $request, IdDocumentVerificationService $idVerification)
     {
         $request->validate([
             'category' => 'nullable|string|in:resume,valid_id,certificate,certs,pwd_id',
@@ -138,6 +140,9 @@ class DocumentController extends Controller
         }
 
         $docId = 'doc_' . uniqid();
+        $status = 'under_review';
+        $rejectionReason = null;
+        $message = ucfirst(str_replace('_', ' ', $category)) . ' uploaded successfully to your vault.';
 
         if ($jobseeker) {
             $details = $jobseeker->details;
@@ -159,6 +164,36 @@ class DocumentController extends Controller
                 return false;
             });
 
+            $reviewedBy = null;
+            $reviewedAt = null;
+
+            if ($category === 'valid_id' && in_array($extension, ['jpg', 'jpeg', 'png'], true)) {
+                set_time_limit(120);
+                $verification = $idVerification->verify(
+                    $jobseeker,
+                    Storage::disk('public')->path($path)
+                );
+                $status = $verification['status'];
+                $rejectionReason = $verification['rejection_reason'];
+                $message = $rejectionReason ?? match ($status) {
+                    'verified' => 'Your government ID matched your profile and your account is now verified.',
+                    default => 'Your ID was submitted for manual review.',
+                };
+
+                if ($status === 'verified') {
+                    $reviewedBy = 'auto_ocr';
+                    $reviewedAt = now()->toIso8601String();
+
+                    if ($user) {
+                        DB::table('users')->where('user_id', $user->user_id)->update([
+                            'account_status' => 'verified',
+                            'is_approved' => true,
+                            'updated_at' => now(),
+                        ]);
+                    }
+                }
+            }
+
             $newDoc = [
                 'id' => $docId,
                 'category' => $category,
@@ -168,10 +203,10 @@ class DocumentController extends Controller
                 'file_path' => $path,
                 'file_size' => $file->getSize(),
                 'mime_type' => $file->getMimeType(),
-                'status' => 'under_review',
-                'rejection_reason' => null,
-                'reviewed_by' => null,
-                'reviewed_at' => null,
+                'status' => $status,
+                'rejection_reason' => $rejectionReason,
+                'reviewed_by' => $reviewedBy,
+                'reviewed_at' => $reviewedAt,
                 'uploaded_at' => now()->toIso8601String(),
             ];
 
@@ -182,9 +217,13 @@ class DocumentController extends Controller
             if ($user) {
                 Notification::create([
                     'user_id' => $user->user_id,
-                    'title' => 'Document Uploaded',
-                    'message' => "Your " . ucfirst(str_replace('_', ' ', $category)) . " has been uploaded and is under review.",
-                    'type' => 'approval',
+                    'title' => match ($status) {
+                        'verified' => 'ID Automatically Verified',
+                        'rejected' => 'ID Could Not Be Verified',
+                        default => 'Document Uploaded',
+                    },
+                    'message' => $message,
+                    'type' => $status === 'rejected' ? 'rejection' : 'approval',
                     'is_read' => false,
                 ]);
             }
@@ -197,7 +236,9 @@ class DocumentController extends Controller
             'fileUrl' => $fileUrl,
             'file_url' => $fileUrl,
             'category' => $category,
-            'message' => ucfirst(str_replace('_', ' ', $category)) . ' uploaded successfully to your vault.',
+            'status' => $status,
+            'rejection_reason' => $rejectionReason,
+            'message' => $message,
         ]);
     }
 

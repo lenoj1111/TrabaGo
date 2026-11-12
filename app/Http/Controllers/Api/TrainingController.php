@@ -3,17 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\JobseekerDetail;
-use App\Models\JobseekerSkill;
 use App\Models\Notification;
 use App\Models\TrainingEnrollment;
 use App\Models\TrainingProgram;
 use App\Services\TrainingQuizService;
 use App\Traits\ResolvesJobseeker;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class TrainingController extends Controller
 {
@@ -31,7 +27,15 @@ class TrainingController extends Controller
      */
     private function formatProgram(TrainingProgram $program, ?int $jobseekerId = null): array
     {
-        $programQuestions = $this->quizService->getQuestionsForTraining($program, 5);
+        $programQuestions = array_map(static fn($question) => [
+            'id' => $question['id'],
+            'question' => $question['question'],
+            'image_url' => $question['image_url'],
+            'question_type' => $question['type'],
+            'choices' => $question['choices'],
+            'options' => $question['choices'],
+            'points' => $question['points'],
+        ], $this->quizService->getQuestionsForTraining($program));
 
         $topics = $program->topics->map(function ($topic) {
             $questions = is_array($topic->questions) ? $topic->questions : json_decode($topic->questions ?? '[]', true);
@@ -65,6 +69,7 @@ class TrainingController extends Controller
         $certificateIssued = false;
         $certificateNo = null;
         $score = null;
+        $reviewStatus = null;
 
         if ($jobseekerId) {
             $enrollment = TrainingEnrollment::where('jobseeker_id', $jobseekerId)
@@ -77,6 +82,10 @@ class TrainingController extends Controller
                 $certificateIssued = (bool)$enrollment->certificate_issued;
                 $certificateNo = $enrollment->certificate_no;
                 $score = $enrollment->score;
+                $answers = is_array($enrollment->answers)
+                    ? $enrollment->answers
+                    : (json_decode($enrollment->answers ?? '[]', true) ?: []);
+                $reviewStatus = $answers['review_status'] ?? null;
             }
         }
 
@@ -89,6 +98,9 @@ class TrainingController extends Controller
             'durationMonths' => $program->duration_months ?? 1,
             'duration_months' => $program->duration_months ?? 1,
             'duration' => ($program->duration_months ?? 1) . ' month(s)',
+            'training_start_date' => $program->training_start_date,
+            'training_end_date' => $program->training_end_date,
+            'trainee_capacity' => $program->trainee_capacity,
             'description' => $program->description ?? '',
             'topics' => $topics,
             'modulesCount' => count($topics),
@@ -102,9 +114,10 @@ class TrainingController extends Controller
             'score' => $score,
             'enrollment_id' => $enrollment ? $enrollment->enrollment_id : null,
             'status' => $enrollment ? $enrollment->status : 'not_enrolled',
+            'review_status' => $reviewStatus,
             'passed' => $enrollment ? (bool)$enrollment->passed : false,
             'enrolled_skills' => $enrollment ? $enrollment->enrolled_skills : null,
-            'skills' => !empty($program->skills) 
+            'skills' => !empty($program->skills)
                 ? array_values(array_filter(array_map('trim', explode(',', $program->skills))))
                 : [trim($program->title)],
         ];
@@ -165,7 +178,7 @@ class TrainingController extends Controller
         $jobseeker = $this->resolveJobseeker($request);
         if (!$jobseeker) {
             return response()->json([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Please sign in to your jobseeker account to enroll in courses.',
                 'requires_auth' => true
             ], 401);
@@ -188,6 +201,25 @@ class TrainingController extends Controller
                 'message' => "You are already enrolled in '{$training->title}'.",
                 'enrollment_id' => $enrollment->enrollment_id,
             ]);
+        }
+
+        if (!$jobseeker->isProfileAndDocumentsComplete() || !$user || !$user->isAccountVerified()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Complete your jobseeker profile and verify your account with a valid Government ID before applying for training.',
+            ], 403);
+        }
+
+        $eligibilityIssues = $training->demographicEligibilityIssues($jobseeker);
+        if ($eligibilityIssues) {
+            return response()->json([
+                'success' => false,
+                'message' => implode(' ', $eligibilityIssues),
+            ], 422);
+        }
+
+        if ($training->trainee_capacity !== null && TrainingEnrollment::where('training_id', $id)->count() >= $training->trainee_capacity) {
+            return response()->json(['success' => false, 'message' => 'This training program has reached its trainee capacity.'], 409);
         }
 
         $newEnrollment = TrainingEnrollment::create([
@@ -215,118 +247,90 @@ class TrainingController extends Controller
     }
 
     /**
-     * Submit quiz results for a training program and generate official certificate.
+     * Submit a training assessment for trainer review.
      */
     public function submitQuiz(Request $request, $id)
     {
-        $score = (int)$request->input('score', 0);
-        $total = (int)$request->input('total', 5);
-        $training = TrainingProgram::find($id);
-
+        $training = TrainingProgram::with('trainer')->find($id);
         if (!$training) {
             return response()->json(['success' => false, 'message' => 'Training program not found'], 404);
         }
 
-        $passingThreshold = $training->passing_score ?: 80;
-        // Percentage calculation
-        $percentScore = $total > 0 ? (int)(($score / $total) * 100) : $score;
-        $passed = $percentScore >= $passingThreshold;
+        if (empty($this->quizService->getQuestionsForTraining($training))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This course does not have assessment questions yet. Please wait for the trainer to add them.',
+            ], 422);
+        }
 
+        $validated = $request->validate(['responses' => 'required|array']);
         $jobseeker = $this->resolveJobseeker($request);
-        $certNo = null;
+        if (!$jobseeker) {
+            return response()->json(['success' => false, 'message' => 'Sign in to your jobseeker account before submitting the assessment.'], 401);
+        }
 
-        if ($jobseeker) {
-            $jobseekerId = $jobseeker->jobseeker_id;
-            $user = $jobseeker->user ?? \App\Models\User::find($jobseeker->user_id);
-            
-            $enrollment = TrainingEnrollment::where('jobseeker_id', $jobseekerId)
-                ->where('training_id', $id)
-                ->first();
+        try {
+            $gradedSubmission = $this->quizService->gradeSubmission($training, $validated['responses']);
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
+        }
 
-            if (!$enrollment) {
-                $enrollment = new TrainingEnrollment([
-                    'jobseeker_id' => $jobseekerId,
-                    'training_id' => $id,
-                    'training_type' => 'online',
-                    'start_date' => now()->toDateString(),
-                ]);
-            }
+        $enrollment = TrainingEnrollment::firstOrNew([
+            'jobseeker_id' => $jobseeker->jobseeker_id,
+            'training_id' => $training->training_id,
+        ]);
+        if (!$enrollment->exists && $training->trainee_capacity !== null && TrainingEnrollment::where('training_id', $training->training_id)->count() >= $training->trainee_capacity) {
+            return response()->json(['success' => false, 'message' => 'This training program has reached its trainee capacity.'], 409);
+        }
+        $existingAnswers = is_array($enrollment->answers)
+            ? $enrollment->answers
+            : (json_decode($enrollment->answers ?? '[]', true) ?: []);
+        if (in_array($existingAnswers['review_status'] ?? null, ['pending', 'passed'], true)) {
+            return response()->json(['success' => false, 'message' => 'This assessment is already pending review or has been approved.'], 409);
+        }
 
-            $enrollment->score = $percentScore;
-            $enrollment->passed = $passed ? 1 : 0;
-            $enrollment->answers = ['score' => $percentScore, 'passed' => $passed, 'submitted_at' => now()->toIso8601String()];
-            
-            if ($passed) {
-                $enrollment->end_date = now()->toDateString();
-                $enrollment->status = 'completed';
-                
-                $certNo = 'DMDP-CERT-' . date('Y') . '-' . strtoupper(Str::random(6));
-                $enrollment->certificate_no = $certNo;
-                $enrollment->certificate_issued = 1;
-                $enrollment->certificate_issued_at = now();
+        $enrollment->training_type = $training->training_type ?: 'online';
+        $enrollment->start_date = $enrollment->start_date ?: now()->toDateString();
+        $enrollment->score = $gradedSubmission['objective_score']['percentage'];
+        $enrollment->passed = null;
+        $enrollment->status = 'in_progress';
+        $enrollment->end_date = null;
+        $enrollment->certificate_no = null;
+        $enrollment->certificate_issued = false;
+        $enrollment->certificate_issued_at = null;
+        $enrollment->answers = [
+            'review_status' => 'pending',
+            'submitted_at' => now()->toIso8601String(),
+            'objective_score' => $gradedSubmission['objective_score'],
+            'responses' => $gradedSubmission['responses'],
+        ];
+        $enrollment->save();
 
-                // Save to document vault
-                $detail = JobseekerDetail::where('jobseeker_id', $jobseekerId)->first();
-                if (!$detail) {
-                    $detail = JobseekerDetail::create(['jobseeker_id' => $jobseekerId, 'training_certificates' => []]);
-                }
-                $existingDocs = is_array($detail->training_certificates)
-                    ? $detail->training_certificates
-                    : (json_decode($detail->training_certificates ?? '[]', true) ?: []);
-
-                $existingDocs[] = [
-                    'id' => 'cert_' . ($enrollment->enrollment_id ?: $id),
-                    'enrollment_id' => $enrollment->enrollment_id ?: $id,
-                    'category' => 'certificate',
-                    'name' => "Certificate of Completion - {$training->title} (#{$certNo})",
-                    'status' => 'verified',
-                    'certificate_no' => $certNo,
-                    'course_title' => $training->title,
-                    'uploaded_at' => now()->toIso8601String(),
-                ];
-                $detail->training_certificates = array_values($existingDocs);
-                $detail->save();
-
-                // Automatically grant skill tag to jobseeker's profile
-                $skillName = trim($training->title);
-                $exists = JobseekerSkill::where('jobseeker_id', $jobseekerId)
-                    ->where('skill_name', $skillName)
-                    ->first();
-
-                if (!$exists) {
-                    JobseekerSkill::create([
-                        'jobseeker_id' => $jobseekerId,
-                        'skill_name' => $skillName,
-                        'skill_type' => 'technical',
-                    ]);
-                }
-
-                // Notification if user object available
-                if ($user) {
-                    Notification::create([
-                        'user_id' => $user->user_id,
-                        'title' => '🎓 Official Certificate Issued!',
-                        'message' => "Congratulations! You passed '{$training->title}' with {$percentScore}%. Your official Certificate of Completion (#{$certNo}) has been generated and added to your profile skills!",
-                        'type' => 'training',
-                        'is_read' => false,
-                        'related_id' => $training->training_id,
-                    ]);
-                }
-            } else {
-                $enrollment->status = 'in_progress';
-            }
-
-            $enrollment->save();
+        Notification::create([
+            'user_id' => $jobseeker->user_id,
+            'title' => 'Assessment Submitted for Trainer Review',
+            'message' => "Your assessment for '{$training->title}' is awaiting trainer review. Your certificate is pending.",
+            'type' => 'training',
+            'is_read' => false,
+            'related_id' => $enrollment->enrollment_id,
+        ]);
+        if ($training->trainer?->user_id) {
+            Notification::create([
+                'user_id' => $training->trainer->user_id,
+                'title' => 'Trainee Assessment Awaiting Review',
+                'message' => "{$jobseeker->first_name} {$jobseeker->last_name} submitted the assessment for '{$training->title}'. Review objective answers and essay responses.",
+                'type' => 'training',
+                'is_read' => false,
+                'related_id' => $enrollment->enrollment_id,
+            ]);
         }
 
         return response()->json([
             'success' => true,
-            'score' => $percentScore,
-            'passed' => $passed,
-            'certificate_no' => $certNo,
-            'message' => $passed
-                ? "Congratulations! You scored {$percentScore}% and earned your official Certificate of Completion (#{$certNo})!"
-                : "Assessment completed with score {$percentScore}%. Passing score is {$passingThreshold}%. Review course material and try again!",
+            'review_status' => 'pending',
+            'objective_score' => $gradedSubmission['objective_score'],
+            'certificate_issued' => false,
+            'message' => 'Assessment submitted. The trainer must review your answers before deciding the result.',
         ]);
     }
 

@@ -92,7 +92,7 @@ class User extends Authenticatable
      */
     public function getNameAttribute(): ?string
     {
-        return $this->profile?->full_name 
+        return $this->profile?->full_name
             ?? ($this->jobseeker ? trim($this->jobseeker->first_name . ' ' . $this->jobseeker->last_name) : null);
     }
 
@@ -249,7 +249,18 @@ class User extends Authenticatable
      */
     public function isAccountVerified(): bool
     {
-        return ($this->account_status === 'verified') || ($this->is_approved && $this->isActive());
+        // Primary check: legacy account flags
+        if ($this->account_status === 'verified' || ($this->is_approved && $this->isActive())) {
+            return true;
+        }
+
+        // Fallback: check the Document Hub for a verified valid_id (OCR auto-verify path)
+        $jobseeker = $this->jobseeker;
+        if ($jobseeker && $jobseeker->hasDocument('valid_id')) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

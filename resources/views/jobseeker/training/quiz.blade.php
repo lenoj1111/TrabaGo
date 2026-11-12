@@ -3,311 +3,128 @@
 @section('title', 'Skill Assessment: ' . $training->title . ' - TrabaGo')
 
 @section('content')
-<div x-data="{
-    questions: {{ json_encode($questions) }},
-    answers: {},
-    currentQuestion: 0,
-    submitted: false,
-    score: 0,
-    passed: false,
-    correctCount: 0,
-    showReview: false,
-    
-    get totalQuestions() {
-        return this.questions.length;
-    },
-
-    get answeredCount() {
-        return Object.keys(this.answers).length;
-    },
-
-    get isAllAnswered() {
-        return this.answeredCount === this.totalQuestions && this.totalQuestions > 0;
-    },
-
-    selectAnswer(qIndex, choiceIndex) {
-        if (this.submitted) return;
-        this.answers[qIndex] = choiceIndex;
-    },
-
-    goToQuestion(idx) {
-        if (idx >= 0 && idx < this.totalQuestions) {
-            this.currentQuestion = idx;
-        }
-    },
-
-    isQuestionAnswered(idx) {
-        return this.answers[idx] !== undefined && this.answers[idx] !== null;
-    },
-
-    calculateScore() {
-        let correct = 0;
-        this.questions.forEach((q, idx) => {
-            let selected = this.answers[idx];
-            if (selected !== undefined && selected !== null) {
-                if (typeof q.answer === 'number') {
-                    if (selected === q.answer) correct++;
-                } else if (typeof q.answer === 'string') {
-                    if (String(selected) === q.answer || (q.choices && String(q.choices[selected]).trim().toLowerCase() === q.answer.trim().toLowerCase())) {
-                        correct++;
-                    }
-                } else if (selected == q.answer) {
-                    correct++;
-                }
-            }
-        });
-        this.correctCount = correct;
-        this.score = this.totalQuestions > 0 ? Math.round((correct / this.totalQuestions) * 100) : 100;
-        this.passed = this.score >= 80;
-        this.submitted = true;
-    },
-
-    resetQuiz() {
-        this.answers = {};
-        this.currentQuestion = 0;
-        this.submitted = false;
-        this.score = 0;
-        this.passed = false;
-        this.correctCount = 0;
-        this.showReview = false;
-    }
-}" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-4xl space-y-8">
-        
-        <!-- Header -->
-        <div class="flex items-center justify-between">
-            <a href="{{ route('jobseeker.training.show', $training->training_id) }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-emerald-700 transition-colors">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                Exit Assessment
-            </a>
-            <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-1 rounded-full uppercase tracking-wider">
-                    Passing Threshold: 80%
-                </span>
-                <span class="text-xs font-bold text-slate-500 bg-white border border-slate-200 px-3 py-1 rounded-full" x-text="totalQuestions + ' Total Questions'"></span>
+@if(empty($questions))
+    <div class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-3xl space-y-6">
+            <a href="{{ route('jobseeker.training.show', $training->training_id) }}" class="text-xs font-bold text-slate-600 hover:text-emerald-700">&larr; Back to Course</a>
+            <div class="rounded-3xl border border-amber-300 bg-amber-50 p-8 text-center shadow-sm">
+                <h1 class="text-xl font-black text-amber-950">Assessment not available yet</h1>
+                <p class="mt-2 text-sm text-amber-900">The trainer has not added questions to this course yet. Please wait for the trainer to prepare the assessment.</p>
             </div>
         </div>
-
-        <!-- Quiz Container Card in green Theme -->
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-10 shadow-sm space-y-8">
-            
-            <!-- Quiz Title & Progress Bar -->
-            <div class="space-y-4 pb-6 border-b border-slate-100">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
-                            <span class="h-2 w-2 rounded-full bg-emerald-600 animate-pulse"></span>
-                            Official Skill Certification Assessment
-                        </span>
-                        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{{ $training->title }}</h1>
-                    </div>
-
-                    <div class="text-left sm:text-right" x-show="!submitted">
-                        <span class="text-xs font-bold text-slate-400 block uppercase tracking-wider">Progress</span>
-                        <span class="text-sm font-black text-emerald-800" x-text="'Question ' + (currentQuestion + 1) + ' of ' + totalQuestions"></span>
-                    </div>
-                </div>
-                
-                <!-- Linear Progress Bar -->
-                <div class="h-2.5 w-full overflow-hidden rounded-full bg-slate-100" x-show="!submitted">
-                    <div class="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-300 shadow-sm"
-                         :style="'width: ' + ((answeredCount / totalQuestions) * 100) + '%'"></div>
-                </div>
-
-                <!-- Interactive Question Navigator Pills -->
-                <div class="flex flex-wrap items-center gap-2 pt-2" x-show="!submitted">
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1">Questions:</span>
-                    <template x-for="(q, idx) in questions" :key="idx">
-                        <button type="button" 
-                                @click="goToQuestion(idx)"
-                                class="h-9 w-9 rounded-xl text-xs font-bold transition-all flex items-center justify-center relative"
-                                :class="{
-                                    'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-500/40': currentQuestion === idx,
-                                    'bg-emerald-100 text-emerald-900 border border-emerald-300': currentQuestion !== idx && isQuestionAnswered(idx),
-                                    'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200': currentQuestion !== idx && !isQuestionAnswered(idx)
-                                }">
-                            <span x-text="idx + 1"></span>
-                            <!-- Answered Dot Indicator -->
-                            <span x-show="isQuestionAnswered(idx) && currentQuestion !== idx" 
-                                  class="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white"></span>
-                        </button>
-                    </template>
-                </div>
+    </div>
+@else
+    <div x-data="{
+        questions: @js($questions),
+        answers: {},
+        currentQuestion: 0,
+        answered(question) {
+            const response = this.answers[question.id];
+            return question.type === 'essay'
+                ? typeof response === 'string' && response.trim().length > 0
+                : response !== undefined && response !== null;
+        },
+        get answeredCount() {
+            return this.questions.filter(question => this.answered(question)).length;
+        },
+        get allAnswered() {
+            return this.answeredCount === this.questions.length;
+        }
+    }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-4xl space-y-8">
+            <div class="flex items-center justify-between">
+                <a href="{{ route('jobseeker.training.show', $training->training_id) }}" class="text-xs font-bold text-slate-600 hover:text-emerald-700">&larr; Exit Assessment</a>
+                <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold uppercase text-amber-800">Trainer review required</span>
             </div>
 
-            <!-- Active Question & Choices (When NOT submitted) -->
-            <div x-show="!submitted" class="space-y-6">
-                <template x-for="(q, qIdx) in questions" :key="qIdx">
-                    <div x-show="currentQuestion === qIdx" class="space-y-5">
-                        
-                        <div class="flex items-start gap-3">
-                            <span class="h-8 w-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm font-black shrink-0" x-text="qIdx + 1"></span>
-                            <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-snug pt-0.5" x-text="q.question"></h3>
-                        </div>
+            @if($errors->has('responses'))
+                <div class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-800">{{ $errors->first('responses') }}</div>
+            @endif
 
-                        <!-- Choices List -->
-                        <div class="space-y-3 pt-2">
-                            <template x-for="(choice, cIdx) in q.choices" :key="cIdx">
-                                <button type="button" 
-                                        @click="selectAnswer(qIdx, cIdx)"
-                                        class="w-full p-4 rounded-2xl border text-left text-xs sm:text-sm font-semibold transition-all flex items-center justify-between group"
-                                        :class="answers[qIdx] === cIdx ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400/30 text-emerald-950 font-bold shadow-sm' : 'border-slate-200 hover:border-emerald-300 hover:bg-slate-50/80 text-slate-700'">
-                                    <span class="flex items-center gap-3.5">
-                                        <span class="h-7 w-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 transition-colors"
-                                              :class="answers[qIdx] === cIdx ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 group-hover:bg-emerald-100 group-hover:text-emerald-800'"
-                                              x-text="['A', 'B', 'C', 'D', 'E'][cIdx] || (cIdx + 1)"></span>
-                                        <span x-text="choice" class="leading-relaxed"></span>
-                                    </span>
-                                    <div class="h-5 w-5 rounded-full border flex items-center justify-center shrink-0 ml-2"
-                                         :class="answers[qIdx] === cIdx ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-300'">
-                                        <svg x-show="answers[qIdx] === cIdx" class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                                    </div>
-                                </button>
+            <form action="{{ route('jobseeker.training.quiz.submit', $training->training_id) }}" method="POST" class="space-y-6">
+                @csrf
+                <input type="hidden" name="responses" :value="JSON.stringify(answers)">
+
+                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
+                    <div class="space-y-5 border-b border-slate-100 pb-6">
+                        <div>
+                            <span class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold uppercase text-emerald-800">Skill Assessment</span>
+                            <h1 class="mt-2 text-2xl font-black text-slate-900 sm:text-3xl">{{ $training->title }}</h1>
+                        </div>
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <p class="text-xs font-semibold text-slate-500">
+                                Question <span x-text="currentQuestion + 1"></span> of {{ count($questions) }}
+                            </p>
+                            <p class="text-xs font-semibold text-slate-500">
+                                <span x-text="answeredCount"></span> of {{ count($questions) }} answered
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <template x-for="(question, index) in questions" :key="question.id">
+                                <button type="button" @click="currentQuestion = index" class="h-9 w-9 rounded-xl border text-xs font-bold"
+                                    :class="currentQuestion === index ? 'border-emerald-600 bg-emerald-600 text-white' : (answered(question) ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-slate-50 text-slate-600')"
+                                    x-text="index + 1"></button>
                             </template>
                         </div>
                     </div>
-                </template>
 
-                <!-- Navigation Controls -->
-                <div class="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div class="flex items-center gap-3 w-full sm:w-auto">
-                        <button type="button" 
-                                x-show="currentQuestion > 0" 
-                                @click="currentQuestion--" 
-                                class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors">
-                            &larr; Previous
-                        </button>
-                        
-                        <button type="button" 
-                                x-show="currentQuestion < totalQuestions - 1" 
-                                @click="currentQuestion++" 
-                                class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors">
-                            Next Question &rarr;
-                        </button>
-                    </div>
-
-                    <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-                        <span class="text-xs text-slate-400 font-semibold" x-text="answeredCount + '/' + totalQuestions + ' Answered'"></span>
-
-                        <button type="button" 
-                                @click="calculateScore()" 
-                                :disabled="!isAllAnswered"
-                                class="w-full sm:w-auto px-8 py-3 rounded-xl font-black text-xs transition-all shadow-md"
-                                :class="isAllAnswered ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 hover:scale-105 cursor-pointer' : 'bg-slate-200 text-slate-400 cursor-not-allowed'">
-                            Submit Assessment ({{ count($questions) }} Questions)
-                        </button>
-                    </div>
-                </div>
-
-                <div x-show="!isAllAnswered" class="text-right">
-                    <p class="text-[11px] text-amber-600 font-medium">Please answer all <span x-text="totalQuestions"></span> questions to unlock the assessment submission.</p>
-                </div>
-            </div>
-
-            <!-- Quiz Results Screen (When submitted) -->
-            <div x-show="submitted" x-cloak class="space-y-8 text-center py-4">
-                
-                <!-- Status Badge Icon -->
-                <div class="mx-auto h-24 w-24 rounded-3xl flex items-center justify-center shadow-xl transition-all"
-                     :class="passed ? 'bg-emerald-100 text-emerald-800 border-2 border-emerald-400 ring-4 ring-emerald-500/20' : 'bg-amber-100 text-amber-800 border-2 border-amber-400 ring-4 ring-amber-500/20'">
-                    <template x-if="passed">
-                        <svg class="h-12 w-12 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </template>
-                    <template x-if="!passed">
-                        <svg class="h-12 w-12 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                        </svg>
-                    </template>
-                </div>
-
-                <div class="space-y-2">
-                    <h2 class="text-3xl font-black text-slate-900" x-text="passed ? 'Congratulations! You Passed!' : 'Assessment Completed'"></h2>
-                    <p class="text-sm text-slate-600 max-w-md mx-auto" 
-                       x-text="passed ? 'You answered ' + correctCount + ' of ' + totalQuestions + ' questions correctly (' + score + '%). The certified skill has been permanently verified on your profile!' : 'You answered ' + correctCount + ' of ' + totalQuestions + ' questions correctly (' + score + '%). A minimum of 80% is required to earn the certificate. Review the questions and retake when ready!'"></p>
-                </div>
-
-                <!-- Final Score Metric Card -->
-                <div class="inline-flex flex-col items-center p-6 rounded-3xl bg-emerald-50/60 border border-emerald-200 shadow-sm min-w-[260px]">
-                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Final Assessment Score</span>
-                    <span class="text-5xl font-black text-emerald-800 mt-1.5" x-text="score + '%'"></span>
-                    <span class="mt-3 text-xs font-black px-4 py-1.5 rounded-full"
-                          :class="passed ? 'bg-emerald-600 text-white shadow-xs' : 'bg-rose-100 text-rose-800 border border-rose-200'"
-                          x-text="passed ? 'PASSED (>= 80%)' : 'NEEDS IMPROVEMENT (< 80%)'"></span>
-                </div>
-
-                <!-- Form to save score & automatically grant skill -->
-                <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                    
-                    <button type="button" 
-                            @click="showReview = !showReview" 
-                            class="w-full sm:w-auto px-6 py-3 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all flex items-center justify-center gap-2">
-                        <span x-text="showReview ? 'Hide Answer Review' : 'Review Questions & Answers (' + totalQuestions + ')'"></span>
-                    </button>
-
-                    <button type="button" 
-                            x-show="!passed" 
-                            @click="resetQuiz()" 
-                            class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all">
-                        Retake Assessment
-                    </button>
-
-                    <form action="{{ route('jobseeker.training.quiz.submit', $training->training_id) }}" method="POST" class="w-full sm:w-auto">
-                        @csrf
-                        <input type="hidden" name="score" :value="score">
-                        <input type="hidden" name="passed" :value="passed ? 1 : 0">
-                        
-                        <button type="submit" class="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-xl shadow-emerald-600/30 transition-all hover:scale-105">
-                            <span x-text="passed ? 'Save Certification & Return to Course &rarr;' : 'Save Score & Return to Course &rarr;'"></span>
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Review Breakdown Table -->
-                <div x-show="showReview" x-cloak class="mt-8 pt-8 border-t border-slate-200 text-left space-y-4">
-                    <h3 class="text-sm font-black text-slate-900 uppercase tracking-wider">Assessment Question Review:</h3>
-                    
-                    <div class="space-y-4">
-                        <template x-for="(q, idx) in questions" :key="idx">
-                            @php
-                                // Alpine handles review dynamic rendering
-                            @endphp
-                            <div class="p-5 rounded-2xl border transition-all"
-                                 :class="answers[idx] === q.answer ? 'bg-emerald-50/50 border-emerald-200' : 'bg-rose-50/40 border-rose-200'">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div class="space-y-2">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-xs font-black px-2.5 py-0.5 rounded-md"
-                                                  :class="answers[idx] === q.answer ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'"
-                                                  x-text="answers[idx] === q.answer ? 'Correct' : 'Incorrect'"></span>
-                                            <span class="text-xs font-bold text-slate-500" x-text="'Question ' + (idx + 1)"></span>
-                                        </div>
-                                        <p class="text-sm font-bold text-slate-900" x-text="q.question"></p>
+                    <div class="py-8">
+                        <template x-for="(question, index) in questions" :key="question.id">
+                            <section x-show="currentQuestion === index" class="space-y-5">
+                                <div class="flex items-start gap-3">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-sm font-black text-emerald-800" x-text="index + 1"></span>
+                                    <div>
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-700" x-text="question.type === 'essay' ? 'Essay response' : 'Multiple choice'"></span>
+                                        <h2 class="mt-1 text-base font-bold leading-relaxed text-slate-900 sm:text-lg" x-text="question.question"></h2>
                                     </div>
                                 </div>
+                                <template x-if="question.image_url">
+                                    <img :src="question.image_url" alt="Assessment question illustration" class="ml-11 max-h-80 max-w-full rounded-xl border border-slate-200 object-contain">
+                                </template>
 
-                                <div class="mt-3 pt-3 border-t border-slate-200/60 space-y-1.5 text-xs">
-                                    <p class="text-slate-600">
-                                        <span class="font-bold text-slate-700">Your Selection:</span> 
-                                        <span :class="answers[idx] === q.answer ? 'text-emerald-800 font-bold' : 'text-rose-700 font-bold'"
-                                              x-text="q.choices[answers[idx]] || 'Not answered'"></span>
-                                    </p>
-                                    <p class="text-slate-600" x-show="answers[idx] !== q.answer">
-                                        <span class="font-bold text-emerald-800">Correct Answer:</span> 
-                                        <span class="text-emerald-800 font-semibold" x-text="q.choices[q.answer] || q.answer"></span>
-                                    </p>
-                                    <p class="text-[11px] text-slate-500 italic pt-1" x-show="q.explanation" x-text="'Note: ' + q.explanation"></p>
-                                </div>
-                            </div>
+                                <template x-if="question.type === 'essay'">
+                                    <div class="space-y-2 pl-11">
+                                        <textarea :name="'essay_' + question.id" x-model="answers[question.id]" rows="8" maxlength="5000"
+                                            placeholder="Write your response here..."
+                                            class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
+                                        <p class="text-[11px] text-slate-400">Your written response will be reviewed by the trainer.</p>
+                                    </div>
+                                </template>
+
+                                <template x-if="question.type !== 'essay'">
+                                    <div class="space-y-3 pl-11">
+                                        <template x-for="(choice, choiceIndex) in question.choices" :key="choiceIndex">
+                                            <button type="button" @click="answers[question.id] = choiceIndex"
+                                                class="flex w-full items-center gap-3 rounded-2xl border p-4 text-left text-sm font-semibold transition-colors"
+                                                :class="answers[question.id] === choiceIndex ? 'border-emerald-500 bg-emerald-50 text-emerald-950' : 'border-slate-200 text-slate-700 hover:border-emerald-300 hover:bg-slate-50'">
+                                                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-black text-slate-600" x-text="String.fromCharCode(65 + choiceIndex)"></span>
+                                                <span x-text="choice"></span>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </template>
+                            </section>
                         </template>
                     </div>
+
+                    <div class="flex flex-col justify-between gap-3 border-t border-slate-100 pt-5 sm:flex-row">
+                        <button type="button" @click="currentQuestion = Math.max(0, currentQuestion - 1)" :disabled="currentQuestion === 0"
+                            class="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-bold text-slate-700 disabled:opacity-40">Previous</button>
+                        <button type="button" x-show="currentQuestion < questions.length - 1" @click="currentQuestion++"
+                            class="rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-slate-800">Next Question</button>
+                        <div x-show="currentQuestion === questions.length - 1" class="space-y-2 sm:text-right">
+                            <p x-show="!allAnswered" class="text-xs font-semibold text-amber-700">Answer every question before submitting.</p>
+                            <button type="submit" :disabled="!allAnswered"
+                                class="rounded-xl bg-emerald-600 px-7 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none">
+                                Submit for Trainer Review
+                            </button>
+                        </div>
+                    </div>
                 </div>
+            </form>
 
-            </div>
-
+            <p class="text-center text-xs text-slate-500">Your certificate remains pending until the trainer reviews your answers and approves the result.</p>
         </div>
-
     </div>
-</div>
+@endif
 @endsection

@@ -378,6 +378,16 @@
 
         {{-- Flash Toasts --}}
         <div class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-md w-full px-4 pointer-events-none">
+            @if (session('warning'))
+                <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 7000)"
+                     class="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-amber-950 text-white p-4 shadow-2xl border border-amber-500/40">
+                    <div class="flex items-center gap-2.5">
+                        <span class="h-8 w-8 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-black">!</span>
+                        <p class="text-xs font-bold">{{ session('warning') }}</p>
+                    </div>
+                    <button @click="show = false" class="text-amber-300 hover:text-white">&times;</button>
+                </div>
+            @endif
             @if (session('success'))
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
                      class="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-slate-900 text-white p-4 shadow-2xl border border-emerald-500/40">

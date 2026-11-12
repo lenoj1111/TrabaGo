@@ -6,9 +6,11 @@
 <div x-data="{ 
     addQuestionModal: false, 
     editQuestionModal: false,
+    newQuestionType: 'multiple_choice',
     activeQuestion: {
         id: null,
         question: '',
+        type: 'multiple_choice',
         options: ['', '', '', ''],
         correct_answer: 0,
         explanation: '',
@@ -41,25 +43,15 @@
                             {{ $course->training_type === 'laboratory_onsite' ? 'Laboratory / Onsite Hands-on' : 'Online Track' }}
                         </span>
                         <span class="rounded-full bg-white/10 px-3 py-0.5 text-xs font-semibold text-slate-300">
-                            {{ $course->duration_months ?: 1 }} Month Track
+                            {{ $course->training_start_date ? \Carbon\Carbon::parse($course->training_start_date)->format('M j, Y') : 'Date unset' }}
+                            to {{ $course->training_end_date ? \Carbon\Carbon::parse($course->training_end_date)->format('M j, Y') : 'Date unset' }}
                         </span>
-                        @if($course->auto_generate_certificate ?? true)
-                            <span class="rounded-full bg-emerald-400/20 border border-emerald-300/30 px-3 py-0.5 text-xs font-bold text-emerald-300 inline-flex items-center gap-1.5">
-                                <svg class="h-3.5 w-3.5 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path d="M12 14l9-5-9-5-9 5 9 5z"/>
-                                    <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
-                                </svg>
-                                <span>Auto-Generate Certificate Enabled</span>
-                            </span>
-                        @else
-                            <span class="rounded-full bg-amber-400/20 border border-amber-300/30 px-3 py-0.5 text-xs font-bold text-amber-300 inline-flex items-center gap-1.5">
-                                <svg class="h-3.5 w-3.5 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                                </svg>
-                                <span>Manual Assessment & Certificate Approval</span>
-                            </span>
-                        @endif
+                        <span class="rounded-full bg-amber-400/20 border border-amber-300/30 px-3 py-0.5 text-xs font-bold text-amber-300 inline-flex items-center gap-1.5">
+                            <svg class="h-3.5 w-3.5 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                            <span>Trainer Review Required</span>
+                        </span>
                     </div>
 
                     <h1 class="text-2xl sm:text-3xl font-black tracking-tight">{{ $course->title }}</h1>
@@ -86,7 +78,7 @@
                     </div>
                     <div class="rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 p-4 text-center">
                         <div class="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Trainees Enrolled</div>
-                        <div class="text-2xl font-black text-white">{{ count($enrollments) }}</div>
+                        <div class="text-2xl font-black text-white">{{ count($enrollments) }} / {{ $course->trainee_capacity ?: 'Unlimited' }}</div>
                     </div>
                 </div>
             </div>
@@ -134,45 +126,58 @@
                                         </span>
                                         <h4 class="text-xs font-bold text-slate-900 leading-snug">{{ $item->question }}</h4>
                                     </div>
+                                    <span class="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold uppercase text-indigo-700">{{ $item->question_type === 'essay' ? 'Essay' : 'Multiple Choice' }}</span>
 
-                                    <div class="flex items-center gap-1 shrink-0">
+                                    <div class="flex shrink-0 flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
                                         <!-- Edit Question Button -->
                                         <button @click="activeQuestion = {
                                             id: {{ $item->assessment_id }},
                                             question: '{{ addslashes($item->question) }}',
-                                            options: {{ json_encode($choices) }},
+                                            options: {{ json_encode(count($choices) ? $choices : ['', '', '', '']) }},
+                                            type: '{{ $item->question_type ?: 'multiple_choice' }}',
                                             correct_answer: {{ (int) $item->correct_answer }},
                                             explanation: '{{ addslashes($item->explanation ?? '') }}',
-                                            points: {{ (int) ($item->points ?? 1) }}
-                                        }; editQuestionModal = true;" type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors" title="Edit Question">
+                                            points: {{ (int) ($item->points ?? 1) }},
+                                            image_url: @js($item->image_path ? asset('storage/' . $item->image_path) : '')
+                                        }; editQuestionModal = true;" type="button" class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-200" title="Edit Question">
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                            <span>Edit</span>
                                         </button>
 
                                         <!-- Delete Question -->
                                         <form action="{{ route('trainer.courses.assessments.destroy', [$course->training_id, $item->assessment_id]) }}" method="POST" onsubmit="return confirm('Delete this assessment question?');" class="inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Delete Question">
+                                            <button type="submit" class="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-100" title="Delete Question">
                                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                <span>Delete</span>
                                             </button>
                                         </form>
                                     </div>
                                 </div>
 
+                                @if($item->image_path)
+                                    <img src="{{ asset('storage/' . $item->image_path) }}" alt="Assessment question illustration" class="ml-8 max-h-64 max-w-full rounded-xl border border-slate-200 object-contain">
+                                @endif
+
                                 <!-- Choices -->
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 pl-8">
-                                    @foreach($choices as $cIndex => $choice)
-                                        <div class="rounded-xl px-3 py-2 text-xs flex items-center gap-2 border {{ (int)$item->correct_answer === $cIndex ? 'border-emerald-500 bg-emerald-50 text-emerald-950 font-bold' : 'border-slate-200 bg-white text-slate-700' }}">
-                                            <span class="h-4 w-4 rounded-full flex items-center justify-center text-[10px] {{ (int)$item->correct_answer === $cIndex ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 text-slate-500' }}">
-                                                {{ chr(65 + $cIndex) }}
-                                            </span>
-                                            <span class="truncate">{{ $choice }}</span>
-                                            @if((int)$item->correct_answer === $cIndex)
-                                                <span class="ml-auto text-[10px] text-emerald-700 uppercase font-black tracking-wider">Correct</span>
-                                            @endif
-                                        </div>
-                                    @endforeach
-                                </div>
+                                @if($item->question_type === 'essay')
+                                    <p class="pl-8 text-xs font-semibold text-indigo-700">Essay response - trainer reviewed</p>
+                                @else
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 pl-8">
+                                        @foreach($choices as $cIndex => $choice)
+                                            <div class="rounded-xl px-3 py-2 text-xs flex items-center gap-2 border {{ (int)$item->correct_answer === $cIndex ? 'border-emerald-500 bg-emerald-50 text-emerald-950 font-bold' : 'border-slate-200 bg-white text-slate-700' }}">
+                                                <span class="h-4 w-4 rounded-full flex items-center justify-center text-[10px] {{ (int)$item->correct_answer === $cIndex ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 text-slate-500' }}">
+                                                    {{ chr(65 + $cIndex) }}
+                                                </span>
+                                                <span class="truncate">{{ $choice }}</span>
+                                                @if((int)$item->correct_answer === $cIndex)
+                                                    <span class="ml-auto text-[10px] text-emerald-700 uppercase font-black tracking-wider">Correct</span>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
 
                                 @if(!empty($item->explanation))
                                     <div class="pl-8 text-[11px] text-slate-500 italic">
@@ -319,13 +324,13 @@
 
                 <!-- Course Configuration Card -->
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-                    <h3 class="text-sm font-black text-slate-900 pb-3 border-b border-slate-100">Certification Settings</h3>
+                    <h3 class="text-sm font-black text-slate-900 pb-3 border-b border-slate-100">Certification</h3>
                     
                     <div class="space-y-3 text-xs">
                         <div class="flex justify-between py-1 border-b border-slate-50">
                             <span class="text-slate-400">Issuance Rule:</span>
-                            <span class="font-bold {{ ($course->auto_generate_certificate ?? true) ? 'text-emerald-700' : 'text-amber-700' }}">
-                                {{ ($course->auto_generate_certificate ?? true) ? 'Automatic upon passing' : 'Manual Trainer Assessment' }}
+                            <span class="font-bold text-amber-700">
+                                Manual issuance after trainer approval
                             </span>
                         </div>
                         <div class="flex justify-between py-1 border-b border-slate-50">
@@ -337,8 +342,8 @@
                             <span class="font-bold text-slate-800">{{ $course->training_type }}</span>
                         </div>
                         <div class="flex justify-between py-1">
-                            <span class="text-slate-400">Duration:</span>
-                            <span class="font-bold text-slate-800">{{ $course->duration_months ?: 1 }} Months</span>
+                            <span class="text-slate-400">Schedule:</span>
+                            <span class="font-bold text-slate-800">{{ $course->training_start_date }} - {{ $course->training_end_date }}</span>
                         </div>
                     </div>
                 </div>
@@ -356,7 +361,7 @@
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
             <div x-show="addQuestionModal" x-transition class="relative inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full border border-slate-200">
-                <form action="{{ route('trainer.courses.assessments.store', $course->training_id) }}" method="POST">
+                <form action="{{ route('trainer.courses.assessments.store', $course->training_id) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 px-6 py-5 text-white flex items-center justify-between border-b border-emerald-500/20">
                         <div class="flex items-center gap-3">
@@ -374,14 +379,27 @@
                     </div>
 
                     <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                        <div>
+                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">Question Type</label>
+                            <select name="question_type" x-model="newQuestionType" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-800">
+                                <option value="multiple_choice">Multiple Choice</option>
+                                <option value="essay">Essay</option>
+                            </select>
+                        </div>
+
                         <!-- Question Prompt -->
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Question Prompt <span class="text-rose-500">*</span></label>
                             <textarea name="question" rows="3" required placeholder="State the question clearly..." class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none"></textarea>
                         </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Question Image (Optional)</label>
+                            <input type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-700">
+                            <p class="mt-1 text-[11px] text-slate-400">JPEG, PNG, GIF, or WebP; maximum 5 MB.</p>
+                        </div>
 
                         <!-- Choices -->
-                        <div class="space-y-3">
+                        <fieldset class="space-y-3" x-show="newQuestionType !== 'essay'" :disabled="newQuestionType === 'essay'">
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Answer Choices & Correct Option <span class="text-rose-500">*</span></label>
                             <p class="text-[11px] text-slate-400">Select the radio button next to the correct answer choice.</p>
 
@@ -392,7 +410,10 @@
                                     <input type="text" name="options[]" required placeholder="Option {{ chr(65 + $i) }}" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
                                 </div>
                             @endfor
-                        </div>
+                        </fieldset>
+                        <p x-show="newQuestionType === 'essay'" class="rounded-xl border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-800">
+                            Jobseekers will enter a written response. The trainer reviews and decides the final result.
+                        </p>
 
                         <!-- Explanation -->
                         <div>
@@ -427,7 +448,7 @@
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
             <div x-show="editQuestionModal" x-transition class="relative inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full border border-slate-200">
-                <form :action="'/trainer/courses/{{ $course->training_id }}/assessments/' + activeQuestion.id" method="POST">
+                <form :action="'/trainer/courses/{{ $course->training_id }}/assessments/' + activeQuestion.id" method="POST" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
                     <div class="bg-slate-900 px-6 py-5 text-white flex items-center justify-between border-b border-slate-800">
@@ -451,7 +472,28 @@
                             <textarea name="question" x-model="activeQuestion.question" rows="3" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none"></textarea>
                         </div>
 
-                        <div class="space-y-3">
+                        <div>
+                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">Question Type</label>
+                            <select name="question_type" x-model="activeQuestion.type" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-800">
+                                <option value="multiple_choice">Multiple Choice</option>
+                                <option value="essay">Essay</option>
+                            </select>
+                        </div>
+                        <div>
+                            <template x-if="activeQuestion.image_url">
+                                <div class="mb-2 space-y-2">
+                                    <img :src="activeQuestion.image_url" alt="Current assessment question illustration" class="max-h-40 rounded-xl border border-slate-200 object-contain">
+                                    <label class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600">
+                                        <input type="checkbox" name="remove_image" value="1" class="rounded border-slate-300 text-rose-600 focus:ring-rose-500">
+                                        Remove current image
+                                    </label>
+                                </div>
+                            </template>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Replace Image (Optional)</label>
+                            <input type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-700">
+                        </div>
+
+                        <fieldset class="space-y-3" x-show="activeQuestion.type !== 'essay'" :disabled="activeQuestion.type === 'essay'">
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Answer Choices & Correct Option <span class="text-rose-500">*</span></label>
                             
                             <template x-for="(opt, idx) in activeQuestion.options" :key="idx">
@@ -461,7 +503,10 @@
                                     <input type="text" name="options[]" x-model="activeQuestion.options[idx]" required class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
                                 </div>
                             </template>
-                        </div>
+                        </fieldset>
+                        <p x-show="activeQuestion.type === 'essay'" class="rounded-xl border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-800">
+                            Jobseekers will enter a written response. The trainer reviews and decides the final result.
+                        </p>
 
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Explanation / Rationale</label>

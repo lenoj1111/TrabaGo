@@ -79,7 +79,13 @@ class ApplicationController extends Controller
             return response()->json([
                 'applications' => [],
                 'counts' => [
-                    'all' => 0, 'offered' => 0, 'pending' => 0, 'reviewed' => 0, 'interview' => 0, 'hired' => 0, 'rejected' => 0
+                    'all' => 0,
+                    'offered' => 0,
+                    'pending' => 0,
+                    'reviewed' => 0,
+                    'interview' => 0,
+                    'hired' => 0,
+                    'rejected' => 0
                 ]
             ]);
         }
@@ -172,6 +178,13 @@ class ApplicationController extends Controller
                 'application' => $formatted,
                 'data' => $formatted,
             ]);
+        }
+
+        if ($job->resume_required && !$jobseeker->hasDocument('resume')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This job posting requires a resume. Upload one to your Document Hub before applying.',
+            ], 422);
         }
 
         $app = JobApplication::create([

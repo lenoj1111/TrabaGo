@@ -96,7 +96,9 @@
                     $enrollment = $training->enrollments->first();
                     $isCompleted = $enrollment && $enrollment->status === 'completed';
                     $isInProgress = $enrollment && $enrollment->status === 'in_progress';
-                    $isEnrolled = $enrollment && in_array($enrollment->status, ['enrolled', 'in_progress', 'completed']);
+                    $isEnrolled = $enrollment && in_array($enrollment->status, ['enrolled', 'in_progress', 'completed', 'failed']);
+                    $assessmentData = $enrollment && is_array($enrollment->answers) ? $enrollment->answers : [];
+                    $reviewStatus = $assessmentData['review_status'] ?? null;
                 @endphp
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between gap-6">
                     
@@ -105,7 +107,13 @@
                             <span class="rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-0.5 text-xs font-bold">
                                 {{ ucfirst($training->training_type ?: 'Online') }}
                             </span>
-                            @if($isCompleted)
+                            @if($reviewStatus === 'pending')
+                                <span class="rounded-full bg-amber-100 text-amber-900 border border-amber-300 px-3 py-0.5 text-xs font-bold">Assessment Pending Review</span>
+                            @elseif($reviewStatus === 'needs_retake' || ($enrollment && $enrollment->status === 'failed'))
+                                <span class="rounded-full bg-rose-100 text-rose-800 border border-rose-300 px-3 py-0.5 text-xs font-bold">Needs Retake</span>
+                            @elseif($reviewStatus === 'passed')
+                                <span class="rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 px-3 py-0.5 text-xs font-bold">Assessment Passed</span>
+                            @elseif($isCompleted)
                                 <span class="rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 px-3 py-0.5 text-xs font-extrabold flex items-center gap-1">
                                     <svg class="h-3.5 w-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                                     Certified
@@ -151,6 +159,16 @@
                         </div>
                     </div>
 
+                    @if(!$isEnrolled && !$training->can_enroll)
+                        <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
+                            @if(!$training->account_can_enroll)
+                                Complete your profile and verify your account before enrolling.
+                            @else
+                                {{ implode(' ', $training->eligibility_issues) }}
+                            @endif
+                        </div>
+                    @endif
+
                     <div class="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
                         <span class="text-xs font-semibold text-slate-500">
                             {{ $training->topics->count() }} Modules &bull; {{ $training->duration_months ?? 1 }} Mo
@@ -168,6 +186,15 @@
                                     Continue &rarr;
                                 </a>
                             @else
+                                @if(!$training->can_enroll)
+                                    @if(!$training->account_can_enroll)
+                                        <a href="{{ route('jobseeker.documents') }}" class="inline-flex items-center justify-center rounded-xl bg-amber-100 px-4 py-2.5 text-xs font-bold text-amber-900 hover:bg-amber-200">
+                                            Verify to Enroll
+                                        </a>
+                                    @else
+                                        <span class="rounded-xl bg-slate-100 px-4 py-2.5 text-xs font-bold text-slate-600">Not eligible</span>
+                                    @endif
+                                @else
                                 <form action="{{ route('jobseeker.training.enroll', $training->training_id) }}" method="POST">
                                     @csrf
                                     <button type="submit" 
@@ -175,6 +202,7 @@
                                         <span>+</span> Enroll Now
                                     </button>
                                 </form>
+                                @endif
                             @endif
                         </div>
                     </div>
