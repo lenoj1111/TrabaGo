@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ApprovalsController;
 use App\Http\Controllers\Admin\BarangayDistributionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\JobPostingController;
+use App\Http\Controllers\Admin\ReportsController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -657,24 +658,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/job-postings-list/{id}/close', [JobPostingController::class, 'close'])->name('job-postings-list.close');
 
     // Reports
-    Route::get('/reports', function () {
-        $stats = [
-            'total_jobs' => DB::table('job_postings')->count(),
-            'pending_jobs' => DB::table('job_postings')->where('status', 'pending')->count(),
-            'approved' => DB::table('job_postings')->where('status', 'approved')->count(),
-            'rejected' => DB::table('job_postings')->where('status', 'rejected')->count(),
-            'closed' => DB::table('job_postings')->where('status', 'closed')->count(),
-            'total_employers' => DB::table('employers')->count(),
-            'total_jobseekers' => DB::table('jobseekers')->count(),
-            'total_applications' => DB::table('job_applications')->count(),
-            'admin_count' => DB::table('users')->where('role', 'admin')->count(),
-            'staff_count' => DB::table('users')->whereIn('role', ['jpo', 'trainer'])->count(),
-            'total_placement_reports' => DB::table('placement_reports')->count(),
-            'approved_placements' => DB::table('placement_reports')->where('status', 'approved')->count(),
-        ];
-
-        return view('admin.reports', compact('stats'));
-    })->name('reports');
+    Route::get('/reports', [ReportsController::class, 'index'])->name('reports');
+    Route::get('/reports/print', [ReportsController::class, 'printable'])->name('reports.print');
 
     // Barangay Distribution (City-Wide Macro-Level Visualization, Heatmaps & Resource Deployment)
     Route::get('/barangay-distribution', [BarangayDistributionController::class, 'index'])->name('barangay-distribution');

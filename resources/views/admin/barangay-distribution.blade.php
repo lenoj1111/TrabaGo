@@ -136,6 +136,37 @@
         </section>
 
         <!-- TALENT HUBS & GEOGRAPHIC SUMMARY -->
+        @php
+            $skillBreakdown = $skill_type_breakdown ?? ['technical' => 0, '21st_century' => 0];
+        @endphp
+        <section aria-label="Skill Type Overview" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Technical Skills</p>
+                        <h2 class="mt-2 text-3xl font-black text-slate-900">{{ number_format($skillBreakdown['technical']) }}</h2>
+                    </div>
+                    <div class="h-10 w-10 rounded-xl bg-cyan-100 text-cyan-800 flex items-center justify-center">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </div>
+                </div>
+                <p class="mt-3 text-xs text-slate-600">Vocational, trade, and technical competencies captured across active candidate records.</p>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">21st Century Skills</p>
+                        <h2 class="mt-2 text-3xl font-black text-slate-900">{{ number_format($skillBreakdown['21st_century']) }}</h2>
+                    </div>
+                    <div class="h-10 w-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3 3 7-7M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                </div>
+                <p class="mt-3 text-xs text-slate-600">Communication, problem solving, adaptability, and other soft/critical-thinking competencies.</p>
+            </div>
+        </section>
+
         <section aria-label="Talent Hubs and Classifications" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
             
             <!-- Real Talent Hubs -->
@@ -249,6 +280,69 @@
 
         </section>
 
+        @php
+            $workforceChartMax = max(collect($top10_registered)->max('registered') ?? 0, 1);
+            $seekerChartMax = max(collect($top10_unemployment)->max('seeking') ?? 0, 1);
+        @endphp
+        <section aria-label="Barangay workforce distribution charts" class="space-y-4">
+            <div class="flex flex-col gap-1 border-b border-slate-200 pb-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h2 class="text-lg font-black text-slate-900">Barangay Workforce Distribution</h2>
+                    <p class="text-xs text-slate-600">Compare registered workforce, employment status, and active job-seeker hotspots.</p>
+                </div>
+                <span class="text-[10px] font-semibold text-slate-500">Live counts | Top 10 locations per chart</span>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <article class="border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">Largest Registered Workforces</h3>
+                            <p class="mt-1 text-[11px] text-slate-500">Employed and seeking counts, scaled against the largest barangay.</p>
+                        </div>
+                        <div class="flex gap-3 text-[10px] font-semibold text-slate-600">
+                            <span class="inline-flex items-center gap-1.5"><i class="h-2.5 w-2.5 bg-emerald-600"></i>Employed</span>
+                            <span class="inline-flex items-center gap-1.5"><i class="h-2.5 w-2.5 bg-amber-500"></i>Seeking</span>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        @forelse($top10_registered as $barangay)
+                            <div class="grid grid-cols-[minmax(6rem,8rem)_1fr_auto] items-center gap-3" title="{{ $barangay['name'] }}: {{ $barangay['registered'] }} registered, {{ $barangay['employed'] }} employed, {{ $barangay['seeking'] }} seeking">
+                                <span class="truncate text-xs font-semibold text-slate-700">{{ $barangay['name'] }}</span>
+                                <div class="flex h-3 overflow-hidden bg-slate-100" role="img" aria-label="{{ $barangay['name'] }} workforce: {{ $barangay['employed'] }} employed and {{ $barangay['seeking'] }} seeking">
+                                    <span class="h-full bg-emerald-600" style="width: {{ round(($barangay['employed'] / $workforceChartMax) * 100) }}%"></span>
+                                    <span class="h-full bg-amber-500" style="width: {{ round(($barangay['seeking'] / $workforceChartMax) * 100) }}%"></span>
+                                </div>
+                                <strong class="w-8 text-right text-xs text-slate-900">{{ number_format($barangay['registered']) }}</strong>
+                            </div>
+                        @empty
+                            <p class="py-8 text-center text-xs text-slate-500">No registered jobseekers to chart yet.</p>
+                        @endforelse
+                    </div>
+                </article>
+
+                <article class="border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="mb-4">
+                        <h3 class="text-sm font-bold text-slate-900">Active Job-Seeker Hotspots</h3>
+                        <p class="mt-1 text-[11px] text-slate-500">Barangays with the most candidates currently seeking employment.</p>
+                    </div>
+                    <div class="space-y-3">
+                        @forelse($top10_unemployment as $barangay)
+                            <div class="grid grid-cols-[minmax(6rem,8rem)_1fr_auto] items-center gap-3" title="{{ $barangay['name'] }}: {{ $barangay['seeking'] }} actively seeking">
+                                <span class="truncate text-xs font-semibold text-slate-700">{{ $barangay['name'] }}</span>
+                                <div class="h-3 overflow-hidden bg-slate-100" role="img" aria-label="{{ $barangay['name'] }} has {{ $barangay['seeking'] }} active jobseekers">
+                                    <div class="h-full bg-rose-600" style="width: {{ round(($barangay['seeking'] / $seekerChartMax) * 100) }}%"></div>
+                                </div>
+                                <strong class="w-8 text-right text-xs text-slate-900">{{ number_format($barangay['seeking']) }}</strong>
+                            </div>
+                        @empty
+                            <p class="py-8 text-center text-xs text-slate-500">No active job-seeker counts to chart yet.</p>
+                        @endforelse
+                    </div>
+                </article>
+            </div>
+        </section>
+
         <!-- SEARCH, FILTERS & QUICK CHIPS -->
         <section aria-label="Search and Filter Controls" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
             
@@ -289,7 +383,7 @@
                     <span>With Registered Talent</span>
                 </a>
 
-                @if(!empty($filters['search']) || !empty($filters['district']) || !empty($filters['terrain']) || !empty($filters['talent_only']) || !empty($filters['sort']))
+                @if(!empty($filters['search']) || !empty($filters['district']) || !empty($filters['terrain']) || !empty($filters['skill_type']) && $filters['skill_type'] !== 'all' || !empty($filters['talent_only']) || !empty($filters['sort']))
                     <a href="{{ route('admin.barangay-distribution') }}" class="text-xs font-bold text-rose-600 hover:text-rose-800 hover:underline ml-auto flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                         <span>Clear All Filters</span>
@@ -338,6 +432,16 @@
                             <option value="">All Terrains</option>
                             <option value="urban" {{ ($filters['terrain'] ?? '') === 'urban' ? 'selected' : '' }}>Urban / Lowland</option>
                             <option value="mountain" {{ ($filters['terrain'] ?? '') === 'mountain' ? 'selected' : '' }}>Mountain / Upland</option>
+                        </select>
+                    </div>
+
+                    <!-- Skill Type Filter -->
+                    <div class="lg:col-span-2 space-y-1">
+                        <label for="filter-skill-type" class="text-xs font-bold text-slate-700">Skill Type</label>
+                        <select id="filter-skill-type" name="skill_type" onchange="this.form.submit()" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 transition-colors">
+                            <option value="all" {{ (($filters['skill_type'] ?? 'all') === 'all') ? 'selected' : '' }}>All Skills</option>
+                            <option value="21st_century" {{ (($filters['skill_type'] ?? 'all') === '21st_century') ? 'selected' : '' }}>21st Century Skills</option>
+                            <option value="technical" {{ (($filters['skill_type'] ?? 'all') === 'technical') ? 'selected' : '' }}>Technical Skills</option>
                         </select>
                     </div>
 

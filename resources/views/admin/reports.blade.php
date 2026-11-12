@@ -80,6 +80,95 @@
             </div>
         </div>
 
+        @php
+            $monthlyMax = max(collect($charts['monthly']['applications'])
+                ->merge($charts['monthly']['hires'])
+                ->merge($charts['monthly']['training_starts'])
+                ->max() ?? 0, 1);
+            $applicationMax = max(collect($charts['application_statuses'])->max('total') ?? 0, 1);
+            $trainingMax = max(collect($charts['training_statuses'])->max('total') ?? 0, 1);
+            $skillTypeMax = max($charts['skill_types']['technical'], $charts['skill_types']['21st_century'], 1);
+        @endphp
+
+        <section class="space-y-4" aria-label="Platform trend charts">
+            <div class="border-b border-slate-200 pb-3">
+                <h2 class="text-lg font-black text-slate-900">Workforce & Service Trends</h2>
+                <p class="text-xs text-slate-500">Live activity from the most recent 12 months and current workflow status.</p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-5 xl:grid-cols-3">
+                <article class="border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+                    <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">Monthly Platform Activity</h3>
+                            <p class="mt-1 text-[11px] text-slate-500">Applications, recorded hires, and training starts</p>
+                        </div>
+                        <div class="flex flex-wrap gap-3 text-[10px] font-semibold text-slate-600">
+                            <span class="inline-flex items-center gap-1.5"><i class="h-2.5 w-2.5 bg-emerald-600"></i>Applications</span>
+                            <span class="inline-flex items-center gap-1.5"><i class="h-2.5 w-2.5 bg-blue-600"></i>Hires</span>
+                            <span class="inline-flex items-center gap-1.5"><i class="h-2.5 w-2.5 bg-amber-500"></i>Training starts</span>
+                        </div>
+                    </div>
+                    <div class="grid h-48 grid-cols-12 items-end gap-2 border-b border-l border-slate-200 px-2 pb-1">
+                        @foreach($charts['monthly']['labels'] as $index => $monthLabel)
+                            @php
+                                $applicationValue = $charts['monthly']['applications'][$index];
+                                $hireValue = $charts['monthly']['hires'][$index];
+                                $trainingValue = $charts['monthly']['training_starts'][$index];
+                            @endphp
+                            <div class="flex h-full min-w-0 flex-col justify-end gap-1" title="{{ $monthLabel }}: {{ $applicationValue }} applications, {{ $hireValue }} hires, {{ $trainingValue }} training starts">
+                                <div class="flex h-[88%] items-end justify-center gap-0.5">
+                                    <span class="w-1/4 bg-emerald-600" style="height: {{ $applicationValue > 0 ? max(3, round(($applicationValue / $monthlyMax) * 100)) : 1 }}%"></span>
+                                    <span class="w-1/4 bg-blue-600" style="height: {{ $hireValue > 0 ? max(3, round(($hireValue / $monthlyMax) * 100)) : 1 }}%"></span>
+                                    <span class="w-1/4 bg-amber-500" style="height: {{ $trainingValue > 0 ? max(3, round(($trainingValue / $monthlyMax) * 100)) : 1 }}%"></span>
+                                </div>
+                                <span class="truncate text-center text-[9px] text-slate-500">{{ \Illuminate\Support\Carbon::createFromFormat('M Y', $monthLabel)->format('M') }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                    <p class="mt-2 text-right text-[10px] text-slate-400">Hover a month to compare exact values.</p>
+                </article>
+
+                <article class="border border-slate-200 bg-white p-5 shadow-sm">
+                    <h3 class="text-sm font-bold text-slate-900">Skill Category Coverage</h3>
+                    <p class="mt-1 text-[11px] text-slate-500">Registered skill records by category</p>
+                    @foreach(['technical' => 'Technical', '21st_century' => '21st Century'] as $key => $label)
+                        @php $value = $charts['skill_types'][$key]; @endphp
+                        <div class="mt-5 space-y-1.5">
+                            <div class="flex justify-between text-xs"><span class="font-semibold text-slate-700">{{ $label }}</span><strong>{{ number_format($value) }}</strong></div>
+                            <div class="h-3 overflow-hidden bg-slate-100"><div class="h-full {{ $key === 'technical' ? 'bg-cyan-600' : 'bg-emerald-600' }}" style="width: {{ round(($value / $skillTypeMax) * 100) }}%"></div></div>
+                        </div>
+                    @endforeach
+                </article>
+
+                <article class="border border-slate-200 bg-white p-5 shadow-sm">
+                    <h3 class="text-sm font-bold text-slate-900">Application Pipeline</h3>
+                    <p class="mt-1 text-[11px] text-slate-500">Current applications by workflow stage</p>
+                    @forelse($charts['application_statuses'] as $status)
+                        <div class="mt-4 space-y-1">
+                            <div class="flex justify-between gap-2 text-[11px]"><span class="truncate capitalize text-slate-600">{{ str_replace('_', ' ', $status->status) }}</span><strong>{{ number_format($status->total) }}</strong></div>
+                            <div class="h-2 overflow-hidden bg-slate-100"><div class="h-full bg-blue-600" style="width: {{ round(($status->total / $applicationMax) * 100) }}%"></div></div>
+                        </div>
+                    @empty
+                        <p class="mt-6 text-xs text-slate-500">No application records yet.</p>
+                    @endforelse
+                </article>
+
+                <article class="border border-slate-200 bg-white p-5 shadow-sm">
+                    <h3 class="text-sm font-bold text-slate-900">Training Progress</h3>
+                    <p class="mt-1 text-[11px] text-slate-500">Enrollments by current status</p>
+                    @forelse($charts['training_statuses'] as $status)
+                        <div class="mt-4 space-y-1">
+                            <div class="flex justify-between gap-2 text-[11px]"><span class="truncate capitalize text-slate-600">{{ str_replace('_', ' ', $status->status) }}</span><strong>{{ number_format($status->total) }}</strong></div>
+                            <div class="h-2 overflow-hidden bg-slate-100"><div class="h-full bg-amber-500" style="width: {{ round(($status->total / $trainingMax) * 100) }}%"></div></div>
+                        </div>
+                    @empty
+                        <p class="mt-6 text-xs text-slate-500">No training enrollment records yet.</p>
+                    @endforelse
+                </article>
+            </div>
+        </section>
+
         <!-- Breakdown Analytics Section -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
@@ -224,6 +313,43 @@
             </div>
 
         </div>
+
+        <section class="space-y-4" aria-label="Printable administrative reports">
+            <div class="flex flex-col gap-2 border-b border-slate-200 pb-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h2 class="text-lg font-black text-slate-900">Printable Administrative Reports</h2>
+                    <p class="text-xs text-slate-500">Generate filtered reports for workforce, employers, placements, and skills.</p>
+                </div>
+                <span class="text-[11px] font-semibold text-slate-500">Print dialog supports Save as PDF</span>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                @php
+                    $printReports = [
+                        ['type' => 'jobseekers', 'title' => 'Registered Jobseekers', 'description' => 'Employment status, barangay, skills, and registration date.'],
+                        ['type' => 'employers', 'title' => 'Employer Registry', 'description' => 'Accreditation status, registration date, and posting activity.'],
+                        ['type' => 'hired', 'title' => 'Hired Jobseekers', 'description' => 'Recorded hires, employer, position, and hiring date.'],
+                        ['type' => 'specialized-skills', 'title' => 'Specialized Skills Inventory', 'description' => 'Technical and 21st-century skills across the workforce.'],
+                        ['type' => 'barangay-skills', 'title' => 'Barangay Skills Distribution', 'description' => 'Skill category and candidate counts by barangay.'],
+                        ['type' => 'training', 'title' => 'Training Enrollment & Completion', 'description' => 'Enrollment volume, completion status, pass counts, and certificates.'],
+                        ['type' => 'application-funnel', 'title' => 'Application Pipeline', 'description' => 'Application counts and share by current workflow stage.'],
+                        ['type' => 'hiring-trends', 'title' => 'Monthly Hiring Trends', 'description' => 'Recorded hires grouped by hiring month.'],
+                    ];
+                @endphp
+                @foreach($printReports as $reportCard)
+                    <article class="flex flex-col justify-between gap-4 border border-slate-200 bg-white p-4 shadow-sm">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">{{ $reportCard['title'] }}</h3>
+                            <p class="mt-1 text-xs leading-relaxed text-slate-500">{{ $reportCard['description'] }}</p>
+                        </div>
+                        <a href="{{ route('admin.reports.print', ['type' => $reportCard['type']]) }}" class="inline-flex w-fit items-center gap-2 rounded-lg bg-slate-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-700">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-12-4h12v8H6z"/></svg>
+                            Open report
+                        </a>
+                    </article>
+                @endforeach
+            </div>
+        </section>
 
     </div>
 </div>
