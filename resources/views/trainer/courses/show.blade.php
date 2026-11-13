@@ -6,7 +6,8 @@
 <div x-data="{ 
     addQuestionModal: false, 
     editQuestionModal: false,
-    certModal: false,
+    deleteModal: false,
+    deleteUrl: '',
     newQuestionType: 'multiple_choice',
     activeQuestion: {
         id: null,
@@ -15,24 +16,55 @@
         options: ['', '', '', ''],
         correct_answer: 0,
         explanation: '',
-        points: 1
+        points: 1,
+        image_url: ''
     },
-    // Certificate Live Preview State
-    certTitle: @js($course->cert_content['title'] ?? 'CERTIFICATE OF TRAINING'),
-    competencies: @js(implode(" \n", $course->cert_content['competencies'] ?? [
-    'Participate in workplace communication',
-    'Work in a team environment',
-    'Practice career professionalism',
-    'Practice occupational health and safety procedures',
-    'Apply quality standards',
-    'Perform computer operations'
-    ])),
-    get previewCompetencies() {
-    return this.competencies.split('\n').filter(line => line.trim() !== '');
+    openEditModal(item) {
+        this.activeQuestion = {
+            id: item.id,
+            question: item.question,
+            options: item.options,
+            type: item.type,
+            correct_answer: item.correct_answer,
+            explanation: item.explanation,
+            points: item.points,
+            image_url: item.image_url
+        };
+        this.editQuestionModal = true;
     }
-    }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
+}" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
     <div class="w-full max-w-[1680px] mx-auto space-y-8">
+        <!-- ⚠️ CERTIFICATE CONFIGURATION WARNING BANNER -->
+        @if(empty($course->cert_content) || empty($course->cert_content['title']) || empty($course->cert_content['competencies']))
+        <div class="rounded-3xl border-2 border-rose-300 bg-rose-50/90 p-6 sm:p-8 text-rose-950 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div class="flex items-start gap-4">
+                <div class="h-12 w-12 rounded-2xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex flex-wrap items-center gap-2 mb-1">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black bg-rose-600 text-white uppercase tracking-wider">
+                            Action Required
+                        </span>
+                    </div>
+                    <h3 class="text-lg font-black text-rose-950">Certificate Template Not Configured</h3>
+                    <p class="text-sm text-rose-800 mt-1 max-w-2xl font-medium">
+                        You haven't customized the certificate for this course yet. Students who pass the quiz will receive a blank or default certificate. Please configure the title and competencies before your students finish the course.
+                    </p>
+                </div>
+            </div>
 
+            <a href="{{ route('trainer.courses.certificate-content', $course->training_id) }}"
+                class="shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-black shadow-lg shadow-rose-600/30 transition-all hover:scale-105">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Configure Certificate Now
+            </a>
+        </div>
+        @endif
         <!-- Breadcrumb & Actions -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
@@ -42,14 +74,12 @@
             </div>
 
             <div class="flex items-center gap-3">
-                <!-- NEW BUTTON for Certificate Template -->
-                <button @click="certModal = true" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-colors flex items-center gap-2">
+                <a href="{{ route('trainer.courses.certificate-content', $course->training_id) }}" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-colors flex items-center gap-2">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                     <span>Edit Certificate Template</span>
-                </button>
-
+                </a>
                 <a href="{{ route('trainer.courses') }}" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors">
                     &larr; Back to Catalog
                 </a>
@@ -137,22 +167,31 @@
                                 <span class="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold uppercase text-indigo-700">{{ $item->question_type === 'essay' ? 'Essay' : 'Multiple Choice' }}</span>
 
                                 <div class="flex shrink-0 flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
-                                    <button @click="activeQuestion = { id: {{ $item->assessment_id }}, question: '{{ addslashes($item->question) }}', options: {{ json_encode(count($choices) ? $choices : ['', '', '', '']) }}, type: '{{ $item->question_type ?: 'multiple_choice' }}', correct_answer: {{ (int) $item->correct_answer }}, explanation: '{{ addslashes($item->explanation ?? '') }}', points: {{ (int) ($item->points ?? 1) }}, image_url: @js($item->image_path ? asset('storage/' . $item->image_path) : '') }; editQuestionModal = true;" type="button" class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-200">
+
+                                    <!-- Edit Button (Clean JS Object) -->
+                                    <button x-on:click="openEditModal({
+                                        id: {{ $item->assessment_id }},
+                                        question: @js($item->question),
+                                        options: @js(count($choices) ? array_values($choices) : ['', '', '', '']),
+                                        type: @js($item->question_type ?: 'multiple_choice'),
+                                        correct_answer: {{ (int) $item->correct_answer }},
+                                        explanation: @js($item->explanation ?? ''),
+                                        points: {{ (int) ($item->points ?? 1) }},
+                                        image_url: @js($item->image_path ? asset('storage/' . $item->image_path) : '')
+                                    })" type="button" class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-200">
                                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                         </svg>
                                         <span>Edit</span>
                                     </button>
-                                    <form action="{{ route('trainer.courses.assessments.destroy', [$course->training_id, $item->assessment_id]) }}" method="POST" onsubmit="return confirm('Delete this assessment question?');" class="inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-100">
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                            <span>Delete</span>
-                                        </button>
-                                    </form>
+
+                                    <!-- Custom Delete Button -->
+                                    <button type="button" @click="deleteUrl = '{{ route('trainer.courses.assessments.destroy', [$course->training_id, $item->assessment_id]) }}'; deleteModal = true;" class="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-100">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        <span>Delete</span>
+                                    </button>
                                 </div>
                             </div>
                             @if($item->image_path)
@@ -271,125 +310,12 @@
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- CERTIFICATE TEMPLATE MODAL (Split Screen)  -->
-    <!-- ========================================== -->
-    <div x-show="certModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
-            <div x-show="certModal" x-transition.opacity class="fixed inset-0 bg-slate-900/80 backdrop-blur-md" @click="certModal = false"></div>
-
-            <div x-show="certModal" x-transition class="relative inline-block align-middle bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all my-8 w-full max-w-[1400px] border border-slate-200">
-
-                <!-- Modal Header -->
-                <div class="bg-slate-900 px-6 py-4 flex items-center justify-between border-b border-slate-800">
-                    <div class="flex items-center gap-3">
-                        <div class="h-8 w-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 class="text-base font-bold text-white">Certificate Template</h3>
-                            <p class="text-xs text-slate-400">Customize the certificate design and competencies.</p>
-                        </div>
-                    </div>
-                    <button @click="certModal = false" type="button" class="text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
-                </div>
-
-                <!-- Modal Body (Split Screen) -->
-                <div class="grid grid-cols-1 xl:grid-cols-2 gap-0 h-[80vh] max-h-[800px]">
-
-                    <!-- LEFT: Form -->
-                    <div class="p-6 sm:p-10 overflow-y-auto border-r border-slate-200">
-                        <form action="{{ route('trainer.courses.certificate-content', $course->training_id) }}" method="POST" class="flex flex-col h-full">
-                            @csrf
-                            <div class="space-y-6 flex-1">
-                                <div>
-                                    <label class="block text-sm font-black text-slate-800 mb-2 uppercase tracking-wide">Certificate Title</label>
-                                    <input type="text" name="certificate_title" x-model="certTitle" required
-                                        class="w-full rounded-xl border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 font-bold text-lg">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-black text-slate-800 mb-2 uppercase tracking-wide">Competencies (One per line)</label>
-                                    <textarea name="competencies" x-model="competencies" required rows="12"
-                                        class="w-full rounded-xl border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 font-mono text-sm leading-relaxed"></textarea>
-                                    <p class="text-xs text-slate-500 mt-2">Each new line will appear as a bullet point on the certificate.</p>
-                                </div>
-                            </div>
-
-                            <div class="pt-6 border-t border-slate-100 mt-auto">
-                                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-lg shadow-emerald-600/20">
-                                    Save Certificate Content
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- RIGHT: Live Preview (Portrait) -->
-                    <div class="bg-slate-800 p-6 flex flex-col items-center justify-center overflow-y-auto relative">
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span> Live Preview
-                        </span>
-
-                        <!-- Scaled A4 Portrait Container -->
-                        <div class="w-full max-w-[420px] aspect-[210/297] relative shadow-2xl rounded-sm overflow-hidden bg-white shrink-0">
-                            <!-- Background Placeholder for Border -->
-                            <div class="absolute inset-0 z-0 p-2" style="border: 12px solid #0a1d3f;">
-                                <!-- You will replace this with background-image: url('...') later -->
-                            </div>
-
-                            <!-- Inner Content -->
-                            <div class="relative z-10 h-full flex flex-col justify-between p-10 pb-12 text-center">
-                                <div class="mt-2">
-                                    <div class="flex justify-center gap-3 mb-3">
-                                        <img src="{{ asset('images/cebu.png') }}" class="h-12 w-12 object-contain" alt="Cebu">
-                                        <img src="{{ asset('images/dmdp.png') }}" class="h-12 w-12 object-contain" alt="DMDP">
-                                    </div>
-                                    <h2 style="font-family: 'Playfair Display', serif; font-size: 12px; color: #0a1d3f; margin: 0;">Republic of the Philippines</h2>
-                                    <h2 style="font-family: 'Playfair Display', serif; font-size: 14px; color: #0a1d3f; margin: 0;">City of Cebu</h2>
-                                    <h2 style="font-family: 'Playfair Display', serif; font-size: 13px; color: #0a1d3f; margin: 0; font-weight: 700;">Department of Manpower Development and Placement</h2>
-                                </div>
-
-                                <div>
-                                    <h1 style="font-family: 'Cinzel', serif; font-size: 22px; color: #0a1d3f; font-weight: 800; letter-spacing: 1px; margin: 10px 0;" x-text="certTitle"></h1>
-                                    <p style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 11px; color: #0a1d3f;">is awarded to</p>
-                                    <div class="bg-slate-50 border-y border-slate-200 py-2 my-2 mx-4">
-                                        <h2 style="font-family: 'Cinzel', serif; font-size: 20px; color: #0a1d3f; font-weight: 700; margin: 0;">JOHN DOE</h2>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <p style="font-size: 9px; color: #334155; margin-bottom: 4px;">for having completed the competency based training program in</p>
-                                    <h3 style="font-family: 'Cinzel', serif; font-size: 14px; color: #0a1d3f; font-weight: 700; margin: 0 0 8px 0;">{{ $course->title }}</h3>
-                                    <p style="font-size: 8px; color: #334155; margin-bottom: 8px;">conducted on <strong>{{ $course->training_start_date ? \Carbon\Carbon::parse($course->training_start_date)->format('M d') : 'N/A' }} to {{ $course->training_end_date ? \Carbon\Carbon::parse($course->training_end_date)->format('M d, Y') : 'N/A' }}</strong> and satisfactorily achieved the requirements of the following units of competency:</p>
-                                    <ul class="text-left inline-block text-[8px] leading-tight text-slate-700 max-h-[100px] overflow-hidden">
-                                        <template x-for="(comp, index) in previewCompetencies" :key="index">
-                                            <li class="relative pl-4 mb-0.5"><span class="absolute left-0 text-[#0a1d3f]">✦</span><span x-text="comp"></span></li>
-                                        </template>
-                                    </ul>
-                                </div>
-
-                                <div class="mb-2">
-                                    <p style="font-family: 'Playfair Display', serif; font-size: 9px; color: #334155; margin-bottom: 10px;">Given this <strong>1st day of September, 2026</strong> at Cebu City, Philippines</p>
-                                    <div>
-                                        <h3 style="font-family: 'Cinzel', serif; font-size: 12px; color: #0a1d3f; font-weight: 700; margin: 0;">ANTHONY V. AGUHAR, PhD</h3>
-                                        <p style="font-size: 8px; color: #0a1d3f; margin: 0;">CG Acting Department Head (PESO Manager)</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Add Question Modal -->
     <div x-show="addQuestionModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div x-show="addQuestionModal" x-transition.opacity class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="addQuestionModal = false"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+
             <div x-show="addQuestionModal" x-transition class="relative inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full border border-slate-200">
                 <form action="{{ route('trainer.courses.assessments.store', $course->training_id) }}" method="POST" enctype="multipart/form-data">
                     @csrf
@@ -397,57 +323,198 @@
                         <h3 class="text-base font-bold text-white">Add Assessment Question</h3>
                         <button @click="addQuestionModal = false" type="button" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
                     </div>
-                    <div class="p-6 space-y-4">
+
+                    <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                         <div>
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">Question Type</label>
-                            <select name="question_type" x-model="newQuestionType" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs">
+                            <select name="question_type" x-model="newQuestionType" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-800">
                                 <option value="multiple_choice">Multiple Choice</option>
                                 <option value="essay">Essay</option>
                             </select>
                         </div>
+
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Question Prompt</label>
-                            <textarea name="question" rows="3" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs"></textarea>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Question Prompt <span class="text-rose-500">*</span></label>
+                            <textarea name="question" rows="3" required placeholder="State the question clearly..." class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none"></textarea>
                         </div>
-                        <fieldset class="space-y-3" x-show="newQuestionType !== 'essay'">
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Question Image (Optional)</label>
+                            <input type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-700">
+                        </div>
+
+                        <div x-show="newQuestionType === 'multiple_choice'" class="space-y-3">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Answer Choices & Correct Option <span class="text-rose-500">*</span></label>
+                            <p class="text-[11px] text-slate-400">Select the radio button next to the correct answer choice.</p>
+
                             @for($i = 0; $i < 4; $i++)
                                 <div class="flex items-center gap-3">
-                                <input type="radio" name="correct_answer" value="{{ $i }}" {{ $i === 0 ? 'checked' : '' }} class="h-4 w-4 text-emerald-600">
+                                <input type="radio" name="correct_answer" value="{{ $i }}" {{ $i === 0 ? 'checked' : '' }}
+                                    :required="newQuestionType === 'multiple_choice'"
+                                    class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-slate-300">
                                 <span class="text-xs font-bold text-slate-400 w-4">{{ chr(65 + $i) }}</span>
-                                <input type="text" name="options[]" required placeholder="Option {{ chr(65 + $i) }}" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs">
+                                <input type="text" name="options[]" placeholder="Option {{ chr(65 + $i) }}"
+                                    :required="newQuestionType === 'multiple_choice'"
+                                    class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
+                        </div>
+                        @endfor
                     </div>
-                    @endfor
-                    </fieldset>
+
+                    <div x-show="newQuestionType === 'essay'" class="rounded-xl border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-800">
+                        Jobseekers will enter a written response. The trainer reviews and decides the final result.
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Explanation / Rationale (Optional)</label>
+                        <textarea name="explanation" rows="2" placeholder="Explain why the correct answer is standard procedure..." class="w-full rounded-xl border border-slate-200 px-4 py-2 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Points</label>
+                        <input type="number" name="points" value="1" min="1" max="10" class="w-32 rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
+                    </div>
             </div>
-            <div class="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3">
-                <button @click="addQuestionModal = false" type="button" class="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold">Cancel</button>
-                <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-extrabold">Save Question</button>
+
+            <div class="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3 rounded-b-3xl">
+                <button @click="addQuestionModal = false" type="button" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 transition-all">
+                    Save Question
+                </button>
             </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Edit Question Modal (Simplified for brevity) -->
+<!-- Edit Question Modal -->
 <div x-show="editQuestionModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div x-show="editQuestionModal" x-transition.opacity class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="editQuestionModal = false"></div>
-        <div x-show="editQuestionModal" x-transition class="relative inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl sm:my-8 sm:align-middle sm:max-w-xl sm:w-full">
-            <form :action="'/trainer/courses/{{ $course->training_id }}/assessments/' + activeQuestion.id" method="POST">
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+
+        <div x-show="editQuestionModal" x-transition class="relative inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full border border-slate-200">
+            <form :action="'/trainer/courses/{{ $course->training_id }}/assessments/' + activeQuestion.id" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 <div class="bg-slate-900 px-6 py-5 text-white flex items-center justify-between">
                     <h3 class="text-base font-bold text-white">Edit Assessment Question</h3>
                     <button @click="editQuestionModal = false" type="button" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
                 </div>
-                <div class="p-6 space-y-4">
-                    <textarea name="question" x-model="activeQuestion.question" rows="3" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs"></textarea>
+
+                <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Question Type</label>
+                        <select name="question_type" x-model="activeQuestion.type" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-800">
+                            <option value="multiple_choice">Multiple Choice</option>
+                            <option value="essay">Essay</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Question Prompt <span class="text-rose-500">*</span></label>
+                        <textarea name="question" x-model="activeQuestion.question" rows="3" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none"></textarea>
+                    </div>
+
+                    <div>
+                        <template x-if="activeQuestion.image_url">
+                            <div class="mb-2 space-y-2">
+                                <img :src="activeQuestion.image_url" alt="Current assessment question illustration" class="max-h-40 rounded-xl border border-slate-200 object-contain">
+                                <label class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600">
+                                    <input type="checkbox" name="remove_image" value="1" class="rounded border-slate-300 text-rose-600 focus:ring-rose-500">
+                                    Remove current image
+                                </label>
+                            </div>
+                        </template>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Replace Image (Optional)</label>
+                        <input type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-700">
+                    </div>
+
+                    <div x-show="activeQuestion.type === 'multiple_choice'" class="space-y-3">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Answer Choices & Correct Option <span class="text-rose-500">*</span></label>
+
+                        <template x-for="(opt, idx) in activeQuestion.options" :key="idx">
+                            <div class="flex items-center gap-3">
+                                <input type="radio" name="correct_answer" :value="idx" :checked="activeQuestion.correct_answer == idx"
+                                    :required="activeQuestion.type === 'multiple_choice'"
+                                    class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                                <span class="text-xs font-bold text-slate-400 w-4" x-text="String.fromCharCode(65 + idx)"></span>
+                                <input type="text" name="options[]" x-model="activeQuestion.options[idx]"
+                                    :required="activeQuestion.type === 'multiple_choice'"
+                                    class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
+                            </div>
+                        </template>
+                    </div>
+
+                    <div x-show="activeQuestion.type === 'essay'" class="rounded-xl border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-800">
+                        Jobseekers will enter a written response. The trainer reviews and decides the final result.
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Explanation / Rationale (Optional)</label>
+                        <textarea name="explanation" x-model="activeQuestion.explanation" rows="2" class="w-full rounded-xl border border-slate-200 px-4 py-2 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Points</label>
+                        <input type="number" name="points" x-model="activeQuestion.points" min="1" max="10" class="w-32 rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
+                    </div>
                 </div>
-                <div class="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3">
-                    <button @click="editQuestionModal = false" type="button" class="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold">Cancel</button>
-                    <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold">Update Question</button>
+
+                <div class="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3 rounded-b-3xl">
+                    <button @click="editQuestionModal = false" type="button" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 transition-all">
+                        Update Question
+                    </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- CUSTOM DELETE WARNING MODAL -->
+<div x-show="deleteModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+
+        <!-- Background Overlay -->
+        <div x-show="deleteModal" x-transition.opacity class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="deleteModal = false"></div>
+
+        <!-- Modal Content -->
+        <div x-show="deleteModal" x-transition class="relative inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-rose-100">
+
+            <div class="bg-rose-50 px-6 py-6 flex items-start gap-4">
+                <div class="h-12 w-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-rose-950">Delete Assessment Question?</h3>
+                    <p class="text-sm text-rose-800 mt-1">
+                        Are you absolutely sure you want to delete this question? <strong>This cannot be undone.</strong>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Modal Actions -->
+            <div class="bg-white px-6 py-4 flex items-center justify-end gap-3 border-t border-slate-100">
+                <button @click="deleteModal = false" type="button" class="px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors">
+                    Cancel
+                </button>
+
+                <!-- The actual delete form -->
+                <form :action="deleteUrl" method="POST" class="m-0">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-lg shadow-rose-600/30 transition-all">
+                        Yes, Delete
+                    </button>
+                </form>
+            </div>
+
         </div>
     </div>
 </div>
