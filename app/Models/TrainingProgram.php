@@ -43,6 +43,7 @@ class TrainingProgram extends Model
         'description',
         'auto_generate_certificate',
         'skills',
+        'cert_content',
         'passing_score',
         'demographic_requirements',
     ];
@@ -60,6 +61,7 @@ class TrainingProgram extends Model
             'trainee_capacity' => 'integer',
             'passing_score' => 'integer',
             'demographic_requirements' => 'array',
+            'cert_content' => 'array',
         ];
     }
 

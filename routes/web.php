@@ -226,8 +226,7 @@ Route::prefix('employer')->name('employer.')->group(function () {
         Route::get('/accreditation', [EmployerPortalController::class, 'accreditation'])->name('accreditation');
         Route::post('/accreditation/upload', [EmployerPortalController::class, 'submitAccreditation'])->name('accreditation.upload');
         Route::post('/accreditation/submit', [EmployerPortalController::class, 'submitAccreditation'])->name('accreditation.submit');
-        Route::get('/accreditation/print', [EmployerPortalController::class, 'printAccreditation'])->name('accreditation.print');
-
+        Route::get('/accreditation/print', [EmployerPortalController::class, 'printCertificate'])->name('accreditation.print');
         // 3. Review Referred Jobseekers (From JPO) & Schedule Interview / Hire / Mark Not Qualified
         Route::get('/referred-jobseekers', [EmployerPortalController::class, 'referredJobseekers'])->name('referred-jobseekers');
         Route::get('/applications', [EmployerPortalController::class, 'referredJobseekers'])->name('applications');
@@ -393,6 +392,10 @@ Route::prefix('trainer')->name('trainer.')->middleware(['auth', 'trainer'])->gro
     Route::get('/notifications', [TrainerPortalController::class, 'notifications'])->name('notifications');
     Route::post('/notifications/read-all', [TrainerPortalController::class, 'markAllNotificationsRead'])->name('notifications.read_all');
     Route::post('/notifications/{id}/read', [TrainerPortalController::class, 'markNotificationRead'])->name('notifications.read');
+
+    // 5.1. Trainer-Authored Certificate Content Management
+    Route::get('/courses/{id}/certificate-content', [TrainerPortalController::class, 'showCertificateContent'])->name('courses.certificate-content');
+    Route::post('/courses/{id}/certificate-content', [TrainerPortalController::class, 'updateCertificateContent'])->name('courses.certificate-content.update');
 });
 
 /*

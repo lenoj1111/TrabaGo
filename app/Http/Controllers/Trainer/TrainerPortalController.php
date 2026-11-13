@@ -615,7 +615,34 @@ class TrainerPortalController extends Controller
         return redirect()->route('trainer.enrollments.index')
             ->with('success', "Learner '{$enrollment->first_name} {$enrollment->last_name}' marked as COMPLETED! Verified skills have been awarded.");
     }
+    /**
+     * Update the certificate content (competencies, title, etc.) for a course.
+     */
+    public function updateCertificateContent(Request $request, int $id)
+    {
+        $course = TrainingProgram::findOrFail($id);
 
+        $validated = $request->validate([
+            'certificate_title' => 'required|string|max:255',
+            'competencies' => 'required|string',
+        ]);
+
+        $competenciesArray = array_filter(array_map('trim', explode("\n", $validated['competencies'])));
+
+        $course->update([
+            'cert_content' => [
+                'title' => $validated['certificate_title'],
+                'competencies' => array_values($competenciesArray), // <-- MUST BE array_values()
+            ]
+        ]);
+
+        return back()->with('success', 'Certificate content updated successfully.');
+    }
+    public function showCertificateContent($id)
+    {
+        $course = TrainingProgram::findOrFail($id);
+        return view('trainer.courses.certificate', compact('course'));
+    }
     /**
      * Figure 12: Generate Completion Certificate.
      */
@@ -742,7 +769,9 @@ class TrainerPortalController extends Controller
                 'jobseekers.first_name',
                 'jobseekers.last_name',
                 'training_programs.title as course_title',
-                'training_programs.training_type'
+                'training_programs.training_type',
+                'training_programs.cert_content'
+
             )
             ->first();
 
@@ -793,6 +822,7 @@ class TrainerPortalController extends Controller
             'training_programs.description',
             'training_programs.auto_generate_certificate',
             'training_programs.skills',
+            'training_programs.cert_content',
             'training_programs.passing_score',
             'training_programs.demographic_requirements',
             'training_programs.created_at',

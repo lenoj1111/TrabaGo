@@ -1134,59 +1134,37 @@ class JobseekerPortalController extends Controller
     }
     private function runPaddleOcr(string $absolutePath): ?string
     {
-        $pythonScript = 'C:\Users\acer\Desktop\Trabago2\app\scripts\ocr_engine.py';
-        $python = 'C:\Users\acer\AppData\Local\Programs\Python\Python313\python.exe';
+        $pythonScript = base_path('app/scripts/ocr_engine.py');
 
         if (!file_exists($pythonScript) || !file_exists($absolutePath)) {
-            Log::error("OCR failed: Script or image missing.");
+            Log::error("OCR failed: Script or image missing.", [
+                'script_exists' => file_exists($pythonScript),
+                'image_exists'  => file_exists($absolutePath),
+                'image_path'    => $absolutePath,
+            ]);
             return null;
         }
 
         try {
-            $safeTempDir = storage_path('app/temp');
-            if (!file_exists($safeTempDir)) {
-                mkdir($safeTempDir, 0777, true);
-            }
-
-            // THE FIX: Create a fake "User" home directory inside Laravel's storage
-            $fakeHomeDir = $safeTempDir . '\fake_home';
-            if (!file_exists($fakeHomeDir)) {
-                mkdir($fakeHomeDir, 0777, true);
-            }
-            if (!file_exists($fakeHomeDir . '\.cache')) {
-                mkdir($fakeHomeDir . '\.cache', 0777, true);
-            }
-
-            putenv('TMP=' . $safeTempDir);
-            putenv('TEMP=' . $safeTempDir);
-            putenv('HOME=' . $fakeHomeDir);
-            putenv('USERPROFILE=' . $fakeHomeDir);
-
+            // PHP-FPM on Windows does not pass USERPROFILE/HOME to subprocesses.
+            // PaddleOCR's ModelScope dependency requires a home directory to
+            // locate its cache, so we pass the env vars explicitly.
+            $home = getenv('USERPROFILE') ?: ('C:\\Users\\' . getenv('USERNAME'));
             $env = [
-                // Force Python to think the user's home folder is inside Laravel
-                'USERPROFILE' => $fakeHomeDir,
-                'HOME'        => $fakeHomeDir,
-                'APPDATA'     => $fakeHomeDir . '\AppData\Roaming',
-                'LOCALAPPDATA' => $fakeHomeDir . '\AppData\Local',
-
-                'PATH'        => getenv('PATH') . ';C:\Windows\System32',
+                'USERPROFILE' => $home,
+                'HOME'        => $home,
+                'PATH'        => getenv('PATH'),
                 'SYSTEMROOT'  => getenv('SYSTEMROOT') ?: 'C:\\Windows',
-                'TEMP'        => $safeTempDir,
-                'TMP'         => $safeTempDir,
-                'PADDLE_PDX_CACHE_HOME' => $safeTempDir . '\paddlex_cache',
-                'PADDLE_HOME' => $safeTempDir . '\paddle_cache',
-                'XDG_CACHE_HOME' => $fakeHomeDir . '\.cache',
+                'TEMP'        => getenv('TEMP') ?: 'C:\\Windows\\Temp',
+                'TMP'         => getenv('TMP')  ?: 'C:\\Windows\\Temp',
             ];
 
-            $process = new Process([$python, $pythonScript, $absolutePath], null, $env);
-            $process->setTimeout(120);
+            $process = new Process(['py', '-3.12', $pythonScript, $absolutePath], null, $env);
+            $process->setTimeout(60);
             $process->run();
 
             if (!$process->isSuccessful()) {
-                Log::error('PaddleOCR process failed.', [
-                    'exit_code' => $process->getExitCode(),
-                    'stderr'    => $process->getErrorOutput(),
-                ]);
+                Log::warning('PaddleOCR exited non-zero: ' . $process->getErrorOutput());
                 return null;
             }
 

@@ -1320,4 +1320,19 @@ class EmployerPortalController extends Controller
         }
         return view('reports.employer-certificate', compact('employer', 'accreditation'));
     }
+    /**
+     * Generate and display the printable Certificate of Accreditation.
+     */
+    public function printCertificate()
+    {
+        $employer = auth()->user()->employer;
+        $accreditation = \App\Models\EmployerAccreditation::where('employer_id', $employer->id)->latest()->first();
+
+        if (!$accreditation || $accreditation->status !== 'admin_approved') {
+            abort(403, 'You do not have an approved accreditation yet.');
+        }
+
+        // This tells Laravel to load the modern design file you showed me
+        return view('reports.employer-certificate', compact('employer', 'accreditation'));
+    }
 }
