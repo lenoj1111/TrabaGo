@@ -53,8 +53,8 @@ class JobPostingController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('jp.title', 'LIKE', "%{$search}%")
-                  ->orWhere('e.company_name', 'LIKE', "%{$search}%")
-                  ->orWhere('jp.job_id', 'LIKE', "%{$search}%");
+                    ->orWhere('e.company_name', 'LIKE', "%{$search}%")
+                    ->orWhere('jp.job_id', 'LIKE', "%{$search}%");
             });
         }
 
@@ -67,7 +67,7 @@ class JobPostingController extends Controller
         }
 
         $jobPostings = $query->orderBy('jp.created_at', 'desc')
-            ->paginate(15)
+            ->paginate(6)
             ->withQueryString();
 
         // Get statistics
@@ -305,7 +305,7 @@ class JobPostingController extends Controller
     public function destroy(int $id)
     {
         DB::table('job_postings')->where('job_id', $id)->delete();
-        
+
         return redirect()->route('admin.job-postings')
             ->with('success', 'Job posting deleted successfully.');
     }
@@ -420,51 +420,51 @@ class JobPostingController extends Controller
         $count = count($jobIds);
 
         switch ($action) {
-    case 'approve':
-        DB::table('job_postings')
-            ->whereIn('job_id', $jobIds)
-            ->where('status', 'pending')
-            ->update([
-                'status' => 'approved',
-                'approved_at' => now()->toDateString(),
-            ]);
+            case 'approve':
+                DB::table('job_postings')
+                    ->whereIn('job_id', $jobIds)
+                    ->where('status', 'pending')
+                    ->update([
+                        'status' => 'approved',
+                        'approved_at' => now()->toDateString(),
+                    ]);
 
-        $message = "{$count} job postings approved successfully.";
-        break;
+                $message = "{$count} job postings approved successfully.";
+                break;
 
-    case 'reject':
-        DB::table('job_postings')
-            ->whereIn('job_id', $jobIds)
-            ->where('status', 'pending')
-            ->update(['status' => 'rejected']);
+            case 'reject':
+                DB::table('job_postings')
+                    ->whereIn('job_id', $jobIds)
+                    ->where('status', 'pending')
+                    ->update(['status' => 'rejected']);
 
-        $message = "{$count} job postings rejected successfully.";
-        break;
+                $message = "{$count} job postings rejected successfully.";
+                break;
 
-    case 'close':
-        DB::table('job_postings')
-            ->whereIn('job_id', $jobIds)
-            ->whereIn('status', ['approved', 'pending'])
-            ->update(['status' => 'closed']);
+            case 'close':
+                DB::table('job_postings')
+                    ->whereIn('job_id', $jobIds)
+                    ->whereIn('status', ['approved', 'pending'])
+                    ->update(['status' => 'closed']);
 
-        $message = "{$count} job postings closed successfully.";
-        break;
+                $message = "{$count} job postings closed successfully.";
+                break;
 
-    case 'delete':
-        DB::table('job_postings')
-            ->whereIn('job_id', $jobIds)
-            ->delete();
+            case 'delete':
+                DB::table('job_postings')
+                    ->whereIn('job_id', $jobIds)
+                    ->delete();
 
-        $message = "{$count} job postings deleted successfully.";
-        break;
+                $message = "{$count} job postings deleted successfully.";
+                break;
 
-    default:
-        return response()->json([
-            'error' => 'Invalid action.'
-        ], 400);
-}
+            default:
+                return response()->json([
+                    'error' => 'Invalid action.'
+                ], 400);
+        }
 
-return response()->json(['success' => $message]);
+        return response()->json(['success' => $message]);
     }
 
     /**
@@ -501,8 +501,16 @@ return response()->json(['success' => $message]);
         $callback = function () use ($jobPostings) {
             $file = fopen('php://output', 'w');
             fputcsv($file, [
-                'Job ID', 'Title', 'Company', 'Vacancies', 'Valid Until', 
-                'Status', 'Created By', 'Created At', 'Approved At', 'Applications'
+                'Job ID',
+                'Title',
+                'Company',
+                'Vacancies',
+                'Valid Until',
+                'Status',
+                'Created By',
+                'Created At',
+                'Approved At',
+                'Applications'
             ]);
 
             foreach ($jobPostings as $job) {

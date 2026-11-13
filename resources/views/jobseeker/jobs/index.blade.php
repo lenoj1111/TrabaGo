@@ -93,14 +93,14 @@ $isProfileComplete = $jobseeker->isProfileAndDocumentsComplete();
         <!-- FULL-SCREEN GRID JOB LISTINGS -->
         <!-- =================================================================== -->
         <div class="space-y-4">
-            <div class="flex items-center justify-between px-1">
+            <div class="flex flex-col gap-2 px-1 sm:flex-row sm:items-center sm:justify-between">
                 <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                    {{ count($rankedJobs) }} Positions Available
+                    {{ $rankedJobs->total() }} Positions Available
                 </p>
                 <span class="text-xs text-emerald-700 font-bold">Click any box to inspect details & apply</span>
             </div>
 
-            <div class="grid grid-cols-1 gap-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 @forelse ($rankedJobs as $item)
                 @php
                 $job = $item['job'];
@@ -108,9 +108,24 @@ $isProfileComplete = $jobseeker->isProfileAndDocumentsComplete();
                 $company = $job->employer->company_name ?? 'Partner Employer';
                 $companyLogo = $job->employer->company_logo ?? null;
                 $hasApplied = in_array($job->job_id, $appliedJobIds);
+                $matchPercentage = (int) ($match['percentage'] ?? 0);
+                $matchCardClass = $matchPercentage >= 75
+                    ? 'border-green-300 border-l-4 border-l-green-600 bg-green-50'
+                    : ($matchPercentage >= 50
+                        ? 'border-yellow-300 border-l-4 border-l-yellow-600 bg-yellow-50'
+                        : ($matchPercentage >= 25
+                            ? 'border-orange-300 border-l-4 border-l-orange-600 bg-orange-50'
+                            : 'border-red-300 border-l-4 border-l-red-600 bg-red-50'));
+                $matchBadgeClass = $matchPercentage >= 75
+                    ? 'border-green-300 bg-green-200 text-green-900'
+                    : ($matchPercentage >= 50
+                        ? 'border-yellow-300 bg-yellow-200 text-yellow-900'
+                        : ($matchPercentage >= 25
+                            ? 'border-orange-300 bg-orange-200 text-orange-900'
+                            : 'border-red-300 bg-red-200 text-red-900'));
                 @endphp
                 <div @click="selectedJobId = '{{ $job->job_id }}'; selectedJobResumeRequired = {{ $job->resume_required ? 'true' : 'false' }}; selectedJobTitle = '{{ addslashes($job->title) }}'; selectedJobCompany = '{{ addslashes($company) }}'; previewOpen = true;"
-                    class="cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm hover:shadow-md hover:border-emerald-400 transition-all relative overflow-hidden flex flex-col justify-between gap-5 group">
+                    class="cursor-pointer rounded-2xl border {{ $matchCardClass }} p-4 sm:p-5 shadow-sm hover:shadow-md hover:border-emerald-400 transition-all relative overflow-hidden flex flex-col justify-between gap-4 group">
 
                     @if($hasApplied)
                     <span class="absolute top-0 right-0 rounded-bl-xl bg-emerald-700 text-white text-[9px] font-black px-2.5 py-1 shadow-xs z-10">
@@ -136,12 +151,12 @@ $isProfileComplete = $jobseeker->isProfileAndDocumentsComplete();
                                     </h3>
                                 </div>
                             </div>
-                            <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black border shrink-0 self-start {{ $match['badgeClass'] ?? 'bg-emerald-50 text-emerald-700 border-emerald-200' }}">
-                                {{ $match['percentage'] ?? 0 }}% Match
+                            <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black border shrink-0 self-start {{ $matchBadgeClass }}">
+                                {{ $matchPercentage }}% Match
                             </span>
                         </div>
 
-                        <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <div class="mt-4 grid gap-3 grid-cols-1 sm:grid-cols-2">
                             <div class="flex min-w-0 items-start gap-2 rounded-xl bg-slate-50 px-3 py-2.5 sm:col-span-2">
                                 <svg class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -193,6 +208,11 @@ $isProfileComplete = $jobseeker->isProfileAndDocumentsComplete();
                 </div>
                 @endforelse
             </div>
+            @if($rankedJobs->hasPages())
+            <div class="pt-2">
+                {{ $rankedJobs->onEachSide(1)->links() }}
+            </div>
+            @endif
         </div>
 
     </div>

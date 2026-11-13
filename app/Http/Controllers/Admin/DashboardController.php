@@ -145,11 +145,11 @@ class DashboardController extends Controller
 
                 if ($hasAccountStatusColumn) {
                     $q->orWhere('users.account_status', 'pending_review')
-                      ->orWhere('users.account_status', 'unverified')
-                      ->orWhereNull('users.account_status');
+                        ->orWhere('users.account_status', 'unverified')
+                        ->orWhereNull('users.account_status');
                 } else {
                     $q->orWhere('users.status', 'pending')
-                      ->orWhereNull('users.status');
+                        ->orWhereNull('users.status');
                 }
             })
             ->latest('users.created_at')
@@ -172,7 +172,8 @@ class DashboardController extends Controller
             ->join('employers', 'job_postings.employer_id', '=', 'employers.employer_id')
             ->join('jobseekers', 'job_applications.jobseeker_id', '=', 'jobseekers.jobseeker_id')
             ->select(
-                'jobseekers.first_name', 'jobseekers.last_name',
+                'jobseekers.first_name',
+                'jobseekers.last_name',
                 'job_postings.title as job_title',
                 'employers.company_name',
                 'job_applications.created_at as hire_time'
@@ -296,7 +297,7 @@ class DashboardController extends Controller
         $notifications = DB::table('notifications')
             ->where('user_id', $user->user_id)
             ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            ->paginate(6);
 
         $unreadCount = DB::table('notifications')
             ->where('user_id', $user->user_id)

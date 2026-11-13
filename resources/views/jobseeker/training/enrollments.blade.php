@@ -299,6 +299,11 @@
                 </div>
             @endforelse
         </div>
+        @if($enrollments->hasPages())
+        <div class="pt-2">
+            {{ $enrollments->onEachSide(1)->links() }}
+        </div>
+        @endif
 
     </div>
 </div>

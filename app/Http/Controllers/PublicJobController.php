@@ -7,6 +7,7 @@ use App\Models\JobPosting;
 use App\Models\Jobseeker;
 use App\Services\SkillMatchingService;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 
 class PublicJobController extends Controller
@@ -29,11 +30,11 @@ class PublicJobController extends Controller
         if ($search = $request->input('q')) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'LIKE', "%{$search}%")
-                  ->orWhere('description', 'LIKE', "%{$search}%")
-                  ->orWhere('qualifications', 'LIKE', "%{$search}%")
-                  ->orWhereHas('employer', function ($empQ) use ($search) {
-                      $empQ->where('company_name', 'LIKE', "%{$search}%");
-                  });
+                    ->orWhere('description', 'LIKE', "%{$search}%")
+                    ->orWhere('qualifications', 'LIKE', "%{$search}%")
+                    ->orWhereHas('employer', function ($empQ) use ($search) {
+                        $empQ->where('company_name', 'LIKE', "%{$search}%");
+                    });
             });
         }
 
@@ -41,7 +42,7 @@ class PublicJobController extends Controller
         if ($location = $request->input('location')) {
             $query->where(function ($q) use ($location) {
                 $q->where('description', 'LIKE', "%{$location}%")
-                  ->orWhere('qualifications', 'LIKE', "%{$location}%");
+                    ->orWhere('qualifications', 'LIKE', "%{$location}%");
             });
         }
 
@@ -67,22 +68,32 @@ class PublicJobController extends Controller
         $rankedJobs = $this->matchingService->rankJobsForJobseeker($jobs, $jobseeker);
 
         if ($request->input('sort', 'match') === 'latest') {
-            usort($rankedJobs, fn ($a, $b) => $b['job']->job_id <=> $a['job']->job_id);
+            usort($rankedJobs, fn($a, $b) => $b['job']->job_id <=> $a['job']->job_id);
         }
+
+        $perPage = 6;
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $rankedJobs = new LengthAwarePaginator(
+            array_slice($rankedJobs, ($currentPage - 1) * $perPage, $perPage),
+            count($rankedJobs),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         $appliedJobIds = $jobseeker
             ? JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)
-                ->get()
-                ->reject(function ($application) {
-                    if (in_array($application->status, ['withdrawn', 'rejected'], true)) {
-                        return true;
-                    }
+            ->get()
+            ->reject(function ($application) {
+                if (in_array($application->status, ['withdrawn', 'rejected'], true)) {
+                    return true;
+                }
 
-                    return $application->status === 'hired'
-                        && $application->resignation_status === 'approved';
-                })
-                ->pluck('job_id')
-                ->all()
+                return $application->status === 'hired'
+                    && $application->resignation_status === 'approved';
+            })
+            ->pluck('job_id')
+            ->all()
             : [];
         $userSkills = $this->matchingService->getJobseekerSkills($jobseeker);
         $selectedJobId = $request->input('selected_job', $request->input('job_id'));

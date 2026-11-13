@@ -217,6 +217,11 @@
                 </div>
             @endforelse
         </div>
+        @if($trainings->hasPages())
+        <div class="pt-2">
+            {{ $trainings->onEachSide(1)->links() }}
+        </div>
+        @endif
 
     </div>
 </div>

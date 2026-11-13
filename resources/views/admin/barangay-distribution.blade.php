@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="min-h-screen bg-slate-50/70 px-4 py-6 sm:px-6 lg:px-8" x-data="{ rationaleModalOpen: false }">
-    <div class="w-full max-w-[1680px] mx-auto space-y-6">
+    <div class="w-full max-w-[1680px] mx-auto space-y-4">
         
         <!-- HEADER HERO -->
         <header class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950 p-6 sm:p-8 text-white shadow-lg border border-slate-800">
@@ -63,19 +63,19 @@
         </header>
 
         <!-- MACRO SUMMARY KPI CARDS (100% REAL DATABASE DATA) -->
-        <section aria-label="Workforce Summary KPIs" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <section aria-label="Workforce Summary KPIs" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             
             <!-- 1. Total Registered -->
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-slate-300 transition-colors">
+            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-slate-300 transition-colors">
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-600">Total Registered</span>
-                    <div class="h-9 w-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shadow-inner" aria-hidden="true">
+                    <div class="h-8 w-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shadow-inner" aria-hidden="true">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                     </div>
                 </div>
-                <div class="mt-3">
-                    <p class="text-3xl font-black text-slate-900 tracking-tight">{{ number_format($kpis['total_registered']) }}</p>
-                    <div class="mt-2.5 flex items-center justify-between text-xs text-slate-600 pt-2 border-t border-slate-100">
+                <div class="mt-2">
+                    <p class="text-2xl font-black text-slate-900 tracking-tight">{{ number_format($kpis['total_registered']) }}</p>
+                    <div class="mt-2 flex items-center justify-between text-xs text-slate-600 pt-2 border-t border-slate-100">
                         <span>North: <strong class="text-slate-900 font-bold">{{ number_format($kpis['north_registered']) }}</strong></span>
                         <span>South: <strong class="text-slate-900 font-bold">{{ number_format($kpis['south_registered']) }}</strong></span>
                     </div>
@@ -83,16 +83,16 @@
             </div>
 
             <!-- 2. Actively Seeking -->
-            <div class="rounded-2xl border border-amber-200/80 bg-amber-50/40 p-5 shadow-sm hover:border-amber-300 transition-colors">
+            <div class="rounded-2xl border border-amber-200/80 bg-amber-50/40 p-4 shadow-sm hover:border-amber-300 transition-colors">
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-bold uppercase tracking-wider text-amber-800">Actively Seeking</span>
-                    <div class="h-9 w-9 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center shadow-inner" aria-hidden="true">
+                    <div class="h-8 w-8 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center shadow-inner" aria-hidden="true">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     </div>
                 </div>
-                <div class="mt-3">
-                    <p class="text-3xl font-black text-amber-950 tracking-tight">{{ number_format($kpis['total_seeking']) }}</p>
-                    <div class="mt-2.5 flex items-center justify-between text-xs text-amber-900 pt-2 border-t border-amber-200/60 font-medium">
+                <div class="mt-2">
+                    <p class="text-2xl font-black text-amber-950 tracking-tight">{{ number_format($kpis['total_seeking']) }}</p>
+                    <div class="mt-2 flex items-center justify-between text-xs text-amber-900 pt-2 border-t border-amber-200/60 font-medium">
                         <span>City Unemployment:</span>
                         <strong class="font-bold text-amber-950">{{ $kpis['overall_unemployment_rate'] }}%</strong>
                     </div>
@@ -100,16 +100,16 @@
             </div>
 
             <!-- 3. Employed / Placed -->
-            <div class="rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-5 shadow-sm hover:border-emerald-300 transition-colors">
+            <div class="rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-4 shadow-sm hover:border-emerald-300 transition-colors">
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-bold uppercase tracking-wider text-emerald-800">Employed / Placed</span>
-                    <div class="h-9 w-9 rounded-xl bg-emerald-100 text-emerald-900 flex items-center justify-center shadow-inner" aria-hidden="true">
+                    <div class="h-8 w-8 rounded-xl bg-emerald-100 text-emerald-900 flex items-center justify-center shadow-inner" aria-hidden="true">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     </div>
                 </div>
-                <div class="mt-3">
-                    <p class="text-3xl font-black text-emerald-950 tracking-tight">{{ number_format($kpis['total_employed']) }}</p>
-                    <div class="mt-2.5 flex items-center justify-between text-xs text-emerald-900 pt-2 border-t border-emerald-200/60 font-medium">
+                <div class="mt-2">
+                    <p class="text-2xl font-black text-emerald-950 tracking-tight">{{ number_format($kpis['total_employed']) }}</p>
+                    <div class="mt-2 flex items-center justify-between text-xs text-emerald-900 pt-2 border-t border-emerald-200/60 font-medium">
                         <span>Placement Rate:</span>
                         <strong class="font-bold text-emerald-950">{{ $kpis['overall_employment_rate'] }}%</strong>
                     </div>
@@ -117,16 +117,16 @@
             </div>
 
             <!-- 4. Vulnerable Groups -->
-            <div class="rounded-2xl border border-purple-200/80 bg-purple-50/40 p-5 shadow-sm hover:border-purple-300 transition-colors">
+            <div class="rounded-2xl border border-purple-200/80 bg-purple-50/40 p-4 shadow-sm hover:border-purple-300 transition-colors">
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-bold uppercase tracking-wider text-purple-800">Inclusivity Coverage</span>
-                    <div class="h-9 w-9 rounded-xl bg-purple-100 text-purple-900 flex items-center justify-center shadow-inner" aria-hidden="true">
+                    <div class="h-8 w-8 rounded-xl bg-purple-100 text-purple-900 flex items-center justify-center shadow-inner" aria-hidden="true">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                     </div>
                 </div>
-                <div class="mt-3">
-                    <p class="text-3xl font-black text-purple-950 tracking-tight">{{ number_format($kpis['total_pwd']) }} <span class="text-xs font-bold text-purple-800">PWDs</span></p>
-                    <div class="mt-2.5 flex items-center justify-between text-xs text-purple-900 pt-2 border-t border-purple-200/60 font-medium">
+                <div class="mt-2">
+                    <p class="text-2xl font-black text-purple-950 tracking-tight">{{ number_format($kpis['total_pwd']) }} <span class="text-xs font-bold text-purple-800">PWDs</span></p>
+                    <div class="mt-2 flex items-center justify-between text-xs text-purple-900 pt-2 border-t border-purple-200/60 font-medium">
                         <span>4Ps Beneficiaries:</span>
                         <strong class="font-bold text-purple-950">{{ number_format($kpis['total_4ps']) }}</strong>
                     </div>
@@ -139,38 +139,38 @@
         @php
             $skillBreakdown = $skill_type_breakdown ?? ['technical' => 0, '21st_century' => 0];
         @endphp
-        <section aria-label="Skill Type Overview" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section aria-label="Skill Type Overview" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Technical Skills</p>
-                        <h2 class="mt-2 text-3xl font-black text-slate-900">{{ number_format($skillBreakdown['technical']) }}</h2>
+                        <h2 class="mt-1 text-2xl font-black text-slate-900">{{ number_format($skillBreakdown['technical']) }}</h2>
                     </div>
-                    <div class="h-10 w-10 rounded-xl bg-cyan-100 text-cyan-800 flex items-center justify-center">
+                    <div class="h-8 w-8 rounded-xl bg-cyan-100 text-cyan-800 flex items-center justify-center">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     </div>
                 </div>
-                <p class="mt-3 text-xs text-slate-600">Vocational, trade, and technical competencies captured across active candidate records.</p>
+                <p class="mt-2 text-xs text-slate-600">Vocational, trade, and technical competencies captured across active candidate records.</p>
             </div>
 
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">21st Century Skills</p>
-                        <h2 class="mt-2 text-3xl font-black text-slate-900">{{ number_format($skillBreakdown['21st_century']) }}</h2>
+                        <h2 class="mt-1 text-2xl font-black text-slate-900">{{ number_format($skillBreakdown['21st_century']) }}</h2>
                     </div>
-                    <div class="h-10 w-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                    <div class="h-8 w-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3 3 7-7M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     </div>
                 </div>
-                <p class="mt-3 text-xs text-slate-600">Communication, problem solving, adaptability, and other soft/critical-thinking competencies.</p>
+                <p class="mt-2 text-xs text-slate-600">Communication, problem solving, adaptability, and other soft/critical-thinking competencies.</p>
             </div>
         </section>
 
         <section aria-label="Talent Hubs and Classifications" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
             
             <!-- Real Talent Hubs -->
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div>
                         <h2 class="text-sm font-bold text-slate-900">Current Talent Hubs</h2>
@@ -182,7 +182,7 @@
                 </div>
 
                 @if(count($top10_registered) > 0)
-                    <div class="space-y-2.5 pt-1">
+                    <div class="max-h-[26rem] space-y-2.5 overflow-y-auto overscroll-contain pt-1 pr-2">
                         @php
                             $maxVal = max(array_column($top10_registered, 'registered') ?: [1]);
                         @endphp

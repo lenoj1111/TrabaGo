@@ -281,7 +281,7 @@ class EmployerPortalController extends Controller
 
         $jobs = $query->with('employer')->withCount(['applications' => function ($q) {
             $q->where('status', '!=', 'jpo_pending'); // Hides JPO pending count from employer
-        }])->latest('job_id')->paginate(10)->withQueryString();
+        }])->latest('job_id')->paginate(6)->withQueryString();
 
         $stats = [
             'total' => JobPosting::where('employer_id', $employer->employer_id)->count(),
@@ -696,7 +696,7 @@ class EmployerPortalController extends Controller
             });
         }
 
-        $referredApplicants = $query->latest('application_id')->paginate(15)->withQueryString();
+        $referredApplicants = $query->latest('application_id')->paginate(6)->withQueryString();
 
         $stats = [
             'total' => JobApplication::whereIn('job_id', $jobIds)
@@ -1003,7 +1003,7 @@ class EmployerPortalController extends Controller
         $employer = $this->getOrCreateEmployer();
         $jobIds = JobPosting::where('employer_id', $employer->employer_id)->pluck('job_id');
 
-        $reports = DB::table('placement_reports')->where('employer_id', $employer->employer_id)->latest('report_id')->paginate(10);
+        $reports = DB::table('placement_reports')->where('employer_id', $employer->employer_id)->latest('report_id')->paginate(6);
         $hiredApplicants = JobApplication::with(['jobseeker', 'jobPosting'])
             ->whereIn('job_id', $jobIds)
             ->where('status', 'hired')
@@ -1284,7 +1284,7 @@ class EmployerPortalController extends Controller
         $user = Auth::user();
         $notifications = Notification::where('user_id', $user->user_id)
             ->latest('created_at')
-            ->paginate(15);
+            ->paginate(6);
 
         $unreadCount = Notification::where('user_id', $user->user_id)
             ->where('is_read', false)

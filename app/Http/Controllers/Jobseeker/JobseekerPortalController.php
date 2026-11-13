@@ -17,6 +17,7 @@ use App\Models\TrainingTopic;
 use App\Services\IdDocumentVerificationService;
 use App\Services\SkillMatchingService;
 use App\Services\TrainingQuizService;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -186,6 +187,16 @@ class JobseekerPortalController extends Controller
         if (!$selectedItem && !empty($rankedJobs)) {
             $selectedItem = $rankedJobs[0];
         }
+
+        $perPage = 6;
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $rankedJobs = new LengthAwarePaginator(
+            array_slice($rankedJobs, ($currentPage - 1) * $perPage, $perPage),
+            count($rankedJobs),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         $savedDocuments = $jobseeker->details && $jobseeker->details->training_certificates
             ? (is_array($jobseeker->details->training_certificates) ? $jobseeker->details->training_certificates : json_decode($jobseeker->details->training_certificates, true))
@@ -423,7 +434,7 @@ class JobseekerPortalController extends Controller
         }
 
         // Paginate the applications and map the match data
-        $applications = $query->orderByDesc('application_id')->paginate(12)->through(function ($app) use ($userSkills) {
+        $applications = $query->orderByDesc('application_id')->paginate(6)->through(function ($app) use ($userSkills) {
             $jobSkills = $app->jobPosting ? $this->matchingService->getJobSkills($app->jobPosting) : [];
             $match = $this->matchingService->calculateMatch($userSkills, $jobSkills);
             $app->match_details = $match;
@@ -691,6 +702,15 @@ class JobseekerPortalController extends Controller
             $allTrainingSkills[$t->training_id] = array_values($words);
         }
 
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $trainings = new LengthAwarePaginator(
+            $trainings->forPage($currentPage, 6)->values(),
+            $trainings->count(),
+            6,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
         return view('jobseeker.training.index', compact('trainings', 'userSkills', 'allTrainingSkills', 'jobseeker', 'filter', 'counts'));
     }
 
@@ -751,6 +771,15 @@ class JobseekerPortalController extends Controller
             });
         }
 
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $skillsCatalog = new LengthAwarePaginator(
+            array_slice($skillsCatalog, ($currentPage - 1) * 6, 6),
+            count($skillsCatalog),
+            6,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
         return view('jobseeker.training.skills', compact('skillsCatalog', 'userSkills', 'jobseeker'));
     }
 
@@ -759,17 +788,26 @@ class JobseekerPortalController extends Controller
         $jobseeker = $this->getOrCreateJobseeker();
         $userSkills = $this->matchingService->getJobseekerSkills($jobseeker);
 
-        $enrollments = TrainingEnrollment::with(['trainingProgram.topics', 'trainingProgram.trainer'])
+        $allEnrollments = TrainingEnrollment::with(['trainingProgram.topics', 'trainingProgram.trainer'])
             ->where('jobseeker_id', $jobseeker->jobseeker_id)
             ->orderBy('enrollment_id', 'desc')
             ->get();
 
         $stats = [
-            'total' => $enrollments->count(),
-            'in_progress' => $enrollments->whereIn('status', ['enrolled', 'in_progress', 'failed'])->count(),
-            'completed' => $enrollments->where('status', 'completed')->count(),
-            'certificates' => $enrollments->where('certificate_issued', 1)->count(),
+            'total' => $allEnrollments->count(),
+            'in_progress' => $allEnrollments->whereIn('status', ['enrolled', 'in_progress', 'failed'])->count(),
+            'completed' => $allEnrollments->where('status', 'completed')->count(),
+            'certificates' => $allEnrollments->where('certificate_issued', 1)->count(),
         ];
+
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $enrollments = new LengthAwarePaginator(
+            $allEnrollments->forPage($currentPage, 6)->values(),
+            $allEnrollments->count(),
+            6,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         return view('jobseeker.training.enrollments', compact('enrollments', 'jobseeker', 'userSkills', 'stats'));
     }
@@ -1544,7 +1582,7 @@ class JobseekerPortalController extends Controller
             }
         }
 
-        $notifications = $query->orderByDesc('created_at')->paginate(15)->appends(['category' => $filter]);
+        $notifications = $query->orderByDesc('created_at')->paginate(6)->appends(['category' => $filter]);
         $unreadCount = Notification::where('user_id', $user->user_id)->where('is_read', false)->count();
 
         return view('jobseeker.notifications.index', compact('notifications', 'unreadCount', 'filter'));

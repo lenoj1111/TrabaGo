@@ -55,14 +55,14 @@ class UserManagementController extends Controller
             $search = '%' . $request->search . '%';
             $query->where(function ($q) use ($search) {
                 $q->where('users.email', 'like', $search)
-                  ->orWhere('user_profiles.full_name', 'like', $search)
-                  ->orWhere('employers.company_name', 'like', $search)
-                  ->orWhere('jobseekers.first_name', 'like', $search)
-                  ->orWhere('jobseekers.last_name', 'like', $search);
+                    ->orWhere('user_profiles.full_name', 'like', $search)
+                    ->orWhere('employers.company_name', 'like', $search)
+                    ->orWhere('jobseekers.first_name', 'like', $search)
+                    ->orWhere('jobseekers.last_name', 'like', $search);
             });
         }
 
-        $users = $query->orderBy('users.created_at', 'desc')->paginate(15)->withQueryString();
+        $users = $query->orderBy('users.created_at', 'desc')->paginate(6)->withQueryString();
 
         $counts = [
             'total'      => DB::table('users')->count(),
@@ -223,14 +223,16 @@ class UserManagementController extends Controller
                     'submitted_at' => Carbon::now(),
                 ]);
 
-                $this->createNotification($userId, 'Employer Account Created', 
-                    "Employer account for {$request->company_name} has been provisioned.");
+                $this->createNotification(
+                    $userId,
+                    'Employer Account Created',
+                    "Employer account for {$request->company_name} has been provisioned."
+                );
 
                 DB::commit();
 
                 $redirect = $isJpo ? redirect()->route('jpo.evaluations.accreditations') : redirect()->route('admin.employers');
                 return $redirect->with('success', "Employer account for '{$request->company_name}' created successfully!" . ($isAccredited ? " (Certificate {$certNo} issued)" : ""));
-
             } elseif ($role === 'jobseeker') {
                 $fullName = trim("{$request->first_name} {$request->last_name}");
 
@@ -287,14 +289,16 @@ class UserManagementController extends Controller
                     'created_at' => Carbon::now(),
                 ]);
 
-                $this->createNotification($userId, 'Jobseeker Account Created', 
-                    "Jobseeker account for {$fullName} has been provisioned.");
+                $this->createNotification(
+                    $userId,
+                    'Jobseeker Account Created',
+                    "Jobseeker account for {$fullName} has been provisioned."
+                );
 
                 DB::commit();
 
                 $redirect = $isJpo ? redirect()->route('jpo.evaluations.jobseekers') : redirect()->route('admin.jobseekers.index');
                 return $redirect->with('success', "Jobseeker account for '{$fullName}' created successfully!");
-
             } else {
                 // Admin, JPO, Trainer, Supervisor, LMO
                 $isApproved = ($request->role === 'trainer') ? 1 : ($request->is_approved ?? 1);
@@ -328,15 +332,17 @@ class UserManagementController extends Controller
                 ]);
 
                 // 3. Create notification
-                $this->createNotification($user, 'New Employee Account Created', 
-                    "An employee account has been created for {$request->full_name} ({$request->role}).");
+                $this->createNotification(
+                    $user,
+                    'New Employee Account Created',
+                    "An employee account has been created for {$request->full_name} ({$request->role})."
+                );
 
                 DB::commit();
 
                 return redirect()->route('admin.users.index')
                     ->with('success', "Staff account created successfully!");
             }
-
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Creation failed: ' . $e->getMessage()])->withInput();
@@ -483,7 +489,6 @@ class UserManagementController extends Controller
 
             return redirect()->route('admin.users.index')
                 ->with('success', 'User updated successfully!');
-
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Update failed: ' . $e->getMessage()])->withInput();
@@ -523,7 +528,6 @@ class UserManagementController extends Controller
                 'success' => "User has been {$message} successfully!",
                 'status'  => $newStatus,
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Operation failed: ' . $e->getMessage(),
@@ -567,7 +571,6 @@ class UserManagementController extends Controller
             }
 
             return redirect()->back()->with('success', 'User approved successfully!');
-
         } catch (\Exception $e) {
             if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
                 return response()->json([
@@ -607,7 +610,6 @@ class UserManagementController extends Controller
             DB::commit();
 
             return redirect()->back()->with('success', 'User deleted successfully!');
-
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Deletion failed: ' . $e->getMessage());

@@ -126,7 +126,7 @@ class JpoPortalController extends Controller
             });
         }
 
-        $applications = $query->paginate(15)->withQueryString();
+        $applications = $query->paginate(6)->withQueryString();
 
         return view('jpo.evaluations.jobseekers', compact('applications'));
     }
@@ -339,7 +339,7 @@ class JpoPortalController extends Controller
 
         abort_unless(is_array($documents), 404);
         $document = collect($documents)->first(
-            fn ($item) => is_array($item) && ($item['category'] ?? null) === 'valid_id'
+            fn($item) => is_array($item) && ($item['category'] ?? null) === 'valid_id'
         );
         abort_unless($document, 404);
 
@@ -404,7 +404,7 @@ class JpoPortalController extends Controller
             $query->where('employers.company_name', 'like', "%{$s}%");
         }
 
-        $accreditations = $query->paginate(15)->withQueryString();
+        $accreditations = $query->paginate(6)->withQueryString();
 
         return view('jpo.evaluations.accreditations', compact('accreditations'));
     }
@@ -694,7 +694,7 @@ class JpoPortalController extends Controller
             $query->where('placement_reports.report_month', 'like', $request->month . '%');
         }
 
-        $reports = $query->paginate(15)->withQueryString();
+        $reports = $query->paginate(6)->withQueryString();
 
         return view('jpo.evaluations.placement-reports', compact('reports'));
     }
@@ -838,7 +838,7 @@ class JpoPortalController extends Controller
         $user = Auth::user();
         $notifications = Notification::where('user_id', $user->user_id)
             ->latest('created_at')
-            ->paginate(15);
+            ->paginate(6);
 
         $unreadCount = Notification::where('user_id', $user->user_id)
             ->where('is_read', false)
@@ -865,7 +865,7 @@ class JpoPortalController extends Controller
         return redirect()->back()->with('success', 'All notifications marked as read.');
     }
 
-        public function approveJobseeker(Request $request, int $id)
+    public function approveJobseeker(Request $request, int $id)
     {
         $jobseeker = Jobseeker::with('user', 'details')->find($id);
         if (!$jobseeker) {
@@ -986,9 +986,9 @@ class JpoPortalController extends Controller
             ->leftJoin('users', 'jobseekers.user_id', '=', 'users.user_id')
             ->leftJoin('social_status', 'jobseekers.jobseeker_id', '=', 'social_status.jobseeker_id')
             ->select(
-                'jobseekers.*', 
+                'jobseekers.*',
                 'users.user_id',
-                'users.email as user_email', 
+                'users.email as user_email',
                 'users.status as account_status',
                 'users.is_approved as user_is_approved',
                 'users.created_at as registered_at',
@@ -1008,8 +1008,8 @@ class JpoPortalController extends Controller
             $s = $request->search;
             $query->where(function ($q) use ($s) {
                 $q->where('jobseekers.first_name', 'like', "%{$s}%")
-                ->orWhere('jobseekers.last_name', 'like', "%{$s}%")
-                ->orWhere('users.email', 'like', "%{$s}%");
+                    ->orWhere('jobseekers.last_name', 'like', "%{$s}%")
+                    ->orWhere('users.email', 'like', "%{$s}%");
             });
         }
 
@@ -1036,7 +1036,7 @@ class JpoPortalController extends Controller
             $query->where('social_status.is_pwd', 1);
         }
 
-        $jobseekers = $query->orderBy('jobseekers.jobseeker_id', 'desc')->paginate(15)->withQueryString();
+        $jobseekers = $query->orderBy('jobseekers.jobseeker_id', 'desc')->paginate(6)->withQueryString();
 
         $jobseekerIds = collect($jobseekers->items())->pluck('jobseeker_id');
         $models = \App\Models\Jobseeker::with(['user', 'details', 'socialStatus', 'skills'])
@@ -1055,14 +1055,14 @@ class JpoPortalController extends Controller
                 $documents = json_decode($documents, true) ?: [];
             }
             $validIdDocument = collect(is_array($documents) ? $documents : [])->first(
-                fn ($document) => is_array($document) && ($document['category'] ?? null) === 'valid_id'
+                fn($document) => is_array($document) && ($document['category'] ?? null) === 'valid_id'
             );
-            
+
             // 🔥 CRITICAL FIX: Use the JPO route instead of the Admin route
             $item->valid_id_url = $validIdDocument
                 ? route('jpo.jobseekers.valid-id', $item->jobseeker_id)
                 : null;
-                
+
             $item->valid_id_name = $validIdDocument['name'] ?? null;
             $validIdSource = (string) ($validIdDocument['file_path'] ?? $validIdDocument['path'] ?? $validIdDocument['name'] ?? '');
             $validIdPath = parse_url($validIdSource, PHP_URL_PATH);
@@ -1093,9 +1093,9 @@ class JpoPortalController extends Controller
         $certifiedJobseekers = DB::table('training_enrollments')->where('certificate_issued', 1)->distinct('jobseeker_id')->count();
 
         return view('jpo.index', compact(
-            'jobseekers', 
-            'totalJobseekers', 
-            'pwdJobseekers', 
+            'jobseekers',
+            'totalJobseekers',
+            'pwdJobseekers',
             'employedJobseekers',
             'inTrainingJobseekers',
             'certifiedJobseekers'

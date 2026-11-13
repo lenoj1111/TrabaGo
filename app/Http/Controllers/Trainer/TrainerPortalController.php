@@ -254,7 +254,7 @@ class TrainerPortalController extends Controller
             });
         }
 
-        $enrollments = $query->orderBy('training_enrollments.enrollment_id', 'desc')->paginate(12)->withQueryString();
+        $enrollments = $query->orderBy('training_enrollments.enrollment_id', 'desc')->paginate(6)->withQueryString();
 
         return view('trainer.enrollments.index', compact('enrollments'));
     }
@@ -829,7 +829,7 @@ class TrainerPortalController extends Controller
             'training_programs.updated_at'
         )
             ->orderBy('training_programs.training_id', 'desc')
-            ->paginate(12)
+            ->paginate(6)
             ->withQueryString();
 
         return view('trainer.courses.index', compact('courses'));
@@ -895,7 +895,7 @@ class TrainerPortalController extends Controller
 
         $enrollments = $query
             ->orderByDesc('training_enrollments.enrollment_id')
-            ->paginate(15)
+            ->paginate(6)
             ->withQueryString();
 
         return view('trainer.courses.enrollments', compact('course', 'enrollments'));
@@ -1155,7 +1155,7 @@ class TrainerPortalController extends Controller
                 'user_profiles.trainer_type'
             )
             ->orderBy('users.user_id', 'desc')
-            ->paginate(15);
+            ->paginate(6);
 
         return view('trainer.collaborators.index', compact('collaborators'));
     }
@@ -1255,7 +1255,7 @@ class TrainerPortalController extends Controller
             });
         }
 
-        $jobseekers = $query->orderBy('jobseekers.first_name')->paginate(12)->withQueryString();
+        $jobseekers = $query->orderBy('jobseekers.first_name')->paginate(6)->withQueryString();
 
         // Load existing enrollments with skills
         $recentEnrollments = DB::table('training_enrollments')
@@ -1410,7 +1410,7 @@ class TrainerPortalController extends Controller
         $notifications = DB::table('notifications')
             ->where('user_id', $user->user_id)
             ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            ->paginate(6);
 
         $unreadCount = DB::table('notifications')
             ->where('user_id', $user->user_id)

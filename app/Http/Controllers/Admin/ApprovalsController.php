@@ -619,7 +619,7 @@ class ApprovalsController extends Controller
             });
         }
 
-        $reports = $query->latest('placement_reports.report_id')->paginate(15)->withQueryString();
+        $reports = $query->latest('placement_reports.report_id')->paginate(6)->withQueryString();
 
         $stats = [
             'total' => DB::table('placement_reports')->count(),
@@ -712,7 +712,7 @@ class ApprovalsController extends Controller
             $query->where('social_status.is_pwd', 1);
         }
 
-        $jobseekers = $query->orderBy('jobseekers.jobseeker_id', 'desc')->paginate(15)->withQueryString();
+        $jobseekers = $query->orderBy('jobseekers.jobseeker_id', 'desc')->paginate(6)->withQueryString();
 
         $jobseekerIds = collect($jobseekers->items())->pluck('jobseeker_id');
         $models = \App\Models\Jobseeker::with(['user', 'details', 'socialStatus', 'skills'])
@@ -1061,7 +1061,7 @@ class ApprovalsController extends Controller
             });
         }
 
-        $applications = $query->paginate(15)->withQueryString();
+        $applications = $query->paginate(6)->withQueryString();
 
         return view('admin.evaluations.jobseekers', compact('applications'));
     }
