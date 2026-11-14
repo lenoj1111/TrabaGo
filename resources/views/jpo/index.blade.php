@@ -3,8 +3,14 @@
 @section('title', 'Jobseeker Status & Workflow Supervision - JPO')
 
 @section('content')
-<div x-data="{ viewModal: false, selectedJobseeker: null, openView(js) { this.selectedJobseeker = js; this.viewModal = true; } }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
+<div x-data="{ viewModal: false, credentialsModal: false, selectedJobseeker: null, credentialEmail: '', credentialPassword: '', credentialPasswordConfirmation: '', openView(js) { this.selectedJobseeker = js; this.viewModal = true; }, openCredentials(js) { this.selectedJobseeker = js; this.credentialEmail = js.email; this.credentialPassword = ''; this.credentialPasswordConfirmation = ''; this.credentialsModal = true; } }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
     <div class="w-full max-w-[1680px] mx-auto space-y-8">
+
+        @if($errors->any())
+            <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800" role="alert">
+                {{ $errors->first() }}
+            </div>
+        @endif
 
         <!-- Header -->
         <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
@@ -247,17 +253,9 @@
                                 <td class="py-4 px-6 text-right">
                                     <div class="ml-auto flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
                                         <button type="button"
-                                                data-action="approve-user"
-                                                data-approve-url="{{ route('jpo.evaluations.jobseekers.approve', $js->jobseeker_id) }}"
-                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all" title="Approve Candidate">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                            <span>Approve</span>
-                                        </button>
-                                        <button type="button"
-                                                data-action="disapprove-user"
-                                                data-approve-url="{{ route('jpo.evaluations.jobseekers.disapprove', $js->jobseeker_id) }}"
-                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-all" title="Disapprove Candidate">
-                                            <span>Disapprove</span>
+                                                @click='openCredentials(@json($jsData))'
+                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all">
+                                            <span>Update Login</span>
                                         </button>
                                         <button type="button" @click='openView(@json($jsData))'
                                                 class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors" title="View Full Profile">
@@ -418,23 +416,9 @@
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-                    <div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <button type="button"
-                                    data-action="approve-user"
-                                    :data-approve-url="'{{ url('/jpo/evaluations/jobseekers') }}/' + selectedJobseeker.id + '/approve'"
-                                    class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-emerald-700">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                <span>Approve Candidate</span>
-                            </button>
-                            <button type="button"
-                                    data-action="disapprove-user"
-                                    :data-approve-url="'{{ url('/jpo/evaluations/jobseekers') }}/' + selectedJobseeker.id + '/disapprove'"
-                                    class="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 transition-all hover:bg-rose-100">
-                                <span>Disapprove Candidate</span>
-                            </button>
-                        </div>
-                    </div>
+                    <button type="button" @click="openCredentials(selectedJobseeker)" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-emerald-700">
+                        Update Login
+                    </button>
                     <button type="button" @click="viewModal = false" class="px-5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
                         Close
                     </button>
@@ -442,69 +426,42 @@
             </div>
         </div>
 
+        <div x-show="credentialsModal" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 p-4" @keydown.escape.window="credentialsModal = false">
+            <div @click.away="credentialsModal = false" class="w-full max-w-lg space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl sm:p-8">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">Account Access</p>
+                        <h2 class="mt-1 text-xl font-black text-slate-900">Update Login</h2>
+                        <p class="mt-1 text-xs text-slate-500" x-text="selectedJobseeker?.name"></p>
+                    </div>
+                    <button type="button" @click="credentialsModal = false" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Close">&times;</button>
+                </div>
+
+                <form method="POST" :action="'{{ route('jpo.jobseekers.index') }}/' + selectedJobseeker.id + '/credentials'" class="space-y-4">
+                    @csrf
+                    @method('PUT')
+                    <div class="space-y-1.5">
+                        <label for="jobseeker-email" class="text-xs font-bold text-slate-700">Email address</label>
+                        <input id="jobseeker-email" type="email" name="email" x-model="credentialEmail" required maxlength="150" autocomplete="email" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                        @error('email')<p class="text-xs text-rose-700">{{ $message }}</p>@enderror
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="jobseeker-password" class="text-xs font-bold text-slate-700">New password <span class="font-normal text-slate-400">(leave blank to keep current)</span></label>
+                        <input id="jobseeker-password" type="password" name="password" x-model="credentialPassword" minlength="8" autocomplete="new-password" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                        @error('password')<p class="text-xs text-rose-700">{{ $message }}</p>@enderror
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="jobseeker-password-confirmation" class="text-xs font-bold text-slate-700">Confirm new password</label>
+                        <input id="jobseeker-password-confirmation" type="password" name="password_confirmation" x-model="credentialPasswordConfirmation" :required="credentialPassword.length > 0" minlength="8" autocomplete="new-password" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                    </div>
+                    <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
+                        <button type="button" @click="credentialsModal = false" class="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                        <button type="submit" class="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700">Save Login</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </div>
 </div>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        document.addEventListener('click', function (event) {
-            const button = event.target.closest('[data-action="approve-user"], [data-action="disapprove-user"]');
-            if (!button) return;
-            const isDisapproval = button.dataset.action === 'disapprove-user';
-
-            const confirmation = {
-                title: isDisapproval ? 'Disapprove Jobseeker Account?' : 'Approve User Account?',
-                text: isDisapproval
-                    ? 'This will revoke application access and return the account to pending review.'
-                    : 'This will authorize the user account to log in and access system functions.',
-                icon: isDisapproval ? 'warning' : 'question',
-                showCancelButton: true,
-                confirmButtonColor: isDisapproval ? '#e11d48' : '#059669',
-                cancelButtonColor: '#64748b',
-                confirmButtonText: isDisapproval ? 'Yes, disapprove' : 'Yes, approve'
-            };
-
-            if (isDisapproval) {
-                confirmation.input = 'textarea';
-                confirmation.inputLabel = 'Remarks for the jobseeker';
-                confirmation.inputPlaceholder = 'Explain why the account is being disapproved...';
-                confirmation.inputAttributes = { 'aria-label': 'Disapproval remarks' };
-                confirmation.inputValidator = (value) => {
-                    if (!value || !value.trim()) return 'Please enter remarks for the jobseeker.';
-                    if (value.trim().length > 1000) return 'Remarks must be 1000 characters or fewer.';
-                };
-            }
-
-            Swal.fire(confirmation).then((result) => {
-                if (!result.isConfirmed) return;
-
-                const headers = {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                };
-                const request = { method: 'POST', headers };
-                if (isDisapproval) {
-                    headers['Content-Type'] = 'application/json';
-                    request.body = JSON.stringify({ remarks: result.value });
-                }
-
-                fetch(button.dataset.approveUrl, request)
-                .then(async response => {
-                    const data = await response.json().catch(() => ({}));
-                    if (!response.ok) {
-                        throw new Error(data.message || data.error || 'Unable to update this account.');
-                    }
-                    return data;
-                })
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire(isDisapproval ? 'Disapproved!' : 'Approved!', data.success, 'success').then(() => location.reload());
-                    } else {
-                        Swal.fire('Action Failed', data.error || 'Unable to update this account.', 'error');
-                    }
-                })
-                .catch(error => Swal.fire('Action Failed', error.message || 'Network error occurred.', 'error'));
-            });
-        });
-    });
-</script>
 @endsection

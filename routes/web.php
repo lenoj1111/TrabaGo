@@ -19,6 +19,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\Employer\EmployerPortalController;
 use App\Http\Controllers\EmployerRegistrationController;
 use App\Http\Controllers\Jobseeker\JobseekerPortalController;
+use App\Http\Controllers\JobseekerCredentialsController;
 use App\Http\Controllers\JobseekerRegistrationController;
 use App\Http\Controllers\Jpo\JpoBarangayDistributionController;
 use App\Http\Controllers\Jpo\JpoPortalController;
@@ -315,6 +316,7 @@ Route::prefix('jpo')->name('jpo.')->middleware(['auth', 'jpo'])->group(function 
 
     // Approve Jobseeker
     Route::get('/jobseekers', [JpoPortalController::class, 'jobseekers'])->name('jobseekers.index');
+    Route::put('/jobseekers/{id}/credentials', [JobseekerCredentialsController::class, 'update'])->name('jobseekers.credentials.update');
     Route::get('/jobseekers/{id}/valid-id', [JpoPortalController::class, 'viewJobseekerValidId'])->name('jobseekers.valid-id');
 });
 
@@ -440,6 +442,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/approvals/jobseekers/{id}/approve', [ApprovalsController::class, 'approveJobseeker'])->name('approvals.jobseekers.approve');
     Route::post('/approvals/jobseekers/{id}/disapprove', [ApprovalsController::class, 'disapproveJobseeker'])->name('approvals.jobseekers.disapprove');
     Route::post('/approvals/jobseekers/{id}/reject', [ApprovalsController::class, 'rejectJobseeker'])->name('approvals.jobseekers.reject');
+    Route::put('/jobseekers/{id}/credentials', [JobseekerCredentialsController::class, 'update'])->name('jobseekers.credentials.update');
 
     // Placement Reports Management Directory
     Route::get('/placement-reports', [ApprovalsController::class, 'placementReports'])->name('placement-reports.index');
