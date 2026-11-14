@@ -191,6 +191,7 @@ Route::prefix('jobseeker')->name('jobseeker.')->group(function () {
         Route::post('/profile/skills', [JobseekerPortalController::class, 'addSkill'])->name('profile.skills.add');
         Route::delete('/profile/skills/{id}', [JobseekerPortalController::class, 'removeSkill'])->name('profile.skills.remove');
         Route::post('/password/change', [JobseekerPortalController::class, 'changePassword'])->name('password.change');
+        Route::post('/profile/photo', [JobseekerPortalController::class, 'uploadProfilePhoto'])->name('profile.upload_photo');
     });
 });
 

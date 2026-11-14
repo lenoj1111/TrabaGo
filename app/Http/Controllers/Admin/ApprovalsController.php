@@ -725,7 +725,11 @@ class ApprovalsController extends Controller
             $item->is_verified = $model ? $model->isVerified() : false;
             $item->missing_requirements = $model ? array_values($model->getMissingRequirements()) : [];
             $item->skills_text = $model && $model->skills ? $model->skills->pluck('skill_name')->implode(', ') : '';
-
+            // 👇 Add this block
+            $item->profile_photo = $model?->profile_photo;
+            $item->profile_photo_url = !empty($model?->profile_photo) && Storage::disk('public')->exists($model->profile_photo)
+                ? asset('storage/' . $model->profile_photo)
+                : null;
             $documents = $model && $model->details ? $model->details->training_certificates : [];
             if (is_string($documents)) {
                 $documents = json_decode($documents, true) ?: [];
