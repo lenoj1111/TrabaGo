@@ -290,7 +290,7 @@ $myApplicationsCount = 0;
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('logout') }}" class="mt-1">
+            <form method="POST" action="{{ route('logout') }}" class="mt-1" onsubmit="return confirm('Are you sure you want to log out?')">
                 @csrf
                 <button type="submit"
                     class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold
@@ -383,7 +383,7 @@ $myApplicationsCount = 0;
                                 <i class="bi bi-file-earmark-text"></i> My Applications
                             </a>
                             <div class="border-t border-slate-100 my-1"></div>
-                            <form action="{{ route('logout') }}" method="POST">
+                            <form action="{{ route('logout') }}" method="POST" onsubmit="return confirm('Are you sure you want to log out?')">
                                 @csrf
                                 <button type="submit"
                                     class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors">

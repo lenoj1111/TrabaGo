@@ -1646,22 +1646,10 @@ class JobseekerPortalController extends Controller
         $query = Notification::where('user_id', $user->user_id);
 
         if ($filter !== 'all') {
-            if ($filter === 'jpo_pending') {
-                // Still waiting for DMDP / JPO
-                $query->where('status', 'jpo_pending')->where('referred_by_jpo', 0);
-            } elseif ($filter === 'pending') {
-                // Endorsed by JPO — waiting for employer
-                $query->where('referred_by_jpo', 1)->whereIn('status', ['pending', 'reviewed']);
-            } elseif ($filter === 'hired') {
-                $query->where('status', 'hired')
-                    ->where(function ($q) {
-                        $q->whereNull('resignation_status')
-                            ->orWhere('resignation_status', '!=', 'approved');
-                    });
-            } elseif ($filter === 'rejected') {
-                $query->where('status', 'rejected');
+            if ($filter === 'application') {
+                $query->whereIn('type', ['application', 'approval', 'rejection', 'manual_review']);
             } else {
-                $query->where('status', $filter);
+                $query->where('type', $filter);
             }
         }
 

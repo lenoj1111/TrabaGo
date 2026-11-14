@@ -340,10 +340,39 @@ class JobseekerComprehensiveFunctionalityTest extends TestCase
             'type' => 'interview',
             'is_read' => false,
         ]);
+        Notification::create([
+            'user_id' => $this->user->user_id,
+            'title' => 'Application Update',
+            'message' => 'Your application is being reviewed.',
+            'type' => 'approval',
+            'is_read' => false,
+        ]);
+        Notification::create([
+            'user_id' => $this->user->user_id,
+            'title' => 'Training Certificate',
+            'message' => 'Your training certificate is ready.',
+            'type' => 'training',
+            'is_read' => false,
+        ]);
 
         $response = $this->actingAs($this->user)->get('/jobseeker/notifications');
         $response->assertOk();
         $response->assertSee('Interview Scheduled');
+
+        $applicationResponse = $this->actingAs($this->user)->get('/jobseeker/notifications?category=application');
+        $applicationResponse->assertOk();
+        $applicationResponse->assertSee('Application Update');
+        $applicationResponse->assertDontSee('Training Certificate');
+
+        $trainingResponse = $this->actingAs($this->user)->get('/jobseeker/notifications?category=training');
+        $trainingResponse->assertOk();
+        $trainingResponse->assertSee('Training Certificate');
+        $trainingResponse->assertDontSee('Interview Scheduled');
+
+        $interviewResponse = $this->actingAs($this->user)->get('/jobseeker/notifications?category=interview');
+        $interviewResponse->assertOk();
+        $interviewResponse->assertSee('Interview Scheduled');
+        $interviewResponse->assertDontSee('Training Certificate');
 
         // Mark single notification read
         $readResponse = $this->actingAs($this->user)->post("/jobseeker/notifications/{$notif->notification_id}/read");

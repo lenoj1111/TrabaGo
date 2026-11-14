@@ -667,7 +667,7 @@ class TrainerPortalController extends Controller
 
         return back()->with('success', 'Certificate content updated successfully.');
     }
-    public function showCertificateContent($id)
+    public function showCertificateContent(int $id)
     {
         $course = TrainingProgram::findOrFail($id);
         return view('trainer.courses.certificate', compact('course'));

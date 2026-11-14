@@ -247,6 +247,21 @@ $isProfileComplete = $jobseeker->isProfileAndDocumentsComplete();
                 $company = $job->employer->company_name ?? 'Partner Employer';
                 $companyLogo = $job->employer->company_logo ?? null;
                 $hasApplied = in_array($job->job_id, $appliedJobIds);
+                $matchPercentage = (int) ($match['percentage'] ?? 0);
+                $matchBannerClass = $matchPercentage >= 75
+                    ? 'bg-green-50/80 border-green-200 text-green-900'
+                    : ($matchPercentage >= 50
+                        ? 'bg-yellow-50/80 border-yellow-200 text-yellow-900'
+                        : ($matchPercentage >= 25
+                            ? 'bg-orange-50/80 border-orange-200 text-orange-900'
+                            : 'bg-red-50/80 border-red-200 text-red-900'));
+                $matchBannerValueClass = $matchPercentage >= 75
+                    ? 'text-green-700'
+                    : ($matchPercentage >= 50
+                        ? 'text-yellow-700'
+                        : ($matchPercentage >= 25
+                            ? 'text-orange-700'
+                            : 'text-red-700'));
                 @endphp
 
                 <!-- Individual Job View inside Drawer with Snappy Fade/Scale Transition -->
@@ -306,12 +321,12 @@ $isProfileComplete = $jobseeker->isProfileAndDocumentsComplete();
                         </div>
 
                         <!-- Match Score Banner -->
-                        <div class="bg-emerald-50/70 rounded-2xl p-4 border border-emerald-100 flex items-center justify-between">
+                        <div class="rounded-2xl p-4 border flex items-center justify-between {{ $matchBannerClass }}">
                             <div>
-                                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">AI Skill Match Rating</span>
-                                <p class="text-xs font-extrabold text-emerald-800">{{ $match['tier'] ?? 'Match Calculated' }}</p>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">AI Skill Match Rating</span>
+                                <p class="text-xs font-extrabold {{ $matchBannerValueClass }}">{{ $match['tier'] ?? 'Match Calculated' }}</p>
                             </div>
-                            <span class="text-3xl font-black text-emerald-700">{{ $match['percentage'] ?? 0 }}%</span>
+                            <span class="text-3xl font-black {{ $matchBannerValueClass }}">{{ $matchPercentage }}%</span>
                         </div>
 
                         <!-- Skills Compatibility Analysis -->
