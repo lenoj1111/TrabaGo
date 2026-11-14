@@ -148,11 +148,15 @@
                         @forelse($jobseekers as $js)
                             @php
                                 $jsName = trim(($js->first_name ?? '') . ' ' . ($js->last_name ?? ''));
+                                $profilePhotoUrl = !empty($js->profile_photo) && \Illuminate\Support\Facades\Storage::disk('public')->exists($js->profile_photo)
+                                    ? asset('storage/' . $js->profile_photo)
+                                    : null;
                                 $jsData = [
                                     'id' => $js->jobseeker_id,
                                     'user_id' => $js->user_id,
                                     'name' => $jsName,
                                     'email' => $js->user_email ?? 'N/A',
+                                    'profile_photo_url' => $profilePhotoUrl,
                                     'mobile' => $js->mobile_number ?: 'Not provided',
                                     'gender' => !empty($js->sex) ? ucfirst($js->sex) : (!empty($js->gender) ? ucfirst($js->gender) : 'N/A'),
                                     'civil_status' => !empty($js->civil_status) ? ucfirst($js->civil_status) : 'N/A',
@@ -183,9 +187,15 @@
                             <tr class="hover:bg-slate-50/80 transition-colors">
                                 <td class="py-4 px-6">
                                     <div class="flex items-center gap-3">
+                                        @if($profilePhotoUrl)
+                                            <img src="{{ $profilePhotoUrl }}"
+                                                 alt="{{ $jsName }}"
+                                                 class="h-9 w-9 rounded-xl object-cover ring-2 ring-emerald-500/30 shrink-0">
+                                        @else
                                         <div class="h-9 w-9 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center justify-center ring-2 ring-emerald-500/30 shrink-0">
                                             {{ strtoupper(substr($js->first_name ?? 'J', 0, 1)) }}
                                         </div>
+                                        @endif
                                         <div>
                                             <div class="font-black text-slate-900 text-sm flex items-center gap-1.5 flex-wrap">
                                                 <span>{{ $js->first_name }} {{ $js->last_name }}</span>
@@ -292,12 +302,22 @@
         <div x-show="viewModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
             <div @click.away="viewModal = false" class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6 max-h-[90vh] overflow-y-auto" x-show="selectedJobseeker">
                 
-                <div class="flex items-start justify-between border-b border-slate-100 pb-4">
-                    <div class="space-y-1">
-                        <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Jobseeker Dossier</span>
-                        <h3 class="text-2xl font-black text-slate-900" x-text="selectedJobseeker.name"></h3>
-                        <p class="text-xs text-slate-400">Candidate ID #<span x-text="selectedJobseeker.id"></span> &bull; <span x-text="selectedJobseeker.email"></span></p>
-                        <div class="pt-1 flex items-center gap-2">
+                <div class="flex items-start justify-between border-b border-slate-100 pb-4 gap-4">
+                    <div class="flex items-start gap-4 min-w-0">
+                        <template x-if="selectedJobseeker.profile_photo_url">
+                            <img :src="selectedJobseeker.profile_photo_url"
+                                 :alt="selectedJobseeker.name"
+                                 class="h-16 w-16 rounded-2xl object-cover ring-2 ring-emerald-500/40 shadow-sm shrink-0">
+                        </template>
+                        <template x-if="!selectedJobseeker.profile_photo_url">
+                            <div class="h-16 w-16 rounded-2xl bg-slate-900 text-white font-black text-xl flex items-center justify-center ring-2 ring-emerald-500/40 shadow-sm shrink-0"
+                                 x-text="(selectedJobseeker.name || 'J').charAt(0).toUpperCase()"></div>
+                        </template>
+                        <div class="space-y-1 min-w-0">
+                            <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Jobseeker Dossier</span>
+                            <h3 class="text-2xl font-black text-slate-900 truncate" x-text="selectedJobseeker.name"></h3>
+                            <p class="text-xs text-slate-400">Candidate ID #<span x-text="selectedJobseeker.id"></span> &bull; <span x-text="selectedJobseeker.email"></span></p>
+                            <div class="pt-1 flex items-center gap-2">
                             <template x-if="selectedJobseeker.is_verified">
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black border border-emerald-300">
                                     <svg class="w-3.5 h-3.5 text-emerald-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
@@ -310,9 +330,10 @@
                                     <span>Unverified (Profile/Documents Incomplete)</span>
                                 </span>
                             </template>
+                            </div>
                         </div>
                     </div>
-                    <button @click="viewModal = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
+                    <button @click="viewModal = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold shrink-0">&times;</button>
                 </div>
 
                 <!-- Badges -->

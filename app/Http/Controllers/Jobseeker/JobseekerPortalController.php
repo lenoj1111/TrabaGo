@@ -240,7 +240,7 @@ class JobseekerPortalController extends Controller
                 if ($app->resignation_status !== 'approved') {
                     $hasApplied = true;
                 }
-            } elseif (!in_array($app->status, ['withdrawn', 'rejected'])) {
+            } elseif (!in_array($app->status, ['withdrawn', 'rejected', 'training_recommended'])) {
                 $hasApplied = true;
             }
         }
@@ -307,7 +307,7 @@ class JobseekerPortalController extends Controller
         // Check if the user has an ACTIVE application for this job
         $existing = JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)
             ->where('job_id', $jobId)
-            ->whereNotIn('status', ['withdrawn', 'rejected'])
+            ->whereNotIn('status', ['withdrawn', 'rejected', 'training_recommended'])
             ->where(function ($query) {
                 $query->where('status', '!=', 'hired')
                     ->orWhere(function ($q) {
@@ -1910,6 +1910,24 @@ class JobseekerPortalController extends Controller
         $social->save();
 
         return redirect()->route('jobseeker.profile')->with('success', 'Comprehensive profile updated successfully.');
+    }
+    public function uploadProfilePhoto(Request $request)
+    {
+        $request->validate([
+            'profile_photo' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+        ]);
+
+        $jobseeker = $this->getOrCreateJobseeker();
+
+        if ($request->hasFile('profile_photo')) {
+            if ($jobseeker->profile_photo && Storage::disk('public')->exists($jobseeker->profile_photo)) {
+                Storage::disk('public')->delete($jobseeker->profile_photo);
+            }
+            $path = $request->file('profile_photo')->store('profile_photos', 'public');
+            $jobseeker->update(['profile_photo' => $path]);
+        }
+
+        return redirect()->back()->with('success', 'Profile photo updated successfully!');
     }
 
     public function syncSkills(Request $request)

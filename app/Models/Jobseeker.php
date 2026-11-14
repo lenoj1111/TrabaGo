@@ -38,6 +38,7 @@ class Jobseeker extends Model
         'last_name',
         'middle_name',
         'birth_date',
+        'profile_photo',
         'sex',
         'civil_status',
         'citizenship',
@@ -62,7 +63,7 @@ class Jobseeker extends Model
             ->where('status', 'hired')
             ->where(function ($q) {
                 $q->whereNull('resignation_status')
-                  ->orWhere('resignation_status', '!=', 'approved');
+                    ->orWhere('resignation_status', '!=', 'approved');
             })
             ->exists();
 
@@ -94,7 +95,7 @@ class Jobseeker extends Model
             ->where('status', 'hired')
             ->where(function ($q) {
                 $q->whereNull('resignation_status')
-                  ->orWhere('resignation_status', '!=', 'approved');
+                    ->orWhere('resignation_status', '!=', 'approved');
             })
             ->latestOfMany('application_id');
     }
@@ -205,8 +206,8 @@ class Jobseeker extends Model
         if (!$details || empty($details->training_certificates)) {
             return [];
         }
-        return is_array($details->training_certificates) 
-            ? $details->training_certificates 
+        return is_array($details->training_certificates)
+            ? $details->training_certificates
             : (json_decode($details->training_certificates, true) ?: []);
     }
 

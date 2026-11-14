@@ -133,18 +133,28 @@ class JpoPortalController extends Controller
 
     public function referJobseeker(Request $request, int $id)
     {
-        $application = JobApplication::with(['jobseeker.user', 'jobPosting.employer.user'])->findOrFail($id);
+        $application = JobApplication::with(['jobseeker.user', 'jobPosting.employer.user'])
+            ->findOrFail($id);
 
         $request->validate([
             'recommendation' => 'required|in:refer,training,reject',
-            'remarks' => 'nullable|string',
+            'remarks' => 'nullable|string|max:2000',
         ]);
 
         $recommendation = $request->input('recommendation');
-        $remarks = $request->input('remarks', 'Evaluated by DMDP Job Placement Officer (JPO).');
-        $jobseekerUser = $application->jobseeker->user ?? null;
-        $jobTitle = $application->jobPosting->title ?? 'the position';
+        $remarks = $request->input('remarks') ?: 'Evaluated by DMDP Job Placement Officer (JPO).';
 
+        $jobseekerUser = $application->jobseeker->user ?? null;
+        $employerUser = $application->jobPosting->employer->user ?? null;
+        $jobTitle = $application->jobPosting->title ?? 'the position';
+        $companyName = $application->jobPosting->employer->company_name ?? 'the employer';
+
+        $jpoProfile = DB::table('user_profiles')->where('user_id', Auth::id())->first();
+        $jpoProfileId = $jpoProfile ? $jpoProfile->profile_id : 1;
+
+        // -----------------------------------------------------------
+        // 1. REFER TO EMPLOYER
+        // -----------------------------------------------------------
         if ($recommendation === 'refer') {
             $application->update([
                 'referred_by_jpo' => 1,
@@ -152,9 +162,6 @@ class JpoPortalController extends Controller
                 'jpo_notes' => $remarks,
                 'jpo_evaluated_at' => now(),
             ]);
-
-            $jpoProfile = DB::table('user_profiles')->where('user_id', Auth::id())->first();
-            $jpoProfileId = $jpoProfile ? $jpoProfile->profile_id : 1;
 
             DB::table('jpo_assessments')->updateOrInsert(
                 ['application_id' => $application->application_id],
@@ -167,11 +174,11 @@ class JpoPortalController extends Controller
                 ]
             );
 
-            if ($employerUser = $application->jobPosting->employer->user ?? null) {
+            if ($employerUser) {
                 Notification::create([
                     'user_id' => $employerUser->user_id,
                     'title' => 'Qualified Jobseeker Referred by JPO',
-                    'message' => "Job Placement Officer referred applicant '{$application->jobseeker->first_name} {$application->jobseeker->last_name}' for position '{$jobTitle}'.",
+                    'message' => "The Job Placement Officer has reviewed and endorsed applicant '{$application->jobseeker->first_name} {$application->jobseeker->last_name}' for the position '{$jobTitle}'. Please review their profile and application at your earliest convenience.",
                     'type' => 'manual_review',
                     'is_read' => false,
                     'related_id' => $application->application_id,
@@ -182,16 +189,19 @@ class JpoPortalController extends Controller
                 Notification::create([
                     'user_id' => $jobseekerUser->user_id,
                     'title' => 'Application Endorsed by JPO!',
-                    'message' => "Great news! DMDP JPO reviewed your application for '{$jobTitle}' and officially endorsed you to the employer.",
+                    'message' => "Great news! DMDP JPO reviewed your application for '{$jobTitle}' at {$companyName} and officially endorsed you to the employer. Please wait for their response — you will be notified of any updates.",
                     'type' => 'approval',
                     'is_read' => false,
                     'related_id' => $application->application_id,
                 ]);
             }
 
-            return redirect()->back()->with('success', "Applicant successfully referred to Employer.");
+            return redirect()->back()->with('success', "Applicant successfully referred to {$companyName}. Employer has been notified.");
         }
 
+        // -----------------------------------------------------------
+        // 2. RECOMMEND TRAINING
+        // -----------------------------------------------------------
         if ($recommendation === 'training') {
             $application->update([
                 'status' => 'training_recommended',
@@ -200,21 +210,34 @@ class JpoPortalController extends Controller
                 'jpo_evaluated_at' => now(),
             ]);
 
+            DB::table('jpo_assessments')->updateOrInsert(
+                ['application_id' => $application->application_id],
+                [
+                    'jpo_id' => $jpoProfileId,
+                    'recommendation' => 'training',
+                    'remarks' => $remarks,
+                    'referral_date' => now()->toDateString(),
+                    'referral_notes' => $remarks,
+                ]
+            );
+
             if ($jobseekerUser) {
                 Notification::create([
                     'user_id' => $jobseekerUser->user_id,
-                    'title' => 'Training Recommended by JPO',
-                    'message' => "The JPO has reviewed your application for '{$jobTitle}' and recommended you for upskilling/training. Remarks: {$remarks}",
+                    'title' => 'Training Recommended Before Re-Applying',
+                    'message' => "DMDP has evaluated your application for '{$jobTitle}' at {$companyName} and recommends that you complete a training course first to strengthen your qualifications. Visit the Training Courses section, enroll in a relevant program, and earn your certificate. You may re-apply for this position after completing training. JPO Remarks: {$remarks}",
                     'type' => 'training',
                     'is_read' => false,
                     'related_id' => $application->application_id,
                 ]);
             }
 
-            return redirect()->back()->with('info', 'Applicant recommended for training. Notification sent to jobseeker.');
+            return redirect()->back()->with('info', "Applicant has been directed to complete training first. A notification with instructions to enroll and re-apply has been sent to the jobseeker.");
         }
 
-        // Reject
+        // -----------------------------------------------------------
+        // 3. MARK AS NOT QUALIFIED (reject)
+        // -----------------------------------------------------------
         $application->update([
             'status' => 'rejected',
             'referred_by_jpo' => 0,
@@ -222,18 +245,29 @@ class JpoPortalController extends Controller
             'jpo_evaluated_at' => now(),
         ]);
 
+        DB::table('jpo_assessments')->updateOrInsert(
+            ['application_id' => $application->application_id],
+            [
+                'jpo_id' => $jpoProfileId,
+                'recommendation' => 'reject',
+                'remarks' => $remarks,
+                'referral_date' => now()->toDateString(),
+                'referral_notes' => $remarks,
+            ]
+        );
+
         if ($jobseekerUser) {
             Notification::create([
                 'user_id' => $jobseekerUser->user_id,
                 'title' => 'Application Status: Not Qualified',
-                'message' => "Your application for '{$jobTitle}' was evaluated by JPO and marked as Not Qualified. Reason: {$remarks}",
+                'message' => "Your application for '{$jobTitle}' at {$companyName} was evaluated by DMDP and marked as Not Qualified. Reason: {$remarks}",
                 'type' => 'rejection',
                 'is_read' => false,
                 'related_id' => $application->application_id,
             ]);
         }
 
-        return redirect()->back()->with('info', 'Application marked as Not Qualified.');
+        return redirect()->back()->with('info', 'Application marked as Not Qualified. The jobseeker has been notified with the reason.');
     }
 
     public function showNsrpForm(int $id)
