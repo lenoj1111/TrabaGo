@@ -654,73 +654,64 @@ class JobseekerPortalController extends Controller
         $userSkills = $this->matchingService->getJobseekerSkills($jobseeker);
         $filter = $request->input('filter', 'all');
 
-        $allTrainings = TrainingProgram::with(['topics', 'enrollments' => function ($q) use ($jobseeker) {
+        // 1. Get counts for the tabs based on the current jobseeker
+        $counts = [
+            'all' => TrainingProgram::whereDoesntHave('enrollments', function ($q) use ($jobseeker) {
+                $q->where('jobseeker_id', $jobseeker->jobseeker_id)
+                    ->whereIn('status', ['enrolled', 'in_progress', 'completed']);
+            })->count(),
+
+            'enrolled' => TrainingEnrollment::where('jobseeker_id', $jobseeker->jobseeker_id)
+                ->whereIn('status', ['enrolled', 'in_progress'])
+                ->count(),
+
+            'completed' => TrainingEnrollment::where('jobseeker_id', $jobseeker->jobseeker_id)
+                ->where('status', 'completed')
+                ->count(),
+        ];
+
+        // 2. Build the query based on the selected tab
+        $query = TrainingProgram::with(['topics', 'enrollments' => function ($q) use ($jobseeker) {
             $q->where('jobseeker_id', $jobseeker->jobseeker_id);
-        }])
-            ->where(function ($q) use ($jobseeker) {
-                // Show only non-archived courses, OR archived courses that the jobseeker is already enrolled in
-                $q->where('is_archived', false)
-                    ->orWhereHas('enrollments', function ($sub) use ($jobseeker) {
-                        $sub->where('jobseeker_id', $jobseeker->jobseeker_id);
-                    });
-            })->get();
-        $accountCanEnroll = $jobseeker->isProfileAndDocumentsComplete()
-            && Auth::user()
-            && Auth::user()->isAccountVerified();
-        $allTrainings->each(function ($training) use ($jobseeker, $accountCanEnroll) {
+        }]);
+
+        if ($filter === 'enrolled') {
+            // Show courses they are currently taking
+            $query->whereHas('enrollments', function ($q) use ($jobseeker) {
+                $q->where('jobseeker_id', $jobseeker->jobseeker_id)
+                    ->whereIn('status', ['enrolled', 'in_progress']);
+            });
+        } elseif ($filter === 'completed') {
+            // Show courses they have finished and passed
+            $query->whereHas('enrollments', function ($q) use ($jobseeker) {
+                $q->where('jobseeker_id', $jobseeker->jobseeker_id)
+                    ->where('status', 'completed');
+            });
+        } else {
+            // "All Courses": Show only courses they are NOT enrolled in, or failed/dropped
+            $query->whereDoesntHave('enrollments', function ($q) use ($jobseeker) {
+                $q->where('jobseeker_id', $jobseeker->jobseeker_id)
+                    ->whereIn('status', ['enrolled', 'in_progress', 'completed']);
+            });
+        }
+
+        // 3. Sorting: Latest created first
+        $query->orderByDesc('created_at');
+
+        $trainings = $query->paginate(12)->withQueryString();
+
+        // 4. Attach eligibility rules to each course
+        $accountCanEnroll = $jobseeker->isProfileAndDocumentsComplete() && Auth::user() && Auth::user()->isAccountVerified();
+
+        $trainings->getCollection()->transform(function ($training) use ($jobseeker, $accountCanEnroll) {
             $training->eligibility_issues = $training->demographicEligibilityIssues($jobseeker);
             $training->account_can_enroll = $accountCanEnroll;
             $training->can_enroll = $accountCanEnroll && empty($training->eligibility_issues);
+            return $training;
         });
 
-        $enrolledCount = $allTrainings->filter(function ($t) {
-            $enr = $t->enrollments->first();
-            return $enr && in_array($enr->status, ['enrolled', 'in_progress', 'completed', 'failed']);
-        })->count();
-
-        $completedCount = $allTrainings->filter(function ($t) {
-            $enr = $t->enrollments->first();
-            return $enr && $enr->status === 'completed';
-        })->count();
-
-        $counts = [
-            'all' => $allTrainings->count(),
-            'enrolled' => $enrolledCount,
-            'completed' => $completedCount,
-        ];
-
-        if ($filter === 'enrolled') {
-            $trainings = $allTrainings->filter(function ($t) {
-                $enr = $t->enrollments->first();
-                return $enr && in_array($enr->status, ['enrolled', 'in_progress', 'completed', 'failed']);
-            });
-        } elseif ($filter === 'completed') {
-            $trainings = $allTrainings->filter(function ($t) {
-                $enr = $t->enrollments->first();
-                return $enr && $enr->status === 'completed';
-            });
-        } else {
-            $trainings = $allTrainings;
-        }
-
-        $allTrainingSkills = [];
-        foreach ($allTrainings as $t) {
-            $words = array_filter(explode(' ', $t->title), fn($w) => strlen($w) > 3);
-            $allTrainingSkills[$t->training_id] = array_values($words);
-        }
-
-        $currentPage = LengthAwarePaginator::resolveCurrentPage();
-        $trainings = new LengthAwarePaginator(
-            $trainings->forPage($currentPage, 6)->values(),
-            $trainings->count(),
-            6,
-            $currentPage,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
-
-        return view('jobseeker.training.index', compact('trainings', 'userSkills', 'allTrainingSkills', 'jobseeker', 'filter', 'counts'));
+        return view('jobseeker.training.index', compact('trainings', 'userSkills', 'jobseeker', 'filter', 'counts'));
     }
-
     public function trainingSkills(Request $request)
     {
         $jobseeker = $this->getOrCreateJobseeker();
