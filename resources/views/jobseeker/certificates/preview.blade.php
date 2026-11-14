@@ -1,122 +1,327 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Certificate of Completion - {{ $enrollment->first_name }} {{ $enrollment->last_name }}</title>
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Inter:wght@400;600;700&family=Playfair+Display:ital,wght@1,600&display=swap" rel="stylesheet">
-    
-    @vite(['resources/css/app.css'])
-
+    <title>Certificate of Training - {{ $enrollment->first_name }} {{ $enrollment->last_name }}</title>
     <style>
-        @media print {
-            .no-print { display: none !important; }
-            body { background: white !important; padding: 0 !important; }
-            .cert-container { box-shadow: none !important; border: 4px solid #065f46 !important; }
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap');
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .font-cinzel { font-family: 'Cinzel', serif; }
-        .font-playfair { font-family: 'Playfair Display', serif; }
+
+        /* A4 Portrait Paper with the Canva Design */
+        .certificate-container {
+            background-color: #ffffff;
+            width: 210mm;
+            height: 297mm;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            box-sizing: border-box;
+
+            /* THIS LOADS YOUR EXACT BORDER IMAGE */
+            background-image: url('/images/border-design.png');
+            background-size: 100% 100%;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .certificate-inner {
+            position: absolute;
+            top: 10%;
+            left: 12%;
+            right: 12%;
+            bottom: 10%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            text-align: center;
+        }
+
+        /* Header */
+        .header-logos {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .header-logos img {
+            height: 60px;
+            width: 60px;
+            object-fit: contain;
+        }
+
+        .header-text h2 {
+            font-family: 'Playfair Display', serif;
+            color: #0a1d3f;
+            margin: 0;
+        }
+
+        /* Title */
+        .title {
+            font-family: 'Cinzel', serif;
+            font-size: 38px;
+            color: #0a1d3f;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin: 15px 0 10px 0;
+            text-transform: uppercase;
+        }
+
+        .is-awarded {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 16px;
+            color: #0a1d3f;
+            margin-bottom: 15px;
+        }
+
+        /* Name */
+        .name-box {
+            margin: 15px 0;
+        }
+
+        .name-box h2 {
+            font-family: 'Cinzel', serif;
+            font-size: 34px;
+            color: #0a1d3f;
+            margin: 0;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Body Text */
+        .body-content {
+            font-size: 14px;
+            color: #1e293b;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        .course-title {
+            font-family: 'Cinzel', serif;
+            font-size: 20px;
+            color: #0a1d3f;
+            font-weight: 700;
+            margin: 10px 0;
+            text-transform: uppercase;
+        }
+
+        /* Standard CSS 2-Column Layout */
+        .two-column-list {
+            display: flex;
+            justify-content: space-between;
+            text-align: left;
+            margin: 15px auto 0;
+            width: 100%;
+            max-width: 600px;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .column {
+            width: 48%;
+        }
+
+        .list-item {
+            position: relative;
+            padding-left: 20px;
+            margin-bottom: 5px;
+            color: #1e293b;
+            font-weight: 500;
+        }
+
+        .list-item::before {
+            content: '✦';
+            position: absolute;
+            left: 0;
+            color: #0a1d3f;
+            font-size: 12px;
+        }
+
+        /* 1-Column Layout */
+        .one-column-list {
+            text-align: left;
+            display: inline-block;
+            margin: 15px auto 0;
+        }
+
+        /* Dynamic sizing based on count */
+        .list-dense {
+            font-size: 10px !important;
+            line-height: 1.3 !important;
+        }
+
+        .list-dense .list-item {
+            font-size: 10px !important;
+            margin-bottom: 2px !important;
+        }
+
+        /* Footer (Signature) */
+        .footer {
+            font-size: 14px;
+            color: #334155;
+        }
+
+        .signatory h3 {
+            font-family: 'Cinzel', serif;
+            font-size: 18px;
+            color: #0a1d3f;
+            margin: 5px 0;
+            font-weight: 800;
+        }
+
+        /* Print Settings */
+        @media print {
+            body {
+                background-color: #fff;
+                padding: 0;
+                display: block;
+            }
+
+            .print-btn {
+                display: none !important;
+            }
+
+            .certificate-container {
+                box-shadow: none;
+                page-break-after: avoid;
+            }
+
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+        }
+
+        .print-btn {
+            margin-bottom: 20px;
+            padding: 12px 24px;
+            background-color: #0a1d3f;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen p-4 sm:p-8 flex flex-col items-center justify-center antialiased">
 
-    <!-- Top Action Bar -->
-    <div class="no-print w-full max-w-4xl mb-6 flex items-center justify-between">
-        <a href="{{ route('jobseeker.documents') }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white px-4 py-2.5 rounded-xl shadow-sm border border-slate-200 transition-colors">
-            &larr; Back to Document Hub
-        </a>
-        <div class="flex items-center gap-3">
-            <a href="{{ route('jobseeker.training') }}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-emerald-700 bg-white px-4 py-2.5 rounded-xl shadow-sm border border-slate-200 transition-colors">
-                <svg class="w-4 h-4 shrink-0 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"/></svg>
-                <span>My Courses</span>
-            </a>
-            <button onclick="window.print()" class="inline-flex items-center gap-2 text-xs font-black text-white bg-emerald-600 hover:bg-emerald-500 px-6 py-2.5 rounded-xl shadow-lg shadow-emerald-600/30 transition-all hover:scale-105">
-                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.03-.42-2.106-.52-3.216m11.6 3.216c.24-1.03.42-2.106.52-3.216M6.72 13.829C4.545 14.25 3 15.688 3 17.4V19.5h18v-2.1c0-1.712-1.545-3.15-3.72-3.571M6.72 13.829A41.782 41.782 0 0 1 12 13.5c1.802 0 3.553.113 5.28.329M6 8.25V4.5h12v3.75m-10.5 9h9"/></svg>
-                <span>Print / Download PDF</span>
-            </button>
-        </div>
-    </div>
+<body>
 
-    <!-- Official Printable Certificate -->
-    <div class="cert-container w-full max-w-4xl bg-white border-8 border-double border-emerald-800 rounded-3xl p-8 sm:p-14 shadow-2xl relative overflow-hidden text-center space-y-6">
-        
-        <!-- Watermark / Background Accent -->
-        <div class="absolute -right-20 -bottom-20 w-96 h-96 rounded-full bg-emerald-50/50 pointer-events-none -z-0"></div>
-        <div class="absolute -left-20 -top-20 w-96 h-96 rounded-full bg-emerald-50/50 pointer-events-none -z-0"></div>
+    <button onclick="window.print()" class="print-btn">Print / Save as PDF</button>
 
-        <!-- Header Seals & Logo -->
-        <div class="relative z-10 flex items-center justify-center gap-6">
-            <div class="h-16 w-16 rounded-full bg-gradient-to-tr from-emerald-800 to-emerald-600 flex items-center justify-center text-white shadow-md">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.5M4.5 21V10.5M3 21h18M3 10.5h18"/></svg>
-            </div>
-            <div>
-                <h3 class="text-xs font-extrabold uppercase tracking-widest text-emerald-800">Republic of the Philippines &bull; City of Cebu</h3>
-                <h2 class="text-sm font-bold text-slate-700">Department of Manpower Development and Placement (DMDP)</h2>
-                <span class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Skills Training & Certification Division</span>
-            </div>
-        </div>
+    @php
+    $certContent = $enrollment->cert_content ?? null;
+    if (is_string($certContent)) { $certContent = json_decode($certContent, true); }
 
-        <div class="relative z-10 pt-4">
-            <h1 class="font-cinzel text-3xl sm:text-4xl font-black tracking-wider text-emerald-950 uppercase">
-                Certificate of Completion
-            </h1>
-            <p class="font-playfair text-slate-500 text-sm italic mt-1">This official credential is proudly awarded to</p>
-        </div>
+    $certTitle = $certContent['title'] ?? 'CERTIFICATE OF TRAINING';
+    $competencies = $certContent['competencies'] ?? [];
+    $compCount = count($competencies);
 
-        <!-- Recipient Name -->
-        <div class="relative z-10 py-2 border-b-2 border-emerald-800 max-w-xl mx-auto">
-            <h2 class="font-cinzel text-2xl sm:text-3xl font-black text-slate-900 tracking-wide uppercase">
-                {{ $enrollment->first_name }} {{ $enrollment->last_name }}
-            </h2>
-        </div>
+    // Switch to 2 columns ONLY if there are 15 or more
+    $isTwoColumn = $compCount >= 15;
 
-        <!-- Course Details -->
-        <div class="relative z-10 max-w-2xl mx-auto space-y-2">
-            <p class="text-xs text-slate-600 leading-relaxed">
-                for successfully completing the standardized industry competency training program in
-            </p>
-            <h3 class="font-cinzel text-lg sm:text-xl font-black text-emerald-800 uppercase">
-                {{ $enrollment->course_title }}
-            </h3>
-            <p class="text-xs text-slate-500">
-                demonstrating professional proficiency, practical execution, and assessment scoring exceeding the official DMDP benchmark.
-            </p>
-        </div>
+    if ($isTwoColumn) {
+    $half = ceil($compCount / 2);
+    $leftColumn = array_slice($competencies, 0, $half);
+    $rightColumn = array_slice($competencies, $half);
+    }
 
-        <!-- Verified Credential Badge & Signatures -->
-        <div class="relative z-10 pt-8 grid grid-cols-1 sm:grid-cols-3 gap-6 items-end">
-            
-            <!-- Left: Certificate ID -->
-            <div class="text-center sm:text-left space-y-1">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Certificate ID</span>
-                <p class="text-xs font-black font-mono text-emerald-900">{{ $enrollment->certificate_no }}</p>
-                <span class="text-[10px] text-slate-400">Issued: {{ date('F d, Y', strtotime($enrollment->certificate_issued_at ?? now())) }}</span>
-            </div>
+    // If 14 or below, shrink the font size slightly to fit the page
+    $fontSize = '13px';
+    $lineHeight = '1.8';
 
-            <!-- Center: Gold Seal -->
-            <div class="flex flex-col items-center justify-center">
-                <div class="h-20 w-20 rounded-full border-4 border-amber-400 bg-amber-50 flex items-center justify-center shadow-inner">
-                    <svg class="w-9 h-9 text-amber-500 fill-amber-400" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"/></svg>
+    if ($compCount >= 12 && $compCount <= 14) {
+        $fontSize='11px' ;
+        $lineHeight='1.5' ;
+        }
+
+        $startDate=$enrollment->start_date ? date('M d', strtotime($enrollment->start_date)) : 'N/A';
+        $endDate = $enrollment->end_date ? date('M d, Y', strtotime($enrollment->end_date)) : date('M d, Y');
+        $issueDate = $certContent['issue_date'] ?? date('jS \d\a\y \of F, Y', strtotime($enrollment->certificate_issued_at ?? now()));
+        @endphp
+
+        <div class="certificate-container">
+            <div class="certificate-inner">
+
+                <!-- Header (Logos & Official Text) -->
+                <div>
+                    <div class="header-logos">
+                        <img src="{{ asset('images/cebu.png') }}" alt="Cebu">
+                        <img src="{{ asset('images/dmdp.png') }}" alt="DMDP">
+                    </div>
+                    <div class="header-text">
+                        <h2 style="font-size: 14px; font-weight: 500;">Republic of the Philippines</h2>
+                        <h2 style="font-size: 16px; font-weight: 500;">City of Cebu</h2>
+                        <h2 style="font-size: 15px; font-weight: 700;">Department of Manpower Development and Placement</h2>
+                    </div>
                 </div>
-                <span class="text-[10px] font-bold uppercase tracking-widest text-amber-700 mt-1">Verified Competency</span>
-            </div>
 
-            <!-- Right: Signature Line -->
-            <div class="text-center sm:text-right space-y-1">
-                <div class="border-b border-slate-400 pb-1 max-w-[180px] ml-auto">
-                    <span class="font-playfair text-sm text-slate-800 italic">DMDP Certified Trainer</span>
+                <!-- Title & Name -->
+                <div>
+                    <div class="title">{{ $certTitle }}</div>
+                    <div class="is-awarded">is awarded to</div>
+                    <div class="name-box">
+                        <h2>{{ $enrollment->first_name }} {{ $enrollment->last_name }}</h2>
+                    </div>
                 </div>
-                <p class="text-xs font-bold text-slate-900">Skills Training Director</p>
-                <span class="text-[10px] text-slate-400">Cebu City DMDP</span>
+
+                <!-- Body -->
+                <div class="body-content">
+                    <p style="margin: 0;">for having completed the competency based training program in</p>
+                    <div class="course-title">{{ $enrollment->course_title }}</div>
+                    <p style="margin: 0;">conducted on <strong>{{ $startDate }} to {{ $endDate }}</strong> and satisfactorily achieved the requirements of<br>the following units of competency:</p>
+
+                    @if($isTwoColumn)
+                    <!-- 2-Column Layout -->
+                    <div class="two-column-list {{ $compCount > 18 ? 'list-dense' : '' }}">
+                        <div class="column">
+                            @foreach($leftColumn as $comp)
+                            <div class="list-item">{{ $comp }}</div>
+                            @endforeach
+                        </div>
+                        <div class="column">
+                            @foreach($rightColumn as $comp)
+                            <div class="list-item">{{ $comp }}</div>
+                            @endforeach
+                        </div>
+                    </div>
+                    @else
+                    <!-- 1-Column Layout -->
+                    <div class="one-column-list" style="font-size: {{ $fontSize }}; line-height: {{ $lineHeight }};">
+                        @foreach($competencies as $comp)
+                        <div class="list-item" style="font-size: {{ $fontSize }}; margin-bottom: {{ $compCount >= 12 ? '2px' : '5px' }};">{{ $comp }}</div>
+                        @endforeach
+                    </div>
+                    @endif
+                </div>
+
+                <!-- Footer (Signature) -->
+                <div class="footer">
+                    <p style="font-family: 'Playfair Display', serif; margin-bottom: 20px;">Given this <strong>{{ $issueDate }}</strong> at Cebu City, Philippines</p>
+                    <div class="signatory">
+                        <h3>ANTHONY V. AGUHAR, PhD</h3>
+                        <p style="font-size: 12px; margin: 0;">CG Acting Department Head (PESO Manager)</p>
+                    </div>
+                </div>
+
             </div>
-
         </div>
-
-    </div>
 
 </body>
+
 </html>

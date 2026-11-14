@@ -369,6 +369,7 @@ Route::prefix('trainer')->name('trainer.')->middleware(['auth', 'trainer'])->gro
     Route::get('/courses/{id}', [TrainerPortalController::class, 'showCourse'])->name('courses.show');
     Route::put('/courses/{id}', [TrainerPortalController::class, 'updateCourse'])->name('courses.update');
     Route::delete('/courses/{id}', [TrainerPortalController::class, 'destroyCourse'])->name('courses.destroy');
+    Route::post('/courses/{id}/archive', [TrainerPortalController::class, 'archiveCourse'])->name('courses.archive');
 
     // Trainer Assessment Question Management (Trainer-authored)
     Route::post('/courses/{id}/assessments', [TrainerPortalController::class, 'storeAssessment'])->name('courses.assessments.store');

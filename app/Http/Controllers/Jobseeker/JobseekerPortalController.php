@@ -656,7 +656,14 @@ class JobseekerPortalController extends Controller
 
         $allTrainings = TrainingProgram::with(['topics', 'enrollments' => function ($q) use ($jobseeker) {
             $q->where('jobseeker_id', $jobseeker->jobseeker_id);
-        }])->get();
+        }])
+            ->where(function ($q) use ($jobseeker) {
+                // Show only non-archived courses, OR archived courses that the jobseeker is already enrolled in
+                $q->where('is_archived', false)
+                    ->orWhereHas('enrollments', function ($sub) use ($jobseeker) {
+                        $sub->where('jobseeker_id', $jobseeker->jobseeker_id);
+                    });
+            })->get();
         $accountCanEnroll = $jobseeker->isProfileAndDocumentsComplete()
             && Auth::user()
             && Auth::user()->isAccountVerified();
@@ -816,6 +823,10 @@ class JobseekerPortalController extends Controller
     {
         $jobseeker = $this->getOrCreateJobseeker();
         $training = TrainingProgram::findOrFail($id);
+        if ($training->is_archived) {
+            return redirect()->route('jobseeker.training')
+                ->with('error', 'This training program is no longer accepting new enrollments.');
+        }
 
         $enrollment = TrainingEnrollment::where('jobseeker_id', $jobseeker->jobseeker_id)
             ->where('training_id', $id)
@@ -987,20 +998,92 @@ class JobseekerPortalController extends Controller
             ]);
         }
 
-        $enrollment->score = $gradedSubmission['objective_score']['percentage'];
-        $enrollment->passed = null;
-        $enrollment->status = 'in_progress';
-        $enrollment->end_date = null;
-        $enrollment->certificate_no = null;
-        $enrollment->certificate_issued = false;
-        $enrollment->certificate_issued_at = null;
+        // 1. Check if this course has ANY essay questions
+        $hasEssay = \App\Models\TrainingAssessment::where('training_id', $training->training_id)
+            ->where('question_type', 'essay')
+            ->exists();
+
+        $score = $gradedSubmission['objective_score']['percentage'];
+        $passingScore = $training->passing_score ?? 80;
+
+        $reviewStatus = 'pending';
+        $status = 'in_progress';
+        $passed = null;
+        $endDate = null;
+
+        // 2. If NO essays, auto-grade and auto-complete
+        if (!$hasEssay) {
+            if ($score >= $passingScore) {
+                $reviewStatus = 'passed';
+                $status = 'completed';
+                $passed = 1;
+                $endDate = now()->toDateString();
+            } else {
+                $reviewStatus = 'needs_retake';
+                $status = 'failed';
+                $passed = 0;
+                $endDate = now()->toDateString();
+            }
+        }
+
+        $enrollment->score = $score;
+        $enrollment->passed = $passed; // Will be null if there's an essay, waiting for trainer
+        $enrollment->status = $status;
+        $enrollment->end_date = $endDate;
         $enrollment->answers = [
-            'review_status' => 'pending',
+            'review_status' => $reviewStatus,
             'submitted_at' => now()->toIso8601String(),
             'objective_score' => $gradedSubmission['objective_score'],
             'responses' => $gradedSubmission['responses'],
         ];
         $enrollment->save();
+
+        // 3. If they passed and there are no essays, ISSUE THE CERTIFICATE IMMEDIATELY
+        if ($status === 'completed' && $reviewStatus === 'passed') {
+
+            // Call the TrainerPortalController's generateCertificate method programmatically
+            $trainerController = new \App\Http\Controllers\Trainer\TrainerPortalController();
+
+            // We need to pass the enrollment ID
+            $trainerController->generateCertificate($request, $enrollment->enrollment_id);
+
+            // Refresh the enrollment so the new certificate ID is caught
+            $enrollment->refresh();
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'review_status' => 'passed',
+                    'objective_score' => $gradedSubmission['objective_score'],
+                    'certificate_issued' => true,
+                    'message' => 'Congratulations! You passed and your certificate has been issued.',
+                ]);
+            }
+            return redirect()->route('jobseeker.training.show', $id)
+                ->with('success', 'Congratulations! You passed the assessment and your certificate has been generated automatically.');
+        }
+
+        // 3. If they passed and there are no essays, ISSUE THE CERTIFICATE IMMEDIATELY
+        if ($status === 'completed' && $reviewStatus === 'passed') {
+            // We call the TrainerPortalController's generateCertificate method programmatically
+            $trainerController = new \App\Http\Controllers\Trainer\TrainerPortalController();
+
+            // We need to pass the enrollment ID
+            $trainerController->generateCertificate($request, $enrollment->enrollment_id);
+
+            // After generation, redirect with a special success message
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'review_status' => 'passed',
+                    'objective_score' => $gradedSubmission['objective_score'],
+                    'certificate_issued' => true,
+                    'message' => 'Congratulations! You passed and your certificate has been issued.',
+                ]);
+            }
+            return redirect()->route('jobseeker.training.show', $id)
+                ->with('success', 'Congratulations! You passed the assessment and your certificate has been generated automatically.');
+        }
 
         Notification::create([
             'user_id' => Auth::id(),
@@ -1047,7 +1130,8 @@ class JobseekerPortalController extends Controller
                 'jobseekers.first_name',
                 'jobseekers.last_name',
                 'training_programs.title as course_title',
-                'training_programs.description as course_desc'
+                'training_programs.description as course_desc',
+                'training_programs.cert_content' // <--- MAKE SURE THIS IS HERE
             )
             ->first();
 
@@ -1057,7 +1141,6 @@ class JobseekerPortalController extends Controller
 
         return view('jobseeker.certificates.preview', compact('enrollment'));
     }
-
     // =========================================================================
     // 5. DOCUMENTS
     // =========================================================================
