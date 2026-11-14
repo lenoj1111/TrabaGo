@@ -459,7 +459,6 @@
             <div @click.away="docModalOpen = false"
                  class="w-full max-w-5xl rounded-3xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
 
-                {{-- Modal Header --}}
                 <div class="flex items-start justify-between gap-4 border-b border-slate-100 bg-slate-50/60 p-6">
                     <div>
                         <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Document Inspection</span>
@@ -473,13 +472,30 @@
                             aria-label="Close documents">&times;</button>
                 </div>
 
-                {{-- Modal Body: Sidebar + Preview --}}
                 <div class="grid grid-cols-1 lg:grid-cols-12">
-
-                    {{-- Document List --}}
                     <aside class="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-slate-100 max-h-[60vh] lg:max-h-[70vh] overflow-y-auto">
+                        <div class="sticky top-0 z-10 grid grid-cols-1 gap-2 border-b border-slate-100 bg-white p-3 sm:grid-cols-3">
+                            <input type="search" x-model="docSearch" placeholder="Search documents"
+                                   aria-label="Search documents"
+                                   class="min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none sm:col-span-3">
+                            <select x-model="docFilter" aria-label="Filter by document status"
+                                    class="min-w-0 rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none">
+                                <option value="all">All statuses</option>
+                                <option value="Current">Current</option>
+                                <option value="Expired">Expired</option>
+                                <option value="Superseded">Superseded</option>
+                            </select>
+                            <select x-model="docSort" aria-label="Sort documents"
+                                    class="min-w-0 rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none sm:col-span-2">
+                                <option value="newest">Newest upload</option>
+                                <option value="oldest">Oldest upload</option>
+                                <option value="name">Document name</option>
+                                <option value="expiry">Expiration date</option>
+                            </select>
+                        </div>
+
                         <ul class="divide-y divide-slate-100">
-                            <template x-for="doc in activeDocList" :key="doc.key">
+                            <template x-for="doc in filteredDocuments" :key="doc.key">
                                 <li>
                                     <button type="button"
                                             @click="selectDocument(doc)"
@@ -493,26 +509,31 @@
                                                 <p class="text-xs font-black text-slate-900 leading-tight" x-text="doc.label"></p>
                                                 <p class="text-[10px] text-slate-500 mt-0.5" x-text="doc.issuer"></p>
                                                 <div class="flex items-center gap-1.5 mt-1.5">
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
-                                                        ✓ <span x-text="doc.status"></span>
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border"
+                                                          :class="doc.status === 'Expired' ? 'bg-rose-50 text-rose-700 border-rose-200' : (doc.status === 'Superseded' ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')">
+                                                        <span x-text="doc.status"></span>
+                                                    </span>
+                                                    <span x-show="doc.versionLabel"
+                                                          class="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200"
+                                                          x-text="doc.versionLabel">
                                                     </span>
                                                 </div>
-                                                <p class="text-[10px] text-slate-400 mt-1" x-text="doc.validity"></p>
+                                                <p class="text-[10px] text-slate-400 mt-1" x-text="'Uploaded ' + (doc.uploadedAt || 'date not recorded')"></p>
                                             </div>
                                         </div>
                                     </button>
                                 </li>
                             </template>
 
-                            <template x-if="activeDocList.length === 0">
-                                <li class="p-6 text-center text-xs text-slate-400 italic">
-                                    No documents attached.
+                            <template x-if="filteredDocuments.length === 0">
+                                <li class="p-8 text-center">
+                                    <p class="text-xs font-bold text-slate-700" x-text="activeDocList.length === 0 ? 'No documents uploaded' : 'No documents match these filters'"></p>
+                                    <p class="mt-1 text-[11px] text-slate-500" x-text="activeDocList.length === 0 ? 'There are no files attached to this accreditation.' : 'Try a different search or status filter.'"></p>
                                 </li>
                             </template>
                         </ul>
                     </aside>
 
-                    {{-- Preview Panel --}}
                     <div class="lg:col-span-7 bg-slate-50/40 p-6 max-h-[60vh] lg:max-h-[70vh] overflow-y-auto">
                         <template x-if="currentDoc && currentDoc.key">
                             <div class="space-y-4">
@@ -535,7 +556,13 @@
                                              class="w-full rounded-lg border border-slate-100"
                                              loading="lazy">
                                     </template>
-                                    <template x-if="!currentDoc.isImage || !currentDoc.previewUrl">
+                                    <template x-if="!currentDoc.isImage && currentDoc.canPreview && currentDoc.previewUrl">
+                                        <iframe :src="currentDoc.previewUrl"
+                                                :title="currentDoc.label"
+                                                class="w-full h-[60vh] rounded-lg border border-slate-100"
+                                                loading="lazy"></iframe>
+                                    </template>
+                                    <template x-if="!currentDoc.canPreview || !currentDoc.previewUrl">
                                         <div class="flex flex-col items-center justify-center py-12 text-center">
                                             <div class="text-5xl mb-3" x-text="currentDoc.icon || '📄'"></div>
                                             <p class="text-xs font-bold text-slate-700">Preview not available</p>
@@ -552,11 +579,21 @@
                                     </div>
                                     <div class="flex items-center justify-between gap-3">
                                         <span class="text-slate-500 font-semibold">Status</span>
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200" x-text="currentDoc.status"></span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border"
+                                              :class="currentDoc.status === 'Expired' ? 'bg-rose-50 text-rose-700 border-rose-200' : (currentDoc.status === 'Superseded' ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')"
+                                              x-text="currentDoc.status"></span>
                                     </div>
                                     <div class="flex items-center justify-between gap-3">
-                                        <span class="text-slate-500 font-semibold">Validity</span>
-                                        <span class="text-slate-900 font-bold" x-text="currentDoc.validity"></span>
+                                        <span class="text-slate-500 font-semibold">Uploaded</span>
+                                        <span class="text-slate-900 font-bold" x-text="currentDoc.uploadedAt || 'Date not recorded'"></span>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span class="text-slate-500 font-semibold">Issue Date</span>
+                                        <span class="text-slate-900 font-bold" x-text="currentDoc.issueDate || 'Not provided'"></span>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span class="text-slate-500 font-semibold">Expiration Date</span>
+                                        <span class="font-bold" :class="currentDoc.status === 'Expired' ? 'text-rose-700' : 'text-slate-900'" x-text="currentDoc.expirationDate || 'Not provided'"></span>
                                     </div>
                                 </div>
                             </div>
@@ -602,6 +639,21 @@ function employersRegistry(config) {
         activeDocList: [],
         selectedDocKey: '',
         currentDoc: {},
+        docSearch: '',
+        docFilter: 'all',
+        docSort: 'newest',
+        get filteredDocuments() {
+            const search = (this.docSearch || '').trim().toLowerCase();
+            return (this.activeDocList || [])
+                .filter(doc => this.docFilter === 'all' || doc.status === this.docFilter)
+                .filter(doc => !search || `${doc.label} ${doc.filename} ${doc.issuer}`.toLowerCase().includes(search))
+                .sort((a, b) => {
+                    if (this.docSort === 'name') return (a.label || '').localeCompare(b.label || '');
+                    if (this.docSort === 'oldest') return (Date.parse(a.uploadedAt || '') || 0) - (Date.parse(b.uploadedAt || '') || 0);
+                    if (this.docSort === 'expiry') return (Date.parse(a.expirationDate || '') || Number.MAX_SAFE_INTEGER) - (Date.parse(b.expirationDate || '') || Number.MAX_SAFE_INTEGER);
+                    return (Date.parse(b.uploadedAt || '') || 0) - (Date.parse(a.uploadedAt || '') || 0);
+                });
+        },
 
         // ---------------------------------------------
         // Employer Details
@@ -619,29 +671,159 @@ function employersRegistry(config) {
             this.activeDocList = [];
             this.selectedDocKey = '';
             this.currentDoc = {};
+            this.docSearch = '';
+            this.docFilter = 'all';
+            this.docSort = 'newest';
 
-            const entries = Object.entries(docs || {});
+            const aliases = {
+                sec_dti_registration: 'sec_dti',
+                updated_job_vacancies: 'job_vacancies_form',
+                business_permit: 'mayors_permit'
+            };
+            const versionGroups = new Map();
 
-            entries.forEach(([key, val]) => {
-                const meta = this.describeDocument(key, val);
+            for (const [key, val] of Object.entries(docs || {})) {
+                if (!val || key.includes('_previous_')) continue;
+                const canonicalKey = aliases[key] || key;
+                const path = typeof val === 'object' && val !== null ? val.path : val;
+                if (!versionGroups.has(canonicalKey)) versionGroups.set(canonicalKey, []);
+                versionGroups.get(canonicalKey).push({ key, val, path });
+            }
+
+            const inferredPreviousKeys = new Set();
+            for (const candidates of versionGroups.values()) {
+                const distinctPaths = new Set(candidates.map(item => item.path).filter(Boolean));
+                if (distinctPaths.size < 2) continue;
+
+                const explicitCurrent = candidates.find(item => item.val?.revision_status === 'new');
+                const current = explicitCurrent || [...candidates].sort((a, b) => {
+                    const aDate = Date.parse(a.val?.uploaded_at || '') || 0;
+                    const bDate = Date.parse(b.val?.uploaded_at || '') || 0;
+                    return bDate - aDate;
+                })[0];
+
+                for (const candidate of candidates) {
+                    if (candidate !== current) inferredPreviousKeys.add(candidate.key);
+                }
+            }
+
+            const seenPaths = new Set();
+            for (let [key, val] of Object.entries(docs || {})) {
+                const documentPath = typeof val === 'object' && val !== null ? val.path : val;
+                const normalizedPath = typeof documentPath === 'string' ? documentPath.replace(/\\/g, '/') : '';
+                if (normalizedPath && seenPaths.has(normalizedPath)) continue;
+                if (normalizedPath) seenPaths.add(normalizedPath);
+
+                let label = 'Attached Document';
+                let icon = '📄';
+                let issuer = 'Regulatory Authority';
+                let filename = '';
+
+                if (typeof val === 'object' && val !== null) {
+                    filename = val.original_name || val.path || '';
+                } else if (typeof val === 'string') {
+                    filename = val.split('/').pop() || val;
+                }
+
+                const k = (key || '').toLowerCase();
+                if (k.includes('bir') || k.includes('2303') || k.includes('tin')) {
+                    label = 'BIR Certificate of Registration (Form 2303)';
+                    icon = '📑';
+                    issuer = 'Bureau of Internal Revenue (BIR District 080)';
+                } else if (k.includes('sec') || k.includes('dti')) {
+                    label = 'SEC Registration or DTI Registration';
+                    icon = '📜';
+                    issuer = 'Securities and Exchange Commission (SEC) / DTI';
+                } else if (k.includes('mayor') || k.includes('permit') || k.includes('business')) {
+                    label = 'Mayor’s Business Permit';
+                    icon = '🏢';
+                    issuer = 'City Government of Cebu - BPLO';
+                } else if (k.includes('philjobnet')) {
+                    label = 'PhilJobNet Proof of Registration';
+                    icon = '🌐';
+                    issuer = 'PhilJobNet / DOLE Bureau of Local BLE';
+                } else if (k.includes('vacanc') || k.includes('job_vacanc')) {
+                    label = 'Updated Job Vacancies (prescribed form)';
+                    icon = '💼';
+                    issuer = 'Cebu City DMDP Prescribed Template';
+                } else if (k.includes('dole')) {
+                    label = 'DOLE License / DO 174';
+                    icon = '🛡️';
+                    issuer = 'Department of Labor and Employment (DOLE RO-7)';
+                } else if (k.includes('dmw_license') || (k.includes('dmw') && !k.includes('order'))) {
+                    label = 'DMW License (Overseas Agency)';
+                    icon = '🏛️';
+                    issuer = 'Department of Migrant Workers (DMW / POEA)';
+                } else if (k.includes('order') || k.includes('job_order')) {
+                    label = 'DMW Approved and Validated Job Orders';
+                    icon = '📋';
+                    issuer = 'Department of Migrant Workers (DMW)';
+                } else if (k.includes('intent') || k.includes('letter')) {
+                    label = 'Letter of Intent';
+                    icon = '✉️';
+                    issuer = 'Corporate Executive / Authorized Signatory';
+                } else if (k.includes('profile')) {
+                    label = 'Company Overview Profile / Org Chart';
+                    icon = '🗂️';
+                    issuer = 'Corporate Executive Board';
+                } else {
+                    label = key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+                }
+
+                const extensionSource = typeof val === 'object' && val !== null ? (val.path || filename) : val;
+                const extension = String(extensionSource || '').split('.').pop().toLowerCase();
+                const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extension);
                 const fileRoute = this.documentRouteTemplate
                     .replace('__ACCREDITATION_ID__', encodeURIComponent(accreditationId || ''))
                     .replace('__DOCUMENT_KEY__', encodeURIComponent(key));
 
+                const revisionStatus = (typeof val === 'object' && val !== null && val.revision_status)
+                    || (key.includes('_previous_') || inferredPreviousKeys.has(key) ? 'previous' : '');
+                const metadata = typeof val === 'object' && val !== null ? val : {};
+                const dateMetadata = metadata.extracted_fields || metadata.metadata || metadata;
+                const issueRaw = dateMetadata.issue_date || dateMetadata.date_issued || dateMetadata.issued_at || dateMetadata.issued_date || '';
+                const expirationRaw = dateMetadata.expiration_date || dateMetadata.expiry_date || dateMetadata.expires_at || dateMetadata.valid_until || '';
+                const uploadedRaw = metadata.uploaded_at || '';
+                const formatDate = value => {
+                    if (!value) return '';
+                    const date = new Date(value);
+                    return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+                };
+                const issueDate = formatDate(issueRaw);
+                const expirationDate = formatDate(expirationRaw);
+                const uploadedAt = formatDate(uploadedRaw);
+                const expirationDateObj = expirationRaw ? new Date(String(expirationRaw).slice(0, 10) + 'T00:00:00') : null;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const isSuperseded = revisionStatus === 'previous' || inferredPreviousKeys.has(key);
+                const status = isSuperseded ? 'Superseded' : (expirationDateObj && !Number.isNaN(expirationDateObj.getTime()) && expirationDateObj < today ? 'Expired' : 'Current');
+
+                const yearMatch = (expirationRaw || issueRaw || uploadedRaw || '').toString().match(/\b(19|20)\d{2}\b/);
+                const yearText = yearMatch ? yearMatch[0] : new Date().getFullYear();
+                if ((label.includes('Mayor') || label.includes('Business Permit')) && !/\d{4}/.test(label)) {
+                    label = `${label} ${yearText}`;
+                }
+
+                const versionLabel = isSuperseded ? 'Previous Version' : (revisionStatus === 'new' ? 'Latest Upload' : '');
+
                 this.activeDocList.push({
                     key: key,
-                    label: meta.label,
-                    icon: meta.icon,
-                    issuer: meta.issuer,
-                    validity: meta.validity,
-                    filename: meta.filename,
-                    isImage: meta.isImage,
-                    previewUrl: meta.isImage ? fileRoute.replace('__ACTION__', 'preview') : '',
+                    label: label,
+                    icon: icon,
+                    issuer: issuer,
+                    filename: filename,
+                    isImage: isImage,
+                    previewUrl: isImage ? fileRoute.replace('__ACTION__', 'preview') : '',
                     downloadUrl: fileRoute.replace('__ACTION__', 'download'),
-                    status: 'Verified Valid',
-                    url: meta.isImage ? fileRoute.replace('__ACTION__', 'preview') : fileRoute.replace('__ACTION__', 'download')
+                    canPreview: !!(isImage || fileRoute),
+                    status: status,
+                    versionLabel: versionLabel,
+                    uploadedAt: uploadedAt,
+                    issueDate: issueDate,
+                    expirationDate: expirationDate,
+                    validity: expirationDate ? `${issueDate || 'Issue date not provided'} → ${expirationDate}` : (uploadedAt ? `Uploaded ${uploadedAt}` : 'No date metadata')
                 });
-            });
+            }
 
             if (this.activeDocList.length > 0) {
                 this.selectDocument(this.activeDocList[0]);

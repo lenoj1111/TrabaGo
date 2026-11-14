@@ -1,4 +1,21 @@
 <div x-show="docModalOpen" x-cloak
+     x-data="{
+         docSearch: '',
+         docFilter: 'all',
+         docSort: 'newest',
+         get filteredDocuments() {
+             const search = this.docSearch.trim().toLowerCase();
+             return (this.activeDocList || [])
+                 .filter(doc => this.docFilter === 'all' || doc.status === this.docFilter)
+                 .filter(doc => !search || `${doc.label} ${doc.filename} ${doc.issuer}`.toLowerCase().includes(search))
+                 .sort((a, b) => {
+                     if (this.docSort === 'name') return a.label.localeCompare(b.label);
+                     if (this.docSort === 'oldest') return (Date.parse(a.uploadedAt || '') || 0) - (Date.parse(b.uploadedAt || '') || 0);
+                     if (this.docSort === 'expiry') return (Date.parse(a.expirationDate || '') || Number.MAX_SAFE_INTEGER) - (Date.parse(b.expirationDate || '') || Number.MAX_SAFE_INTEGER);
+                     return (Date.parse(b.uploadedAt || '') || 0) - (Date.parse(a.uploadedAt || '') || 0);
+                 });
+         }
+     }"
      class="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/70 backdrop-blur-sm"
      @keydown.escape.window="docModalOpen = false">
     <div class="flex min-h-full items-center justify-center p-4">
@@ -20,8 +37,27 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-12">
                 <aside class="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-slate-100 max-h-[60vh] lg:max-h-[70vh] overflow-y-auto">
+                    <div class="sticky top-0 z-10 grid grid-cols-1 gap-2 border-b border-slate-100 bg-white p-3 sm:grid-cols-3">
+                        <input type="search" x-model="docSearch" placeholder="Search documents"
+                               aria-label="Search documents"
+                               class="min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none sm:col-span-3">
+                        <select x-model="docFilter" aria-label="Filter by document status"
+                                class="min-w-0 rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none">
+                            <option value="all">All statuses</option>
+                            <option value="Current">Current</option>
+                            <option value="Expired">Expired</option>
+                            <option value="Superseded">Superseded</option>
+                        </select>
+                        <select x-model="docSort" aria-label="Sort documents"
+                                class="min-w-0 rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none sm:col-span-2">
+                            <option value="newest">Newest upload</option>
+                            <option value="oldest">Oldest upload</option>
+                            <option value="name">Document name</option>
+                            <option value="expiry">Expiration date</option>
+                        </select>
+                    </div>
                     <ul class="divide-y divide-slate-100">
-                        <template x-for="doc in activeDocList" :key="doc.key">
+                        <template x-for="doc in filteredDocuments" :key="doc.key">
                             <li>
                                 <button type="button"
                                         @click="selectDocument(doc)"
@@ -35,28 +71,26 @@
                                             <p class="text-xs font-black text-slate-900 leading-tight" x-text="doc.label"></p>
                                             <p class="text-[10px] text-slate-500 mt-0.5" x-text="doc.issuer"></p>
                                             <div class="flex items-center gap-1.5 mt-1.5">
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
-                                                    ✓ <span x-text="doc.status"></span>
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border"
+                                                      :class="doc.status === 'Expired' ? 'bg-rose-50 text-rose-700 border-rose-200' : (doc.status === 'Superseded' ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')">
+                                                    <span x-text="doc.status"></span>
                                                 </span>
-                                                <span x-show="doc.revisionStatus === 'new'"
-                                                      class="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200">
-                                                    New
-                                                </span>
-                                                <span x-show="doc.revisionStatus === 'previous'"
-                                                      class="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold border border-slate-200">
-                                                    Previous version
+                                                <span x-show="doc.versionLabel"
+                                                      class="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200"
+                                                      x-text="doc.versionLabel">
                                                 </span>
                                             </div>
-                                            <p class="text-[10px] text-slate-400 mt-1" x-text="doc.validity"></p>
+                                            <p class="text-[10px] text-slate-400 mt-1" x-text="'Uploaded ' + (doc.uploadedAt || 'date not recorded')"></p>
                                         </div>
                                     </div>
                                 </button>
                             </li>
                         </template>
 
-                        <template x-if="activeDocList.length === 0">
-                            <li class="p-6 text-center text-xs text-slate-400 italic">
-                                No documents attached.
+                        <template x-if="filteredDocuments.length === 0">
+                            <li class="p-8 text-center">
+                                <p class="text-xs font-bold text-slate-700" x-text="activeDocList.length === 0 ? 'No documents uploaded' : 'No documents match these filters'"></p>
+                                <p class="mt-1 text-[11px] text-slate-500" x-text="activeDocList.length === 0 ? 'There are no files attached to this accreditation.' : 'Try a different search or status filter.'"></p>
                             </li>
                         </template>
                     </ul>
@@ -106,12 +140,22 @@
                                     <span class="text-slate-900 font-bold truncate max-w-[60%]" x-text="currentDoc.filename || 'N/A'"></span>
                                 </div>
                                 <div class="flex items-center justify-between gap-3">
-                                    <span class="text-slate-500 font-semibold">Status</span>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200" x-text="currentDoc.status"></span>
+                                    <span class="text-slate-500 font-semibold">Relevance</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border"
+                                          :class="currentDoc.status === 'Expired' ? 'bg-rose-50 text-rose-700 border-rose-200' : (currentDoc.status === 'Superseded' ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')"
+                                          x-text="currentDoc.status"></span>
                                 </div>
                                 <div class="flex items-center justify-between gap-3">
-                                    <span class="text-slate-500 font-semibold">Validity</span>
-                                    <span class="text-slate-900 font-bold" x-text="currentDoc.validity"></span>
+                                    <span class="text-slate-500 font-semibold">Uploaded</span>
+                                    <span class="text-slate-900 font-bold" x-text="currentDoc.uploadedAt || 'Date not recorded'"></span>
+                                </div>
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="text-slate-500 font-semibold">Issue Date</span>
+                                    <span class="text-slate-900 font-bold" x-text="currentDoc.issueDate || 'Not provided'"></span>
+                                </div>
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="text-slate-500 font-semibold">Expiration Date</span>
+                                    <span class="font-bold" :class="currentDoc.status === 'Expired' ? 'text-rose-700' : 'text-slate-900'" x-text="currentDoc.expirationDate || 'Not provided'"></span>
                                 </div>
                             </div>
                         </div>

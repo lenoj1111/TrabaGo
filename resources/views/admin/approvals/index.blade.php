@@ -95,7 +95,7 @@
                 issuer = 'Securities and Exchange Commission (SEC) / DTI';
                 validity = 'Perpetual / Registered';
             } else if (key.includes('mayor') || key.includes('permit') || key.includes('business')) {
-                label = 'Mayor’s Business Permit (current year)';
+                label = 'Mayor’s Business Permit';
                 icon = 'permit';
                 issuer = 'City Government of Cebu - BPLO';
                 validity = 'Calendar Year ' + new Date().getFullYear();
@@ -147,9 +147,27 @@
                 .replace('__DOCUMENT_KEY__', encodeURIComponent(key));
             const revisionStatus = (typeof val === 'object' && val !== null && val.revision_status)
                 || (key.includes('_previous_') || inferredPreviousKeys.has(key) ? 'previous' : '');
-            const status = revisionStatus === 'new'
-                ? 'New upload'
-                : (revisionStatus === 'previous' ? 'Previous version' : 'Verified Valid');
+            const metadata = typeof val === 'object' && val !== null ? val : {};
+            const dateMetadata = metadata.extracted_fields || metadata.metadata || metadata;
+            const issueRaw = dateMetadata.issue_date || dateMetadata.date_issued || dateMetadata.issued_at || dateMetadata.issued_date || '';
+            const expirationRaw = dateMetadata.expiration_date || dateMetadata.expiry_date || dateMetadata.expires_at || dateMetadata.valid_until || '';
+            const uploadedRaw = metadata.uploaded_at || '';
+            const formatDate = value => {
+                if (!value) return '';
+                const date = new Date(value);
+                return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+            };
+            const issueDate = formatDate(issueRaw);
+            const expirationDate = formatDate(expirationRaw);
+            const uploadedAt = formatDate(uploadedRaw);
+            const expirationDay = expirationRaw ? new Date(String(expirationRaw).slice(0, 10) + 'T00:00:00') : null;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const isSuperseded = revisionStatus === 'previous' || inferredPreviousKeys.has(key);
+            const status = isSuperseded ? 'Superseded' : (expirationDay && !Number.isNaN(expirationDay.getTime()) && expirationDay < today ? 'Expired' : 'Current');
+            const uploadYear = (expirationRaw || issueRaw || uploadedRaw || '').toString().slice(0, 4);
+            if (label.includes('Mayor’s Business Permit') && uploadYear) label += ` ${uploadYear}`;
+            const versionLabel = isSuperseded ? 'Previous Version' : (revisionStatus === 'new' ? 'Latest Upload' : '');
 
             this.activeDocList.push({
                 key: key,
@@ -162,14 +180,17 @@
                 downloadUrl: fileRoute.replace('__ACTION__', 'download'),
                 status: status,
                 revisionStatus: revisionStatus,
-                validity: validity
+                versionLabel: versionLabel,
+                uploadedAt: uploadedAt,
+                issueDate: issueDate,
+                expirationDate: expirationDate
             });
         }
 
         if (this.activeDocList.length > 0) {
             this.selectDocument(this.activeDocList[0]);
-            this.docModalOpen = true;
         }
+        this.docModalOpen = true;
     },
     selectDocument(doc) {
         this.selectedDocKey = doc.key;

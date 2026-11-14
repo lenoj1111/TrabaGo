@@ -816,7 +816,8 @@ class TrainerPortalController extends Controller
                 'training_programs.*',
                 DB::raw('COUNT(DISTINCT training_enrollments.enrollment_id) as enrolled_count'),
                 DB::raw('SUM(CASE WHEN training_enrollments.certificate_issued = 1 THEN 1 ELSE 0 END) as certs_count'),
-                DB::raw('COUNT(DISTINCT training_assessments.assessment_id) as assessments_count')
+                DB::raw('COUNT(DISTINCT training_assessments.assessment_id) as assessments_count'),
+                DB::raw("COUNT(DISTINCT CASE WHEN training_assessments.question_type = 'essay' THEN training_assessments.assessment_id END) as essay_assessments_count")
             );
 
         // Toggle between Active and Archived based on the checkbox

@@ -90,20 +90,43 @@
 
             const previewUrl = meta.isImage ? fileRoute.replace('__ACTION__', 'preview') : '';
             const downloadUrl = fileRoute.replace('__ACTION__', 'download');
+            const metadata = typeof val === 'object' && val !== null ? val : {};
+            const dateMetadata = metadata.extracted_fields || metadata.metadata || metadata;
+            const issueRaw = dateMetadata.issue_date || dateMetadata.date_issued || dateMetadata.issued_at || dateMetadata.issued_date || '';
+            const expirationRaw = dateMetadata.expiration_date || dateMetadata.expiry_date || dateMetadata.expires_at || dateMetadata.valid_until || '';
+            const uploadedRaw = metadata.uploaded_at || '';
+            const formatDate = value => {
+                if (!value) return '';
+                const date = new Date(value);
+                return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+            };
+            const issueDate = formatDate(issueRaw);
+            const expirationDate = formatDate(expirationRaw);
+            const uploadedAt = formatDate(uploadedRaw);
+            const expirationDay = expirationRaw ? new Date(String(expirationRaw).slice(0, 10) + 'T00:00:00') : null;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const isSuperseded = meta.revisionStatus === 'previous' || inferredPreviousKeys.has(key);
+            const status = isSuperseded ? 'Superseded' : (expirationDay && !Number.isNaN(expirationDay.getTime()) && expirationDay < today ? 'Expired' : 'Current');
+            const uploadYear = (expirationRaw || issueRaw || uploadedRaw || '').toString().slice(0, 4);
+            let label = meta.label;
+            if (label.includes('Mayor’s Business Permit') && uploadYear) label += ` ${uploadYear}`;
+            const versionLabel = isSuperseded ? 'Previous Version' : (meta.revisionStatus === 'new' ? 'Latest Upload' : '');
 
             this.activeDocList.push({
                 key: key,
-                label: meta.label,
+                label: label,
                 issuer: meta.issuer,
-                validity: meta.validity,
                 filename: meta.filename,
                 isImage: meta.isImage,
                 previewUrl: previewUrl,
                 downloadUrl: downloadUrl,
-                status: meta.revisionStatus === 'new'
-                    ? 'New upload'
-                    : (meta.revisionStatus === 'previous' || inferredPreviousKeys.has(key) ? 'Previous version' : 'Attached for Review'),
+                status: status,
                 revisionStatus: meta.revisionStatus || (inferredPreviousKeys.has(key) ? 'previous' : ''),
+                versionLabel: versionLabel,
+                uploadedAt: uploadedAt,
+                issueDate: issueDate,
+                expirationDate: expirationDate,
                 url: previewUrl || downloadUrl || ''
             });
         });
@@ -115,8 +138,8 @@
                 if (found) targetDoc = found;
             }
             this.selectDocument(targetDoc);
-            this.docModalOpen = true;
         }
+        this.docModalOpen = true;
     },
 
     selectDocument(doc) {
@@ -138,7 +161,7 @@
             filename = val.split('/').pop() || val;
         }
 
-        let validity = 'Current / Valid';
+        let validity = 'Date not provided';
         const normalizedKey = String(key || '').toLowerCase();
         const revisionStatus = (typeof val === 'object' && val !== null && val.revision_status)
             || (normalizedKey.includes('_previous_') ? 'previous' : '');
@@ -146,7 +169,7 @@
         if (normalizedKey.includes('bir') || normalizedKey.includes('2303') || normalizedKey.includes('tin')) {
             label = 'BIR Certificate of Registration (Form 2303)';
             issuer = 'Bureau of Internal Revenue (BIR District 080)';
-            validity = 'Current / Valid';
+            validity = 'Date not provided';
         } else if (normalizedKey.includes('sec') || normalizedKey.includes('dti')) {
             label = 'SEC Registration or DTI Registration';
             issuer = 'Securities and Exchange Commission (SEC) / DTI';
@@ -154,7 +177,7 @@
         } else if (normalizedKey.includes('mayor') || normalizedKey.includes('permit') || normalizedKey.includes('business')) {
             label = 'Mayor’s Business Permit (current year)';
             issuer = 'City Government of Cebu - BPLO';
-            validity = 'Calendar Year ' + new Date().getFullYear();
+            validity = 'Date not provided';
         } else if (normalizedKey.includes('philjobnet')) {
             label = 'PhilJobNet Proof of Registration';
             issuer = 'PhilJobNet / DOLE Bureau of Local Employment';
