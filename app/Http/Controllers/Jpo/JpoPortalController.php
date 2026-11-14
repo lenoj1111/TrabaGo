@@ -388,7 +388,11 @@ class JpoPortalController extends Controller
     {
         $query = DB::table('employer_accreditation')
             ->join('employers', 'employer_accreditation.employer_id', '=', 'employers.employer_id')
-            ->select('employer_accreditation.*', 'employers.company_name')
+            ->select(
+                'employer_accreditation.*',
+                'employers.company_name',
+                'employers.company_logo' // 
+            )
             ->latest('submitted_at');
 
         if ($request->filled('status')) {

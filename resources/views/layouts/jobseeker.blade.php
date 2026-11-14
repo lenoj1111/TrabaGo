@@ -145,10 +145,9 @@ $myApplicationsCount = 0;
         {{-- Brand / Header --}}
         <div class="flex items-center justify-between gap-3 px-4 h-16 border-b border-slate-800 shrink-0">
             <a href="{{ route('jobseeker.home') }}" class="flex items-center gap-3 min-w-0">
-                <div class="h-10 w-10 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-cyan-600
-                            flex items-center justify-center text-white text-xl shadow-md shadow-emerald-900/30 shrink-0">
-                    💼
-                </div>
+                <img src="{{ asset('images/logo.png') }}"
+                    alt="TrabaGo Logo"
+                    class="h-10 w-10 object-contain shrink-0 drop-shadow-md" />
                 <div class="flex flex-col leading-tight min-w-0 js-sidebar-label">
                     <span class="font-black text-base text-white tracking-tight">
                         Traba<span class="text-emerald-400">Go</span>

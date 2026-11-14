@@ -1,27 +1,37 @@
 <div x-show="docModalOpen" x-cloak
-     x-data="{
+    x-data="{
+         viewMode: 'latest',
          docSearch: '',
          docFilter: 'all',
          docSort: 'newest',
          get filteredDocuments() {
              const search = this.docSearch.trim().toLowerCase();
-             return (this.activeDocList || [])
+             let filtered = (this.activeDocList || [])
                  .filter(doc => this.docFilter === 'all' || doc.status === this.docFilter)
-                 .filter(doc => !search || `${doc.label} ${doc.filename} ${doc.issuer}`.toLowerCase().includes(search))
-                 .sort((a, b) => {
-                     if (this.docSort === 'name') return a.label.localeCompare(b.label);
-                     if (this.docSort === 'oldest') return (Date.parse(a.uploadedAt || '') || 0) - (Date.parse(b.uploadedAt || '') || 0);
-                     if (this.docSort === 'expiry') return (Date.parse(a.expirationDate || '') || Number.MAX_SAFE_INTEGER) - (Date.parse(b.expirationDate || '') || Number.MAX_SAFE_INTEGER);
-                     return (Date.parse(b.uploadedAt || '') || 0) - (Date.parse(a.uploadedAt || '') || 0);
-                 });
+                 .filter(doc => !search || `${doc.label} ${doc.filename} ${doc.issuer}`.toLowerCase().includes(search));
+
+             // Filter by Latest vs Previous based on the isSuperseded flag
+             if (this.viewMode === 'latest') {
+                 filtered = filtered.filter(doc => doc.status !== 'Superseded');
+             } else {
+                 filtered = filtered.filter(doc => doc.status === 'Superseded');
+             }
+
+             return filtered.sort((a, b) => {
+                 if (this.docSort === 'name') return a.label.localeCompare(b.label);
+                 if (this.docSort === 'oldest') return (Date.parse(a.uploadedAt || '') || 0) - (Date.parse(b.uploadedAt || '') || 0);
+                 if (this.docSort === 'expiry') return (Date.parse(a.expirationDate || '') || Number.MAX_SAFE_INTEGER) - (Date.parse(b.expirationDate || '') || Number.MAX_SAFE_INTEGER);
+                 return (Date.parse(b.uploadedAt || '') || 0) - (Date.parse(a.uploadedAt || '') || 0);
+             });
          }
      }"
-     class="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/70 backdrop-blur-sm"
-     @keydown.escape.window="docModalOpen = false">
+    class="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/70 backdrop-blur-sm"
+    @keydown.escape.window="docModalOpen = false">
     <div class="flex min-h-full items-center justify-center p-4">
         <div @click.away="docModalOpen = false"
-             class="w-full max-w-5xl rounded-3xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
+            class="w-full max-w-5xl rounded-3xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
 
+            <!-- Modal Header -->
             <div class="flex items-start justify-between gap-4 border-b border-slate-100 bg-slate-50/60 p-6">
                 <div>
                     <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">DMDP Document Inspection Hub</span>
@@ -31,40 +41,56 @@
                     </p>
                 </div>
                 <button type="button" @click="docModalOpen = false"
-                        class="text-2xl font-bold text-slate-400 hover:text-slate-800"
-                        aria-label="Close documents">&times;</button>
+                    class="text-2xl font-bold text-slate-400 hover:text-slate-800"
+                    aria-label="Close documents">&times;</button>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12">
-                <aside class="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-slate-100 max-h-[60vh] lg:max-h-[70vh] overflow-y-auto">
-                    <div class="sticky top-0 z-10 grid grid-cols-1 gap-2 border-b border-slate-100 bg-white p-3 sm:grid-cols-3">
+                <!-- Left Sidebar: Document List -->
+                <aside class="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-slate-100 max-h-[60vh] lg:max-h-[70vh] overflow-y-auto flex flex-col">
+
+                    <!-- TABS: Latest vs Previous -->
+                    <div class="flex items-center border-b border-slate-100 bg-slate-50 px-3 pt-3 gap-1 shrink-0">
+                        <button type="button" @click="viewMode = 'latest'"
+                            :class="viewMode === 'latest' ? 'bg-white border-t border-l border-r border-slate-200 rounded-t-lg text-emerald-800 font-black' : 'text-slate-500 hover:text-slate-800 font-bold'"
+                            class="px-4 py-2 text-xs border-b-2 border-transparent transition-colors relative -mb-px">
+                            Latest Documents
+                        </button>
+                        <button type="button" @click="viewMode = 'previous'"
+                            :class="viewMode === 'previous' ? 'bg-white border-t border-l border-r border-slate-200 rounded-t-lg text-amber-800 font-black' : 'text-slate-500 hover:text-slate-800 font-bold'"
+                            class="px-4 py-2 text-xs border-b-2 border-transparent transition-colors relative -mb-px">
+                            Previous Versions
+                        </button>
+                    </div>
+
+                    <!-- Search & Filters -->
+                    <div class="grid grid-cols-1 gap-2 border-b border-slate-100 bg-white p-3 sm:grid-cols-3 shrink-0">
                         <input type="search" x-model="docSearch" placeholder="Search documents"
-                               aria-label="Search documents"
-                               class="min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none sm:col-span-3">
-                        <select x-model="docFilter" aria-label="Filter by document status"
-                                class="min-w-0 rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none">
+                            class="min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none sm:col-span-3">
+                        <select x-model="docFilter" class="min-w-0 rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none">
                             <option value="all">All statuses</option>
                             <option value="Current">Current</option>
                             <option value="Expired">Expired</option>
                             <option value="Superseded">Superseded</option>
                         </select>
-                        <select x-model="docSort" aria-label="Sort documents"
-                                class="min-w-0 rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none sm:col-span-2">
+                        <select x-model="docSort" class="min-w-0 rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none sm:col-span-2">
                             <option value="newest">Newest upload</option>
                             <option value="oldest">Oldest upload</option>
                             <option value="name">Document name</option>
                             <option value="expiry">Expiration date</option>
                         </select>
                     </div>
-                    <ul class="divide-y divide-slate-100">
+
+                    <!-- Document List -->
+                    <ul class="divide-y divide-slate-100 flex-1">
                         <template x-for="doc in filteredDocuments" :key="doc.key">
                             <li>
                                 <button type="button"
-                                        @click="selectDocument(doc)"
-                                        :class="selectedDocKey === doc.key
+                                    @click="selectDocument(doc)"
+                                    :class="selectedDocKey === doc.key
                                             ? 'bg-emerald-50 border-l-4 border-emerald-500'
                                             : 'hover:bg-slate-50 border-l-4 border-transparent'"
-                                        class="w-full text-left p-4 transition-colors">
+                                    class="w-full text-left p-4 transition-colors">
                                     <div class="flex items-start gap-3">
                                         <span class="text-2xl shrink-0" x-text="doc.icon"></span>
                                         <div class="min-w-0 flex-1">
@@ -72,12 +98,12 @@
                                             <p class="text-[10px] text-slate-500 mt-0.5" x-text="doc.issuer"></p>
                                             <div class="flex items-center gap-1.5 mt-1.5">
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border"
-                                                      :class="doc.status === 'Expired' ? 'bg-rose-50 text-rose-700 border-rose-200' : (doc.status === 'Superseded' ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')">
+                                                    :class="doc.status === 'Expired' ? 'bg-rose-50 text-rose-700 border-rose-200' : (doc.status === 'Superseded' ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')">
                                                     <span x-text="doc.status"></span>
                                                 </span>
                                                 <span x-show="doc.versionLabel"
-                                                      class="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200"
-                                                      x-text="doc.versionLabel">
+                                                    class="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200"
+                                                    x-text="doc.versionLabel">
                                                 </span>
                                             </div>
                                             <p class="text-[10px] text-slate-400 mt-1" x-text="'Uploaded ' + (doc.uploadedAt || 'date not recorded')"></p>
@@ -89,13 +115,14 @@
 
                         <template x-if="filteredDocuments.length === 0">
                             <li class="p-8 text-center">
-                                <p class="text-xs font-bold text-slate-700" x-text="activeDocList.length === 0 ? 'No documents uploaded' : 'No documents match these filters'"></p>
-                                <p class="mt-1 text-[11px] text-slate-500" x-text="activeDocList.length === 0 ? 'There are no files attached to this accreditation.' : 'Try a different search or status filter.'"></p>
+                                <p class="text-xs font-bold text-slate-700" x-text="viewMode === 'latest' ? 'No latest documents found' : 'No previous versions found'"></p>
+                                <p class="mt-1 text-[11px] text-slate-500" x-text="viewMode === 'latest' ? 'Try switching to the Previous tab or adjusting filters.' : 'There are no older versions on record.'"></p>
                             </li>
                         </template>
                     </ul>
                 </aside>
 
+                <!-- Right Content Area -->
                 <div class="lg:col-span-7 bg-slate-50/40 p-6 max-h-[60vh] lg:max-h-[70vh] overflow-y-auto">
                     <template x-if="currentDoc && currentDoc.key">
                         <div class="space-y-4">
@@ -106,7 +133,7 @@
                                     <p class="text-[11px] text-slate-500 mt-0.5" x-text="currentDoc.issuer"></p>
                                 </div>
                                 <a :href="currentDoc.downloadUrl"
-                                   class="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-emerald-600 text-white text-[11px] font-bold transition-colors">
+                                    class="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-emerald-600 text-white text-[11px] font-bold transition-colors">
                                     ⬇ Download
                                 </a>
                             </div>
@@ -114,15 +141,15 @@
                             <div class="rounded-xl border border-slate-200 bg-white p-3">
                                 <template x-if="currentDoc.isImage && currentDoc.previewUrl">
                                     <img :src="currentDoc.previewUrl"
-                                         :alt="currentDoc.label"
-                                         class="w-full rounded-lg border border-slate-100"
-                                         loading="lazy">
+                                        :alt="currentDoc.label"
+                                        class="w-full rounded-lg border border-slate-100"
+                                        loading="lazy">
                                 </template>
                                 <template x-if="!currentDoc.isImage && currentDoc.canPreview && currentDoc.previewUrl">
                                     <iframe :src="currentDoc.previewUrl"
-                                            :title="currentDoc.label"
-                                            class="w-full h-[60vh] rounded-lg border border-slate-100"
-                                            loading="lazy"></iframe>
+                                        :title="currentDoc.label"
+                                        class="w-full h-[60vh] rounded-lg border border-slate-100"
+                                        loading="lazy"></iframe>
                                 </template>
                                 <template x-if="!currentDoc.canPreview || !currentDoc.previewUrl">
                                     <div class="flex flex-col items-center justify-center py-12 text-center">
@@ -142,8 +169,8 @@
                                 <div class="flex items-center justify-between gap-3">
                                     <span class="text-slate-500 font-semibold">Relevance</span>
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border"
-                                          :class="currentDoc.status === 'Expired' ? 'bg-rose-50 text-rose-700 border-rose-200' : (currentDoc.status === 'Superseded' ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')"
-                                          x-text="currentDoc.status"></span>
+                                        :class="currentDoc.status === 'Expired' ? 'bg-rose-50 text-rose-700 border-rose-200' : (currentDoc.status === 'Superseded' ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')"
+                                        x-text="currentDoc.status"></span>
                                 </div>
                                 <div class="flex items-center justify-between gap-3">
                                     <span class="text-slate-500 font-semibold">Uploaded</span>
