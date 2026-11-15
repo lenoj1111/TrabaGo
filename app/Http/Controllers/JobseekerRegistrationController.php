@@ -68,45 +68,50 @@ class JobseekerRegistrationController extends Controller
             'mobile_number.unique' => 'An account with this mobile number already exists. Please contact your JPO or an administrator to update your email or reset your password. For your security, never share your password.',
         ]);
 
-        $nameDuplicateMessage = 'An existing jobseeker account matches this name and date of birth. Please contact your JPO or an administrator to confirm the account and update your email or reset your password. For your security, never share your password.';
-        $nameDuplicateDetected = false;
-
-        $validator->after(function ($validator) use ($request, $nameDuplicateMessage, &$nameDuplicateDetected) {
-            if (
-                $validator->errors()->has('first_name')
-                || $validator->errors()->has('last_name')
-                || $validator->errors()->has('birth_date')
-            ) {
-                return;
+        // 1. Check standard validation first
+        if ($validator->fails()) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'message' => 'Please review the registration details and try again.',
+                    'errors' => $validator->errors(),
+                ], 422);
             }
 
-            $existingJobseeker = DB::table('jobseekers')
-                ->whereRaw('LOWER(LTRIM(RTRIM(first_name))) = ?', [Str::lower(trim($request->input('first_name')))])
-                ->whereRaw('LOWER(LTRIM(RTRIM(last_name))) = ?', [Str::lower(trim($request->input('last_name')))])
-                ->whereDate('birth_date', $request->input('birth_date'))
-                ->exists();
-
-            if ($existingJobseeker) {
-                $nameDuplicateDetected = true;
-            }
-        });
-
-        if ($validator->fails() || $nameDuplicateDetected) {
-            if ($nameDuplicateDetected) {
-                $response = redirect()->back()
-                    ->with('error', $nameDuplicateMessage)
-                    ->withInput();
-
-                return $validator->errors()->isNotEmpty()
-                    ? $response->withErrors($validator)
-                    : $response;
-            }
-
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
+            return redirect()->back()->withErrors($validator)->withInput();
         }
 
+        // 2. DUPLICATE CHECK (Name + DOB)
+        if ($request->input('role', 'jobseeker') === 'jobseeker') {
+            $firstName = $request->input('first_name');
+            $lastName = $request->input('last_name');
+            $birthDate = $request->input('birth_date');
+
+            if ($firstName && $lastName && $birthDate) {
+                $dateStr = \Carbon\Carbon::parse($birthDate)->format('Y-m-d');
+
+                $duplicate = DB::table('jobseekers')
+                    ->whereRaw('LOWER(LTRIM(RTRIM(first_name))) = ?', [\Illuminate\Support\Str::lower(trim($firstName))])
+                    ->whereRaw('LOWER(LTRIM(RTRIM(last_name))) = ?', [\Illuminate\Support\Str::lower(trim($lastName))])
+                    ->whereRaw("CONVERT(varchar(10), birth_date, 120) = ?", [$dateStr])
+                    ->exists();
+
+                if ($duplicate && !$request->has('confirm_duplicate')) {
+                    // If the request expects JSON, return the popup message
+                    if ($request->wantsJson()) {
+                        return response()->json([
+                            'success' => false,
+                            'error' => 'POSSIBLE_DUPLICATE',
+                            'message' => 'A jobseeker with the same name and birthdate already exists. If this is you, please log in. If you are a different person, click Continue to proceed with registration.',
+                        ], 409);
+                    }
+
+                    // If the form submits normally (JS failed), show this fallback error
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'A jobseeker with the same name and birthdate already exists. If this is you, please log in. If you are a different person, confirm the warning to continue registration.');
+                }
+            }
+        }
         try {
             // Begin transaction
             DB::beginTransaction();
@@ -252,10 +257,16 @@ class JobseekerRegistrationController extends Controller
             $isDuplicatePhone = $e instanceof QueryException
                 && str_contains(strtolower($e->getMessage()), 'users_phone_number_unique');
 
+            $errorMessage = $isDuplicatePhone
+                ? 'An account with this mobile number already exists. Please contact your JPO or an administrator to update your email or reset your password. For your security, never share your password.'
+                : 'Registration could not be completed. Please try again or contact your JPO or an administrator for assistance.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $errorMessage], 422);
+            }
+
             return redirect()->back()
-                ->with('error', $isDuplicatePhone
-                    ? 'An account with this mobile number already exists. Please contact your JPO or an administrator to update your email or reset your password. For your security, never share your password.'
-                    : 'Registration could not be completed. Please try again or contact your JPO or an administrator for assistance.')
+                ->with('error', $errorMessage)
                 ->withInput();
         }
     }

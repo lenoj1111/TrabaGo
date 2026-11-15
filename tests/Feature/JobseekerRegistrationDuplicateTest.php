@@ -58,7 +58,7 @@ class JobseekerRegistrationDuplicateTest extends TestCase
             'birth_date' => '1995-04-12',
         ]);
 
-        $response = $this->from('/jobseeker/register')->post('/jobseeker/register', [
+        $response = $this->from('/jobseeker/register')->postJson('/jobseeker/register', [
             'email' => 'new@example.com',
             'password' => 'Password123',
             'password_confirmation' => 'Password123',
@@ -73,7 +73,11 @@ class JobseekerRegistrationDuplicateTest extends TestCase
             'employment_status' => 'Unemployed',
         ]);
 
-        $response->assertRedirect('/jobseeker/register');
-        $response->assertSessionHas('error', 'An existing jobseeker account matches this name and date of birth. Please contact your JPO or an administrator to confirm the account and update your email or reset your password. For your security, never share your password.');
+        // We now expect a 409 JSON response instead of a redirect
+        $response->assertStatus(409);
+        $response->assertJson([
+            'success' => false,
+            'error' => 'POSSIBLE_DUPLICATE',
+        ]);
     }
 }
