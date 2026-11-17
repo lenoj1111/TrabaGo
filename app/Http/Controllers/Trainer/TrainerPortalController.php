@@ -219,22 +219,15 @@ class TrainerPortalController extends Controller
     {
         $query = DB::table('training_enrollments')
             ->join('jobseekers', 'training_enrollments.jobseeker_id', '=', 'jobseekers.jobseeker_id')
-            ->where('training_enrollments.training_id', $course->training_id)
+            ->join('training_programs', 'training_enrollments.training_id', '=', 'training_programs.training_id')
             ->select(
-                'training_enrollments.enrollment_id',
-                'training_enrollments.status',
-                'training_enrollments.start_date',
-                'training_enrollments.end_date',
-                'training_enrollments.score',
-                'training_enrollments.passed',
-                'training_enrollments.assessment_attempts',
-                'training_enrollments.certificate_issued',
-                'training_enrollments.certificate_no',
-                'training_enrollments.answers',
+                'training_enrollments.*',
                 'jobseekers.first_name',
                 'jobseekers.last_name',
                 'jobseekers.email as jobseeker_email',
-                'jobseekers.mobile_number'
+                'jobseekers.mobile_number',
+                'training_programs.title as course_title',
+                'training_programs.training_type as course_type'
             );
 
         if ($request->filled('status')) {
@@ -335,9 +328,6 @@ class TrainerPortalController extends Controller
     /**
      * Figure 12: Evaluate Training Course Answer (Review answers and grade).
      */
-    /**
-     * Figure 12: Evaluate Training Course Answer (Review answers and grade).
-     */
     public function evaluateAnswer(Request $request, int $id)
     {
         $enrollment = DB::table('training_enrollments')
@@ -351,7 +341,8 @@ class TrainerPortalController extends Controller
                 'jobseekers.email as jobseeker_email',
                 'training_programs.title as course_title',
                 'training_programs.description as course_desc',
-                'training_programs.passing_score'
+                'training_programs.passing_score',
+                'training_programs.auto_generate_certificate'
             )
             ->first();
 
@@ -362,22 +353,17 @@ class TrainerPortalController extends Controller
         $answers = is_array($enrollment->answers)
             ? $enrollment->answers
             : (json_decode($enrollment->answers ?? '[]', true) ?: []);
-
         if ($request->isMethod('post')) {
             $request->validate([
                 'outcome' => 'required|in:passed,needs_retake',
                 'trainer_feedback' => 'nullable|string|max:1000',
             ]);
+            $passed = $request->outcome === 'passed';
+            $status = $passed ? 'completed' : 'in_progress';
 
             if (($answers['review_status'] ?? null) !== 'pending') {
                 return back()->with('error', 'Only assessments awaiting trainer review can be evaluated.');
             }
-
-            $passed = $request->outcome === 'passed';
-
-            // Per spec: a pass on the quiz only marks the learner as "Return for Demo".
-            // Status stays in_progress; the trainer completes the course + issues the
-            // certificate later via the "Return for Demo" confirmation modal.
             $answers['review_status'] = $passed ? 'passed' : 'needs_retake';
             $answers['reviewed_at'] = now()->toIso8601String();
             $answers['reviewed_by'] = Auth::id();
@@ -385,9 +371,9 @@ class TrainerPortalController extends Controller
             DB::table('training_enrollments')->where('enrollment_id', $id)->update([
                 'score' => data_get($answers, 'objective_score.percentage', $enrollment->score),
                 'passed' => $passed ? 1 : 0,
-                'status' => 'in_progress',   // always in_progress here
+                'status' => $status,
                 'trainer_feedback' => $request->trainer_feedback,
-                'end_date' => null,          // do NOT set end_date yet
+                'end_date' => $passed ? now()->toDateString() : null,
                 'answers' => json_encode($answers),
             ]);
 
@@ -397,11 +383,7 @@ class TrainerPortalController extends Controller
                 DB::table('notifications')->insert([
                     'user_id' => $jobseeker->user_id,
                     'title' => 'Training Course Evaluated',
-                    'message' => "Your assessment for '{$enrollment->course_title}' has been reviewed. Outcome: "
-                        . ($passed
-                            ? 'PASSED — please return to the DMDP for your practical demo so your trainer can issue your certificate.'
-                            : 'NEEDS RETAKE.')
-                        . ($request->trainer_feedback ? ". Trainer feedback: {$request->trainer_feedback}" : ''),
+                    'message' => "Your assessment for '{$enrollment->course_title}' has been reviewed. Outcome: " . ($passed ? 'PASSED' : 'NEEDS RETAKE') . ($request->trainer_feedback ? ". Trainer feedback: {$request->trainer_feedback}" : ''),
                     'type' => 'training',
                     'is_read' => 0,
                     'related_id' => $id,
@@ -410,10 +392,14 @@ class TrainerPortalController extends Controller
                 ]);
             }
 
+            if ($passed && $enrollment->auto_generate_certificate) {
+                return $this->generateCertificate($request, $id);
+            }
+
             return redirect()->route('trainer.enrollments.index')->with(
                 'success',
                 $passed
-                    ? 'Assessment passed. The learner is now marked "Return for Demo" — issue the certificate from the enrolled table once they return to DMDP.'
+                    ? 'Assessment passed. The certificate is ready for trainer issuance.'
                     : 'Assessment reviewed. The learner needs to retake the quiz.'
             );
         }
@@ -473,9 +459,6 @@ class TrainerPortalController extends Controller
     /**
      * Submit Conducted Assessment.
      */
-    /**
-     * Submit Conducted Assessment.
-     */
     public function submitAssessment(Request $request, int $id)
     {
         $request->validate([
@@ -491,7 +474,7 @@ class TrainerPortalController extends Controller
             ->where('training_enrollments.enrollment_id', $id)
             ->select(
                 'training_enrollments.*',
-                'training_programs.title',
+                'training_programs.title', // <--- THIS WAS MISSING
                 'training_programs.passing_score'
             )
             ->first();
@@ -510,10 +493,7 @@ class TrainerPortalController extends Controller
         $passingThreshold = $enrollment->passing_score ?: 80;
         $score = (float) $request->score;
         $passed = $score >= $passingThreshold;
-
-        // Per spec: passed learners stay in_progress ("Return for Demo") until
-        // the trainer confirms the demo. Failed learners are marked failed.
-        $status = $passed ? 'in_progress' : 'failed';
+        $status = $passed ? 'completed' : 'failed';
 
         $assessmentData = [
             'theory_score' => $request->theory_score,
@@ -529,12 +509,26 @@ class TrainerPortalController extends Controller
             'status' => $status,
             'trainer_feedback' => $request->trainer_feedback,
             'lab_remarks' => $request->lab_remarks ?: $enrollment->lab_remarks,
-            'end_date' => $passed ? null : now()->toDateString(), // no end_date on pass
+            'end_date' => now()->toDateString(),
             'answers' => json_encode($assessmentData),
         ]);
 
-        // Do NOT award skills or issue a certificate here. Both happen only when
-        // the trainer confirms the demo via the "Return for Demo" button.
+        // If passed, award skills immediately
+        if ($passed) {
+            $skillName = trim(explode(' - ', $enrollment->title)[0] ?? $enrollment->title);
+            $exists = DB::table('jobseeker_skills')
+                ->where('jobseeker_id', $enrollment->jobseeker_id)
+                ->where('skill_name', $skillName)
+                ->exists();
+
+            if (!$exists) {
+                DB::table('jobseeker_skills')->insert([
+                    'jobseeker_id' => $enrollment->jobseeker_id,
+                    'skill_name' => $skillName,
+                    'skill_type' => 'technical',
+                ]);
+            }
+        }
 
         // Notify jobseeker
         $jobseeker = DB::table('jobseekers')->where('jobseeker_id', $enrollment->jobseeker_id)->first();
@@ -542,10 +536,7 @@ class TrainerPortalController extends Controller
             DB::table('notifications')->insert([
                 'user_id' => $jobseeker->user_id,
                 'title' => 'Assessment Conducted',
-                'message' => "Your assessment for '{$enrollment->title}' has been evaluated. Final Score: {$score}%. Outcome: "
-                    . ($passed
-                        ? 'PASSED — please return to the DMDP for your practical demo so your trainer can issue your certificate.'
-                        : 'NEEDS RETAKE'),
+                'message' => "Your assessment for '{$enrollment->title}' has been evaluated. Final Score: {$score}%. Outcome: " . ($passed ? 'PASSED & COMPLETED' : 'NEEDS RETAKE'),
                 'type' => 'training',
                 'is_read' => 0,
                 'related_id' => $id,
@@ -554,17 +545,27 @@ class TrainerPortalController extends Controller
             ]);
         }
 
-        return redirect()->route('trainer.enrollments.index')->with(
-            'success',
-            $passed
-                ? 'Assessment submitted. Learner PASSED — status is now "Return for Demo". Issue the certificate once they return.'
-                : 'Assessment submitted. Learner needs to RETAKE.'
-        );
+        // IF PASSED, AUTO-GENERATE THE CERTIFICATE
+        if ($passed) {
+            // Force refresh the enrollment model to ensure 'passed' and 'completed' are recognized
+            $freshEnrollment = DB::table('training_enrollments')->where('enrollment_id', $id)->first();
+
+            // Call generateCertificate and capture the result
+            $certificateResult = $this->generateCertificate($request, $id);
+
+            // If generation failed, return the error
+            if ($certificateResult instanceof \Illuminate\Http\RedirectResponse && session('error')) {
+                return $certificateResult;
+            }
+
+            return redirect()->route('trainer.enrollments.index')
+                ->with('success', "Assessment submitted! Learner PASSED. Certificate has been generated and issued automatically.");
+        }
+
+        return redirect()->route('trainer.enrollments.index')
+            ->with('success', "Assessment submitted. Learner needs to RETAKE.");
     }
 
-    /**
-     * Mark Enrollment Completion & Award Verified Skills.
-     */
     /**
      * Mark Enrollment Completion & Award Verified Skills.
      */
@@ -587,13 +588,10 @@ class TrainerPortalController extends Controller
         if (!$enrollment) {
             return back()->with('error', 'Enrollment record not found.');
         }
-
-        // Per spec: only the learner's pass is required here. The course is
-        // completed as part of issuance (status may still be in_progress).
-        if ((int) $enrollment->passed !== 1) {
-            return back()->with('error', 'A certificate can only be issued after the learner has passed the assessment.');
+        // Only require the learner to be marked as passed and completed
+        if ((int) $enrollment->passed !== 1 || $enrollment->status !== 'completed') {
+            return back()->with('error', 'A certificate can only be issued after the learner is marked as Passed.');
         }
-
         DB::table('training_enrollments')->where('enrollment_id', $id)->update([
             'status' => 'completed',
             'passed' => 1,
@@ -681,9 +679,6 @@ class TrainerPortalController extends Controller
     /**
      * Figure 12: Generate Completion Certificate.
      */
-    /**
-     * Figure 12: Generate Completion Certificate.
-     */
     public function generateCertificate(Request $request, int $id)
     {
         $enrollment = DB::table('training_enrollments')
@@ -695,24 +690,18 @@ class TrainerPortalController extends Controller
                 'jobseekers.first_name',
                 'jobseekers.last_name',
                 'jobseekers.user_id',
-                'training_programs.title as course_title',
-                'training_programs.skills as course_skills'
+                'training_programs.title as course_title'
             )
             ->first();
 
         if (!$enrollment) {
-            return redirect()->route('trainer.enrollments.index')->with('error', 'Enrollment record not found.');
+            return back()->with('error', 'Enrollment record not found.');
         }
 
-        // Per spec: the certificate is issued on trainer demo confirmation.
-        // The learner must have passed; status may still be in_progress.
-        if ((int) $enrollment->passed !== 1) {
-            return back()->with('error', 'A certificate can only be issued after the learner has passed the assessment.');
-        }
-
-        if ((int) $enrollment->certificate_issued === 1 && !empty($enrollment->certificate_no)) {
-            return redirect()->route('trainer.enrollments.index')
-                ->with('info', "Certificate #{$enrollment->certificate_no} has already been issued to {$enrollment->first_name} {$enrollment->last_name}.");
+        // The submitAssessment function already validated the outcome. 
+        // We just need to ensure it's marked as completed and passed.
+        if ((int) $enrollment->passed !== 1 || $enrollment->status !== 'completed') {
+            return back()->with('error', 'A certificate can only be issued after the learner is marked as Passed and Completed.');
         }
 
         // Generate unique certificate ID
@@ -724,34 +713,21 @@ class TrainerPortalController extends Controller
             'certificate_issued_at' => now(),
             'status' => 'completed',
             'passed' => 1,
-            'end_date' => now()->toDateString(),
         ]);
 
-        // Collect all skills (enrolled skills, course skills, and course title)
-        $skillsToAward = [];
-        if (!empty($enrollment->enrolled_skills)) {
-            $skillsToAward = array_merge($skillsToAward, array_map('trim', explode(',', $enrollment->enrolled_skills)));
-        }
-        if (!empty($enrollment->course_skills)) {
-            $skillsToAward = array_merge($skillsToAward, array_map('trim', explode(',', $enrollment->course_skills)));
-        }
-        $primarySkill = trim(explode(' - ', $enrollment->course_title)[0] ?? $enrollment->course_title);
-        $skillsToAward[] = $primarySkill;
-        $skillsToAward = array_unique(array_filter($skillsToAward));
+        // Automatically award skill tag to jobseeker
+        $skillName = trim(explode(' - ', $enrollment->course_title)[0] ?? $enrollment->course_title);
+        $skillExists = DB::table('jobseeker_skills')
+            ->where('jobseeker_id', $enrollment->jobseeker_id)
+            ->where('skill_name', $skillName)
+            ->exists();
 
-        foreach ($skillsToAward as $skill) {
-            $skillExists = DB::table('jobseeker_skills')
-                ->where('jobseeker_id', $enrollment->jobseeker_id)
-                ->where('skill_name', $skill)
-                ->exists();
-
-            if (!$skillExists) {
-                DB::table('jobseeker_skills')->insert([
-                    'jobseeker_id' => $enrollment->jobseeker_id,
-                    'skill_name' => $skill,
-                    'skill_type' => 'technical',
-                ]);
-            }
+        if (!$skillExists) {
+            DB::table('jobseeker_skills')->insert([
+                'jobseeker_id' => $enrollment->jobseeker_id,
+                'skill_name' => $skillName,
+                'skill_type' => 'technical',
+            ]);
         }
 
         // Store certificate in jobseeker Document Hub vault (training_certificates)
@@ -763,11 +739,12 @@ class TrainerPortalController extends Controller
                 : (json_decode($jobseekerDetail->training_certificates, true) ?: []);
         }
 
+        // Filter out if this enrollment was previously added
         $existingCerts = array_values(array_filter($existingCerts, fn($c) => ($c['enrollment_id'] ?? null) != $id));
 
         $certUrl = route('jobseeker.certificates.preview', $id);
 
-        $existingCerts[] = [
+        $newCertDoc = [
             'id' => 'cert_' . $id,
             'enrollment_id' => $id,
             'category' => 'certificate',
@@ -778,19 +755,21 @@ class TrainerPortalController extends Controller
             'course_title' => $enrollment->course_title,
             'uploaded_at' => now()->toIso8601String(),
         ];
+        $existingCerts[] = $newCertDoc;
 
         DB::table('jobseeker_details')->updateOrInsert(
             ['jobseeker_id' => $enrollment->jobseeker_id],
-            ['training_certificates' => json_encode($existingCerts)]
+            [
+                'training_certificates' => json_encode($existingCerts),
+            ]
         );
 
         // Send celebratory notification with download details
         if ($enrollment->user_id) {
-            $awardedList = implode(', ', $skillsToAward);
             DB::table('notifications')->insert([
                 'user_id' => $enrollment->user_id,
                 'title' => '🎓 Official Certificate Issued!',
-                'message' => "Congratulations! Trainer has issued your official Certificate of Completion (#{$certNo}) for {$enrollment->course_title}. Verified skills ({$awardedList}) have been added to your profile, and your certificate is ready to download in your Document Hub.",
+                'message' => "Congratulations! Trainer has issued your official Certificate of Completion (#{$certNo}) for {$enrollment->course_title}. '{$skillName}' has been added to your profile skills, and your certificate is ready to download in your Document Hub.",
                 'type' => 'training',
                 'is_read' => 0,
                 'related_id' => $id,
@@ -799,9 +778,9 @@ class TrainerPortalController extends Controller
             ]);
         }
 
-        return redirect()->route('trainer.enrollments.index')
-            ->with('success', "Certificate #{$certNo} generated and awarded to {$enrollment->first_name} {$enrollment->last_name}.");
+        return back()->with('success', "Certificate #{$certNo} generated and awarded to {$enrollment->first_name} {$enrollment->last_name}.");
     }
+
     /**
      * Preview / Print Certificate.
      */
@@ -907,16 +886,11 @@ class TrainerPortalController extends Controller
             ->where('training_enrollments.training_id', $course->training_id)
             ->select(
                 'training_enrollments.enrollment_id',
-                'training_enrollments.jobseeker_id',
-                'training_enrollments.training_id',
                 'training_enrollments.status',
                 'training_enrollments.start_date',
                 'training_enrollments.end_date',
                 'training_enrollments.score',
-                'training_enrollments.passed',                 // <-- ADDED
-                'training_enrollments.assessment_attempts',    // <-- ADDED
                 'training_enrollments.certificate_issued',
-                'training_enrollments.certificate_no',         // <-- ADDED
                 'training_enrollments.answers',
                 'jobseekers.first_name',
                 'jobseekers.last_name',
