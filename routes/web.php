@@ -365,6 +365,7 @@ Route::prefix('trainer')->name('trainer.')->middleware(['auth', 'trainer'])->gro
     // 2. Update Enrollment Status & Mark Completion
     Route::post('/enrollments/{id}/status', [TrainerPortalController::class, 'updateEnrollmentStatus'])->name('enrollments.status');
     Route::post('/enrollments/{id}/complete', [TrainerPortalController::class, 'markCompletion'])->name('enrollments.complete');
+    Route::post('/enrollments/{id}/demo-confirmation', [TrainerPortalController::class, 'confirmDemoReturn'])->name('enrollments.demo-confirmation');
 
     // 3. Conduct Assessment / Evaluate Training Course Answer
     Route::get('/enrollments/{id}/assessment', [TrainerPortalController::class, 'conductAssessment'])->name('enrollments.assessment');

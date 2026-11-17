@@ -78,8 +78,8 @@ class TrainingController extends Controller
 
             if ($enrollment) {
                 $isEnrolled = true;
-                $isCompleted = in_array($enrollment->status, ['completed', 'passed']) || (bool)$enrollment->passed || (bool)$enrollment->certificate_issued;
                 $certificateIssued = (bool)$enrollment->certificate_issued;
+                $isCompleted = $enrollment->status === 'completed' && $certificateIssued;
                 $certificateNo = $enrollment->certificate_no;
                 $score = $enrollment->score;
                 $answers = is_array($enrollment->answers)
@@ -275,62 +275,114 @@ class TrainingController extends Controller
             return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
         }
 
-        $enrollment = TrainingEnrollment::firstOrNew([
-            'jobseeker_id' => $jobseeker->jobseeker_id,
-            'training_id' => $training->training_id,
-        ]);
-        if (!$enrollment->exists && $training->trainee_capacity !== null && TrainingEnrollment::where('training_id', $training->training_id)->count() >= $training->trainee_capacity) {
-            return response()->json(['success' => false, 'message' => 'This training program has reached its trainee capacity.'], 409);
-        }
-        $existingAnswers = is_array($enrollment->answers)
-            ? $enrollment->answers
-            : (json_decode($enrollment->answers ?? '[]', true) ?: []);
-        if (in_array($existingAnswers['review_status'] ?? null, ['pending', 'passed'], true)) {
-            return response()->json(['success' => false, 'message' => 'This assessment is already pending review or has been approved.'], 409);
-        }
+        $hasEssay = collect($gradedSubmission['responses'])
+            ->contains(fn($answer) => $answer['question_type'] === 'essay');
+        $objectiveScore = $gradedSubmission['objective_score']['percentage'];
+        $passingScore = (int) ($training->passing_score ?: 70);
+        $passed = !$hasEssay && $objectiveScore !== null && $objectiveScore >= $passingScore;
 
-        $enrollment->training_type = $training->training_type ?: 'online';
-        $enrollment->start_date = $enrollment->start_date ?: now()->toDateString();
-        $enrollment->score = $gradedSubmission['objective_score']['percentage'];
-        $enrollment->passed = null;
-        $enrollment->status = 'in_progress';
-        $enrollment->end_date = null;
-        $enrollment->certificate_no = null;
-        $enrollment->certificate_issued = false;
-        $enrollment->certificate_issued_at = null;
-        $enrollment->answers = [
-            'review_status' => 'pending',
-            'submitted_at' => now()->toIso8601String(),
-            'objective_score' => $gradedSubmission['objective_score'],
-            'responses' => $gradedSubmission['responses'],
-        ];
-        $enrollment->save();
+        $result = DB::transaction(function () use ($training, $jobseeker, $gradedSubmission, $hasEssay, $objectiveScore, $passed) {
+            $enrollment = TrainingEnrollment::where('jobseeker_id', $jobseeker->jobseeker_id)
+                ->where('training_id', $training->training_id)
+                ->lockForUpdate()
+                ->first();
 
-        Notification::create([
-            'user_id' => $jobseeker->user_id,
-            'title' => 'Assessment Submitted for Trainer Review',
-            'message' => "Your assessment for '{$training->title}' is awaiting trainer review. Your certificate is pending.",
-            'type' => 'training',
-            'is_read' => false,
-            'related_id' => $enrollment->enrollment_id,
-        ]);
-        if ($training->trainer?->user_id) {
+            if (!$enrollment) {
+                return ['status' => 'not_enrolled'];
+            }
+
+            $existingAnswers = is_array($enrollment->answers)
+                ? $enrollment->answers
+                : (json_decode($enrollment->answers ?? '[]', true) ?: []);
+            if ($enrollment->certificate_issued || $enrollment->passed) {
+                return ['status' => 'already_passed'];
+            }
+            if (($existingAnswers['review_status'] ?? null) === 'pending') {
+                return ['status' => 'pending_review'];
+            }
+
+            $attempts = (int) $enrollment->assessment_attempts + 1;
+            $reviewStatus = $hasEssay ? 'pending' : ($passed ? 'passed' : 'needs_retake');
+            $enrollment->update([
+                'training_type' => $training->training_type ?: 'online',
+                'start_date' => $enrollment->start_date ?: now()->toDateString(),
+                'score' => $objectiveScore,
+                'passed' => $passed,
+                'status' => 'in_progress',
+                'answers' => array_merge($gradedSubmission, [
+                    'review_status' => $reviewStatus,
+                    'attempt_number' => $attempts,
+                    'submitted_at' => now()->toIso8601String(),
+                ]),
+                'assessment_attempts' => $attempts,
+                'trainer_feedback' => null,
+            ]);
+
+            $tryLabel = $attempts === 1 ? '1 try' : "{$attempts} tries";
+            if ($hasEssay) {
+                $title = 'Assessment Submitted for Trainer Review';
+                $message = "Your assessment for '{$training->title}' (Attempt #{$attempts}) is pending trainer review. If passed, return to the DMDP for your practical demo.";
+            } elseif ($passed) {
+                $title = 'Assessment Passed — Return for Demo (DMDP)';
+                $message = "Congratulations! You passed '{$training->title}' with {$objectiveScore}% in {$tryLabel}. Please return to the DMDP for your practical demo before your trainer issues your certificate.";
+            } else {
+                $title = 'Assessment Not Passed';
+                $message = "You scored {$objectiveScore}% on '{$training->title}' (passing score: {$passingScore}%, attempt #{$attempts}). Review the course materials and retake the assessment.";
+            }
+
             Notification::create([
-                'user_id' => $training->trainer->user_id,
-                'title' => 'Trainee Assessment Awaiting Review',
-                'message' => "{$jobseeker->first_name} {$jobseeker->last_name} submitted the assessment for '{$training->title}'. Review objective answers and essay responses.",
+                'user_id' => $jobseeker->user_id,
+                'title' => $title,
+                'message' => $message,
                 'type' => 'training',
                 'is_read' => false,
                 'related_id' => $enrollment->enrollment_id,
             ]);
+
+            if ($training->trainer?->user_id && ($hasEssay || $passed)) {
+                Notification::create([
+                    'user_id' => $training->trainer->user_id,
+                    'title' => $hasEssay ? 'Trainee Assessment Awaiting Review' : 'Trainee Ready for DMDP Demo',
+                    'message' => $hasEssay
+                        ? "{$jobseeker->first_name} {$jobseeker->last_name} submitted an assessment for '{$training->title}' (Attempt #{$attempts}) that requires review."
+                        : "{$jobseeker->first_name} {$jobseeker->last_name} passed '{$training->title}' with {$objectiveScore}% in {$tryLabel} and is due to return for the practical demo.",
+                    'type' => 'training',
+                    'is_read' => false,
+                    'related_id' => $enrollment->enrollment_id,
+                ]);
+            }
+
+            return [
+                'status' => $reviewStatus,
+                'score' => $objectiveScore,
+                'attempts' => $attempts,
+                'enrollment_id' => $enrollment->enrollment_id,
+            ];
+        });
+
+        if ($result['status'] === 'not_enrolled') {
+            return response()->json(['success' => false, 'message' => 'Enroll in this training course before submitting its assessment.'], 409);
+        }
+        if ($result['status'] === 'already_passed') {
+            return response()->json(['success' => false, 'message' => 'You already passed this assessment. Return to the DMDP for your practical demo.'], 409);
+        }
+        if ($result['status'] === 'pending_review') {
+            return response()->json(['success' => false, 'message' => 'Your previous assessment submission is still awaiting trainer review.'], 409);
         }
 
         return response()->json([
             'success' => true,
-            'review_status' => 'pending',
+            'review_status' => $result['status'],
             'objective_score' => $gradedSubmission['objective_score'],
+            'assessment_attempts' => $result['attempts'],
+            'retakes' => max($result['attempts'] - 1, 0),
+            'passed' => $passed,
             'certificate_issued' => false,
-            'message' => 'Assessment submitted. The trainer must review your answers before deciding the result.',
+            'message' => match ($result['status']) {
+                'pending' => 'Assessment submitted. Essay and mixed responses are awaiting trainer review.',
+                'passed' => 'You passed. Return to the DMDP for your practical demo before certificate issuance.',
+                default => 'Assessment not passed. Review the course materials and retake the assessment.',
+            },
         ]);
     }
 

@@ -51,7 +51,7 @@
                     </div>
                     <h3 class="text-lg font-black text-rose-950">Certificate Template Not Configured</h3>
                     <p class="text-sm text-rose-800 mt-1 max-w-2xl font-medium">
-                        You haven't customized the certificate for this course yet. Students who pass the quiz will receive a blank or default certificate. Please configure the title and competencies before your students finish the course.
+                        You haven't customized the certificate for this course yet. Trainees receive their certificate only after passing the assessment and returning to the DMDP for their practical demo. Configure the title and competencies before they are ready to complete the course.
                     </p>
                 </div>
             </div>
@@ -237,6 +237,7 @@
                                 <tr>
                                     <th class="py-3 px-3">Jobseeker</th>
                                     <th class="py-3 px-3">Status</th>
+                                    <th class="py-3 px-3">Retakes</th>
                                     <th class="py-3 px-3">Score</th>
                                     <th class="py-3 px-3">Certificate</th>
                                     <th class="py-3 px-3 text-right">Action</th>
@@ -244,14 +245,20 @@
                             </thead>
                             <tbody class="divide-y divide-slate-100">
                                 @forelse($enrollments as $enr)
+                                @php
+                                    $assessmentData = is_array($enr->answers) ? $enr->answers : (json_decode($enr->answers ?? '[]', true) ?: []);
+                                    $reviewStatus = $assessmentData['review_status'] ?? null;
+                                    $readyForDemo = $reviewStatus === 'passed' && (int) $enr->passed === 1 && !$enr->certificate_issued;
+                                @endphp
                                 <tr class="hover:bg-slate-50/50">
                                     <td class="py-3 px-3">
                                         <div class="font-bold text-slate-900">{{ $enr->first_name }} {{ $enr->last_name }}</div>
                                         <div class="text-[11px] text-slate-400">{{ $enr->jobseeker_email }}</div>
                                     </td>
                                     <td class="py-3 px-3">
-                                        <span class="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase {{ $enr->status === 'completed' ? 'bg-emerald-100 text-emerald-800' : ($enr->status === 'failed' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-800') }}">{{ str_replace('_', ' ', $enr->status) }}</span>
+                                        <span class="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase {{ $readyForDemo || $enr->status === 'completed' ? 'bg-emerald-100 text-emerald-800' : ($enr->status === 'failed' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-800') }}">{{ $readyForDemo ? 'Return for Demo' : str_replace('_', ' ', $enr->status) }}</span>
                                     </td>
+                                    <td class="py-3 px-3 text-center font-bold">{{ max((int) $enr->assessment_attempts - 1, 0) }}</td>
                                     <td class="py-3 px-3 font-semibold text-slate-700">{{ $enr->score !== null ? $enr->score . '%' : 'Pending' }}</td>
                                     <td class="py-3 px-3">
                                         @if($enr->certificate_issued)
@@ -261,10 +268,10 @@
                                         @endif
                                     </td>
                                     <td class="py-3 px-3 text-right">
-                                        @if(!$enr->certificate_issued && $enr->status === 'completed')
-                                        <form action="{{ route('trainer.enrollments.certificate', $enr->enrollment_id) }}" method="POST" class="inline">
+                                        @if($readyForDemo)
+                                        <form action="{{ route('trainer.enrollments.demo-confirmation', $enr->enrollment_id) }}" method="POST" class="inline" onsubmit="return confirm('Confirm the trainee returned to the DMDP for their practical demo? This completes the course, issues the certificate, and awards skills.')">
                                             @csrf
-                                            <button type="submit" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-sm">Issue Certificate</button>
+                                            <button type="submit" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-sm">Return for Demo</button>
                                         </form>
                                         @elseif($enr->certificate_issued)
                                         <a href="{{ route('trainer.certificates.preview', $enr->enrollment_id) }}" target="_blank" class="text-emerald-700 hover:underline text-[11px] font-bold">View Cert &rarr;</a>
@@ -275,7 +282,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="5" class="py-6 text-center text-slate-400 text-xs">No jobseekers enrolled in this course yet.</td>
+                                    <td colspan="6" class="py-6 text-center text-slate-400 text-xs">No jobseekers enrolled in this course yet.</td>
                                 </tr>
                                 @endforelse
                             </tbody>

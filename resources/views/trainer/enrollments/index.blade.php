@@ -48,7 +48,7 @@
                     Learner Progress & Certification
                 </span>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight">Enrolled Job Seekers & Training Progress</h1>
-                <p class="text-sm text-slate-300">Oversee active learners, update enrollment statuses, conduct assessments, mark completions, and generate official skills certificates.</p>
+                <p class="text-sm text-slate-300">Track learner progress, review assessments, confirm DMDP practical demos, and issue certificates.</p>
             </div>
 
             <div class="shrink-0 bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/10 text-center min-w-[150px]">
@@ -92,7 +92,7 @@
         <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <h2 class="text-lg font-black text-slate-900">Enrolled Learners Registry</h2>
-                <span class="text-xs font-bold text-slate-500">Figure 12: Manage &rarr; Update Status &rarr; Evaluate &rarr; Issue Certificate</span>
+                <span class="text-xs font-bold text-slate-500">Review assessment &rarr; Confirm DMDP demo &rarr; Issue certificate</span>
             </div>
 
             <div class="overflow-x-auto">
@@ -102,6 +102,7 @@
                             <th class="pb-3 px-3">Learner Name</th>
                             <th class="pb-3 px-3">Course / Track</th>
                             <th class="pb-3 px-3">Score / Grade</th>
+                            <th class="pb-3 px-3">Retakes</th>
                             <th class="pb-3 px-3">Enrollment Status</th>
                             <th class="pb-3 px-3">Certificate</th>
                             <th class="pb-3 px-3 text-right">Actions</th>
@@ -120,6 +121,9 @@
                         if ($reviewStatus === 'pending') {
                         $badgeColor = 'bg-amber-100 text-amber-800 border border-amber-300';
                         $badgeText = 'Pending Review';
+                        } elseif ($reviewStatus === 'passed' && (int) $enr->passed === 1 && !$enr->certificate_issued) {
+                        $badgeColor = 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+                        $badgeText = 'Return for Demo';
                         } elseif ($reviewStatus === 'needs_retake' || $enr->status === 'failed') {
                         $badgeColor = 'bg-rose-100 text-rose-800 border border-rose-300';
                         $badgeText = 'Needs Retake';
@@ -151,6 +155,7 @@
                                 <span class="text-slate-400 text-[11px]">Ungraded</span>
                                 @endif
                             </td>
+                            <td class="py-4 px-3 text-center font-bold">{{ max((int) $enr->assessment_attempts - 1, 0) }}</td>
                             <td class="py-4 px-3">
                                 <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold {{ $badgeColor }}">
                                     {{ $badgeText }}
@@ -178,7 +183,12 @@
                             <td class="py-4 px-3 text-right">
 
                                 <!-- Hide buttons if completed, no_show, or multiple_absences -->
-                                @if(!in_array($enr->status, ['completed', 'no_show', 'multiple_absences']))
+                                @if($reviewStatus === 'passed' && (int) $enr->passed === 1 && !$enr->certificate_issued)
+                                <form method="POST" action="{{ route('trainer.enrollments.demo-confirmation', $enr->enrollment_id) }}" onsubmit="return confirm('Confirm the trainee returned to the DMDP for their practical demo? This completes the course, issues the certificate, and awards skills.')">
+                                    @csrf
+                                    <button type="submit" class="rounded-xl bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white transition-colors hover:bg-emerald-500">Return for Demo</button>
+                                </form>
+                                @elseif(!in_array($enr->status, ['completed', 'no_show', 'multiple_absences']))
                                 <div class="ml-auto flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
 
                                     <!-- 1. Update Status -->
@@ -217,7 +227,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="py-12 text-center text-slate-400 italic">
+                            <td colspan="7" class="py-12 text-center text-slate-400 italic">
                                 No enrollments found matching this filter.
                             </td>
                         </tr>

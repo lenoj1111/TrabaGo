@@ -132,19 +132,28 @@ class TrainerAndLmoWorkflowTest extends TestCase
             'enrollment_id' => $this->enrollmentId,
             'score' => 92.5,
             'passed' => 1,
-            'status' => 'completed',
+            'status' => 'in_progress',
+            'assessment_attempts' => 1,
             'trainer_feedback' => 'Exceptional comprehension of MVC architectural principles.',
         ]);
     }
 
     public function test_trainer_generates_certificate_and_grants_verified_skill(): void
     {
-        // Figure 12: Generate Certificate
-        $response = $this->actingAs($this->trainerUser)->post("/trainer/enrollments/{$this->enrollmentId}/certificate");
+        DB::table('training_enrollments')->where('enrollment_id', $this->enrollmentId)->update([
+            'status' => 'in_progress',
+            'passed' => 1,
+            'score' => 95,
+            'answers' => json_encode(['review_status' => 'passed']),
+        ]);
+
+        // Confirming the DMDP demo completes the enrollment and issues the certificate.
+        $response = $this->actingAs($this->trainerUser)->post("/trainer/enrollments/{$this->enrollmentId}/demo-confirmation");
         $response->assertRedirect();
 
         $enrollment = DB::table('training_enrollments')->where('enrollment_id', $this->enrollmentId)->first();
         $this->assertEquals(1, $enrollment->certificate_issued);
+        $this->assertEquals('completed', $enrollment->status);
         $this->assertNotNull($enrollment->certificate_no);
         $this->assertStringContainsString('DMDP-CERT-', $enrollment->certificate_no);
 

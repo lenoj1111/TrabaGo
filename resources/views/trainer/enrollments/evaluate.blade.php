@@ -101,7 +101,7 @@
                     <div class="grid gap-3 sm:grid-cols-2">
                         <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                             <input type="radio" name="outcome" value="passed" required class="mt-0.5 text-emerald-600">
-                            <span><strong class="block text-sm text-emerald-900">Passed</strong><small class="text-xs text-emerald-800">Approve course completion and certificate eligibility.</small></span>
+                            <span><strong class="block text-sm text-emerald-900">Passed</strong><small class="text-xs text-emerald-800">Mark the assessment passed. The trainee must return to the DMDP for their practical demo before the course is completed.</small></span>
                         </label>
                         <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
                             <input type="radio" name="outcome" value="needs_retake" required class="mt-0.5 text-amber-600">

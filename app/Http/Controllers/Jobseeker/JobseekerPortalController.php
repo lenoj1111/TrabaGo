@@ -911,7 +911,7 @@ class JobseekerPortalController extends Controller
         }
         if (($assessmentData['review_status'] ?? null) === 'passed') {
             return redirect()->route('jobseeker.training.show', $id)
-                ->with('info', 'Your assessment has been approved.');
+                ->with('info', 'You passed your assessment. Please return to the DMDP for your practical demo.');
         }
 
         $questions = array_map(function ($question) {
@@ -924,216 +924,182 @@ class JobseekerPortalController extends Controller
 
     public function submitQuiz(Request $request, TrainingProgram $course)
     {
-        $jobseeker = $this->getJobseekerProfile();
-
-        $enrollment = TrainingEnrollment::where('training_program_id', $course->id)
-            ->where('jobseeker_id', $jobseeker->id)
-            ->first();
-
-        if (!$enrollment) {
-            return redirect()
-                ->route('jobseeker.training.show', $course)
-                ->with('error', 'You must enroll in this training course before taking the assessment.');
+        $jobseeker = $this->getOrCreateJobseeker();
+        $responses = $request->input('responses');
+        if (is_string($responses)) {
+            $responses = json_decode($responses, true);
+        }
+        if (!is_array($responses)) {
+            return back()->withErrors(['responses' => 'Submit an answer for every assessment question.'])->withInput();
         }
 
-        if ($enrollment->certificate_issued) {
-            return redirect()
-                ->route('jobseeker.training.show', $course)
-                ->with('info', 'You have already completed this training and received your certificate.');
+        try {
+            $submission = $this->quizService->gradeSubmission($course, $responses);
+        } catch (\InvalidArgumentException $exception) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'responses' => $exception->getMessage(),
+            ]);
         }
 
-        if ($enrollment->passed) {
-            return redirect()
-                ->route('jobseeker.training.show', $course)
-                ->with('info', 'You have already passed the assessment. Please return to the DMDP for your practical demo.');
-        }
+        $hasEssay = collect($submission['responses'])
+            ->contains(fn($answer) => $answer['question_type'] === 'essay');
+        $objectiveScore = $submission['objective_score']['percentage'];
+        $passingScore = (int) ($course->passing_score ?: 70);
+        $passed = !$hasEssay && $objectiveScore !== null && $objectiveScore >= $passingScore;
 
-        if ($enrollment->review_status === 'pending') {
-            return redirect()
-                ->route('jobseeker.training.show', $course)
-                ->with('info', 'Your previous assessment submission is still awaiting trainer review.');
-        }
+        $result = DB::transaction(function () use (
+            $jobseeker,
+            $course,
+            $submission,
+            $hasEssay,
+            $objectiveScore,
+            $passed
+        ) {
+            $enrollment = TrainingEnrollment::where('training_id', $course->training_id)
+                ->where('jobseeker_id', $jobseeker->jobseeker_id)
+                ->lockForUpdate()
+                ->first();
 
-        $questions = $course->assessments()->orderBy('order')->get();
-        if ($questions->isEmpty()) {
-            return redirect()
-                ->route('jobseeker.training.show', $course)
-                ->with('error', 'No assessment questions are available for this course.');
-        }
-
-        $submittedAnswers = $request->input('answers', []);
-        $hasEssay = false;
-        $objectiveTotal = 0;
-        $objectiveCorrect = 0;
-        $structuredAnswers = [];
-
-        foreach ($questions as $question) {
-            $qId = (string) $question->id;
-            $rawAnswer = $submittedAnswers[$qId] ?? null;
-
-            if ($question->question_type === 'essay') {
-                $hasEssay = true;
-                $structuredAnswers[$qId] = [
-                    'question_id' => $question->id,
-                    'question_type' => 'essay',
-                    'answer' => is_string($rawAnswer) ? trim($rawAnswer) : '',
-                    'is_correct' => null,
-                    'points_earned' => null,
-                ];
-            } else {
-                $objectiveTotal++;
-                $normalizedUser = is_string($rawAnswer) ? strtolower(trim($rawAnswer)) : '';
-                $normalizedCorrect = strtolower(trim((string) $question->correct_answer));
-                $isCorrect = ($normalizedUser !== '' && $normalizedUser === $normalizedCorrect);
-
-                if ($isCorrect) {
-                    $objectiveCorrect++;
-                }
-
-                $structuredAnswers[$qId] = [
-                    'question_id' => $question->id,
-                    'question_type' => $question->question_type,
-                    'answer' => $rawAnswer,
-                    'is_correct' => $isCorrect,
-                    'points_earned' => $isCorrect ? 1 : 0,
-                ];
+            if (!$enrollment) {
+                return ['status' => 'not_enrolled'];
             }
-        }
 
-        // Increment tries until the trainee passes
-        $attempts = ((int) $enrollment->assessment_attempts) + 1;
-        $passingScore = (int) ($course->passing_score ?? 70);
+            $answers = $enrollment->answers ?? [];
+            if (!is_array($answers)) {
+                $answers = json_decode($answers, true) ?: [];
+            }
 
-        if ($hasEssay) {
+            if ($enrollment->certificate_issued || $enrollment->passed) {
+                return ['status' => 'already_passed'];
+            }
+            if (($answers['review_status'] ?? null) === 'pending') {
+                return ['status' => 'pending_review'];
+            }
+
+            $attempts = (int) $enrollment->assessment_attempts + 1;
+            $reviewStatus = $hasEssay ? 'pending' : ($passed ? 'passed' : 'needs_retake');
+            $answers = array_merge($submission, [
+                'review_status' => $reviewStatus,
+                'attempt_number' => $attempts,
+                'submitted_at' => now()->toIso8601String(),
+            ]);
+
             $enrollment->update([
                 'status' => 'in_progress',
-                'assessment_answers' => $structuredAnswers,
-                'assessment_score' => null,
+                'answers' => $answers,
+                'score' => $objectiveScore,
                 'assessment_attempts' => $attempts,
-                'passed' => false,
-                'review_status' => 'pending',
+                'passed' => $passed,
                 'trainer_feedback' => null,
             ]);
 
-            AssessmentSubmission::updateOrCreate(
-                ['training_enrollment_id' => $enrollment->id],
-                [
-                    'training_program_id' => $course->id,
-                    'jobseeker_id' => $jobseeker->id,
-                    'answers' => $structuredAnswers,
-                    'score' => null,
-                    'status' => 'pending',
-                    'reviewed_by' => null,
-                    'reviewed_at' => null,
-                    'trainer_feedback' => null,
-                ]
-            );
+            $tryLabel = $attempts === 1 ? '1 try' : "{$attempts} tries";
+            if ($hasEssay) {
+                $title = 'Assessment Submitted for Trainer Review';
+                $message = "Your assessment for {$course->title} (Attempt #{$attempts}) is pending trainer review. If passed, return to the DMDP for your practical demo.";
+                $notificationType = 'assessment_submitted';
+            } elseif ($passed) {
+                $title = 'Assessment Passed — Return for Demo (DMDP)';
+                $message = "Congratulations! You passed {$course->title} with {$objectiveScore}% in {$tryLabel}. Please return to the DMDP for your practical demo before your trainer issues your certificate.";
+                $notificationType = 'assessment_passed_for_demo';
+            } else {
+                $title = 'Assessment Not Passed';
+                $message = "You scored {$objectiveScore}% on {$course->title} (passing score: {$course->passing_score}%, attempt #{$attempts}). Review the course materials and retake the assessment.";
+                $notificationType = 'assessment_failed';
+            }
 
             Notification::create([
-                'user_id' => Auth::id(),
-                'type' => 'assessment_submitted',
-                'title' => 'Assessment Submitted for Trainer Review',
-                'message' => "Your assessment for {$course->title} (Attempt #{$attempts}) has been submitted for essay grading. Once reviewed and passed, you will be scheduled to return for demo at the DMDP.",
-                'data' => ['course_id' => $course->id, 'enrollment_id' => $enrollment->id],
+                'user_id' => $jobseeker->user_id,
+                'title' => $title,
+                'message' => $message,
+                'type' => $notificationType,
+                'is_read' => false,
+                'related_id' => $enrollment->enrollment_id,
             ]);
 
-            if ($course->trainer_id) {
+            $trainerUserId = DB::table('user_profiles')
+                ->where('profile_id', $course->trainer_id)
+                ->value('user_id');
+
+            if ($trainerUserId && $hasEssay) {
                 Notification::create([
-                    'user_id' => $course->trainer_id,
+                    'user_id' => $trainerUserId,
+                    'title' => 'Assessment Awaiting Trainer Review',
+                    'message' => "{$jobseeker->first_name} {$jobseeker->last_name} submitted an assessment for {$course->title} (Attempt #{$attempts}) that requires review.",
                     'type' => 'assessment_review_needed',
-                    'title' => 'New Essay Assessment for Review',
-                    'message' => "{$jobseeker->full_name} submitted an assessment for {$course->title} (Attempt #{$attempts}) that requires essay grading.",
-                    'data' => ['course_id' => $course->id, 'enrollment_id' => $enrollment->id],
+                    'is_read' => false,
+                    'related_id' => $enrollment->enrollment_id,
                 ]);
-            }
-
-            return redirect()
-                ->route('jobseeker.training.show', $course)
-                ->with('success', 'Assessment submitted! Your essay answers are pending trainer review. Once passed, you will need to return for demo at the DMDP.');
-        }
-
-        // Objective-only auto-grading (Multiple Choice / True-False)
-        $score = $objectiveTotal > 0 ? round(($objectiveCorrect / $objectiveTotal) * 100, 2) : 0;
-        $passed = $score >= $passingScore;
-        $reviewStatus = $passed ? 'passed' : 'failed';
-
-        // Keep status as 'in_progress' even when passed — certificate is only issued after DMDP demo
-        $enrollment->update([
-            'status' => 'in_progress',
-            'assessment_answers' => $structuredAnswers,
-            'assessment_score' => $score,
-            'assessment_attempts' => $attempts,
-            'passed' => $passed,
-            'review_status' => $reviewStatus,
-            'reviewed_at' => now(),
-        ]);
-
-        AssessmentSubmission::updateOrCreate(
-            ['training_enrollment_id' => $enrollment->id],
-            [
-                'training_program_id' => $course->id,
-                'jobseeker_id' => $jobseeker->id,
-                'answers' => $structuredAnswers,
-                'score' => $score,
-                'status' => $reviewStatus,
-                'reviewed_at' => now(),
-            ]
-        );
-
-        $tryLabel = $attempts === 1 ? '1 try' : "{$attempts} tries";
-
-        if ($passed) {
-            Notification::create([
-                'user_id' => Auth::id(),
-                'type' => 'assessment_passed_for_demo',
-                'title' => 'Assessment Passed — Return for Demo (DMDP)',
-                'message' => "Congratulations! You scored {$score}% on {$course->title} ({$tryLabel}). Please return to the DMDP to perform your practical demonstration so your trainer can issue your certificate.",
-                'data' => ['course_id' => $course->id, 'enrollment_id' => $enrollment->id],
-            ]);
-
-            if ($course->trainer_id) {
+            } elseif ($trainerUserId && $passed) {
                 Notification::create([
-                    'user_id' => $course->trainer_id,
-                    'type' => 'trainee_ready_for_demo',
+                    'user_id' => $trainerUserId,
                     'title' => 'Trainee Ready for DMDP Demo',
-                    'message' => "{$jobseeker->full_name} passed the assessment for {$course->title} ({$score}%, {$tryLabel}) and is now due to return for demo at the DMDP.",
-                    'data' => ['course_id' => $course->id, 'enrollment_id' => $enrollment->id],
+                    'message' => "{$jobseeker->first_name} {$jobseeker->last_name} passed {$course->title} with {$objectiveScore}% in {$tryLabel} and is due to return for the practical demo.",
+                    'type' => 'trainee_ready_for_demo',
+                    'is_read' => false,
+                    'related_id' => $enrollment->enrollment_id,
                 ]);
             }
 
-            return redirect()
-                ->route('jobseeker.training.show', $course)
-                ->with('success', "Congratulations! You passed the assessment ({$score}%). Please return to the DMDP for your practical demonstration so your certificate can be issued.");
+            return ['status' => $reviewStatus, 'score' => $objectiveScore];
+        });
+
+        if ($result['status'] === 'not_enrolled') {
+            return redirect()->route('jobseeker.training.show', $course->training_id)
+                ->with('error', 'You must enroll in this training course before taking the assessment.');
+        }
+        if ($result['status'] === 'pending_review') {
+            return redirect()->route('jobseeker.training.show', $course->training_id)
+                ->with('info', 'Your previous assessment submission is still awaiting trainer review.');
+        }
+        if ($result['status'] === 'already_passed') {
+            return redirect()->route('jobseeker.training.show', $course->training_id)
+                ->with('info', 'You have already passed. Please return to the DMDP for your practical demo.');
+        }
+        if ($result['status'] === 'pending') {
+            return redirect()->route('jobseeker.training.show', $course->training_id)
+                ->with('success', 'Assessment submitted. Your essay responses are pending trainer review.');
+        }
+        if ($result['status'] === 'passed') {
+            return redirect()->route('jobseeker.training.show', $course->training_id)
+                ->with('success', "Congratulations! You passed with {$result['score']}%. Please return to the DMDP for your practical demo.");
         }
 
-        Notification::create([
-            'user_id' => Auth::id(),
-            'type' => 'assessment_failed',
-            'title' => 'Assessment Not Passed',
-            'message' => "You scored {$score}% on {$course->title} (Passing score: {$passingScore}%, Attempt #{$attempts}). Review the course materials and retake the assessment.",
-            'data' => ['course_id' => $course->id, 'enrollment_id' => $enrollment->id],
-        ]);
-
-        return redirect()
-            ->route('jobseeker.training.show', $course)
-            ->with('error', "You scored {$score}% (Passing score: {$passingScore}%). Please review the modules and try again.");
+        return redirect()->route('jobseeker.training.show', $course->training_id)
+            ->with('error', "You scored {$result['score']}% (passing score: {$passingScore}%). Please review the modules and retake the assessment.");
     }
 
-    public function previewCertificate(TrainingProgram $course)
+    public function previewCertificate(int $id)
     {
-        $jobseeker = $this->getJobseekerProfile();
-
-        $enrollment = TrainingEnrollment::where('training_program_id', $course->id)
-            ->where('jobseeker_id', $jobseeker->id)
+        $jobseeker = $this->getOrCreateJobseeker();
+        $enrollment = DB::table('training_enrollments')
+            ->join('jobseekers', 'training_enrollments.jobseeker_id', '=', 'jobseekers.jobseeker_id')
+            ->join('training_programs', 'training_enrollments.training_id', '=', 'training_programs.training_id')
+            ->where('training_enrollments.enrollment_id', $id)
+            ->where('training_enrollments.jobseeker_id', $jobseeker->jobseeker_id)
+            ->select(
+                'training_enrollments.*',
+                'jobseekers.first_name',
+                'jobseekers.last_name',
+                'training_programs.title as course_title',
+                'training_programs.training_type',
+                'training_programs.cert_content'
+            )
             ->first();
 
-        if (!$enrollment || !$enrollment->certificate_issued) {
-            return redirect()
-                ->route('jobseeker.training.show', $course)
-                ->with('error', 'Your certificate has not been issued yet. Complete the assessment and return to the DMDP for your practical demo.');
+        if (!$enrollment) {
+            abort(404);
         }
 
-        return view('jobseeker.training.certificate', compact('course', 'enrollment', 'jobseeker'));
+        if (!$enrollment->certificate_issued) {
+            return redirect()
+                ->route('jobseeker.training.show', $enrollment->training_id)
+                ->with('error', 'Your certificate has not been issued yet. Return to the DMDP for your practical demo and wait for trainer confirmation.');
+        }
+
+        abort_unless((int) $enrollment->jobseeker_id === (int) $jobseeker->jobseeker_id, 404);
+
+        return view('trainer.certificates.preview', compact('enrollment'));
     }
     // =========================================================================
     // 5. DOCUMENTS

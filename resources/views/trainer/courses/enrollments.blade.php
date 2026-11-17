@@ -64,6 +64,7 @@
                             <th class="px-3 pb-3">Contact</th>
                             <th class="px-3 pb-3">Enrolled</th>
                             <th class="px-3 pb-3">Status</th>
+                            <th class="px-3 pb-3">Retakes</th>
                             <th class="px-3 pb-3">Score</th>
                             <th class="px-3 pb-3">Certificate</th>
                             <th class="px-3 pb-3 text-right">Actions</th>
@@ -78,6 +79,18 @@
                         // Determine badge color and text cleanly
                         $badgeColor = 'border-slate-200 bg-slate-100 text-slate-700';
                         $badgeText = ucfirst(str_replace('_', ' ', $enrollment->status));
+                        $readyForDemo = !$enrollment->certificate_issued && (
+                            ($reviewStatus === 'passed' && (int) $enrollment->passed === 1)
+                            || (
+                                $enrollment->status === 'completed'
+                                && ($enrollment->passed === null || (int) $enrollment->passed === 1)
+                                && !in_array($reviewStatus, ['pending', 'needs_retake', 'failed'], true)
+                            )
+                        );
+                        if ($readyForDemo) {
+                            $badgeColor = 'border-emerald-300 bg-emerald-100 text-emerald-800';
+                            $badgeText = 'Return for Demo';
+                        }
 
                         if ($reviewStatus === 'pending') {
                         $badgeColor = 'border-amber-300 bg-amber-100 text-amber-800';
@@ -85,7 +98,7 @@
                         } elseif ($reviewStatus === 'needs_retake' || $enrollment->status === 'failed') {
                         $badgeColor = 'border-rose-300 bg-rose-100 text-rose-800';
                         $badgeText = 'Needs Retake';
-                        } elseif ($enrollment->status === 'completed') {
+                        } elseif ($enrollment->status === 'completed' && !$readyForDemo) {
                         $badgeColor = 'border-emerald-300 bg-emerald-100 text-emerald-800';
                         $badgeText = 'Completed';
                         } elseif (in_array($enrollment->status, ['no_show', 'multiple_absences'])) {
@@ -110,6 +123,11 @@
                                 </span>
                             </td>
 
+                            <!-- Retakes -->
+                            <td class="px-3 py-4 text-center font-bold text-slate-700">
+                                {{ max((int) $enrollment->assessment_attempts - 1, 0) }}
+                            </td>
+
                             <!-- Score -->
                             <td class="px-3 py-4 font-bold">
                                 @if($reviewStatus === 'pending' && !empty($assessmentData['objective_score']['question_count']))
@@ -132,7 +150,37 @@
 
                             <!-- Actions -->
                             <td class="px-3 py-4 text-right">
-                                @if(in_array($enrollment->status, ['completed', 'no_show', 'multiple_absences']))
+                                @if($readyForDemo)
+                                <div x-data="{ demoConfirmationOpen: false }">
+                                    <button type="button" @click="demoConfirmationOpen = true"
+                                        class="rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-500">
+                                        Return for Demo
+                                    </button>
+
+                                    <div x-show="demoConfirmationOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" role="dialog" aria-modal="true">
+                                        <div @click.away="demoConfirmationOpen = false" class="w-full max-w-md space-y-5 rounded-2xl bg-white p-6 text-left shadow-2xl">
+                                            <div>
+                                                <h3 class="text-lg font-black text-slate-900">Confirm DMDP Demo</h3>
+                                                <p class="mt-2 text-sm text-slate-600">
+                                                    Has {{ $enrollment->first_name }} {{ $enrollment->last_name }} returned to the DMDP and completed their practical demo? Confirming will complete the course, issue the certificate, and award the course skills.
+                                                </p>
+                                            </div>
+                                            <div class="flex justify-end gap-3">
+                                                <button type="button" @click="demoConfirmationOpen = false"
+                                                    class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50">
+                                                    Cancel
+                                                </button>
+                                                <form method="POST" action="{{ route('trainer.enrollments.demo-confirmation', $enrollment->enrollment_id) }}">
+                                                    @csrf
+                                                    <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white hover:bg-emerald-500">
+                                                        Yes, they returned
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                @elseif(in_array($enrollment->status, ['completed', 'no_show', 'multiple_absences']))
                                 <span class="text-[11px] font-bold text-slate-400 italic">No Actions</span>
                                 @else
                                 <div class="ml-auto flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
@@ -149,7 +197,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="px-3 py-12 text-center text-slate-400 italic">No enrolled jobseekers match these filters.</td>
+                            <td colspan="8" class="px-3 py-12 text-center text-slate-400 italic">No enrolled jobseekers match these filters.</td>
                         </tr>
                         @endforelse
                     </tbody>

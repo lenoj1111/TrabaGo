@@ -325,7 +325,7 @@ class TrainingSkillsFlowTest extends TestCase
     /**
      * Trainer Flow - Step 3: Conduct Assessment
      */
-    public function test_trainer_reviews_submitted_quiz_answers(): void
+    public function test_trainer_confirms_demo_after_objective_assessment_pass(): void
     {
         $enrollment = TrainingEnrollment::create([
             'jobseeker_id' => $this->jobseeker->jobseeker_id,
@@ -346,47 +346,38 @@ class TrainingSkillsFlowTest extends TestCase
 
         $enrollment->refresh();
         $this->assertSame('in_progress', $enrollment->status);
-        $this->assertNull($enrollment->passed);
+        $this->assertTrue((bool) $enrollment->passed);
         $this->assertFalse((bool) $enrollment->certificate_issued);
-        $this->assertSame('pending', $enrollment->answers['review_status']);
+        $this->assertSame('passed', $enrollment->answers['review_status']);
+        $this->assertSame(1, $enrollment->assessment_attempts);
 
-        // The trainer reviews the learner's response and records the outcome.
-        $viewResponse = $this->actingAs($this->trainerUser)
-            ->get(route('trainer.enrollments.evaluate', $enrollment->enrollment_id));
-        $viewResponse->assertStatus(200);
-        $viewResponse->assertSee('Submitted Course Answers');
-        $viewResponse->assertSee('Correct answer:');
-        $viewResponse->assertSee('Carlos Mendoza');
-        $viewResponse->assertSee('Which PLC instruction represents a normally open contact?');
+        $this->actingAs($this->trainerUser)
+            ->get(route('trainer.courses.enrollments', $this->trainingCourse->training_id))
+            ->assertOk()
+            ->assertSee('Return for Demo');
 
-        $submitResponse = $this->actingAs($this->trainerUser)
-            ->post(route('trainer.enrollments.evaluate.submit', $enrollment->enrollment_id), [
-                'outcome' => 'passed',
-                'trainer_feedback' => 'Demonstrated high competence in PLC ladder wiring and safety precautions.',
-            ]);
-
-        $submitResponse->assertSessionHasNoErrors();
-        $submitResponse->assertRedirect(route('trainer.enrollments.index'));
-
+        $this->post(route('trainer.enrollments.demo-confirmation', $enrollment->enrollment_id))
+            ->assertSessionHasNoErrors();
         $enrollment->refresh();
         $this->assertEquals(100, (int) $enrollment->score);
         $this->assertTrue((bool) $enrollment->passed);
         $this->assertEquals('completed', $enrollment->status);
         $this->assertSame('passed', $enrollment->answers['review_status']);
-        $this->assertFalse((bool) $enrollment->certificate_issued);
+        $this->assertTrue((bool) $enrollment->certificate_issued);
         $this->assertNotNull($enrollment->end_date);
     }
 
     /**
-     * Trainer Flow - Step 4: Mark Completion & Award Skills
+     * Completion cannot be marked through the legacy status endpoint.
      */
-    public function test_trainer_marks_completion_and_awards_skill(): void
+    public function test_trainer_cannot_mark_completion_without_demo_confirmation(): void
     {
         $enrollment = TrainingEnrollment::create([
             'jobseeker_id' => $this->jobseeker->jobseeker_id,
             'training_id' => $this->trainingCourse->training_id,
             'training_type' => 'laboratory_onsite',
             'status' => 'in_progress',
+            'passed' => 1,
             'start_date' => now()->toDateString(),
             'answers' => ['review_status' => 'passed'],
         ]);
@@ -394,18 +385,43 @@ class TrainingSkillsFlowTest extends TestCase
         $response = $this->actingAs($this->trainerUser)
             ->post(route('trainer.enrollments.complete', $enrollment->enrollment_id));
 
-        $response->assertSessionHasNoErrors();
+        $response->assertSessionHas('error');
         $response->assertRedirect(route('trainer.enrollments.index'));
 
         $enrollment->refresh();
-        $this->assertEquals('completed', $enrollment->status);
+        $this->assertEquals('in_progress', $enrollment->status);
         $this->assertEquals(1, $enrollment->passed);
 
-        // Verify verified skill was awarded to jobseeker
-        $this->assertDatabaseHas('jobseeker_skills', [
+        $this->assertDatabaseMissing('jobseeker_skills', [
             'jobseeker_id' => $this->jobseeker->jobseeker_id,
             'skill_name' => 'Mechatronics Automation & PLC Programming',
         ]);
+    }
+
+    public function test_legacy_completed_ungraded_enrollment_offers_demo_confirmation(): void
+    {
+        $enrollment = TrainingEnrollment::create([
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'training_id' => $this->trainingCourse->training_id,
+            'training_type' => 'laboratory_onsite',
+            'status' => 'completed',
+            'start_date' => now()->toDateString(),
+            'answers' => [],
+        ]);
+
+        $this->actingAs($this->trainerUser)
+            ->get(route('trainer.courses.enrollments', $this->trainingCourse->training_id))
+            ->assertOk()
+            ->assertSee('Return for Demo')
+            ->assertDontSee('No Actions');
+
+        $this->post(route('trainer.enrollments.demo-confirmation', $enrollment->enrollment_id))
+            ->assertSessionHasNoErrors();
+
+        $enrollment->refresh();
+        $this->assertSame('completed', $enrollment->status);
+        $this->assertTrue((bool) $enrollment->passed);
+        $this->assertTrue((bool) $enrollment->certificate_issued);
     }
 
     /**
@@ -417,16 +433,15 @@ class TrainingSkillsFlowTest extends TestCase
             'jobseeker_id' => $this->jobseeker->jobseeker_id,
             'training_id' => $this->trainingCourse->training_id,
             'training_type' => 'laboratory_onsite',
-            'status' => 'completed',
+            'status' => 'in_progress',
             'passed' => 1,
             'score' => 95,
             'start_date' => now()->toDateString(),
-            'end_date' => now()->toDateString(),
             'answers' => ['review_status' => 'passed'],
         ]);
 
         $response = $this->actingAs($this->trainerUser)
-            ->post(route('trainer.enrollments.certificate', $enrollment->enrollment_id));
+            ->post(route('trainer.enrollments.demo-confirmation', $enrollment->enrollment_id));
 
         $response->assertSessionHasNoErrors();
 

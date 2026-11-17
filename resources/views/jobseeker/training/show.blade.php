@@ -44,7 +44,7 @@
         @elseif($assessmentReviewStatus === 'passed')
         <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-900">
             <h2 class="text-sm font-black">Assessment Status: Passed</h2>
-            <p class="mt-1 text-xs">{{ $enrollment->certificate_issued ? 'Your certificate is ready to view.' : 'Your trainer approved your answers. Your certificate is awaiting issuance.' }}</p>
+            <p class="mt-1 text-xs">{{ $enrollment->certificate_issued ? 'Your certificate is ready to view.' : 'Please return to the DMDP for your practical demo. Your trainer will issue the certificate after confirming your return.' }}</p>
         </div>
         @endif
 
@@ -139,7 +139,7 @@
                 <span class="max-w-sm rounded-xl border border-amber-300 bg-amber-50 px-5 py-3 text-center text-xs font-bold text-amber-900">Assessment pending trainer review</span>
                 @elseif($assessmentReviewStatus === 'passed')
                 <span class="max-w-sm rounded-xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-center text-xs font-bold text-emerald-900">
-                    {{ $enrollment->certificate_issued ? 'Course passed - certificate issued' : 'Course passed - certificate pending issuance' }}
+                    {{ $enrollment->certificate_issued ? 'Course passed - certificate issued' : 'Return to DMDP for practical demo' }}
                 </span>
                 @elseif($hasAssessmentQuestions)
                 <a href="{{ route('jobseeker.training.quiz', $training->training_id) }}"

@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('training_enrollments', function (Blueprint $table) {
             if (!Schema::hasColumn('training_enrollments', 'assessment_attempts')) {
-                $table->unsignedInteger('assessment_attempts')->default(0)->after('assessment_score');
+                $table->unsignedInteger('assessment_attempts')->default(0);
             }
         });
     }
