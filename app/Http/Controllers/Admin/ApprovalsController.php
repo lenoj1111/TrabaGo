@@ -156,6 +156,28 @@ class ApprovalsController extends Controller
             ->latest('users.created_at')
             ->get();
 
+        $pendingJobseekers = $this->pendingJobseekers();
+
+        return view('admin.approvals.index', compact(
+            'pendingJobs',
+            'pendingAccreditations',
+            'pendingPlacementReports',
+            'pendingTrainers',
+            'pendingJobseekers'
+        ));
+    }
+
+    public function idVerification()
+    {
+        $pendingJobseekers = $this->pendingJobseekers()
+            ->filter(fn($jobseeker) => $jobseeker->has_valid_id)
+            ->values();
+
+        return view('admin.idverification.index', compact('pendingJobseekers'));
+    }
+
+    private function pendingJobseekers()
+    {
         $hasAccountStatusColumn = Schema::hasColumn('users', 'account_status');
 
         $pendingJobseekers = DB::table('jobseekers')
@@ -170,6 +192,9 @@ class ApprovalsController extends Controller
                 'users.status as user_status',
                 'users.created_at as registered_at',
                 'jobseeker_details.training_certificates',
+                'jobseeker_details.address',           // <-- ADDED
+                'jobseeker_details.education',         // <-- ADDED
+                'jobseeker_details.work_experience',   // <-- ADDED
                 'social_status.is_pwd',
                 'social_status.pwd_type'
             )
@@ -189,35 +214,29 @@ class ApprovalsController extends Controller
             ->latest('users.created_at')
             ->get();
 
-        foreach ($pendingJobseekers as $js) {
-            $docs = [];
-            if (!empty($js->training_certificates)) {
-                $raw = is_array($js->training_certificates)
-                    ? $js->training_certificates
-                    : json_decode($js->training_certificates, true);
+        foreach ($pendingJobseekers as $jobseeker) {
+            $documents = [];
+            if (!empty($jobseeker->training_certificates)) {
+                $rawDocuments = is_array($jobseeker->training_certificates)
+                    ? $jobseeker->training_certificates
+                    : json_decode($jobseeker->training_certificates, true);
 
-                if (is_array($raw)) {
-                    foreach ($raw as $d) {
-                        $cat = $d['category'] ?? '';
-                        $docs[$cat] = $d;
+                if (is_array($rawDocuments)) {
+                    foreach ($rawDocuments as $document) {
+                        $category = $document['category'] ?? '';
+                        $documents[$category] = $document;
                     }
                 }
             }
 
-            $js->parsed_docs = $docs;
-            $js->has_valid_id = !empty($docs['valid_id']);
-            $js->valid_id_doc = $docs['valid_id'] ?? null;
-            $js->has_resume = !empty($docs['resume']);
-            $js->resume_doc = $docs['resume'] ?? null;
+            $jobseeker->parsed_docs = $documents;
+            $jobseeker->has_valid_id = !empty($documents['valid_id']);
+            $jobseeker->valid_id_doc = $documents['valid_id'] ?? null;
+            $jobseeker->has_resume = !empty($documents['resume']);
+            $jobseeker->resume_doc = $documents['resume'] ?? null;
         }
 
-        return view('admin.approvals.index', compact(
-            'pendingJobs',
-            'pendingAccreditations',
-            'pendingPlacementReports',
-            'pendingTrainers',
-            'pendingJobseekers'
-        ));
+        return $pendingJobseekers;
     }
 
     public function approveJobPosting(int $id)
@@ -841,62 +860,6 @@ class ApprovalsController extends Controller
         abort(404, 'Valid ID file not found on storage.');
     }
 
-    public function disapproveJobseeker(Request $request, int $id)
-    {
-        $validated = $request->validate([
-            'remarks' => 'required|string|max:1000',
-        ]);
-
-        $jobseeker = Jobseeker::with('user', 'details')->findOrFail($id);
-
-        $user = $jobseeker->user;
-        abort_unless($user, 404);
-        $remarks = trim($validated['remarks']);
-
-        DB::transaction(function () use ($jobseeker, $user, $remarks) {
-            $user->update([
-                'is_approved' => 0,
-                'account_status' => 'unverified',
-            ]);
-
-            $details = $jobseeker->details;
-            if ($details && !empty($details->training_certificates)) {
-                $documents = is_array($details->training_certificates)
-                    ? $details->training_certificates
-                    : (json_decode($details->training_certificates, true) ?: []);
-
-                foreach ($documents as &$document) {
-                    if (is_array($document) && ($document['category'] ?? null) === 'valid_id') {
-                        $document['status'] = 'rejected';
-                        $document['rejection_reason'] = $remarks;
-                        $document['reviewed_by'] = Auth::id();
-                        $document['reviewed_at'] = now()->toIso8601String();
-                    }
-                }
-                unset($document);
-
-                $details->training_certificates = array_values($documents);
-                $details->save();
-            }
-
-            Notification::create([
-                'user_id' => $user->user_id,
-                'title' => 'Jobseeker Account Requires Revision',
-                'message' => "Your account approval was revoked. Admin remarks: {$remarks}",
-                'type' => 'rejection',
-                'is_read' => false,
-                'related_id' => $jobseeker->jobseeker_id,
-            ]);
-        });
-
-        $message = "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' has been disapproved. The remarks were sent to the jobseeker.";
-
-        if ($request->expectsJson()) {
-            return response()->json(['success' => $message]);
-        }
-
-        return redirect()->back()->with('success', $message);
-    }
 
     public function approveTrainer(Request $request, int $id)
     {
@@ -955,6 +918,12 @@ class ApprovalsController extends Controller
             ]);
         }
 
+        // ✅ NEW: Reset the OCR tracking since they are now manually approved
+        $jobseeker->update([
+            'id_scan_tries' => 0,
+            'id_scan_error' => null,
+        ]);
+
         $details = $jobseeker->details;
         if ($details && !empty($details->training_certificates)) {
             $docs = is_array($details->training_certificates)
@@ -963,7 +932,7 @@ class ApprovalsController extends Controller
 
             foreach ($docs as &$doc) {
                 if (in_array($doc['category'] ?? '', ['valid_id', 'resume', 'certificate', 'pwd_id'])) {
-                    $doc['status'] = 'approved';
+                    $doc['status'] = 'approved'; // Set to approved
                     $doc['reviewed_by'] = Auth::id();
                     $doc['reviewed_at'] = now()->toIso8601String();
                 }
@@ -1004,6 +973,12 @@ class ApprovalsController extends Controller
             $user->update([
                 'is_approved' => 0,
                 'account_status' => 'unverified',
+            ]);
+
+            // ✅ NEW: Reset the OCR tracking since it was rejected
+            $jobseeker->update([
+                'id_scan_tries' => 0,
+                'id_scan_error' => null,
             ]);
 
             $details = $jobseeker->details;

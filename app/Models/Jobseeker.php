@@ -46,6 +46,8 @@ class Jobseeker extends Model
         'email',
         'employment_status',
         'hired_company',
+        'id_scan_tries',
+        'id_scan_error',
     ];
 
     /**

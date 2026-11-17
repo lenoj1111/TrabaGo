@@ -147,6 +147,9 @@ $adminUnreadCount = Auth::check()
             ['route' => 'admin.approvals.index', 'label' => 'Approvals',
             'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
 
+            ['route' => 'admin.idverification.index', 'label' => 'ID Verification',
+            'icon' => 'M12 11c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm0 2c-2.761 0-5 1.79-5 4v1h10v-1c0-2.21-2.239-4-5-4zM4 3h16v18H4z'],
+
             ['route' => 'admin.users.index', 'label' => 'Manage Accounts',
             'icon' => 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'],
 

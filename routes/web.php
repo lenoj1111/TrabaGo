@@ -179,6 +179,13 @@ Route::prefix('jobseeker')->name('jobseeker.')->group(function () {
         Route::post('/documents/upload', [JobseekerPortalController::class, 'uploadDocument'])->name('documents.upload');
         Route::delete('/documents/{category}', [JobseekerPortalController::class, 'deleteDocument'])->name('documents.delete');
 
+        // ID Verification Page (Auto vs Manual)
+        // Redirects to Document Hub since the design was merged there
+        Route::get('/id-verification', function () {
+            return redirect()->route('jobseeker.documents');
+        })->name('idverification');
+        Route::post('/id-verification/cancel', [JobseekerPortalController::class, 'cancelManualReview'])->name('idverification.cancel');
+        Route::post('/id-verification/manual', [JobseekerPortalController::class, 'submitManualReview'])->name('idverification.manual');
         // Notification Center
         Route::get('/notifications', [JobseekerPortalController::class, 'notifications'])->name('notifications');
         Route::post('/notifications/{id}/read', [JobseekerPortalController::class, 'markNotificationRead'])->name('notifications.read');
@@ -273,6 +280,9 @@ Route::prefix('jpo')->name('jpo.')->middleware(['auth', 'jpo'])->group(function 
 
     // Dashboard
     Route::get('/dashboard', [JpoPortalController::class, 'dashboard'])->name('dashboard');
+    Route::get('/idverification', [JpoPortalController::class, 'idVerification'])->name('idverification.index');
+    Route::post('/idverification/jobseekers/{id}/approve', [JpoPortalController::class, 'approveJobseeker'])->name('idverification.approve');
+    Route::post('/idverification/jobseekers/{id}/reject', [JpoPortalController::class, 'rejectJobseeker'])->name('idverification.reject');
 
     // Client User Provisioning (Jobseeker & Employer)
     Route::get('/users/create', [JpoPortalController::class, 'createUser'])->name('users.create');
@@ -318,6 +328,7 @@ Route::prefix('jpo')->name('jpo.')->middleware(['auth', 'jpo'])->group(function 
     // Approve Jobseeker
     Route::get('/jobseekers', [JpoPortalController::class, 'jobseekers'])->name('jobseekers.index');
     Route::put('/jobseekers/{id}/credentials', [JobseekerCredentialsController::class, 'update'])->name('jobseekers.credentials.update');
+    // The valid-ID route is also used by the status directory.
     Route::get('/jobseekers/{id}/valid-id', [JpoPortalController::class, 'viewJobseekerValidId'])->name('jobseekers.valid-id');
 });
 
@@ -431,6 +442,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Manage Approvals Center (3 Pillars: Jobs, Accreditations, Placement Reports)
     Route::get('/approvals', [ApprovalsController::class, 'index'])->name('approvals.index');
+    Route::get('/idverification', [ApprovalsController::class, 'idVerification'])->name('idverification.index');
     Route::post('/approvals/job-postings/{id}/approve', [ApprovalsController::class, 'approveJobPosting'])->name('approvals.job-postings.approve');
     Route::post('/approvals/job-postings/{id}/reject', [ApprovalsController::class, 'rejectJobPosting'])->name('approvals.job-postings.reject');
     Route::post('/approvals/accreditations/{id}/approve', [ApprovalsController::class, 'approveAccreditation'])->name('approvals.accreditations.approve');
@@ -441,7 +453,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/approvals/trainers/{id}/approve', [ApprovalsController::class, 'approveTrainer'])->name('approvals.trainers.approve');
     Route::post('/approvals/trainers/{id}/reject', [ApprovalsController::class, 'rejectTrainer'])->name('approvals.trainers.reject');
     Route::post('/approvals/jobseekers/{id}/approve', [ApprovalsController::class, 'approveJobseeker'])->name('approvals.jobseekers.approve');
-    Route::post('/approvals/jobseekers/{id}/disapprove', [ApprovalsController::class, 'disapproveJobseeker'])->name('approvals.jobseekers.disapprove');
     Route::post('/approvals/jobseekers/{id}/reject', [ApprovalsController::class, 'rejectJobseeker'])->name('approvals.jobseekers.reject');
     Route::put('/jobseekers/{id}/credentials', [JobseekerCredentialsController::class, 'update'])->name('jobseekers.credentials.update');
 

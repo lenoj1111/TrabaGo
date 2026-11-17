@@ -6,11 +6,18 @@
 <div x-data="{ 
     certTitle: @js($course->cert_content['title'] ?? 'CERTIFICATE OF TRAINING'),
     issueDate: @js($course->cert_content['issue_date'] ?? '1st day of ' . date('F, Y')),
-    competencies: @js(implode(" \n", $course->cert_content['competencies'] ?? [])),
+    departmentHead: @js($course->cert_content['department_head'] ?? 'ANTHONY V. AGUHAR, PhD'),
+    columns: @js($course->cert_content['columns'] ?? 'auto'),
+    competencies: @js(implode("\n", $course->cert_content['competencies'] ?? [])),
     get previewCompetencies() {
-    return this.competencies.split('\n').filter(line => line.trim() !== '');
+        return this.competencies.split('\n').filter(line => line.trim() !== '');
+    },
+    get isTwoColumn() {
+        if (this.columns === '2') return true;
+        if (this.columns === '1') return false;
+        return this.previewCompetencies.length >= 10;
     }
-    }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
+}" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
 
     <div class="max-w-7xl mx-auto space-y-6">
 
@@ -42,14 +49,27 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Competencies (One per line)</label>
-                                <textarea name="competencies" rows="12" x-model="competencies" required
+                                <textarea name="competencies" rows="10" x-model="competencies" required
                                     class="w-full rounded-xl border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 font-mono text-sm leading-relaxed"></textarea>
-                                <p class="text-xs text-slate-400 mt-2">If you enter 10 or more, the certificate will automatically switch to a 2-column layout.</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Competencies Column Layout</label>
+                                <select name="columns" x-model="columns"
+                                    class="w-full rounded-xl border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm font-semibold text-slate-700">
+                                    <option value="auto">Auto (Switches to 2 columns when list is long)</option>
+                                    <option value="1">1 Column</option>
+                                    <option value="2">2 Columns</option>
+                                </select>
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Issue Date (Given this...)</label>
                                 <input type="text" name="issue_date" x-model="issueDate" required
                                     class="w-full rounded-xl border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Department Head Name</label>
+                                <input type="text" name="department_head" x-model="departmentHead" required
+                                    class="w-full rounded-xl border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm font-semibold">
                             </div>
                             <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg transition-colors">
                                 Save Certificate Content
@@ -107,8 +127,8 @@
 
                                 <!-- Dynamic Competencies List -->
 
-                                <!-- 1-Column Layout (if less than 10) -->
-                                <ul x-show="previewCompetencies.length < 10" class="text-left inline-block text-[9px] leading-tight text-slate-700 max-h-[140px] overflow-hidden" style="list-style-type: none; padding: 0;">
+                                <!-- 1-Column Layout -->
+                                <ul x-show="!isTwoColumn" class="text-left inline-block text-[9px] leading-tight text-slate-700 max-h-[140px] overflow-hidden" style="list-style-type: none; padding: 0;">
                                     <template x-for="(comp, index) in previewCompetencies" :key="index">
                                         <li class="relative pl-4 mb-0.5">
                                             <span class="absolute left-0 text-[#0a1d3f]">✦</span>
@@ -117,8 +137,8 @@
                                     </template>
                                 </ul>
 
-                                <!-- 2-Column Layout (if 10 or more) -->
-                                <div x-show="previewCompetencies.length >= 10" class="flex justify-between w-full gap-4 text-left mt-2 text-[8px] leading-tight text-slate-700 max-h-[140px] overflow-hidden">
+                                <!-- 2-Column Layout -->
+                                <div x-show="isTwoColumn" class="flex justify-between w-full gap-4 text-left mt-2 text-[8px] leading-tight text-slate-700 max-h-[140px] overflow-hidden">
                                     <div class="w-1/2">
                                         <template x-for="(comp, index) in previewCompetencies.slice(0, Math.ceil(previewCompetencies.length / 2))" :key="index">
                                             <div class="relative pl-3 mb-0.5">
@@ -142,7 +162,7 @@
                             <div class="mt-4">
                                 <p style="font-family: 'Playfair Display', serif; font-size: 10px; color: #334155; margin-bottom: 15px; font-weight: 500;">Given this <strong style="font-family: 'Montserrat', sans-serif; font-weight: 800; color: #0a1d3f;" x-text="issueDate"></strong> at Cebu City, Philippines</p>
                                 <div>
-                                    <h3 style="font-family: 'Cinzel', serif; font-size: 14px; color: #0a1d3f; font-weight: 800; margin: 0; text-transform: uppercase;">ANTHONY V. AGUHAR, PhD</h3>
+                                    <h3 style="font-family: 'Cinzel', serif; font-size: 14px; color: #0a1d3f; font-weight: 800; margin: 0;" x-text="departmentHead"></h3>
                                     <p style="font-size: 9px; color: #0a1d3f; margin: 0; font-weight: 600;">CG Acting Department Head (PESO Manager)</p>
                                 </div>
                             </div>

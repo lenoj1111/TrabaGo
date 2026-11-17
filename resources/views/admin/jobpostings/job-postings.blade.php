@@ -314,9 +314,14 @@
                         <label class="text-xs font-bold text-slate-700">Employer Entity</label>
                         <select name="employer_id" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
                             <option value="">DMDP Direct (Default)</option>
-                            @foreach($employers ?? [] as $emp)
-                                <option value="{{ $emp->employer_id }}">{{ $emp->company_name }}</option>
-                            @endforeach
+                            
+                            @if(isset($employers) && count($employers) > 0)
+                                @foreach($employers as $emp)
+                                    <option value="{{ $emp->employer_id }}">{{ $emp->company_name }} ({{ $emp->email ?? 'No email' }})</option>
+                                @endforeach
+                            @else
+                                <option value="" disabled>-- No verified employers found --</option>
+                            @endif
                         </select>
                         <p class="text-[10px] text-slate-400">Leave blank for direct DMDP public posting.</p>
                     </div>

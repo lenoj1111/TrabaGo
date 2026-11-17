@@ -224,103 +224,107 @@
     <button onclick="window.print()" class="print-btn">Print / Save as PDF</button>
 
     @php
-    $certContent = $enrollment->cert_content ?? null;
-    if (is_string($certContent)) { $certContent = json_decode($certContent, true); }
-
-    $certTitle = $certContent['title'] ?? 'CERTIFICATE OF TRAINING';
-    $competencies = $certContent['competencies'] ?? [];
-    $compCount = count($competencies);
-
-    // Switch to 2 columns ONLY if there are 15 or more
-    $isTwoColumn = $compCount >= 15;
-
-    if ($isTwoColumn) {
-    $half = ceil($compCount / 2);
-    $leftColumn = array_slice($competencies, 0, $half);
-    $rightColumn = array_slice($competencies, $half);
-    }
-
-    // If 14 or below, shrink the font size slightly to fit the page
-    $fontSize = '13px';
-    $lineHeight = '1.8';
-
-    if ($compCount >= 12 && $compCount <= 14) {
-        $fontSize='11px' ;
-        $lineHeight='1.5' ;
+        $certContent = $enrollment->cert_content ?? null;
+        if (is_string($certContent)) {
+            $certContent = json_decode($certContent, true);
         }
 
-        $startDate=$enrollment->start_date ? date('M d', strtotime($enrollment->start_date)) : 'N/A';
+        $certTitle = $certContent['title'] ?? 'CERTIFICATE OF TRAINING';
+        $competencies = $certContent['competencies'] ?? [];
+        $compCount = count($competencies);
+
+        // Switch to 2 columns ONLY if there are 15 or more
+        $columnSetting = $certContent['columns'] ?? 'auto';
+        $isTwoColumn = $columnSetting === '2' || ($columnSetting === 'auto' && $compCount >= 15);
+
+        if ($isTwoColumn) {
+            $half = ceil($compCount / 2);
+            $leftColumn = array_slice($competencies, 0, $half);
+            $rightColumn = array_slice($competencies, $half);
+        }
+
+        // If 14 or below, shrink the font size slightly to fit the page
+        $fontSize = '13px';
+        $lineHeight = '1.8';
+
+        if ($compCount >= 12 && $compCount <= 14) {
+            $fontSize = '11px';
+            $lineHeight = '1.5';
+        }
+
+        $startDate = $enrollment->start_date ? date('M d', strtotime($enrollment->start_date)) : 'N/A';
         $endDate = $enrollment->end_date ? date('M d, Y', strtotime($enrollment->end_date)) : date('M d, Y');
         $issueDate = date('jS \d\a\y \of F, Y', strtotime($enrollment->certificate_issued_at ?? now()));
-        @endphp
+        $departmentHead = $certContent['department_head'] ?? 'ANTHONY V. AGUHAR, PhD';
+    @endphp
 
-        <div class="certificate-container">
-            <div class="certificate-inner">
+    <div class="certificate-container">
+        <div class="certificate-inner">
 
-                <!-- Header (Logos & Official Text) -->
-                <div>
-                    <div class="header-logos">
-                        <img src="{{ asset('images/cebu.png') }}" alt="Cebu">
-                        <img src="{{ asset('images/dmdp.png') }}" alt="DMDP">
-                    </div>
-                    <div class="header-text">
-                        <h2 style="font-size: 14px; font-weight: 500;">Republic of the Philippines</h2>
-                        <h2 style="font-size: 16px; font-weight: 500;">City of Cebu</h2>
-                        <h2 style="font-size: 15px; font-weight: 700;">Department of Manpower Development and Placement</h2>
-                    </div>
+            <!-- Header (Logos & Official Text) -->
+            <div>
+                <div class="header-logos">
+                    <img src="{{ asset('images/cebu.png') }}" alt="Cebu">
+                    <img src="{{ asset('images/dmdp.png') }}" alt="DMDP">
                 </div>
-
-                <!-- Title & Name -->
-                <div>
-                    <div class="title">{{ $certTitle }}</div>
-                    <div class="is-awarded">is awarded to</div>
-                    <div class="name-box">
-                        <h2>{{ $enrollment->first_name }} {{ $enrollment->last_name }}</h2>
-                    </div>
+                <div class="header-text">
+                    <h2 style="font-size: 14px; font-weight: 500;">Republic of the Philippines</h2>
+                    <h2 style="font-size: 16px; font-weight: 500;">{{ $city_name ?? 'City of Cebu' }}</h2>
+                    <h2 style="font-size: 15px; font-weight: 700;">{{ $department_name ?? 'Department of Manpower Development and Placement' }}</h2>
                 </div>
+            </div>
 
-                <!-- Body -->
-                <div class="body-content">
-                    <p style="margin: 0;">for having completed the competency based training program in</p>
-                    <div class="course-title">{{ $enrollment->course_title }}</div>
-                    <p style="margin: 0;">conducted on <strong>{{ $startDate }} to {{ $endDate }}</strong> and satisfactorily achieved the requirements of<br>the following units of competency:</p>
+            <!-- Title & Name -->
+            <div>
+                <div class="title">{{ $certTitle }}</div>
+                <div class="is-awarded">is awarded to</div>
+                <div class="name-box">
+                    <h2>{{ $enrollment->first_name }} {{ $enrollment->last_name }}</h2>
+                </div>
+            </div>
 
-                    @if($isTwoColumn)
+            <!-- Body -->
+            <div class="body-content">
+                <p style="margin: 0;">for having completed the competency based training program in</p>
+                <div class="course-title">{{ $enrollment->course_title }}</div>
+                <p style="margin: 0;">conducted on <strong>{{ $startDate }} to {{ $endDate }}</strong> and satisfactorily achieved the requirements of<br>the following units of competency:</p>
+
+                @if($isTwoColumn)
                     <!-- 2-Column Layout -->
                     <div class="two-column-list {{ $compCount > 18 ? 'list-dense' : '' }}">
                         <div class="column">
                             @foreach($leftColumn as $comp)
-                            <div class="list-item">{{ $comp }}</div>
+                                <div class="list-item">{{ $comp }}</div>
                             @endforeach
                         </div>
                         <div class="column">
                             @foreach($rightColumn as $comp)
-                            <div class="list-item">{{ $comp }}</div>
+                                <div class="list-item">{{ $comp }}</div>
                             @endforeach
                         </div>
                     </div>
-                    @else
+                @else
                     <!-- 1-Column Layout -->
                     <div class="one-column-list" style="font-size: {{ $fontSize }}; line-height: {{ $lineHeight }};">
                         @foreach($competencies as $comp)
-                        <div class="list-item" style="font-size: {{ $fontSize }}; margin-bottom: {{ $compCount >= 12 ? '2px' : '5px' }};">{{ $comp }}</div>
+                            <div class="list-item" style="font-size: {{ $fontSize }}; margin-bottom: {{ $compCount >= 12 ? '2px' : '5px' }};">{{ $comp }}</div>
                         @endforeach
                     </div>
-                    @endif
-                </div>
-
-                <!-- Footer (Moved outside body-content so it pins to the bottom) -->
-                <div class="footer">
-                    <p style="font-family: 'Playfair Display', serif; margin-bottom: 20px;">Given this <strong>{{ $issueDate }}</strong> at Cebu City, Philippines</p>
-                    <div class="signatory">
-                        <h3>ANTHONY V. AGUHAR, PhD</h3>
-                        <p style="font-size: 12px; margin: 0;">CG Acting Department Head (PESO Manager)</p>
-                    </div>
-                </div>
-
+                @endif
             </div>
+
+            <!-- Footer (Pinned to bottom inside .certificate-inner) -->
+            <div class="footer">
+                <p style="font-family: 'Playfair Display', serif; margin-bottom: 20px;">Given this <strong>{{ $issueDate }}</strong> at Cebu City, Philippines</p>
+                <div class="signatory">
+                    <h3>{{ $departmentHead }}</h3>
+                    <p style="font-size: 12px; margin: 0;">CG Acting Department Head (PESO Manager)</p>
+                </div>
+            </div>
+
         </div>
+    </div>
 
 </body>
 
-</html>
+</html> 

@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class JpoPortalController extends Controller
@@ -361,6 +362,74 @@ class JpoPortalController extends Controller
         }
 
         abort(404, 'Document file not found on storage.');
+    }
+
+    public function idVerification()
+    {
+        $pendingJobseekers = $this->pendingJobseekers()
+            ->filter(fn($jobseeker) => $jobseeker->has_valid_id)
+            ->values();
+
+        return view('jpo.idverification.index', compact('pendingJobseekers'));
+    }
+
+    private function pendingJobseekers()
+    {
+        $hasAccountStatusColumn = Schema::hasColumn('users', 'account_status');
+
+        $pendingJobseekers = DB::table('jobseekers')
+            ->join('users', 'jobseekers.user_id', '=', 'users.user_id')
+            ->leftJoin('jobseeker_details', 'jobseekers.jobseeker_id', '=', 'jobseeker_details.jobseeker_id')
+            ->leftJoin('social_status', 'jobseekers.jobseeker_id', '=', 'social_status.jobseeker_id')
+            ->select(
+                'jobseekers.*',
+                'users.email as user_email',
+                $hasAccountStatusColumn ? 'users.account_status' : 'users.status as account_status',
+                'users.is_approved as user_is_approved',
+                'users.status as user_status',
+                'users.created_at as registered_at',
+                'jobseeker_details.training_certificates',
+                'jobseeker_details.address',
+                'jobseeker_details.education',
+                'social_status.is_pwd',
+                'social_status.pwd_type'
+            )
+            ->where('users.role', 'jobseeker')
+            ->where(function ($query) use ($hasAccountStatusColumn) {
+                $query->where('users.is_approved', 0);
+
+                if ($hasAccountStatusColumn) {
+                    $query->orWhereIn('users.account_status', ['pending_review', 'unverified'])
+                        ->orWhereNull('users.account_status');
+                } else {
+                    $query->orWhere('users.status', 'pending')
+                        ->orWhereNull('users.status');
+                }
+            })
+            ->latest('users.created_at')
+            ->get();
+
+        foreach ($pendingJobseekers as $jobseeker) {
+            $rawDocuments = $jobseeker->training_certificates;
+            if (is_string($rawDocuments)) {
+                $rawDocuments = json_decode($rawDocuments, true);
+            }
+
+            $documents = [];
+            if (is_array($rawDocuments)) {
+                foreach ($rawDocuments as $document) {
+                    if (is_array($document)) {
+                        $documents[$document['category'] ?? ''] = $document;
+                    }
+                }
+            }
+
+            $jobseeker->parsed_docs = $documents;
+            $jobseeker->has_valid_id = !empty($documents['valid_id']);
+            $jobseeker->valid_id_doc = $documents['valid_id'] ?? null;
+        }
+
+        return $pendingJobseekers;
     }
 
     public function viewJobseekerValidId(int $id)
@@ -919,6 +988,11 @@ class JpoPortalController extends Controller
             ]);
         }
 
+        $jobseeker->update([
+            'id_scan_tries' => 0,
+            'id_scan_error' => null,
+        ]);
+
         $details = $jobseeker->details;
         if ($details && !empty($details->training_certificates)) {
             $docs = is_array($details->training_certificates)
@@ -926,7 +1000,7 @@ class JpoPortalController extends Controller
                 : (json_decode($details->training_certificates, true) ?: []);
 
             foreach ($docs as &$doc) {
-                if (in_array($doc['category'] ?? '', ['valid_id', 'resume', 'certificate', 'pwd_id'])) {
+                if (is_array($doc) && ($doc['category'] ?? '') === 'valid_id') {
                     $doc['status'] = 'approved';
                     $doc['reviewed_by'] = Auth::id();
                     $doc['reviewed_at'] = now()->toIso8601String();
@@ -973,11 +1047,15 @@ class JpoPortalController extends Controller
         $user = $jobseeker->user;
         if ($user) {
             $user->update([
-                'status' => 'pending',
-                'account_status' => 'pending_review',
                 'is_approved' => 0,
+                'account_status' => 'unverified',
             ]);
         }
+
+        $jobseeker->update([
+            'id_scan_tries' => 0,
+            'id_scan_error' => null,
+        ]);
 
         $details = $jobseeker->details;
         if ($details && !empty($details->training_certificates)) {

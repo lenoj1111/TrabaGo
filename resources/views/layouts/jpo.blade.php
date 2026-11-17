@@ -227,6 +227,19 @@ $jpoUnreadCount = Auth::check()
                 <span class="jpo-sidebar-label flex-1">Approve Jobseekers</span>
             </a>
 
+            {{-- ID Verification --}}
+            <a href="{{ route('jpo.idverification.index') }}"
+                class="nav-item {{ request()->routeIs('jpo.idverification.*') ? 'nav-item-active' : '' }}"
+                :title="collapsed ? 'ID Verification' : ''">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z" />
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M9 12l2 2 4-4" />
+                </svg>
+                <span class="jpo-sidebar-label flex-1">ID Verification</span>
+            </a>
+
             {{-- Accreditation Papers --}}
             <a href="{{ route('jpo.evaluations.accreditations') }}"
                 class="nav-item {{ request()->routeIs('jpo.evaluations.accreditations*') ? 'nav-item-active' : '' }}"
