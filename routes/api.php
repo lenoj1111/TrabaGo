@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\TrainingController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 // --- AUTHENTICATION (PUBLIC) ---
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/forgot-password', [PasswordResetLinkController::class, 'storeApi'])->middleware('throttle:6,1');
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/send-otp', [AuthController::class, 'sendOtp']);
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);

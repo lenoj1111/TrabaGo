@@ -31,6 +31,18 @@ export interface RegisterData {
 }
 
 export const authService = {
+  async requestPasswordReset(email: string): Promise<{ success: boolean; message?: string }> {
+    try {
+      const response = await apiClient.post('/auth/forgot-password', { email });
+      return response.data;
+    } catch (err: any) {
+      return {
+        success: false,
+        message: err.response?.data?.message || err.message || 'Unable to request a password reset.',
+      };
+    }
+  },
+
   async sendOtp(identifier: string, type: 'registration' | 'recovery' | 'login' = 'registration'): Promise<{
     success: boolean;
     message?: string;

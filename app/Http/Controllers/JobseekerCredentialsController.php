@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Jobseeker;
+use App\Notifications\AccountCredentialsUpdatedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Throwable;
 
 class JobseekerCredentialsController extends Controller
 {
@@ -30,15 +32,43 @@ class JobseekerCredentialsController extends Controller
         ]);
 
         $updates = ['email' => $validated['email']];
-        if (!empty($validated['password'])) {
+        $passwordChanged = !empty($validated['password']);
+        $emailChanged = $user->email !== $validated['email'];
+
+        if ($passwordChanged) {
             $updates['password'] = Hash::make($validated['password']);
         }
 
-        DB::transaction(function () use ($user, $jobseeker, $updates) {
-            $user->update($updates);
-            $jobseeker->update(['email' => $updates['email']]);
-        });
+        if (($emailChanged || $passwordChanged) && in_array(config('mail.default'), ['log', 'array', 'failover'], true)) {
+            return redirect()->back()->withInput()->withErrors([
+                'email' => 'Email delivery is not configured. Credentials were not changed.',
+            ]);
+        }
 
-        return redirect()->back()->with('success', 'Jobseeker login credentials updated.');
+        try {
+            DB::transaction(function () use ($user, $jobseeker, $updates, $emailChanged, $passwordChanged, $validated) {
+                $user->update($updates);
+                $jobseeker->update(['email' => $updates['email']]);
+
+                if ($emailChanged || $passwordChanged) {
+                    $user->notify(new AccountCredentialsUpdatedNotification(
+                        $validated['email'],
+                        $passwordChanged ? $validated['password'] : null
+                    ));
+                }
+            });
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return redirect()->back()->withInput()->withErrors([
+                'email' => 'Credentials were not changed because the update email could not be delivered.',
+            ]);
+        }
+
+        $successMessage = ($emailChanged || $passwordChanged)
+            ? 'Jobseeker login credentials updated and an email was sent to the updated account email.'
+            : 'Jobseeker login credentials were already up to date.';
+
+        return redirect()->back()->with('success', $successMessage);
     }
 }

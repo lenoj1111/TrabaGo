@@ -11,6 +11,7 @@ use App\Models\Jobseeker;
 use App\Models\JobseekerDetail;
 use App\Models\Notification;
 use App\Models\User;
+use App\Notifications\AccountCredentialsUpdatedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Throwable;
 
 class ApprovalsController extends Controller
 {
@@ -499,69 +501,100 @@ class ApprovalsController extends Controller
         }
 
         $validated = $validator->validated();
+        $managedUser = $userId ? User::find($userId) : null;
+        $emailChanged = $managedUser && $managedUser->email !== $validated['email'];
+        $passwordChanged = !empty($validated['password']);
+        $credentialsChanged = $managedUser && ($emailChanged || $passwordChanged);
 
-        if ($userId) {
-            $userUpdate = [
-                'email' => $validated['email'],
-                'updated_at' => now(),
-            ];
+        if ($credentialsChanged && in_array(config('mail.default'), ['log', 'array', 'failover'], true)) {
+            $message = 'Email delivery is not configured. Employer credentials were not changed.';
 
-            if (!empty($validated['password'])) {
-                $userUpdate['password'] = Hash::make($validated['password']);
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 503);
             }
 
-            DB::table('users')->where('user_id', $userId)->update($userUpdate);
+            return redirect()->back()->with('error', $message);
+        }
 
-            if (!empty($validated['contact_person']) || !empty($validated['contact_phone'])) {
-                $userProfile = DB::table('user_profiles')->where('user_id', $userId)->first();
-                if ($userProfile) {
-                    $profileUpdate = ['updated_at' => now()];
-                    if (!empty($validated['contact_person'])) {
-                        $profileUpdate['full_name'] = $validated['contact_person'];
-                    }
-                    if (!empty($validated['contact_phone'])) {
-                        $profileUpdate['phone'] = $validated['contact_phone'];
-                    }
-
-                    DB::table('user_profiles')->where('user_id', $userId)->update($profileUpdate);
-                } elseif (!empty($validated['contact_person'])) {
-                    DB::table('user_profiles')->insert([
-                        'user_id' => $userId,
-                        'full_name' => $validated['contact_person'],
-                        'phone' => $validated['contact_phone'] ?? null,
-                        'created_at' => now(),
+        try {
+            DB::transaction(function () use ($userId, $managedUser, $emailChanged, $passwordChanged, $credentialsChanged, $validated, $employer) {
+                if ($userId) {
+                    $userUpdate = [
+                        'email' => $validated['email'],
                         'updated_at' => now(),
-                    ]);
+                    ];
+
+                    if ($passwordChanged) {
+                        $userUpdate['password'] = Hash::make($validated['password']);
+                    }
+
+                    DB::table('users')->where('user_id', $userId)->update($userUpdate);
+
+                    if (!empty($validated['contact_person']) || !empty($validated['contact_phone'])) {
+                        $userProfile = DB::table('user_profiles')->where('user_id', $userId)->first();
+                        if ($userProfile) {
+                            $profileUpdate = ['updated_at' => now()];
+                            if (!empty($validated['contact_person'])) {
+                                $profileUpdate['full_name'] = $validated['contact_person'];
+                            }
+                            if (!empty($validated['contact_phone'])) {
+                                $profileUpdate['phone'] = $validated['contact_phone'];
+                            }
+
+                            DB::table('user_profiles')->where('user_id', $userId)->update($profileUpdate);
+                        } elseif (!empty($validated['contact_person'])) {
+                            DB::table('user_profiles')->insert([
+                                'user_id' => $userId,
+                                'full_name' => $validated['contact_person'],
+                                'phone' => $validated['contact_phone'] ?? null,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                        }
+                    }
                 }
+
+                $employerUpdate = [
+                    'primary_email' => $validated['email'],
+                    'updated_at' => now(),
+                ];
+
+                foreach (['secondary_email', 'contact_person', 'contact_phone'] as $field) {
+                    if (array_key_exists($field, $validated)) {
+                        $employerUpdate[$field] = $validated[$field];
+                    }
+                }
+
+                DB::table('employers')->where('employer_id', $employer->employer_id)->update($employerUpdate);
+
+                if ($userId) {
+                    Notification::create([
+                        'user_id' => $userId,
+                        'title' => 'Employer Login Credentials Updated',
+                        'message' => "The login credentials for {$employer->company_name} were updated by DMDP Administration. Login email: {$validated['email']}.",
+                        'type' => 'security',
+                        'is_read' => false,
+                        'related_id' => $employer->employer_id,
+                    ]);
+
+                    if ($credentialsChanged) {
+                        $managedUser->email = $validated['email'];
+                        $managedUser->notify(new AccountCredentialsUpdatedNotification(
+                            $validated['email'],
+                            $passwordChanged ? $validated['password'] : null
+                        ));
+                    }
+                }
+            });
+        } catch (Throwable $exception) {
+            report($exception);
+            $message = 'Employer credentials were not changed because the update email could not be delivered.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 500);
             }
-        }
 
-        $employerUpdate = [
-            'primary_email' => $validated['email'],
-            'updated_at' => now(),
-        ];
-
-        if (array_key_exists('secondary_email', $validated)) {
-            $employerUpdate['secondary_email'] = $validated['secondary_email'];
-        }
-        if (array_key_exists('contact_person', $validated)) {
-            $employerUpdate['contact_person'] = $validated['contact_person'];
-        }
-        if (array_key_exists('contact_phone', $validated)) {
-            $employerUpdate['contact_phone'] = $validated['contact_phone'];
-        }
-
-        DB::table('employers')->where('employer_id', $employer->employer_id)->update($employerUpdate);
-
-        if ($userId) {
-            Notification::create([
-                'user_id' => $userId,
-                'title' => 'Employer Login Credentials Updated',
-                'message' => "The login credentials for {$employer->company_name} were updated by DMDP Administration. Login email: {$validated['email']}.",
-                'type' => 'security',
-                'is_read' => false,
-                'related_id' => $employer->employer_id,
-            ]);
+            return redirect()->back()->with('error', $message);
         }
 
         $successMessage = "Login credentials for '{$employer->company_name}' have been updated successfully. The new HR can now log in using '{$validated['email']}'.";
