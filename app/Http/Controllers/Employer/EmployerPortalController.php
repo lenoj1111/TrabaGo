@@ -281,7 +281,7 @@ class EmployerPortalController extends Controller
 
         $jobs = $query->with('employer')->withCount(['applications' => function ($q) {
             $q->where('status', '!=', 'jpo_pending'); // Hides JPO pending count from employer
-        }])->latest('job_id')->paginate(10)->withQueryString();
+        }])->latest('job_id')->paginate(6)->withQueryString();
 
         $stats = [
             'total' => JobPosting::where('employer_id', $employer->employer_id)->count(),
@@ -696,7 +696,7 @@ class EmployerPortalController extends Controller
             });
         }
 
-        $referredApplicants = $query->latest('application_id')->paginate(15)->withQueryString();
+        $referredApplicants = $query->latest('application_id')->paginate(6)->withQueryString();
 
         $stats = [
             'total' => JobApplication::whereIn('job_id', $jobIds)
@@ -1003,7 +1003,7 @@ class EmployerPortalController extends Controller
         $employer = $this->getOrCreateEmployer();
         $jobIds = JobPosting::where('employer_id', $employer->employer_id)->pluck('job_id');
 
-        $reports = DB::table('placement_reports')->where('employer_id', $employer->employer_id)->latest('report_id')->paginate(10);
+        $reports = DB::table('placement_reports')->where('employer_id', $employer->employer_id)->latest('report_id')->paginate(6);
         $hiredApplicants = JobApplication::with(['jobseeker', 'jobPosting'])
             ->whereIn('job_id', $jobIds)
             ->where('status', 'hired')
@@ -1142,11 +1142,11 @@ class EmployerPortalController extends Controller
             'primary_email' => 'nullable|email|max:150',
             'phone' => 'required|string|max:50',
             'contact_landline' => 'nullable|string|max:50',
-            'secondary_contact_person' => 'nullable|required_with:secondary_contact_position,secondary_contact_landline,secondary_contact_phone,secondary_email|string|max:150',
-            'secondary_contact_position' => 'nullable|required_with:secondary_contact_person,secondary_contact_landline,secondary_contact_phone,secondary_email|string|max:100',
+            'secondary_contact_person' => 'nullable|required_with:secondary_contact_position,secondary_contact_landline,secondary_contact_phone|string|max:150',
+            'secondary_contact_position' => 'nullable|required_with:secondary_contact_person,secondary_contact_landline,secondary_contact_phone|string|max:100',
             'secondary_contact_landline' => 'nullable|string|max:50',
-            'secondary_contact_phone' => 'nullable|required_with:secondary_contact_person,secondary_contact_position,secondary_contact_landline,secondary_email|string|max:50',
-            'secondary_email' => 'nullable|required_with:secondary_contact_person,secondary_contact_position,secondary_contact_landline,secondary_contact_phone|email|max:150',
+            'secondary_contact_phone' => 'nullable|required_with:secondary_contact_person,secondary_contact_position,secondary_contact_landline|string|max:50',
+            'secondary_email' => 'nullable|email|max:150',
             'position' => 'nullable|string|max:100',
             'department' => 'nullable|string|max:150',
             'office' => 'nullable|string|max:150',
@@ -1284,7 +1284,7 @@ class EmployerPortalController extends Controller
         $user = Auth::user();
         $notifications = Notification::where('user_id', $user->user_id)
             ->latest('created_at')
-            ->paginate(15);
+            ->paginate(6);
 
         $unreadCount = Notification::where('user_id', $user->user_id)
             ->where('is_read', false)
@@ -1318,6 +1318,21 @@ class EmployerPortalController extends Controller
         if (!$employer->is_accredited) {
             return redirect()->route('employer.accreditation')->with('error', 'Your company does not currently have an approved accreditation certificate.');
         }
+        return view('reports.employer-certificate', compact('employer', 'accreditation'));
+    }
+    /**
+     * Generate and display the printable Certificate of Accreditation.
+     */
+    public function printCertificate()
+    {
+        $employer = auth()->user()->employer;
+        $accreditation = \App\Models\EmployerAccreditation::where('employer_id', $employer->id)->latest()->first();
+
+        if (!$accreditation || $accreditation->status !== 'admin_approved') {
+            abort(403, 'You do not have an approved accreditation yet.');
+        }
+
+        // This tells Laravel to load the modern design file you showed me
         return view('reports.employer-certificate', compact('employer', 'accreditation'));
     }
 }

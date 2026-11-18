@@ -37,6 +37,7 @@ class Employer extends Model
         'company_name',
         'company_logo',
         'company_address',
+        'secondary_email',
         'is_accredited',
         'accredited_at',
     ];
