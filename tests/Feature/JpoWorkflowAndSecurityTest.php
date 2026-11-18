@@ -120,6 +120,74 @@ class JpoWorkflowAndSecurityTest extends TestCase
         ]);
     }
 
+    public function test_jpo_can_confirm_and_grant_employer_accreditation(): void
+    {
+        $accreditationId = DB::table('employer_accreditation')->insertGetId([
+            'employer_id' => $this->employer->employer_id,
+            'status' => 'submitted_to_jpo',
+            'document_status' => 'complete',
+            'jpo_reviewed' => 1,
+            'submitted_at' => now(),
+        ]);
+
+        $page = $this->actingAs($this->jpoUser)->get(route('jpo.evaluations.accreditations'));
+        $page->assertOk()
+            ->assertSee('Grant accreditation?')
+            ->assertSee('Please confirm this employer has completed the required review.');
+
+        $response = $this->actingAs($this->jpoUser)
+            ->post(route('jpo.evaluations.accreditations.accredit', $accreditationId));
+
+        $response->assertRedirect()->assertSessionHas('success');
+        $this->assertDatabaseHas('employers', [
+            'employer_id' => $this->employer->employer_id,
+            'is_accredited' => 1,
+        ]);
+        $this->assertDatabaseHas('employer_accreditation', [
+            'accreditation_id' => $accreditationId,
+            'status' => 'admin_approved',
+            'document_status' => 'complete',
+            'certificate_issued_by' => $this->jpoUser->user_id,
+        ]);
+        $this->assertDatabaseHas('users', [
+            'user_id' => $this->employerUser->user_id,
+            'account_status' => 'verified',
+            'is_approved' => 1,
+        ]);
+    }
+
+    public function test_jpo_can_disaccredit_an_employer(): void
+    {
+        $this->employer->update(['is_accredited' => true]);
+        $accreditationId = DB::table('employer_accreditation')->insertGetId([
+            'employer_id' => $this->employer->employer_id,
+            'status' => 'admin_approved',
+            'admin_approved' => 1,
+            'document_status' => 'complete',
+            'submitted_at' => now(),
+        ]);
+
+        $page = $this->actingAs($this->jpoUser)->get(route('jpo.evaluations.accreditations'));
+        $page->assertOk()
+            ->assertSee('Revoke official accreditation?')
+            ->assertSee('Confirm Disaccrediting')
+            ->assertDontSee('onsubmit="return confirm(', false);
+
+        $response = $this->actingAs($this->jpoUser)
+            ->post(route('jpo.evaluations.accreditations.disaccredit', $accreditationId));
+
+        $response->assertRedirect()->assertSessionHas('info');
+        $this->assertDatabaseHas('employers', [
+            'employer_id' => $this->employer->employer_id,
+            'is_accredited' => 0,
+        ]);
+        $this->assertDatabaseHas('employer_accreditation', [
+            'accreditation_id' => $accreditationId,
+            'status' => 'disaccredited',
+            'admin_approved' => 0,
+        ]);
+    }
+
     public function test_jpo_setting_incomplete_requires_a_reason(): void
     {
         $accId = DB::table('employer_accreditation')->insertGetId([

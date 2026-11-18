@@ -10,6 +10,16 @@
     selectedDocStatus: 'pending',
     selectedIncompleteReason: '',
 
+    accreditModal: false,
+    accreditCompany: '',
+    accreditAction: '',
+    accreditRouteTemplate: '{{ route('jpo.evaluations.accreditations.accredit', ['id' => '__ACCREDITATION_ID__']) }}',
+
+    disaccreditModal: false,
+    disaccreditCompany: '',
+    disaccreditAction: '',
+    disaccreditRouteTemplate: '{{ route('jpo.evaluations.accreditations.disaccredit', ['id' => '__ACCREDITATION_ID__']) }}',
+
     docStatusModal: false,
     editAccId: null,
     editCompany: '',
@@ -30,6 +40,18 @@
         this.selectedDocStatus = docStatus || 'pending';
         this.selectedIncompleteReason = reason || '';
         this.recModal = true;
+    },
+
+    openAccreditConfirm(id, company) {
+        this.accreditCompany = company;
+        this.accreditAction = this.accreditRouteTemplate.replace('__ACCREDITATION_ID__', encodeURIComponent(id));
+        this.accreditModal = true;
+    },
+
+    openDisaccreditConfirm(id, company) {
+        this.disaccreditCompany = company;
+        this.disaccreditAction = this.disaccreditRouteTemplate.replace('__ACCREDITATION_ID__', encodeURIComponent(id));
+        this.disaccreditModal = true;
     },
 
     openDocStatusModal(id, company, docStatus, reason) {
@@ -551,28 +573,23 @@
                                     </a>
 
                                     <!-- Disaccredit Employer -->
-                                    <form action="{{ route('jpo.evaluations.accreditations.disaccredit', $acc->accreditation_id) }}" method="POST" class="inline"
-                                        onsubmit="return confirm('Revoke official accreditation for {{ addslashes($acc->company_name) }}?');">
-                                        @csrf
-                                        <button type="submit"
-                                            class="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-colors">
-                                            Disaccredit
-                                        </button>
-                                    </form>
+                                    <button type="button"
+                                        @click="openDisaccreditConfirm({{ $acc->accreditation_id }}, $el.dataset.company)"
+                                        data-company="{{ $acc->company_name }}"
+                                        class="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-colors">
+                                        Disaccredit
+                                    </button>
                                     @else
                                     <!-- Direct Accreditation (JPO & Admin Shared Authority) -->
-                                    <form action="{{ route('jpo.evaluations.accreditations.accredit', $acc->accreditation_id) }}" method="POST" class="inline"
-                                        onsubmit="return confirm('Grant official DMDP Accreditation & generate Certificate for {{ addslashes($acc->company_name) }}?');">
-                                        @csrf
-                                        <button type="submit"
-                                            class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-all inline-flex items-center gap-1 shrink-0"
-                                            title="Directly Accredit and Issue Certificate">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                            </svg>
-                                            <span>Accredit</span>
-                                        </button>
-                                    </form>
+                                    <button type="button"
+                                        @click='openAccreditConfirm({{ $acc->accreditation_id }}, "{{ addslashes($acc->company_name) }}")'
+                                        class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-all inline-flex items-center gap-1 shrink-0"
+                                        title="Directly Accredit and Issue Certificate">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                        </svg>
+                                        <span>Accredit</span>
+                                    </button>
 
                                     <!-- Recommend to Admin Button (Conditioned on Documents Complete) -->
                                     @if($acc->status === 'submitted_to_jpo')
@@ -697,7 +714,89 @@
         </div>
     </div>
 
-    <!-- 2. Official Recommendation to Admin Modal -->
+    <!-- Official Accreditation Confirmation Modal -->
+    <div x-show="accreditModal" x-cloak class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div @click.away="accreditModal = false" class="w-full max-w-lg overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-2xl">
+            <div class="flex items-start gap-4 bg-emerald-50 px-6 py-6">
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622-1.042-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                </div>
+                <div class="min-w-0">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-emerald-700">Official DMDP Accreditation</span>
+                    <h3 class="mt-1 text-lg font-black text-emerald-950">Grant accreditation?</h3>
+                    <p class="mt-1 break-words text-sm font-bold text-slate-800" x-text="accreditCompany"></p>
+                </div>
+                <button type="button" @click="accreditModal = false" class="ml-auto text-2xl font-bold text-slate-400 hover:text-slate-700" aria-label="Close">&times;</button>
+            </div>
+
+            <div class="space-y-4 px-6 py-5">
+                <p class="text-sm leading-relaxed text-slate-600">
+                    This will officially accredit the employer, verify their account, and issue a DMDP Certificate of Accreditation.
+                </p>
+                <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
+                    <p class="text-xs font-black text-emerald-900">Please confirm this employer has completed the required review.</p>
+                    <p class="mt-1 text-[11px] leading-relaxed text-emerald-800">The accreditation and certificate will be recorded immediately.</p>
+                </div>
+
+                <form :action="accreditAction" method="POST" class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+                    @csrf
+                    <button type="button" @click="accreditModal = false"
+                        class="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-50">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-black text-white shadow-lg shadow-emerald-600/20 transition-colors hover:bg-emerald-500">
+                        Confirm &amp; Issue Certificate
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Official Disaccreditation Confirmation Modal -->
+    <div x-show="disaccreditModal" x-cloak class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div @click.away="disaccreditModal = false" class="w-full max-w-lg overflow-hidden rounded-3xl border border-rose-100 bg-white shadow-2xl">
+            <div class="flex items-start gap-4 bg-rose-50 px-6 py-6">
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-600 text-white shadow-sm">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.29 3.86l-8.1 14.02A2 2 0 003.92 21h16.16a2 2 0 001.73-3.12l-8.1-14.02a2 2 0 00-3.46 0z" />
+                    </svg>
+                </div>
+                <div class="min-w-0">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-rose-700">Accreditation Status Change</span>
+                    <h3 class="mt-1 text-lg font-black text-rose-950">Revoke official accreditation?</h3>
+                    <p class="mt-1 break-words text-sm font-bold text-slate-800" x-text="disaccreditCompany"></p>
+                </div>
+                <button type="button" @click="disaccreditModal = false" class="ml-auto text-2xl font-bold text-slate-400 hover:text-slate-700" aria-label="Close">&times;</button>
+            </div>
+
+            <div class="space-y-4 px-6 py-5">
+                <p class="text-sm leading-relaxed text-slate-600">
+                    This will revoke the employer’s official DMDP accreditation and update its status to disaccredited.
+                </p>
+                <div class="rounded-2xl border border-rose-100 bg-rose-50/70 p-4">
+                    <p class="text-xs font-black text-rose-900">Please confirm this status change.</p>
+                    <p class="mt-1 text-[11px] leading-relaxed text-rose-800">The change will be recorded immediately.</p>
+                </div>
+
+                <form :action="disaccreditAction" method="POST" class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+                    @csrf
+                    <button type="button" @click="disaccreditModal = false"
+                        class="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-50">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="rounded-xl bg-rose-600 px-5 py-2.5 text-xs font-black text-white shadow-lg shadow-rose-600/20 transition-colors hover:bg-rose-500">
+                        Confirm Disaccrediting
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Official Recommendation to Admin Modal -->
     <div x-show="recModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div @click.away="recModal = false" class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
 

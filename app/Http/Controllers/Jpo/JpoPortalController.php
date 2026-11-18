@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Jpo;
 
 use App\Http\Controllers\Controller;
+use App\Models\Employer;
 use App\Models\EmployerAccreditation;
 use App\Models\JobApplication;
 use App\Models\JobPosting;
@@ -730,23 +731,25 @@ class JpoPortalController extends Controller
             return redirect()->back()->withErrors(['error' => 'Employer record not found.']);
         }
 
-        $employer->update(['is_accredited' => 0]);
+        DB::transaction(function () use ($employer, $employerId) {
+            $employer->update(['is_accredited' => 0]);
 
-        DB::table('employer_accreditation')->where('employer_id', $employerId)->update([
-            'status' => 'disaccredited',
-            'admin_approved' => 0,
-        ]);
-
-        if ($employer->user) {
-            Notification::create([
-                'user_id' => $employer->user->user_id,
-                'title' => 'Employer Accreditation Revoked',
-                'message' => 'Your official accreditation has been revoked by the Job Placement Office (DMDP). Please contact the DMDP office for further details.',
-                'type' => 'rejection',
-                'is_read' => false,
-                'related_id' => $employer->employer_id,
+            DB::table('employer_accreditation')->where('employer_id', $employerId)->update([
+                'status' => 'disaccredited',
+                'admin_approved' => 0,
             ]);
-        }
+
+            if ($employer->user) {
+                Notification::create([
+                    'user_id' => $employer->user->user_id,
+                    'title' => 'Employer Accreditation Revoked',
+                    'message' => 'Your official accreditation has been revoked by the Job Placement Office (DMDP). Please contact the DMDP office for further details.',
+                    'type' => 'rejection',
+                    'is_read' => false,
+                    'related_id' => $employer->employer_id,
+                ]);
+            }
+        });
 
         return redirect()->back()->with('info', "Employer '{$employer->company_name}' has been disaccredited.");
     }

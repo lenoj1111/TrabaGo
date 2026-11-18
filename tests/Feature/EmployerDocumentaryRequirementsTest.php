@@ -129,6 +129,15 @@ class EmployerDocumentaryRequirementsTest extends TestCase
         $this->assertSame($oldPath, array_values($previousVersions)[0]['path']);
         Storage::disk('public')->assertExists($oldPath);
         Storage::disk('public')->assertExists($documents['mayors_permit']['path']);
+
+        $page = $this->actingAs($this->employerUser)->get(route('employer.accreditation'));
+        $page->assertOk()
+            ->assertSee('Previous Versions')
+            ->assertSee('All statuses')
+            ->assertDontSee('Newest upload')
+            ->assertDontSee('Oldest upload')
+            ->assertSee('Current uploads appear below. Replaced files are kept in Previous Versions.');
+        $this->assertSame(1, substr_count($page->getContent(), 'Preview / Inspect'));
     }
 
     public function test_employer_registration_page_contains_official_documentary_notice(): void

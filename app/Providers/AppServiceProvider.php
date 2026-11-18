@@ -36,7 +36,7 @@ class AppServiceProvider extends ServiceProvider
                     foreach ($accConstraints as $c) {
                         \Illuminate\Support\Facades\DB::statement("ALTER TABLE [employer_accreditation] DROP CONSTRAINT [{$c->name}]");
                     }
-                    \Illuminate\Support\Facades\DB::statement("ALTER TABLE [employer_accreditation] ADD CONSTRAINT [CK_employer_accreditation_status] CHECK ([status] IN ('pending', 'submitted_to_jpo', 'jpo_approved', 'supervisor_approved', 'admin_approved', 'rejected', 'auto_approved', 'manual_review'))");
+                    \Illuminate\Support\Facades\DB::statement("ALTER TABLE [employer_accreditation] ADD CONSTRAINT [CK_employer_accreditation_status] CHECK ([status] IN ('pending', 'submitted_to_jpo', 'jpo_approved', 'supervisor_approved', 'admin_approved', 'rejected', 'auto_approved', 'manual_review', 'disaccredited'))");
                 }
 
                 // Proactively remove restrictive notifications type check constraints

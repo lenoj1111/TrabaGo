@@ -14,107 +14,148 @@
             this.activeDocCompany = company;
             this.activeDocList = [];
             const documentRouteTemplate = '{{ route('accreditation.documents', ['accreditationId' => '__ACCREDITATION_ID__', 'documentKey' => '__DOCUMENT_KEY__', 'action' => '__ACTION__']) }}';
-            
-            for (let [key, val] of Object.entries(docs || {})) {
-                if (!val) continue;
+            const aliases = {
+                sec_dti_registration: 'sec_dti',
+                updated_job_vacancies: 'job_vacancies_form',
+                business_permit: 'mayors_permit'
+            };
+            const canonicalKey = key => {
+                const baseKey = key.replace(/_previous_.+$/, '');
+                return aliases[baseKey] || baseKey;
+            };
+            const entries = Object.entries(docs || {})
+                .filter(([, value]) => !!value)
+                .map(([key, value]) => {
+                    const metadata = typeof value === 'object' && value !== null ? value : {};
+                    return {
+                        key,
+                        value,
+                        metadata,
+                        canonicalKey: canonicalKey(key),
+                        path: metadata.path || metadata.file_path || metadata.file_url || metadata.url || (typeof value === 'string' ? value : ''),
+                        revisionStatus: metadata.revision_status || (key.includes('_previous_') ? 'previous' : '')
+                    };
+                });
+            const inferredPrevious = new Set();
+            const versionsByType = new Map();
 
-                let label = 'Attached Document';
-                let icon = 'document';
+            for (const entry of entries) {
+                if (entry.revisionStatus === 'previous') continue;
+                const versions = versionsByType.get(entry.canonicalKey) || [];
+                versions.push(entry);
+                versionsByType.set(entry.canonicalKey, versions);
+            }
+
+            for (const versions of versionsByType.values()) {
+                if (new Set(versions.map(entry => entry.path).filter(Boolean)).size < 2) continue;
+                const latest = versions.find(entry => entry.revisionStatus === 'new') || [...versions].sort((a, b) => {
+                    return (Date.parse(b.metadata.uploaded_at || '') || 0) - (Date.parse(a.metadata.uploaded_at || '') || 0);
+                })[0];
+                for (const entry of versions) {
+                    if (entry !== latest) inferredPrevious.add(entry.key);
+                }
+            }
+
+            const seenPaths = new Set();
+            for (const entry of entries) {
+                const { key, metadata, path } = entry;
+                const normalizedPath = String(path || '').replace(/\\/g, '/');
+                if (normalizedPath && seenPaths.has(normalizedPath)) continue;
+                if (normalizedPath) seenPaths.add(normalizedPath);
+
+                const docKey = entry.canonicalKey;
+                const keyLower = docKey.toLowerCase();
+                let label = docKey.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+                let icon = '📄';
                 let issuer = 'Regulatory Authority';
-                let filename = '';
 
-                if (typeof val === 'object' && val !== null) {
-                    const storedPath = val.path || val.file_path || val.file_url || val.url || '';
-                    filename = val.original_name || storedPath.split('/').pop();
-                } else if (typeof val === 'string') {
-                    filename = val.split('/').pop() || val;
+                if (keyLower.includes('bir') || keyLower.includes('2303') || keyLower.includes('tin')) {
+                    label = 'BIR Certificate of Registration (Form 2303)';
+                    icon = '📑';
+                    issuer = 'Bureau of Internal Revenue (BIR District 080)';
+                } else if (keyLower.includes('sec') || keyLower.includes('dti')) {
+                    label = 'SEC Registration or DTI Registration';
+                    icon = '📜';
+                    issuer = 'Securities and Exchange Commission (SEC) / DTI';
+                } else if (keyLower.includes('mayor') || keyLower.includes('permit') || keyLower.includes('business')) {
+                    label = 'Mayor’s Business Permit';
+                    icon = '🏢';
+                    issuer = 'City Government of Cebu - BPLO';
+                } else if (keyLower.includes('philjobnet')) {
+                    label = 'PhilJobNet Proof of Registration';
+                    icon = '🌐';
+                    issuer = 'PhilJobNet / DOLE Bureau of Local Employment';
+                } else if (keyLower.includes('vacanc') || keyLower.includes('job_vacanc')) {
+                    label = 'Updated Job Vacancies (prescribed form)';
+                    icon = '💼';
+                    issuer = 'Cebu City DMDP Prescribed Template';
+                } else if (keyLower.includes('dole')) {
+                    label = 'DOLE License/DO 174';
+                    icon = '🛡️';
+                    issuer = 'Department of Labor and Employment (DOLE RO-7)';
+                } else if (keyLower.includes('dmw_license') || (keyLower.includes('dmw') && !keyLower.includes('order'))) {
+                    label = 'DMW License (Overseas Agency)';
+                    icon = '🏛️';
+                    issuer = 'Department of Migrant Workers (DMW / POEA)';
+                } else if (keyLower.includes('order') || keyLower.includes('job_order')) {
+                    label = 'DMW Approved and Validated Job Orders';
+                    icon = '📋';
+                    issuer = 'Department of Migrant Workers (DMW)';
+                } else if (keyLower.includes('intent') || keyLower.includes('letter')) {
+                    label = 'Letter of Intent';
+                    icon = '✉️';
+                    issuer = 'Corporate Executive / Authorized Signatory';
+                } else if (keyLower.includes('profile')) {
+                    label = 'Company Overview Profile / Org Chart';
+                    icon = '🗂️';
+                    issuer = 'Corporate Executive Board';
                 }
 
-                let validity = 'Current / Valid';
-                const extensionSource = typeof val === 'object' && val !== null ? (val.path || filename) : val;
-                const extension = String(extensionSource || '').split('.').pop().toLowerCase();
-                const isImage = ['jpg', 'jpeg', 'png'].includes(extension);
+                const extension = String(path || '').split('.').pop().toLowerCase();
+                const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extension);
                 const canPreview = isImage || extension === 'pdf';
                 const fileRoute = documentRouteTemplate
                     .replace('__ACCREDITATION_ID__', encodeURIComponent(accreditationId))
                     .replace('__DOCUMENT_KEY__', encodeURIComponent(key));
-
-                if (key.includes('bir') || key.includes('2303') || key.includes('tin')) {
-                    label = 'BIR Certificate of Registration (Form 2303)';
-                    icon = 'tax';
-                    issuer = 'Bureau of Internal Revenue (BIR District 080)';
-                    validity = 'Current / Valid';
-                } else if (key.includes('sec') || key.includes('dti')) {
-                    label = 'SEC Registration or DTI Registration';
-                    icon = 'sec';
-                    issuer = 'Securities and Exchange Commission (SEC) / DTI';
-                    validity = 'Perpetual / Registered';
-                } else if (key.includes('mayor') || key.includes('permit') || key.includes('business')) {
-                    label = 'Mayor’s Business Permit (current year)';
-                    icon = 'permit';
-                    issuer = 'City Government of Cebu - BPLO';
-                    validity = 'Calendar Year ' + new Date().getFullYear();
-                } else if (key.includes('philjobnet')) {
-                    label = 'PhilJobNet Proof of Registration';
-                    icon = 'philjobnet';
-                    issuer = 'PhilJobNet / DOLE Bureau of Local Employment';
-                    validity = 'Active Registration Certificate';
-                } else if (key.includes('vacanc') || key.includes('job_vacanc')) {
-                    label = 'Updated Job Vacancies (use prescribed form)';
-                    icon = 'vacancies';
-                    issuer = 'Cebu City DMDP Prescribed Template';
-                    validity = 'Active Hiring Needs';
-                } else if (key.includes('dole')) {
-                    label = 'DOLE License/DO 174';
-                    icon = 'dole';
-                    issuer = 'Department of Labor and Employment (DOLE RO-7)';
-                    validity = 'Valid License (PRPA / Subcontractor)';
-                } else if (key.includes('dmw_license') || (key.includes('dmw') && !key.includes('order'))) {
-                    label = 'DMW License (Overseas Agency)';
-                    icon = 'dmw';
-                    issuer = 'Department of Migrant Workers (DMW / POEA)';
-                    validity = 'Valid DMW License';
-                } else if (key.includes('order') || key.includes('job_order')) {
-                    label = 'DMW Approved and Validated Job Orders';
-                    icon = 'orders';
-                    issuer = 'Department of Migrant Workers (DMW)';
-                    validity = 'Verified Job Orders Period';
-                } else if (key.includes('intent') || key.includes('letter')) {
-                    label = 'Letter of Intent (Services & Assistance Details)';
-                    icon = 'intent';
-                    issuer = 'Corporate Executive / Authorized Signatory';
-                    validity = 'Official Signed Request';
-                } else if (key.includes('profile')) {
-                    label = 'Company Overview Profile / Org Chart';
-                    icon = 'profile';
-                    issuer = 'Corporate Executive Board';
-                    validity = 'Current Operations Overview';
-                } else {
-                    label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    icon = 'document';
-                    issuer = 'Government Regulatory Agency';
-                    validity = 'On File';
-                }
+                const revisionStatus = entry.revisionStatus === 'previous' || inferredPrevious.has(key) ? 'previous' : entry.revisionStatus;
+                const issueRaw = metadata.issue_date || metadata.date_issued || metadata.issued_at || metadata.issued_date || '';
+                const expirationRaw = metadata.expiration_date || metadata.expiry_date || metadata.expires_at || metadata.valid_until || '';
+                const uploadedRaw = metadata.uploaded_at || metadata.replaced_at || '';
+                const formatDate = value => {
+                    const date = value ? new Date(value) : null;
+                    return date && !Number.isNaN(date.getTime())
+                        ? date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+                        : '';
+                };
+                const expirationDate = expirationRaw ? new Date(String(expirationRaw).slice(0, 10) + 'T00:00:00') : null;
+                const isExpired = expirationDate && !Number.isNaN(expirationDate.getTime()) && expirationDate < new Date(new Date().setHours(0, 0, 0, 0));
+                const status = revisionStatus === 'previous' ? 'Superseded' : (isExpired ? 'Expired' : 'Current');
 
                 this.activeDocList.push({
-                    key: key,
-                    label: label,
-                    icon: icon,
-                    issuer: issuer,
-                    validity: validity,
-                    filename: filename,
-                    isImage: isImage,
-                    canPreview: canPreview,
+                    key,
+                    canonicalKey: docKey,
+                    label,
+                    icon,
+                    issuer,
+                    filename: metadata.original_name || String(path || '').split('/').pop(),
+                    isImage,
+                    canPreview,
                     previewUrl: canPreview ? fileRoute.replace('__ACTION__', 'preview') : '',
                     downloadUrl: fileRoute.replace('__ACTION__', 'download'),
-                    status: 'Verified Valid'
+                    revisionStatus,
+                    versionLabel: revisionStatus === 'previous' ? 'Previous Version' : (revisionStatus === 'new' ? 'Latest Upload' : ''),
+                    uploadedAt: formatDate(uploadedRaw),
+                    uploadedAtRaw: uploadedRaw,
+                    issueDate: formatDate(issueRaw),
+                    expirationDate: formatDate(expirationRaw),
+                    status
                 });
             }
 
             if (this.activeDocList.length > 0) {
-                let targetDoc = this.activeDocList[0];
+                let targetDoc = this.activeDocList.find(doc => doc.revisionStatus !== 'previous') || this.activeDocList[0];
                 if (initialKey) {
-                    let found = this.activeDocList.find(d => d.key === initialKey);
+                    let found = this.activeDocList.find(doc => doc.key === initialKey || doc.canonicalKey === canonicalKey(initialKey));
                     if (found) targetDoc = found;
                 }
                 this.selectDocument(targetDoc);
@@ -281,6 +322,22 @@
 
         @php
             $uploadedDocs = $accreditation ? (is_array($accreditation->documents) ? $accreditation->documents : json_decode($accreditation->documents ?? '[]', true)) : [];
+            $currentUploadedDocs = [];
+            foreach (is_array($uploadedDocs) ? $uploadedDocs : [] as $key => $doc) {
+                if (str_contains((string) $key, '_previous_') || (is_array($doc) && ($doc['revision_status'] ?? null) === 'previous')) {
+                    continue;
+                }
+
+                $canonicalKey = match ($key) {
+                    'sec_dti_registration' => 'sec_dti',
+                    'updated_job_vacancies' => 'job_vacancies_form',
+                    'business_permit' => 'mayors_permit',
+                    default => $key,
+                };
+                if (!array_key_exists($canonicalKey, $currentUploadedDocs)) {
+                    $currentUploadedDocs[$canonicalKey] = $doc;
+                }
+            }
             
             $officialDocMeta = [
                 'bir_2303' => ['title' => 'BIR Certificate of Registration (Form 2303)', 'category' => 'Core Mandatory', 'validity' => 'Current / Valid', 'icon' => 'tax', 'issuer' => 'Bureau of Internal Revenue (BIR District 080)'],
@@ -304,7 +361,7 @@
                     <div>
                         <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Enterprise Vault</span>
                         <h3 class="text-lg font-black text-slate-900">Your Uploaded Legal Accreditation Documents</h3>
-                        <p class="text-xs text-slate-500">Original and other documents, when applicable, should be presented for validation.</p>
+                        <p class="text-xs text-slate-500">Current uploads appear below. Replaced files are kept in Previous Versions.</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <a href="{{ route('employer.accreditation.print') }}" target="_blank"
@@ -317,13 +374,13 @@
                                 @click='openDocInspection("{{ addslashes($employer->company_name) }}", @json($uploadedDocs), {{ $accreditation->accreditation_id }})'
                                 class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 self-start sm:self-auto">
                             <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                            <span>Inspect Document Hub ({{ count($uploadedDocs) }} Files)</span>
+                            <span>Inspect Document Hub</span>
                         </button>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                    @foreach($uploadedDocs as $key => $doc)
+                    @forelse($currentUploadedDocs as $key => $doc)
                         @php
                             $meta = $officialDocMeta[$key] ?? [
                                 'title' => ucfirst(str_replace('_', ' ', $key)),
@@ -361,7 +418,12 @@
                                 Preview / Inspect &rarr;
                             </button>
                         </div>
-                    @endforeach
+                    @empty
+                        <div class="sm:col-span-2 lg:col-span-3 rounded-2xl border border-dashed border-emerald-200 bg-white/70 p-6 text-center">
+                            <p class="text-sm font-bold text-slate-700">No current documents uploaded</p>
+                            <p class="mt-1 text-xs text-slate-500">Open the Document Hub to review previous versions.</p>
+                        </div>
+                    @endforelse
                 </div>
             </div>
         @endif
