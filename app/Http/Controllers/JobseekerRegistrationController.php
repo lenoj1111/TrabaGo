@@ -18,6 +18,13 @@ class JobseekerRegistrationController extends Controller
 
     public function register(Request $request)
     {
+        foreach (['salary_min', 'salary_max'] as $salaryField) {
+            $salaryValue = $request->input($salaryField);
+            if (is_string($salaryValue)) {
+                $request->merge([$salaryField => str_replace(',', '', trim($salaryValue))]);
+            }
+        }
+
         // Validate the request
         $validator = Validator::make($request->all(), [
             // User table fields
@@ -46,6 +53,8 @@ class JobseekerRegistrationController extends Controller
 
             // Skills
             'skills' => 'nullable|array',
+            'skills_century' => 'nullable|array',
+            'skills_informal_tech' => 'nullable|array',
 
             // Job Preferences
             'occupation1' => 'nullable|string|max:150',
@@ -56,6 +65,8 @@ class JobseekerRegistrationController extends Controller
             'industry3' => 'nullable|string|max:150',
             'preferred_location' => 'nullable|string|max:255',
             'salary_expectation' => 'nullable|string|max:100',
+            'salary_min' => 'nullable|numeric|min:0',
+            'salary_max' => 'nullable|numeric|min:0',
 
             // Social Status
             'is_4ps' => 'nullable|boolean',
@@ -63,10 +74,23 @@ class JobseekerRegistrationController extends Controller
             'is_ofw' => 'nullable|boolean',
             'is_pwd' => 'nullable|boolean',
             'pwd_type' => 'nullable|string|max:255',
+            'is_lgbtq' => 'nullable|boolean',
+            'is_senior_citizen' => 'nullable|boolean',
+            'is_immigrant' => 'nullable|boolean',
+            'immigrant_origin' => 'nullable|string|max:255',
+            'region' => 'nullable|string|max:100',
         ], [
             'email.unique' => 'An account with this email already exists. Please contact your JPO or an administrator to update your email or reset your password. For your security, never share your password.',
             'mobile_number.unique' => 'An account with this mobile number already exists. Please contact your JPO or an administrator to update your email or reset your password. For your security, never share your password.',
         ]);
+
+        if (
+            $request->filled('salary_min')
+            && $request->filled('salary_max')
+            && (float) $request->input('salary_max') < (float) $request->input('salary_min')
+        ) {
+            $validator->errors()->add('salary_max', 'Maximum salary must be greater than or equal to minimum salary.');
+        }
 
         // 1. Check standard validation first
         if ($validator->fails()) {
@@ -205,6 +229,18 @@ class JobseekerRegistrationController extends Controller
             }
 
             // 5. Create Job Preferences
+            $salaryExpectation = $request->input('salary_expectation');
+            $salaryMin = $request->input('salary_min');
+            $salaryMax = $request->input('salary_max');
+            if ($salaryMin !== null || $salaryMax !== null) {
+                if ($salaryMin !== null && $salaryMax !== null) {
+                    $salaryExpectation = '₱' . number_format((float) $salaryMin) . ' - ₱' . number_format((float) $salaryMax) . ' / month';
+                } elseif ($salaryMin !== null) {
+                    $salaryExpectation = '₱' . number_format((float) $salaryMin) . '+ / month';
+                } else {
+                    $salaryExpectation = 'Up to ₱' . number_format((float) $salaryMax) . ' / month';
+                }
+            }
             DB::table('job_preferences')->insert([
                 'jobseeker_id' => $jobseekerId,
                 'occupation1' => $request->occupation1,
@@ -214,7 +250,7 @@ class JobseekerRegistrationController extends Controller
                 'industry2' => $request->industry2,
                 'industry3' => $request->industry3,
                 'preferred_location' => $request->preferred_location,
-                'salary_expectation' => $request->salary_expectation,
+                'salary_expectation' => $salaryExpectation,
             ]);
 
             // 6. Create Social Status

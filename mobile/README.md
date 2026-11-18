@@ -15,9 +15,9 @@ This mobile application is **exclusively designated for Jobseekers**. Administra
 - **AI Skill-Matching Engine**: Cosine similarity algorithm analyzes applicant competencies against requirements and displays match percentages.
 - **Application Tracking (`/(tabs)/applications`)**: Track submission status across multi-stage review pipelines (`Pending`, `Screening`, `Interview Scheduled`, `Hired`).
 - **DMDP Vocational Hub (`/(tabs)/training`)**: Browse free technical and vocational modules with direct video lectures.
-- **In-App Competency Assessments (`/training/[id]`)**: Interactive quiz with dynamic passing score thresholds (80%), question-by-question review, and instant official digital certificate issuance.
+- **In-App Competency Assessments (`/training/[id]`)**: Trainer-authored multiple-choice and essay assessments are graded by the server, with trainer review and a practical demo required before certificate issuance.
 - **Credentials Vault (`/profile/vault`)**: Multi-document storage supporting Resumes, Valid Government IDs, Technical Licenses, and PWD IDs with in-app preview and status verification tracking.
-- **DOLE NSRP Profile (`/profile/edit`)**: Official DOLE-DMDP NSRP Form 1 fields including education attainment, career preferences, civil service eligibility, and social welfare status.
+- **DOLE NSRP Profile (`/profile/edit`)**: Official DOLE-DMDP NSRP Form 1 fields including education attainment, career preferences, civil service eligibility, and social welfare status. Registration and profile updates use the same jobseeker records as the web portal.
 - **Real-Time Push Updates (`/(tabs)/notifications`)**: Real-time notifications powered by Laravel Reverb WebSockets.
 
 ---

@@ -117,11 +117,11 @@
                             <span>Trainer Review Required</span>
                         </span>
                         @elseif($course->training_type !== 'laboratory_onsite' && ($course->assessments_count ?? 0) > 0)
-                        <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800 inline-flex items-center gap-1" title="Certificate is generated automatically after the learner passes the assessment">
+                        <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800 inline-flex items-center gap-1" title="Jobseeker is required to return demo before certificate issuance">
                             <svg class="h-3 w-3 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                             </svg>
-                            <span>Auto-Certificate on Pass</span>
+                            <span>Return Demo To Get Certificate</span>
                         </span>
                         @endif
                     </div>
@@ -224,7 +224,7 @@
                                 description: '{{ addslashes($course->description ?? '') }}',
                                 skills: '{{ addslashes($course->skills ?? '') }}',
                                 passing_score: {{ $course->passing_score ?: 80 }},
-                                demographics: @js($course->demographic_requirements ?? ['education_levels' => []]),
+                                demographics: @js(array_merge(['gender' => null, 'min_age' => null, 'max_age' => null, 'education_levels' => []], json_decode($course->demographic_requirements ?? '[]', true) ?: [])),
                             }; editFormType = '{{ $course->training_type }}'; editModal = true;" type="button" class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-200" title="Edit Course">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -442,7 +442,7 @@
             <div x-show="editModal" x-transition.opacity class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="editModal = false"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
-            <div x-show="editModal" x-transition class="relative inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full border border-slate-200">
+            <div x-show="editModal" x-transition class="relative inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-slate-200">
                 <form :action="'/trainer/courses/' + activeCourse.id" method="POST">
                     @csrf
                     @method('PUT')
@@ -504,6 +504,40 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Target Skills (Comma-Separated)</label>
                             <input type="text" name="skills" x-model="activeCourse.skills" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-emerald-500 outline-none">
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100 space-y-3">
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Optional Demographic Eligibility</h4>
+                                <p class="text-[11px] text-slate-400">Leave every field blank to accept all applicants.</p>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Gender</label>
+                                    <select name="demographics[gender]" x-model="activeCourse.demographics.gender" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:border-emerald-500 outline-none">
+                                        <option value="">Open to all</option>
+                                        <option value="Male">Men only</option>
+                                        <option value="Female">Women only</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Minimum Age</label>
+                                    <input type="number" name="demographics[min_age]" x-model="activeCourse.demographics.min_age" min="15" max="100" placeholder="No minimum" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:border-emerald-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Maximum Age</label>
+                                    <input type="number" name="demographics[max_age]" x-model="activeCourse.demographics.max_age" min="15" max="100" placeholder="No maximum" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:border-emerald-500 outline-none">
+                                </div>
+                            </div>
+                            <fieldset>
+                                <legend class="block text-xs font-bold text-slate-700 mb-2">Educational Attainment</legend>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-slate-700">
+                                    @foreach(['Elementary', 'High School', 'Senior High School', 'Vocational', 'College', 'Post Graduate'] as $level)
+                                    <label class="inline-flex items-center gap-2"><input type="checkbox" name="demographics[education_levels][]" value="{{ $level }}" x-model="activeCourse.demographics.education_levels" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">{{ $level }}</label>
+                                    @endforeach
+                                </div>
+                                <p class="text-[11px] text-slate-400 mt-1">Applicants matching any selected level can enroll.</p>
+                            </fieldset>
                         </div>
 
                         <div>

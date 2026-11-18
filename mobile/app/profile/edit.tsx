@@ -54,11 +54,11 @@ export default function EditProfileScreen() {
   const [street, setStreet] = useState(addr.street || '');
   const [city, setCity] = useState(addr.city || 'Cebu City');
   const [province, setProvince] = useState(addr.province || 'Cebu');
-  const [zip, setZip] = useState(addr.zip || '6000');
+  const [zip, setZip] = useState(addr.zip || addr.postal_code || '6000');
 
   // 3. Education & Work Experience
   const eduObj = user?.education_details || {};
-  const [eduLevel, setEduLevel] = useState(eduObj.level || 'College Graduate');
+  const [eduLevel, setEduLevel] = useState(eduObj.level || 'College');
   const [eduSchool, setEduSchool] = useState(eduObj.school || '');
   const [eduCourse, setEduCourse] = useState(eduObj.course || user?.education || '');
   const [eduYear, setEduYear] = useState(eduObj.year_graduated || '');
@@ -67,13 +67,17 @@ export default function EditProfileScreen() {
   const [workCompany, setWorkCompany] = useState(workObj.company || '');
   const [workPosition, setWorkPosition] = useState(workObj.position || '');
   const [workDuration, setWorkDuration] = useState(workObj.duration || '');
+  const [workDescription, setWorkDescription] = useState(workObj.description || '');
   const [bio, setBio] = useState(workObj.summary || user?.bio || '');
 
   // 4. Career Preferences
   const prefObj = user?.preferences || {};
   const [occupation1, setOccupation1] = useState(prefObj.occupation1 || '');
   const [occupation2, setOccupation2] = useState(prefObj.occupation2 || '');
+  const [occupation3, setOccupation3] = useState(prefObj.occupation3 || '');
   const [industry1, setIndustry1] = useState(prefObj.industry1 || '');
+  const [industry2, setIndustry2] = useState(prefObj.industry2 || '');
+  const [industry3, setIndustry3] = useState(prefObj.industry3 || '');
   const [salaryExpectation, setSalaryExpectation] = useState(prefObj.salary_expectation || '');
   const [preferredLocation, setPreferredLocation] = useState(prefObj.preferred_location || 'Cebu City');
 
@@ -86,8 +90,15 @@ export default function EditProfileScreen() {
 
   const socObj = user?.social_status || {};
   const [is4ps, setIs4ps] = useState(!!socObj.is_4ps);
+  const [householdId, setHouseholdId] = useState(socObj.household_id || '');
+  const [isOfw, setIsOfw] = useState(!!socObj.is_ofw);
   const [isPwd, setIsPwd] = useState(!!socObj.is_pwd);
   const [pwdType, setPwdType] = useState(socObj.pwd_type || '');
+  const [isLgbtq, setIsLgbtq] = useState(!!socObj.is_lgbtq);
+  const [isSeniorCitizen, setIsSeniorCitizen] = useState(!!socObj.is_senior_citizen);
+  const [isImmigrant, setIsImmigrant] = useState(!!socObj.is_immigrant);
+  const [immigrantOrigin, setImmigrantOrigin] = useState(socObj.immigrant_origin || '');
+  const [region, setRegion] = useState(socObj.region || 'Region VII - Central Visayas');
 
   // 6. Skills
   const [newSkill, setNewSkill] = useState('');
@@ -148,7 +159,9 @@ export default function EditProfileScreen() {
           city: city.trim(),
           province: province.trim(),
           zip: zip.trim(),
-          full: `${street.trim() ? street.trim() + ', ' : ''}${barangay.trim() ? barangay.trim() + ', ' : ''}${city.trim()}`,
+          postal_code: zip.trim(),
+          country: addr.country || 'Philippines',
+          full: [street.trim(), barangay.trim(), city.trim(), province.trim()].filter(Boolean).join(', '),
         },
         education_details: {
           level: eduLevel,
@@ -161,13 +174,17 @@ export default function EditProfileScreen() {
           company: workCompany.trim(),
           position: workPosition.trim(),
           duration: workDuration.trim(),
+          description: workDescription.trim(),
           summary: bio.trim(),
         },
         bio: bio.trim(),
         preferences: {
           occupation1: occupation1.trim(),
           occupation2: occupation2.trim(),
+          occupation3: occupation3.trim(),
           industry1: industry1.trim(),
+          industry2: industry2.trim(),
+          industry3: industry3.trim(),
           salary_expectation: salaryExpectation.trim(),
           preferred_location: preferredLocation.trim(),
         },
@@ -179,13 +196,21 @@ export default function EditProfileScreen() {
         },
         social_status: {
           is_4ps: is4ps,
+          household_id: is4ps ? householdId.trim() : '',
+          is_ofw: isOfw,
           is_pwd: isPwd,
           pwd_type: isPwd ? pwdType.trim() : '',
+          is_lgbtq: isLgbtq,
+          is_senior_citizen: isSeniorCitizen,
+          is_immigrant: isImmigrant,
+          immigrant_origin: isImmigrant ? immigrantOrigin.trim() : '',
+          region,
         },
+        languages: user?.languages || [],
         skills,
       };
 
-      const res = await updateProfile(payload as any);
+      const res = await updateProfile(payload);
 
       if (res.success) {
         Alert.alert('Profile Saved', 'Your official DOLE-DMDP NSRP Form 1 profile has been saved successfully.', [
@@ -494,7 +519,7 @@ export default function EditProfileScreen() {
                 <View style={styles.fieldGroup}>
                   <Text style={styles.label}>Highest Educational Attainment</Text>
                   <View style={styles.pillSelectorRow}>
-                    {['High School', 'Vocational / TVET', 'College Level', 'College Graduate', 'Post Graduate'].map((lvl) => (
+                    {['Elementary', 'High School', 'Senior High School', 'Vocational', 'College', 'Post Graduate'].map((lvl) => (
                       <TouchableOpacity
                         key={lvl}
                         style={[styles.selectorPill, eduLevel === lvl && styles.selectorPillActive]}
@@ -593,6 +618,19 @@ export default function EditProfileScreen() {
                 </View>
 
                 <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>Work Description</Text>
+                  <TextInput
+                    style={[styles.input, styles.textArea]}
+                    value={workDescription}
+                    onChangeText={setWorkDescription}
+                    placeholder="Describe your responsibilities"
+                    placeholderTextColor={COLORS.slate400}
+                    multiline
+                    numberOfLines={3}
+                  />
+                </View>
+
+                <View style={styles.fieldGroup}>
                   <Text style={styles.label}>Professional Bio & Career Objective</Text>
                   <TextInput
                     style={[styles.input, styles.textArea]}
@@ -642,6 +680,19 @@ export default function EditProfileScreen() {
                 </View>
 
                 <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>Preferred Occupation 3</Text>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={styles.input}
+                      value={occupation3}
+                      onChangeText={setOccupation3}
+                      placeholder="Third choice"
+                      placeholderTextColor={COLORS.slate400}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.fieldGroup}>
                   <Text style={styles.label}>Preferred Industry</Text>
                   <View style={styles.inputContainer}>
                     <Ionicons name="business-outline" size={18} color={COLORS.slate400} style={styles.inputIcon} />
@@ -650,6 +701,28 @@ export default function EditProfileScreen() {
                       value={industry1}
                       onChangeText={setIndustry1}
                       placeholder="e.g. BPO / IT, Hospitality, Construction"
+                      placeholderTextColor={COLORS.slate400}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>Alternative Industries</Text>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={styles.input}
+                      value={industry2}
+                      onChangeText={setIndustry2}
+                      placeholder="Second industry choice"
+                      placeholderTextColor={COLORS.slate400}
+                    />
+                  </View>
+                  <View style={[styles.inputContainer, { marginTop: SPACING.sm }]}>
+                    <TextInput
+                      style={styles.input}
+                      value={industry3}
+                      onChangeText={setIndustry3}
+                      placeholder="Third industry choice"
                       placeholderTextColor={COLORS.slate400}
                     />
                   </View>
@@ -760,6 +833,29 @@ export default function EditProfileScreen() {
                   <Switch value={is4ps} onValueChange={setIs4ps} trackColor={{ false: COLORS.slate200, true: COLORS.primary }} />
                 </View>
 
+                {is4ps && (
+                  <View style={[styles.fieldGroup, { marginTop: SPACING.sm }]}>
+                    <Text style={styles.label}>4Ps Household ID</Text>
+                    <View style={styles.inputContainer}>
+                      <TextInput
+                        style={styles.input}
+                        value={householdId}
+                        onChangeText={setHouseholdId}
+                        placeholder="Optional household identifier"
+                        placeholderTextColor={COLORS.slate400}
+                      />
+                    </View>
+                  </View>
+                )}
+
+                <View style={[styles.switchRow, { marginTop: SPACING.md }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.switchTitle}>OFW Returnee</Text>
+                    <Text style={styles.switchSub}>Returning overseas Filipino worker</Text>
+                  </View>
+                  <Switch value={isOfw} onValueChange={setIsOfw} trackColor={{ false: COLORS.slate200, true: COLORS.primary }} />
+                </View>
+
                 <View style={[styles.switchRow, { marginTop: SPACING.md }]}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.switchTitle}>Person with Disability (PWD)</Text>
@@ -782,6 +878,49 @@ export default function EditProfileScreen() {
                     </View>
                   </View>
                 )}
+
+                <View style={[styles.switchRow, { marginTop: SPACING.md }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.switchTitle}>LGBTQ+ Community Member</Text>
+                  </View>
+                  <Switch value={isLgbtq} onValueChange={setIsLgbtq} trackColor={{ false: COLORS.slate200, true: COLORS.purple }} />
+                </View>
+
+                <View style={[styles.switchRow, { marginTop: SPACING.md }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.switchTitle}>Senior Citizen</Text>
+                  </View>
+                  <Switch value={isSeniorCitizen} onValueChange={setIsSeniorCitizen} trackColor={{ false: COLORS.slate200, true: COLORS.primary }} />
+                </View>
+
+                <View style={[styles.switchRow, { marginTop: SPACING.md }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.switchTitle}>Immigrant / Migrant Worker</Text>
+                  </View>
+                  <Switch value={isImmigrant} onValueChange={setIsImmigrant} trackColor={{ false: COLORS.slate200, true: COLORS.primary }} />
+                </View>
+
+                {isImmigrant && (
+                  <View style={[styles.fieldGroup, { marginTop: SPACING.sm }]}>
+                    <Text style={styles.label}>Country / Province of Origin</Text>
+                    <View style={styles.inputContainer}>
+                      <TextInput
+                        style={styles.input}
+                        value={immigrantOrigin}
+                        onChangeText={setImmigrantOrigin}
+                        placeholder="Origin details"
+                        placeholderTextColor={COLORS.slate400}
+                      />
+                    </View>
+                  </View>
+                )}
+
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>Region</Text>
+                  <View style={styles.inputContainer}>
+                    <TextInput style={styles.input} value={region} onChangeText={setRegion} />
+                  </View>
+                </View>
               </View>
             )}
 

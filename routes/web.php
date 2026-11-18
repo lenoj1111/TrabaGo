@@ -170,7 +170,7 @@ Route::prefix('jobseeker')->name('jobseeker.')->group(function () {
         Route::post('/training/{id}/enroll', [JobseekerPortalController::class, 'enrollTraining'])->name('training.enroll');
         Route::get('/training/{id}', [JobseekerPortalController::class, 'trainingShow'])->name('training.show');
         Route::get('/training/{id}/quiz', [JobseekerPortalController::class, 'trainingQuiz'])->name('training.quiz');
-        Route::post('/training/{id}/quiz', [JobseekerPortalController::class, 'submitQuiz'])->name('training.quiz.submit');
+        Route::post('/training/{course}/quiz', [JobseekerPortalController::class, 'submitQuiz'])->name('training.quiz.submit');
         Route::get('/certificates/{id}/preview', [JobseekerPortalController::class, 'previewCertificate'])->name('certificates.preview');
 
         // Document Hub & Verification

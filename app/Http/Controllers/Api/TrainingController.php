@@ -278,10 +278,10 @@ class TrainingController extends Controller
         $hasEssay = collect($gradedSubmission['responses'])
             ->contains(fn($answer) => $answer['question_type'] === 'essay');
         $objectiveScore = $gradedSubmission['objective_score']['percentage'];
-        $passingScore = (int) ($training->passing_score ?: 70);
+        $passingScore = (int) ($training->passing_score ?: 80);
         $passed = !$hasEssay && $objectiveScore !== null && $objectiveScore >= $passingScore;
 
-        $result = DB::transaction(function () use ($training, $jobseeker, $gradedSubmission, $hasEssay, $objectiveScore, $passed) {
+        $result = DB::transaction(function () use ($training, $jobseeker, $gradedSubmission, $hasEssay, $objectiveScore, $passingScore, $passed) {
             $enrollment = TrainingEnrollment::where('jobseeker_id', $jobseeker->jobseeker_id)
                 ->where('training_id', $training->training_id)
                 ->lockForUpdate()
@@ -370,10 +370,19 @@ class TrainingController extends Controller
             return response()->json(['success' => false, 'message' => 'Your previous assessment submission is still awaiting trainer review.'], 409);
         }
 
+        $gradedResponses = array_map(static function (array $response) use ($passed): array {
+            if (!$passed) {
+                $response['correct_answer'] = null;
+            }
+
+            return $response;
+        }, $gradedSubmission['responses']);
+
         return response()->json([
             'success' => true,
             'review_status' => $result['status'],
             'objective_score' => $gradedSubmission['objective_score'],
+            'responses' => $gradedResponses,
             'assessment_attempts' => $result['attempts'],
             'retakes' => max($result['attempts'] - 1, 0),
             'passed' => $passed,

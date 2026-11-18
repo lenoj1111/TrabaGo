@@ -251,6 +251,37 @@ class TrainingSkillsFlowTest extends TestCase
         ], $course->demographic_requirements);
     }
 
+    public function test_trainer_can_update_course_demographic_requirements(): void
+    {
+        $response = $this->actingAs($this->trainerUser)->put(
+            route('trainer.courses.update', $this->trainingCourse->training_id),
+            [
+                'title' => $this->trainingCourse->title,
+                'training_type' => 'laboratory_onsite',
+                'training_start_date' => now()->toDateString(),
+                'training_end_date' => now()->addMonth()->toDateString(),
+                'trainee_capacity' => 12,
+                'description' => $this->trainingCourse->description,
+                'demographics' => [
+                    'gender' => 'Male',
+                    'min_age' => 20,
+                    'max_age' => 40,
+                    'education_levels' => ['College'],
+                ],
+            ]
+        );
+
+        $response->assertSessionHasNoErrors();
+        $response->assertSessionHas('success');
+        $this->trainingCourse->refresh();
+        $this->assertSame([
+            'gender' => 'Male',
+            'min_age' => 20,
+            'max_age' => 40,
+            'education_levels' => ['College'],
+        ], $this->trainingCourse->demographic_requirements);
+    }
+
     /**
      * Job Seeker Flow - Step 3: Training Enrollment Dashboard
      */
@@ -365,6 +396,39 @@ class TrainingSkillsFlowTest extends TestCase
         $this->assertSame('passed', $enrollment->answers['review_status']);
         $this->assertTrue((bool) $enrollment->certificate_issued);
         $this->assertNotNull($enrollment->end_date);
+    }
+
+    public function test_mobile_wrong_answer_returns_retake_result_and_notifies_with_passing_score(): void
+    {
+        TrainingEnrollment::create([
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'training_id' => $this->trainingCourse->training_id,
+            'training_type' => 'online',
+            'status' => 'enrolled',
+            'answers' => [],
+            'assessment_attempts' => 0,
+            'passed' => false,
+            'certificate_issued' => false,
+        ]);
+        $assessmentId = DB::table('training_assessments')
+            ->where('training_id', $this->trainingCourse->training_id)
+            ->value('assessment_id');
+
+        $response = $this->actingAs($this->jobseekerUser, 'sanctum')->postJson(
+            "/api/training/{$this->trainingCourse->training_id}/quiz-result",
+            ['responses' => [(string) $assessmentId => 1]]
+        );
+
+        $response->assertOk()
+            ->assertJsonPath('review_status', 'needs_retake')
+            ->assertJsonPath('passed', false)
+            ->assertJsonPath('certificate_issued', false);
+
+        $notificationMessage = DB::table('notifications')
+            ->where('user_id', $this->jobseekerUser->user_id)
+            ->where('title', 'Assessment Not Passed')
+            ->value('message');
+        $this->assertStringContainsString('passing score: 80%', $notificationMessage);
     }
 
     /**
