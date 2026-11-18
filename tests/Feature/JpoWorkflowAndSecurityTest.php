@@ -96,6 +96,17 @@ class JpoWorkflowAndSecurityTest extends TestCase
         ]);
     }
 
+    public function test_admin_employer_page_uses_accreditation_without_separate_account_approval(): void
+    {
+        $page = $this->actingAs($this->adminUser)->get(route('admin.employers'));
+
+        $page->assertOk()
+            ->assertSee('Direct Accredit')
+            ->assertSee('Current Documents')
+            ->assertSee('Previous Versions')
+            ->assertDontSee('Approve Account');
+    }
+
     public function test_jpo_can_update_employer_document_status_to_complete(): void
     {
         $accId = DB::table('employer_accreditation')->insertGetId([
@@ -120,25 +131,31 @@ class JpoWorkflowAndSecurityTest extends TestCase
         ]);
     }
 
-    public function test_jpo_can_confirm_and_grant_employer_accreditation(): void
+    public function test_jpo_cannot_grant_or_revoke_employer_accreditation(): void
     {
         $accreditationId = DB::table('employer_accreditation')->insertGetId([
             'employer_id' => $this->employer->employer_id,
-            'status' => 'submitted_to_jpo',
+            'status' => 'admin_approved',
+            'admin_approved' => 1,
             'document_status' => 'complete',
             'jpo_reviewed' => 1,
             'submitted_at' => now(),
         ]);
+        $this->employer->update(['is_accredited' => true]);
 
         $page = $this->actingAs($this->jpoUser)->get(route('jpo.evaluations.accreditations'));
         $page->assertOk()
-            ->assertSee('Grant accreditation?')
-            ->assertSee('Please confirm this employer has completed the required review.');
+            ->assertDontSee('Directly Accredit and Issue Certificate')
+            ->assertDontSee('Disaccredit');
 
-        $response = $this->actingAs($this->jpoUser)
-            ->post(route('jpo.evaluations.accreditations.accredit', $accreditationId));
+        $grantResponse = $this->actingAs($this->jpoUser)
+            ->post("/jpo/evaluations/accreditations/{$accreditationId}/accredit");
+        $grantResponse->assertNotFound();
 
-        $response->assertRedirect()->assertSessionHas('success');
+        $revokeResponse = $this->actingAs($this->jpoUser)
+            ->post("/jpo/evaluations/accreditations/{$accreditationId}/disaccredit");
+        $revokeResponse->assertNotFound();
+
         $this->assertDatabaseHas('employers', [
             'employer_id' => $this->employer->employer_id,
             'is_accredited' => 1,
@@ -146,45 +163,50 @@ class JpoWorkflowAndSecurityTest extends TestCase
         $this->assertDatabaseHas('employer_accreditation', [
             'accreditation_id' => $accreditationId,
             'status' => 'admin_approved',
-            'document_status' => 'complete',
-            'certificate_issued_by' => $this->jpoUser->user_id,
-        ]);
-        $this->assertDatabaseHas('users', [
-            'user_id' => $this->employerUser->user_id,
-            'account_status' => 'verified',
-            'is_approved' => 1,
+            'admin_approved' => 1,
         ]);
     }
 
-    public function test_jpo_can_disaccredit_an_employer(): void
+    public function test_jpo_can_reject_accreditation_with_required_remarks(): void
     {
-        $this->employer->update(['is_accredited' => true]);
         $accreditationId = DB::table('employer_accreditation')->insertGetId([
             'employer_id' => $this->employer->employer_id,
-            'status' => 'admin_approved',
-            'admin_approved' => 1,
-            'document_status' => 'complete',
+            'status' => 'submitted_to_jpo',
+            'document_status' => 'incomplete',
+            'jpo_reviewed' => 0,
             'submitted_at' => now(),
         ]);
 
         $page = $this->actingAs($this->jpoUser)->get(route('jpo.evaluations.accreditations'));
         $page->assertOk()
-            ->assertSee('Revoke official accreditation?')
-            ->assertSee('Confirm Disaccrediting')
-            ->assertDontSee('onsubmit="return confirm(', false);
+            ->assertSee('Reject Accreditation Papers')
+            ->assertSee('Rejection Remarks *');
 
-        $response = $this->actingAs($this->jpoUser)
-            ->post(route('jpo.evaluations.accreditations.disaccredit', $accreditationId));
-
-        $response->assertRedirect()->assertSessionHas('info');
-        $this->assertDatabaseHas('employers', [
-            'employer_id' => $this->employer->employer_id,
-            'is_accredited' => 0,
-        ]);
+        $invalidResponse = $this->actingAs($this->jpoUser)->post(
+            "/jpo/evaluations/accreditations/{$accreditationId}/recommend",
+            ['action' => 'reject', 'remarks' => '']
+        );
+        $invalidResponse->assertSessionHasErrors('remarks');
         $this->assertDatabaseHas('employer_accreditation', [
             'accreditation_id' => $accreditationId,
-            'status' => 'disaccredited',
-            'admin_approved' => 0,
+            'status' => 'submitted_to_jpo',
+        ]);
+
+        $response = $this->actingAs($this->jpoUser)->post(
+            "/jpo/evaluations/accreditations/{$accreditationId}/recommend",
+            ['action' => 'reject', 'remarks' => 'Missing a valid business permit.']
+        );
+
+        $response->assertRedirect()->assertSessionHas('info');
+        $this->assertDatabaseHas('employer_accreditation', [
+            'accreditation_id' => $accreditationId,
+            'status' => 'rejected',
+            'jpo_reviewed' => 1,
+            'jpo_remarks' => 'Missing a valid business permit.',
+        ]);
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $this->employerUser->user_id,
+            'title' => 'Accreditation Papers Rejected',
         ]);
     }
 
@@ -244,6 +266,26 @@ class JpoWorkflowAndSecurityTest extends TestCase
         // Status must remain submitted_to_jpo and not jpo_approved
         $this->assertDatabaseHas('employer_accreditation', [
             'accreditation_id' => $accId,
+            'status' => 'submitted_to_jpo',
+            'jpo_reviewed' => 0,
+        ]);
+
+        $pendingAccId = DB::table('employer_accreditation')->insertGetId([
+            'employer_id' => $this->employer->employer_id,
+            'status' => 'submitted_to_jpo',
+            'document_status' => 'pending',
+            'jpo_reviewed' => 0,
+            'submitted_at' => now(),
+        ]);
+
+        $pendingResponse = $this->actingAs($this->jpoUser)->post("/jpo/evaluations/accreditations/{$pendingAccId}/recommend", [
+            'action' => 'recommend',
+            'remarks' => 'Trying to recommend documents that are still pending.',
+        ]);
+
+        $pendingResponse->assertRedirect()->assertSessionHasErrors('error');
+        $this->assertDatabaseHas('employer_accreditation', [
+            'accreditation_id' => $pendingAccId,
             'status' => 'submitted_to_jpo',
             'jpo_reviewed' => 0,
         ]);

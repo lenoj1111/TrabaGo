@@ -129,6 +129,15 @@
                         $docs = is_array($employer->documents ?? null)
                         ? $employer->documents
                         : json_decode($employer->documents ?? '[]', true);
+                        $docs = is_array($docs) ? $docs : [];
+                        $currentDocs = array_filter($docs, function ($document, $key) {
+                            $key = strtolower((string) $key);
+                            $isPreviousKey = str_contains($key, '_previous_');
+                            $isPreviousMetadata = is_array($document)
+                                && strtolower((string) ($document['revision_status'] ?? '')) === 'previous';
+
+                            return !$isPreviousKey && !$isPreviousMetadata;
+                        }, ARRAY_FILTER_USE_BOTH);
                         $isAccountApproved = ($employer->user_status === 'active' && ($employer->user_approved ?? 1));
                         $isJpoRecommended = ($employer->accreditation_status === 'jpo_approved' || $employer->accreditation_status === 'supervisor_approved');
                         @endphp
@@ -167,9 +176,9 @@
                                 </div>
                             </td>
                             <td class="py-4 px-6">
-                                @if(is_array($docs) && count($docs) > 0)
+                                @if(count($currentDocs) > 0)
                                 <div class="flex flex-wrap gap-1">
-                                    @foreach($docs as $k => $d)
+                                    @foreach($currentDocs as $k => $d)
                                     <button type="button"
                                         @click="openDocInspection(
                                                             @js($employer->company_name),
@@ -183,6 +192,8 @@
                                     </button>
                                     @endforeach
                                 </div>
+                                @elseif(is_array($docs) && count($docs) > 0)
+                                <span class="text-[11px] text-slate-400 italic">No current files; previous versions are available in View Docs</span>
                                 @else
                                 <span class="text-[11px] text-slate-400 italic">No files on record</span>
                                 @endif
@@ -248,20 +259,7 @@
                                     </button>
                                     @endif
 
-                                    {{-- 1. Employer Account Approval (Independent from Accreditation) --}}
-                                    @if(!$isAccountApproved && !empty($employer->user_id))
-                                    <button type="button"
-                                        data-action="approve-user"
-                                        data-approve-url="{{ route('admin.users.approve', $employer->user_id) }}"
-                                        class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-colors shadow-sm"
-                                        title="Approve Employer Account">
-                                        ✓ Approve Account
-                                    </button>
-                                    @endif
-
-                                    {{-- 2. Employer Accreditation & Control Actions --}}
-                                    @if(!$employer->is_accredited)
-                                    {{-- 2. Employer Accreditation & Control Actions --}}
+                                    {{-- Employer Accreditation & Control Actions --}}
                                     @if(!$employer->is_accredited)
                                     {{-- Accredit Button (Direct Accredit with warning or JPO Recommended) --}}
                                     <button type="button"
@@ -284,28 +282,6 @@
                                         </svg>
                                         <span>Reject</span>
                                     </button>
-                                    @else
-                                    {{-- Print / Save Certificate --}}
-                                    <a href="{{ route('admin.employers.certificate', $employer->employer_id) }}" target="_blank"
-                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs transition-colors"
-                                        title="View & Print Official Certificate of Accreditation">
-                                        <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                        <span>Certificate</span>
-                                    </a>
-
-                                    {{-- Disaccredit Button --}}
-                                    <button type="button"
-                                        @click="disaccreditEmployer({{ $employer->employer_id }})"
-                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-colors"
-                                        title="Disaccredit Employer & Revoke Status">
-                                        <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                                        </svg>
-                                        <span>Disaccredit</span>
-                                    </button>
-                                    @endif
                                     @endif
 
                                     {{-- 3. Update Email or Password (HR Turnover / Resignation Recovery) --}}
@@ -497,8 +473,10 @@
                     <div>
                         <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Document Inspection</span>
                         <h2 class="mt-1 text-lg font-black text-slate-900" x-text="activeDocCompany"></h2>
-                        <p class="text-xs text-slate-500">
-                            <span x-text="activeDocList.length"></span> document(s) on record
+                        <p class="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-slate-500">
+                            <span><strong class="text-emerald-700" x-text="activeDocList.filter(doc => doc.status !== 'Superseded').length"></strong> current</span>
+                            <span aria-hidden="true">&middot;</span>
+                            <span><strong class="text-amber-700" x-text="activeDocList.filter(doc => doc.status === 'Superseded').length"></strong> previous versions</span>
                         </p>
                     </div>
                     <button type="button" @click="docModalOpen = false"
@@ -508,7 +486,29 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-12">
                     <aside class="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-slate-100 max-h-[60vh] lg:max-h-[70vh] overflow-y-auto">
-                        <div class="sticky top-0 z-10 grid grid-cols-1 gap-2 border-b border-slate-100 bg-white p-3 sm:grid-cols-3">
+                        <div class="sticky top-0 z-20 flex gap-2 border-b border-slate-100 bg-slate-50 p-3">
+                            <button type="button" @click="viewMode = 'current'; docFilter = 'all'"
+                                :aria-pressed="viewMode === 'current'"
+                                :class="viewMode === 'current' ? 'border-emerald-300 bg-white text-emerald-800 shadow-sm' : 'border-transparent text-slate-600 hover:bg-white'"
+                                class="flex-1 rounded-xl border px-3 py-2 text-left text-xs font-bold transition-colors">
+                                <span class="flex items-center justify-between gap-2">
+                                    <span>Current Documents</span>
+                                    <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] text-emerald-800"
+                                        x-text="activeDocList.filter(doc => doc.status !== 'Superseded').length"></span>
+                                </span>
+                            </button>
+                            <button type="button" @click="viewMode = 'previous'; docFilter = 'all'"
+                                :aria-pressed="viewMode === 'previous'"
+                                :class="viewMode === 'previous' ? 'border-amber-300 bg-white text-amber-800 shadow-sm' : 'border-transparent text-slate-600 hover:bg-white'"
+                                class="flex-1 rounded-xl border px-3 py-2 text-left text-xs font-bold transition-colors">
+                                <span class="flex items-center justify-between gap-2">
+                                    <span>Previous Versions</span>
+                                    <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-800"
+                                        x-text="activeDocList.filter(doc => doc.status === 'Superseded').length"></span>
+                                </span>
+                            </button>
+                        </div>
+                        <div class="sticky top-[68px] z-10 grid grid-cols-1 gap-2 border-b border-slate-100 bg-white p-3 sm:grid-cols-3">
                             <input type="search" x-model="docSearch" placeholder="Search documents"
                                 aria-label="Search documents"
                                 class="min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none sm:col-span-3">
@@ -561,8 +561,8 @@
 
                             <template x-if="filteredDocuments.length === 0">
                                 <li class="p-8 text-center">
-                                    <p class="text-xs font-bold text-slate-700" x-text="activeDocList.length === 0 ? 'No documents uploaded' : 'No documents match these filters'"></p>
-                                    <p class="mt-1 text-[11px] text-slate-500" x-text="activeDocList.length === 0 ? 'There are no files attached to this accreditation.' : 'Try a different search or status filter.'"></p>
+                                    <p class="text-xs font-bold text-slate-700" x-text="activeDocList.length === 0 ? 'No documents uploaded' : (viewMode === 'current' ? 'No current documents found' : 'No previous versions found')"></p>
+                                    <p class="mt-1 text-[11px] text-slate-500" x-text="activeDocList.length === 0 ? 'There are no files attached to this accreditation.' : 'Try another tab or adjust the search and status filters.'"></p>
                                 </li>
                             </template>
                         </ul>
@@ -669,6 +669,7 @@
 
             // Document Viewer Modal
             docModalOpen: false,
+            viewMode: 'current',
             activeDocCompany: '',
             activeDocList: [],
             selectedDocKey: '',
@@ -679,6 +680,7 @@
             get filteredDocuments() {
                 const search = (this.docSearch || '').trim().toLowerCase();
                 return (this.activeDocList || [])
+                    .filter(doc => this.viewMode === 'previous' ? doc.status === 'Superseded' : doc.status !== 'Superseded')
                     .filter(doc => this.docFilter === 'all' || doc.status === this.docFilter)
                     .filter(doc => !search || `${doc.label} ${doc.filename} ${doc.issuer}`.toLowerCase().includes(search))
                     .sort((a, b) => {
@@ -708,6 +710,7 @@
                 this.docSearch = '';
                 this.docFilter = 'all';
                 this.docSort = 'newest';
+                this.viewMode = 'current';
 
                 const aliases = {
                     sec_dti_registration: 'sec_dti',
@@ -868,7 +871,9 @@
                 }
 
                 if (this.activeDocList.length > 0) {
-                    this.selectDocument(this.activeDocList[0]);
+                    const firstCurrentDocument = this.activeDocList.find(doc => doc.status !== 'Superseded');
+                    if (!firstCurrentDocument) this.viewMode = 'previous';
+                    this.selectDocument(firstCurrentDocument || this.activeDocList[0]);
                     this.docModalOpen = true;
                 } else {
                     Swal.fire({
@@ -1117,41 +1122,6 @@
         };
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        document.addEventListener('click', function(event) {
-            const button = event.target.closest('[data-action="approve-user"]');
-            if (!button) return;
-
-            Swal.fire({
-                title: 'Approve User Account?',
-                text: 'This will authorize the user account to log in and access system functions.',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#059669',
-                cancelButtonColor: '#64748b',
-                confirmButtonText: 'Yes, approve'
-            }).then((result) => {
-                if (!result.isConfirmed) return;
-
-                fetch(button.dataset.approveUrl, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json'
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            Swal.fire('Approved!', data.success, 'success').then(() => location.reload());
-                        } else {
-                            Swal.fire('Approval Failed', data.error || 'Unable to approve this account.', 'error');
-                        }
-                    })
-                    .catch(() => Swal.fire('Error', 'Network error occurred.', 'error'));
-            });
-        });
-    });
 </script>
 @endpush
 @endsection
