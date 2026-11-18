@@ -123,7 +123,7 @@
                 </div>
             </form>
 
-            <p class="text-center text-xs text-slate-500">Your certificate remains pending until the trainer reviews your answers and approves the result.</p>
+            <p class="text-center text-xs text-slate-500">If you pass, return to the DMDP for your practical demo. Your trainer will issue your certificate after confirming your return.</p>
         </div>
     </div>
 @endif

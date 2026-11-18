@@ -3,8 +3,14 @@
 @section('title', 'Jobseeker Status & Workflow Supervision - JPO')
 
 @section('content')
-<div x-data="{ viewModal: false, selectedJobseeker: null, openView(js) { this.selectedJobseeker = js; this.viewModal = true; } }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
+<div x-data="{ viewModal: false, credentialsModal: false, selectedJobseeker: null, credentialEmail: '', credentialPassword: '', credentialPasswordConfirmation: '', openView(js) { this.selectedJobseeker = js; this.viewModal = true; }, openCredentials(js) { this.selectedJobseeker = js; this.credentialEmail = js.email; this.credentialPassword = ''; this.credentialPasswordConfirmation = ''; this.credentialsModal = true; } }" class="min-h-screen bg-slate-50/80 px-4 py-8 sm:px-6 lg:px-8">
     <div class="w-full max-w-[1680px] mx-auto space-y-8">
+
+        @if($errors->any())
+            <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800" role="alert">
+                {{ $errors->first() }}
+            </div>
+        @endif
 
         <!-- Header -->
         <div class="rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
@@ -142,11 +148,15 @@
                         @forelse($jobseekers as $js)
                             @php
                                 $jsName = trim(($js->first_name ?? '') . ' ' . ($js->last_name ?? ''));
+                                $profilePhotoUrl = !empty($js->profile_photo) && \Illuminate\Support\Facades\Storage::disk('public')->exists($js->profile_photo)
+                                    ? asset('storage/' . $js->profile_photo)
+                                    : null;
                                 $jsData = [
                                     'id' => $js->jobseeker_id,
                                     'user_id' => $js->user_id,
                                     'name' => $jsName,
                                     'email' => $js->user_email ?? 'N/A',
+                                    'profile_photo_url' => $profilePhotoUrl,
                                     'mobile' => $js->mobile_number ?: 'Not provided',
                                     'gender' => !empty($js->sex) ? ucfirst($js->sex) : (!empty($js->gender) ? ucfirst($js->gender) : 'N/A'),
                                     'civil_status' => !empty($js->civil_status) ? ucfirst($js->civil_status) : 'N/A',
@@ -177,9 +187,15 @@
                             <tr class="hover:bg-slate-50/80 transition-colors">
                                 <td class="py-4 px-6">
                                     <div class="flex items-center gap-3">
+                                        @if($profilePhotoUrl)
+                                            <img src="{{ $profilePhotoUrl }}"
+                                                 alt="{{ $jsName }}"
+                                                 class="h-9 w-9 rounded-xl object-cover ring-2 ring-emerald-500/30 shrink-0">
+                                        @else
                                         <div class="h-9 w-9 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center justify-center ring-2 ring-emerald-500/30 shrink-0">
                                             {{ strtoupper(substr($js->first_name ?? 'J', 0, 1)) }}
                                         </div>
+                                        @endif
                                         <div>
                                             <div class="font-black text-slate-900 text-sm flex items-center gap-1.5 flex-wrap">
                                                 <span>{{ $js->first_name }} {{ $js->last_name }}</span>
@@ -247,17 +263,9 @@
                                 <td class="py-4 px-6 text-right">
                                     <div class="ml-auto flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
                                         <button type="button"
-                                                data-action="approve-user"
-                                                data-approve-url="{{ route('jpo.evaluations.jobseekers.approve', $js->jobseeker_id) }}"
-                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all" title="Approve Candidate">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                            <span>Approve</span>
-                                        </button>
-                                        <button type="button"
-                                                data-action="disapprove-user"
-                                                data-approve-url="{{ route('jpo.evaluations.jobseekers.disapprove', $js->jobseeker_id) }}"
-                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-all" title="Disapprove Candidate">
-                                            <span>Disapprove</span>
+                                                @click='openCredentials(@json($jsData))'
+                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all">
+                                            <span>Update Login</span>
                                         </button>
                                         <button type="button" @click='openView(@json($jsData))'
                                                 class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors" title="View Full Profile">
@@ -294,12 +302,22 @@
         <div x-show="viewModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
             <div @click.away="viewModal = false" class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6 max-h-[90vh] overflow-y-auto" x-show="selectedJobseeker">
                 
-                <div class="flex items-start justify-between border-b border-slate-100 pb-4">
-                    <div class="space-y-1">
-                        <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Jobseeker Dossier</span>
-                        <h3 class="text-2xl font-black text-slate-900" x-text="selectedJobseeker.name"></h3>
-                        <p class="text-xs text-slate-400">Candidate ID #<span x-text="selectedJobseeker.id"></span> &bull; <span x-text="selectedJobseeker.email"></span></p>
-                        <div class="pt-1 flex items-center gap-2">
+                <div class="flex items-start justify-between border-b border-slate-100 pb-4 gap-4">
+                    <div class="flex items-start gap-4 min-w-0">
+                        <template x-if="selectedJobseeker.profile_photo_url">
+                            <img :src="selectedJobseeker.profile_photo_url"
+                                 :alt="selectedJobseeker.name"
+                                 class="h-16 w-16 rounded-2xl object-cover ring-2 ring-emerald-500/40 shadow-sm shrink-0">
+                        </template>
+                        <template x-if="!selectedJobseeker.profile_photo_url">
+                            <div class="h-16 w-16 rounded-2xl bg-slate-900 text-white font-black text-xl flex items-center justify-center ring-2 ring-emerald-500/40 shadow-sm shrink-0"
+                                 x-text="(selectedJobseeker.name || 'J').charAt(0).toUpperCase()"></div>
+                        </template>
+                        <div class="space-y-1 min-w-0">
+                            <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Jobseeker Dossier</span>
+                            <h3 class="text-2xl font-black text-slate-900 truncate" x-text="selectedJobseeker.name"></h3>
+                            <p class="text-xs text-slate-400">Candidate ID #<span x-text="selectedJobseeker.id"></span> &bull; <span x-text="selectedJobseeker.email"></span></p>
+                            <div class="pt-1 flex items-center gap-2">
                             <template x-if="selectedJobseeker.is_verified">
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black border border-emerald-300">
                                     <svg class="w-3.5 h-3.5 text-emerald-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
@@ -312,9 +330,10 @@
                                     <span>Unverified (Profile/Documents Incomplete)</span>
                                 </span>
                             </template>
+                            </div>
                         </div>
                     </div>
-                    <button @click="viewModal = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
+                    <button @click="viewModal = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold shrink-0">&times;</button>
                 </div>
 
                 <!-- Badges -->
@@ -418,23 +437,9 @@
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-                    <div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <button type="button"
-                                    data-action="approve-user"
-                                    :data-approve-url="'{{ url('/jpo/evaluations/jobseekers') }}/' + selectedJobseeker.id + '/approve'"
-                                    class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-emerald-700">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                <span>Approve Candidate</span>
-                            </button>
-                            <button type="button"
-                                    data-action="disapprove-user"
-                                    :data-approve-url="'{{ url('/jpo/evaluations/jobseekers') }}/' + selectedJobseeker.id + '/disapprove'"
-                                    class="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 transition-all hover:bg-rose-100">
-                                <span>Disapprove Candidate</span>
-                            </button>
-                        </div>
-                    </div>
+                    <button type="button" @click="openCredentials(selectedJobseeker)" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-emerald-700">
+                        Update Login
+                    </button>
                     <button type="button" @click="viewModal = false" class="px-5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
                         Close
                     </button>
@@ -442,69 +447,42 @@
             </div>
         </div>
 
+        <div x-show="credentialsModal" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 p-4" @keydown.escape.window="credentialsModal = false">
+            <div @click.away="credentialsModal = false" class="w-full max-w-lg space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl sm:p-8">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">Account Access</p>
+                        <h2 class="mt-1 text-xl font-black text-slate-900">Update Login</h2>
+                        <p class="mt-1 text-xs text-slate-500" x-text="selectedJobseeker?.name"></p>
+                    </div>
+                    <button type="button" @click="credentialsModal = false" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Close">&times;</button>
+                </div>
+
+                <form method="POST" :action="'{{ route('jpo.jobseekers.index') }}/' + selectedJobseeker.id + '/credentials'" class="space-y-4">
+                    @csrf
+                    @method('PUT')
+                    <div class="space-y-1.5">
+                        <label for="jobseeker-email" class="text-xs font-bold text-slate-700">Email address</label>
+                        <input id="jobseeker-email" type="email" name="email" x-model="credentialEmail" required maxlength="150" autocomplete="email" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                        @error('email')<p class="text-xs text-rose-700">{{ $message }}</p>@enderror
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="jobseeker-password" class="text-xs font-bold text-slate-700">New password <span class="font-normal text-slate-400">(leave blank to keep current)</span></label>
+                        <input id="jobseeker-password" type="password" name="password" x-model="credentialPassword" minlength="8" autocomplete="new-password" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                        @error('password')<p class="text-xs text-rose-700">{{ $message }}</p>@enderror
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="jobseeker-password-confirmation" class="text-xs font-bold text-slate-700">Confirm new password</label>
+                        <input id="jobseeker-password-confirmation" type="password" name="password_confirmation" x-model="credentialPasswordConfirmation" :required="credentialPassword.length > 0" minlength="8" autocomplete="new-password" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                    </div>
+                    <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
+                        <button type="button" @click="credentialsModal = false" class="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                        <button type="submit" class="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700">Save Login</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </div>
 </div>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        document.addEventListener('click', function (event) {
-            const button = event.target.closest('[data-action="approve-user"], [data-action="disapprove-user"]');
-            if (!button) return;
-            const isDisapproval = button.dataset.action === 'disapprove-user';
-
-            const confirmation = {
-                title: isDisapproval ? 'Disapprove Jobseeker Account?' : 'Approve User Account?',
-                text: isDisapproval
-                    ? 'This will revoke application access and return the account to pending review.'
-                    : 'This will authorize the user account to log in and access system functions.',
-                icon: isDisapproval ? 'warning' : 'question',
-                showCancelButton: true,
-                confirmButtonColor: isDisapproval ? '#e11d48' : '#059669',
-                cancelButtonColor: '#64748b',
-                confirmButtonText: isDisapproval ? 'Yes, disapprove' : 'Yes, approve'
-            };
-
-            if (isDisapproval) {
-                confirmation.input = 'textarea';
-                confirmation.inputLabel = 'Remarks for the jobseeker';
-                confirmation.inputPlaceholder = 'Explain why the account is being disapproved...';
-                confirmation.inputAttributes = { 'aria-label': 'Disapproval remarks' };
-                confirmation.inputValidator = (value) => {
-                    if (!value || !value.trim()) return 'Please enter remarks for the jobseeker.';
-                    if (value.trim().length > 1000) return 'Remarks must be 1000 characters or fewer.';
-                };
-            }
-
-            Swal.fire(confirmation).then((result) => {
-                if (!result.isConfirmed) return;
-
-                const headers = {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                };
-                const request = { method: 'POST', headers };
-                if (isDisapproval) {
-                    headers['Content-Type'] = 'application/json';
-                    request.body = JSON.stringify({ remarks: result.value });
-                }
-
-                fetch(button.dataset.approveUrl, request)
-                .then(async response => {
-                    const data = await response.json().catch(() => ({}));
-                    if (!response.ok) {
-                        throw new Error(data.message || data.error || 'Unable to update this account.');
-                    }
-                    return data;
-                })
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire(isDisapproval ? 'Disapproved!' : 'Approved!', data.success, 'success').then(() => location.reload());
-                    } else {
-                        Swal.fire('Action Failed', data.error || 'Unable to update this account.', 'error');
-                    }
-                })
-                .catch(error => Swal.fire('Action Failed', error.message || 'Network error occurred.', 'error'));
-            });
-        });
-    });
-</script>
 @endsection

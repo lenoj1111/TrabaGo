@@ -11,6 +11,7 @@ use App\Models\Jobseeker;
 use App\Models\JobseekerDetail;
 use App\Models\Notification;
 use App\Models\User;
+use App\Notifications\AccountCredentialsUpdatedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Throwable;
 
 class ApprovalsController extends Controller
 {
@@ -44,7 +46,7 @@ class ApprovalsController extends Controller
         $disk = Storage::disk('public');
 
         $candidates = is_array($document)
-            ? array_map(fn ($key) => $document[$key] ?? null, ['file_path', 'path', 'file_url', 'url'])
+            ? array_map(fn($key) => $document[$key] ?? null, ['file_path', 'path', 'file_url', 'url'])
             : [$document];
 
         $path = null;
@@ -156,6 +158,28 @@ class ApprovalsController extends Controller
             ->latest('users.created_at')
             ->get();
 
+        $pendingJobseekers = $this->pendingJobseekers();
+
+        return view('admin.approvals.index', compact(
+            'pendingJobs',
+            'pendingAccreditations',
+            'pendingPlacementReports',
+            'pendingTrainers',
+            'pendingJobseekers'
+        ));
+    }
+
+    public function idVerification()
+    {
+        $pendingJobseekers = $this->pendingJobseekers()
+            ->filter(fn($jobseeker) => $jobseeker->has_valid_id)
+            ->values();
+
+        return view('admin.idverification.index', compact('pendingJobseekers'));
+    }
+
+    private function pendingJobseekers()
+    {
         $hasAccountStatusColumn = Schema::hasColumn('users', 'account_status');
 
         $pendingJobseekers = DB::table('jobseekers')
@@ -170,6 +194,9 @@ class ApprovalsController extends Controller
                 'users.status as user_status',
                 'users.created_at as registered_at',
                 'jobseeker_details.training_certificates',
+                'jobseeker_details.address',           // <-- ADDED
+                'jobseeker_details.education',         // <-- ADDED
+                'jobseeker_details.work_experience',   // <-- ADDED
                 'social_status.is_pwd',
                 'social_status.pwd_type'
             )
@@ -189,35 +216,29 @@ class ApprovalsController extends Controller
             ->latest('users.created_at')
             ->get();
 
-        foreach ($pendingJobseekers as $js) {
-            $docs = [];
-            if (!empty($js->training_certificates)) {
-                $raw = is_array($js->training_certificates)
-                    ? $js->training_certificates
-                    : json_decode($js->training_certificates, true);
+        foreach ($pendingJobseekers as $jobseeker) {
+            $documents = [];
+            if (!empty($jobseeker->training_certificates)) {
+                $rawDocuments = is_array($jobseeker->training_certificates)
+                    ? $jobseeker->training_certificates
+                    : json_decode($jobseeker->training_certificates, true);
 
-                if (is_array($raw)) {
-                    foreach ($raw as $d) {
-                        $cat = $d['category'] ?? '';
-                        $docs[$cat] = $d;
+                if (is_array($rawDocuments)) {
+                    foreach ($rawDocuments as $document) {
+                        $category = $document['category'] ?? '';
+                        $documents[$category] = $document;
                     }
                 }
             }
 
-            $js->parsed_docs = $docs;
-            $js->has_valid_id = !empty($docs['valid_id']);
-            $js->valid_id_doc = $docs['valid_id'] ?? null;
-            $js->has_resume = !empty($docs['resume']);
-            $js->resume_doc = $docs['resume'] ?? null;
+            $jobseeker->parsed_docs = $documents;
+            $jobseeker->has_valid_id = !empty($documents['valid_id']);
+            $jobseeker->valid_id_doc = $documents['valid_id'] ?? null;
+            $jobseeker->has_resume = !empty($documents['resume']);
+            $jobseeker->resume_doc = $documents['resume'] ?? null;
         }
 
-        return view('admin.approvals.index', compact(
-            'pendingJobs',
-            'pendingAccreditations',
-            'pendingPlacementReports',
-            'pendingTrainers',
-            'pendingJobseekers'
-        ));
+        return $pendingJobseekers;
     }
 
     public function approveJobPosting(int $id)
@@ -480,69 +501,100 @@ class ApprovalsController extends Controller
         }
 
         $validated = $validator->validated();
+        $managedUser = $userId ? User::find($userId) : null;
+        $emailChanged = $managedUser && $managedUser->email !== $validated['email'];
+        $passwordChanged = !empty($validated['password']);
+        $credentialsChanged = $managedUser && ($emailChanged || $passwordChanged);
 
-        if ($userId) {
-            $userUpdate = [
-                'email' => $validated['email'],
-                'updated_at' => now(),
-            ];
+        if ($credentialsChanged && in_array(config('mail.default'), ['log', 'array', 'failover'], true)) {
+            $message = 'Email delivery is not configured. Employer credentials were not changed.';
 
-            if (!empty($validated['password'])) {
-                $userUpdate['password'] = Hash::make($validated['password']);
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 503);
             }
 
-            DB::table('users')->where('user_id', $userId)->update($userUpdate);
+            return redirect()->back()->with('error', $message);
+        }
 
-            if (!empty($validated['contact_person']) || !empty($validated['contact_phone'])) {
-                $userProfile = DB::table('user_profiles')->where('user_id', $userId)->first();
-                if ($userProfile) {
-                    $profileUpdate = ['updated_at' => now()];
-                    if (!empty($validated['contact_person'])) {
-                        $profileUpdate['full_name'] = $validated['contact_person'];
-                    }
-                    if (!empty($validated['contact_phone'])) {
-                        $profileUpdate['phone'] = $validated['contact_phone'];
-                    }
-
-                    DB::table('user_profiles')->where('user_id', $userId)->update($profileUpdate);
-                } elseif (!empty($validated['contact_person'])) {
-                    DB::table('user_profiles')->insert([
-                        'user_id' => $userId,
-                        'full_name' => $validated['contact_person'],
-                        'phone' => $validated['contact_phone'] ?? null,
-                        'created_at' => now(),
+        try {
+            DB::transaction(function () use ($userId, $managedUser, $emailChanged, $passwordChanged, $credentialsChanged, $validated, $employer) {
+                if ($userId) {
+                    $userUpdate = [
+                        'email' => $validated['email'],
                         'updated_at' => now(),
-                    ]);
+                    ];
+
+                    if ($passwordChanged) {
+                        $userUpdate['password'] = Hash::make($validated['password']);
+                    }
+
+                    DB::table('users')->where('user_id', $userId)->update($userUpdate);
+
+                    if (!empty($validated['contact_person']) || !empty($validated['contact_phone'])) {
+                        $userProfile = DB::table('user_profiles')->where('user_id', $userId)->first();
+                        if ($userProfile) {
+                            $profileUpdate = ['updated_at' => now()];
+                            if (!empty($validated['contact_person'])) {
+                                $profileUpdate['full_name'] = $validated['contact_person'];
+                            }
+                            if (!empty($validated['contact_phone'])) {
+                                $profileUpdate['phone'] = $validated['contact_phone'];
+                            }
+
+                            DB::table('user_profiles')->where('user_id', $userId)->update($profileUpdate);
+                        } elseif (!empty($validated['contact_person'])) {
+                            DB::table('user_profiles')->insert([
+                                'user_id' => $userId,
+                                'full_name' => $validated['contact_person'],
+                                'phone' => $validated['contact_phone'] ?? null,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                        }
+                    }
                 }
+
+                $employerUpdate = [
+                    'primary_email' => $validated['email'],
+                    'updated_at' => now(),
+                ];
+
+                foreach (['secondary_email', 'contact_person', 'contact_phone'] as $field) {
+                    if (array_key_exists($field, $validated)) {
+                        $employerUpdate[$field] = $validated[$field];
+                    }
+                }
+
+                DB::table('employers')->where('employer_id', $employer->employer_id)->update($employerUpdate);
+
+                if ($userId) {
+                    Notification::create([
+                        'user_id' => $userId,
+                        'title' => 'Employer Login Credentials Updated',
+                        'message' => "The login credentials for {$employer->company_name} were updated by DMDP Administration. Login email: {$validated['email']}.",
+                        'type' => 'security',
+                        'is_read' => false,
+                        'related_id' => $employer->employer_id,
+                    ]);
+
+                    if ($credentialsChanged) {
+                        $managedUser->email = $validated['email'];
+                        $managedUser->notify(new AccountCredentialsUpdatedNotification(
+                            $validated['email'],
+                            $passwordChanged ? $validated['password'] : null
+                        ));
+                    }
+                }
+            });
+        } catch (Throwable $exception) {
+            report($exception);
+            $message = 'Employer credentials were not changed because the update email could not be delivered.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 500);
             }
-        }
 
-        $employerUpdate = [
-            'primary_email' => $validated['email'],
-            'updated_at' => now(),
-        ];
-
-        if (array_key_exists('secondary_email', $validated)) {
-            $employerUpdate['secondary_email'] = $validated['secondary_email'];
-        }
-        if (array_key_exists('contact_person', $validated)) {
-            $employerUpdate['contact_person'] = $validated['contact_person'];
-        }
-        if (array_key_exists('contact_phone', $validated)) {
-            $employerUpdate['contact_phone'] = $validated['contact_phone'];
-        }
-
-        DB::table('employers')->where('employer_id', $employer->employer_id)->update($employerUpdate);
-
-        if ($userId) {
-            Notification::create([
-                'user_id' => $userId,
-                'title' => 'Employer Login Credentials Updated',
-                'message' => "The login credentials for {$employer->company_name} were updated by DMDP Administration. Login email: {$validated['email']}.",
-                'type' => 'security',
-                'is_read' => false,
-                'related_id' => $employer->employer_id,
-            ]);
+            return redirect()->back()->with('error', $message);
         }
 
         $successMessage = "Login credentials for '{$employer->company_name}' have been updated successfully. The new HR can now log in using '{$validated['email']}'.";
@@ -619,7 +671,7 @@ class ApprovalsController extends Controller
             });
         }
 
-        $reports = $query->latest('placement_reports.report_id')->paginate(15)->withQueryString();
+        $reports = $query->latest('placement_reports.report_id')->paginate(6)->withQueryString();
 
         $stats = [
             'total' => DB::table('placement_reports')->count(),
@@ -712,7 +764,7 @@ class ApprovalsController extends Controller
             $query->where('social_status.is_pwd', 1);
         }
 
-        $jobseekers = $query->orderBy('jobseekers.jobseeker_id', 'desc')->paginate(15)->withQueryString();
+        $jobseekers = $query->orderBy('jobseekers.jobseeker_id', 'desc')->paginate(6)->withQueryString();
 
         $jobseekerIds = collect($jobseekers->items())->pluck('jobseeker_id');
         $models = \App\Models\Jobseeker::with(['user', 'details', 'socialStatus', 'skills'])
@@ -725,14 +777,18 @@ class ApprovalsController extends Controller
             $item->is_verified = $model ? $model->isVerified() : false;
             $item->missing_requirements = $model ? array_values($model->getMissingRequirements()) : [];
             $item->skills_text = $model && $model->skills ? $model->skills->pluck('skill_name')->implode(', ') : '';
-
+            // 👇 Add this block
+            $item->profile_photo = $model?->profile_photo;
+            $item->profile_photo_url = !empty($model?->profile_photo) && Storage::disk('public')->exists($model->profile_photo)
+                ? asset('storage/' . $model->profile_photo)
+                : null;
             $documents = $model && $model->details ? $model->details->training_certificates : [];
             if (is_string($documents)) {
                 $documents = json_decode($documents, true) ?: [];
             }
 
             $validIdDocument = collect(is_array($documents) ? $documents : [])->first(
-                fn ($document) => is_array($document) && ($document['category'] ?? null) === 'valid_id'
+                fn($document) => is_array($document) && ($document['category'] ?? null) === 'valid_id'
             );
 
             $item->valid_id_url = $validIdDocument
@@ -790,7 +846,7 @@ class ApprovalsController extends Controller
         abort_unless(is_array($documents), 404);
 
         $document = collect($documents)->first(
-            fn ($item) => is_array($item) && ($item['category'] ?? null) === 'valid_id'
+            fn($item) => is_array($item) && ($item['category'] ?? null) === 'valid_id'
         );
 
         abort_unless($document, 404);
@@ -837,62 +893,6 @@ class ApprovalsController extends Controller
         abort(404, 'Valid ID file not found on storage.');
     }
 
-    public function disapproveJobseeker(Request $request, int $id)
-    {
-        $validated = $request->validate([
-            'remarks' => 'required|string|max:1000',
-        ]);
-
-        $jobseeker = Jobseeker::with('user', 'details')->findOrFail($id);
-
-        $user = $jobseeker->user;
-        abort_unless($user, 404);
-        $remarks = trim($validated['remarks']);
-
-        DB::transaction(function () use ($jobseeker, $user, $remarks) {
-            $user->update([
-                'is_approved' => 0,
-                'account_status' => 'unverified',
-            ]);
-
-            $details = $jobseeker->details;
-            if ($details && !empty($details->training_certificates)) {
-                $documents = is_array($details->training_certificates)
-                    ? $details->training_certificates
-                    : (json_decode($details->training_certificates, true) ?: []);
-
-                foreach ($documents as &$document) {
-                    if (is_array($document) && ($document['category'] ?? null) === 'valid_id') {
-                        $document['status'] = 'rejected';
-                        $document['rejection_reason'] = $remarks;
-                        $document['reviewed_by'] = Auth::id();
-                        $document['reviewed_at'] = now()->toIso8601String();
-                    }
-                }
-                unset($document);
-
-                $details->training_certificates = array_values($documents);
-                $details->save();
-            }
-
-            Notification::create([
-                'user_id' => $user->user_id,
-                'title' => 'Jobseeker Account Requires Revision',
-                'message' => "Your account approval was revoked. Admin remarks: {$remarks}",
-                'type' => 'rejection',
-                'is_read' => false,
-                'related_id' => $jobseeker->jobseeker_id,
-            ]);
-        });
-
-        $message = "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' has been disapproved. The remarks were sent to the jobseeker.";
-
-        if ($request->expectsJson()) {
-            return response()->json(['success' => $message]);
-        }
-
-        return redirect()->back()->with('success', $message);
-    }
 
     public function approveTrainer(Request $request, int $id)
     {
@@ -951,6 +951,12 @@ class ApprovalsController extends Controller
             ]);
         }
 
+        // ✅ NEW: Reset the OCR tracking since they are now manually approved
+        $jobseeker->update([
+            'id_scan_tries' => 0,
+            'id_scan_error' => null,
+        ]);
+
         $details = $jobseeker->details;
         if ($details && !empty($details->training_certificates)) {
             $docs = is_array($details->training_certificates)
@@ -959,7 +965,7 @@ class ApprovalsController extends Controller
 
             foreach ($docs as &$doc) {
                 if (in_array($doc['category'] ?? '', ['valid_id', 'resume', 'certificate', 'pwd_id'])) {
-                    $doc['status'] = 'approved';
+                    $doc['status'] = 'approved'; // Set to approved
                     $doc['reviewed_by'] = Auth::id();
                     $doc['reviewed_at'] = now()->toIso8601String();
                 }
@@ -981,13 +987,7 @@ class ApprovalsController extends Controller
             ]);
         }
 
-        $message = "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' has been approved and verified successfully.";
-
-        if ($request->expectsJson()) {
-            return response()->json(['success' => $message]);
-        }
-
-        return redirect()->back()->with('success', $message);
+        return redirect()->back()->with('success', "Jobseeker '{$jobseeker->first_name} {$jobseeker->last_name}' has been approved and verified successfully.");
     }
 
     public function rejectJobseeker(Request $request, int $id)
@@ -1006,6 +1006,12 @@ class ApprovalsController extends Controller
             $user->update([
                 'is_approved' => 0,
                 'account_status' => 'unverified',
+            ]);
+
+            // ✅ NEW: Reset the OCR tracking since it was rejected
+            $jobseeker->update([
+                'id_scan_tries' => 0,
+                'id_scan_error' => null,
             ]);
 
             $details = $jobseeker->details;
@@ -1067,7 +1073,7 @@ class ApprovalsController extends Controller
             });
         }
 
-        $applications = $query->paginate(15)->withQueryString();
+        $applications = $query->paginate(6)->withQueryString();
 
         return view('admin.evaluations.jobseekers', compact('applications'));
     }

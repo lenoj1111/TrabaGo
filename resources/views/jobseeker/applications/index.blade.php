@@ -58,6 +58,45 @@
             </svg> {{ session('error') }}
         </div>
         @endif
+        @php
+        $trainingNeeded = $applications->filter(fn($a) => $a->status === 'training_recommended');
+        @endphp
+        @if($trainingNeeded->count() > 0)
+        <div class="rounded-3xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-emerald-50 to-teal-50 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-start gap-3">
+                <div class="h-10 w-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                    </svg>
+                </div>
+                <div class="space-y-1">
+                    <p class="text-sm font-black text-emerald-950">
+                        Training Recommended by DMDP
+                    </p>
+                    <p class="text-xs text-emerald-900 leading-relaxed">
+                        The JPO has evaluated <strong>{{ $trainingNeeded->count() }}</strong> of your application{{ $trainingNeeded->count() > 1 ? 's' : '' }} and recommends you complete a training course first.
+                        Enroll, earn your certificate, then <strong>re-apply</strong> for the position.
+                    </p>
+                    @if($trainingNeeded->first()->jpo_notes)
+                    <p class="text-[11px] text-emerald-800 italic bg-white/70 rounded-lg px-2.5 py-1.5 border border-emerald-200 mt-1">
+                        <span class="font-bold not-italic">JPO Remarks:</span> {{ $trainingNeeded->first()->jpo_notes }}
+                    </p>
+                    @endif
+                </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <a href="{{ route('jobseeker.training') }}"
+                    class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 text-xs font-black shadow-md transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                    </svg>
+                    Browse Training Courses →
+                </a>
+            </div>
+        </div>
+        @endif
 
         <!-- Filter Status Tabs -->
         <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-4">
@@ -283,6 +322,24 @@
                         <button type="button" @click="activeCompany = '{{ addslashes($company) }}'; resignationModal = true" class="px-2 py-1 rounded-lg bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-800 text-[10px] font-bold transition-colors">
                             Resign
                         </button>
+                        @elseif($app->status === 'training_recommended')
+                        <div class="flex items-center gap-1">
+                            <a href="{{ route('jobseeker.training') }}"
+                                class="px-2 py-1 rounded-lg bg-emerald-50 border border-emerald-300 hover:bg-emerald-100 text-emerald-800 text-[10px] font-bold transition-colors flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                                </svg>
+                                View Trainings
+                            </a>
+                            <a href="{{ route('jobseeker.jobs.show', $appData['job_id']) }}"
+                                class="px-2 py-1 rounded-lg bg-amber-50 border border-amber-300 hover:bg-amber-100 text-amber-800 text-[10px] font-bold transition-colors flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Re-Apply
+                            </a>
+                        </div>
                         @elseif($app->status === 'rejected' || ($app->status === 'hired' && $app->resignation_status === 'approved'))
                         <a href="{{ route('jobseeker.jobs.show', $appData['job_id']) }}"
                             class="px-2 py-1 rounded-lg bg-emerald-50 border border-emerald-300 hover:bg-emerald-100 text-emerald-800 text-[10px] font-bold transition-colors flex items-center gap-1">
@@ -299,10 +356,6 @@
                                 Withdraw
                             </button>
                         </form>
-                        @elseif($app->status === 'training_recommended')
-                        <a href="{{ route('jobseeker.training') }}" class="px-2 py-1 rounded-lg bg-blue-50 border border-blue-300 hover:bg-blue-100 text-blue-800 text-[10px] font-bold transition-colors">
-                            View Trainings
-                        </a>
                         @endif
                     </div>
                 </div>
@@ -638,7 +691,7 @@
     <!-- Decline Job Offer Modal -->
     <div x-show="declineModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div @click.away="declineModal = false" class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
-            
+
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
                     <span class="text-xs font-bold text-rose-700 uppercase tracking-wider">Decline Offer</span>
@@ -650,7 +703,7 @@
 
             <form :action="'/jobseeker/applications/' + declineAppId + '/decline-offer'" method="POST" class="space-y-4">
                 @csrf
-                
+
                 <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-950 space-y-1">
                     <p class="font-extrabold flex items-center gap-1 text-rose-900">
                         <span>⚠️</span> Are you sure you want to decline this offer?
@@ -663,7 +716,7 @@
                 <div class="space-y-1">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Reason for Declining (Optional)</label>
                     <textarea name="decline_reason" rows="3" placeholder="e.g., Accepted an offer elsewhere, salary expectations, schedule conflict, location..."
-                              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-400"></textarea>
+                        class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-xs text-slate-900 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-400"></textarea>
                     <span class="text-[10px] text-slate-400">Giving constructive feedback helps employers understand your decision.</span>
                 </div>
 

@@ -335,7 +335,7 @@ class TrainerPortalComprehensiveTest extends TestCase
     /**
      * Test 3: Certificate issuance remains pending after trainer review, regardless of legacy course settings.
      */
-    public function test_certificate_requires_explicit_trainer_issuance_even_if_legacy_course_flag_is_enabled()
+    public function test_mixed_assessment_pass_waits_for_demo_confirmation_even_if_legacy_auto_issue_is_enabled()
     {
         $this->actingAs($this->jobseekerUser);
 
@@ -365,6 +365,13 @@ class TrainerPortalComprehensiveTest extends TestCase
             'correct_answer' => 0,
             'points' => 2,
         ]);
+        TrainingEnrollment::create([
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'training_id' => $course->training_id,
+            'training_type' => 'online',
+            'status' => 'enrolled',
+            'start_date' => now()->toDateString(),
+        ]);
 
         // The assessment is scored objectively but awaits trainer approval.
         $response = $this->post(route('jobseeker.training.quiz.submit', $course->training_id), [
@@ -375,7 +382,7 @@ class TrainerPortalComprehensiveTest extends TestCase
         ]);
 
         $response->assertSessionHasNoErrors();
-        $response->assertSessionMissing('success');
+        $response->assertSessionHas('success');
 
         $enrollment = TrainingEnrollment::where('jobseeker_id', $this->jobseeker->jobseeker_id)
             ->where('training_id', $course->training_id)
@@ -383,7 +390,8 @@ class TrainerPortalComprehensiveTest extends TestCase
 
         $this->assertNotNull($enrollment);
         $this->assertEquals('in_progress', $enrollment->status);
-        $this->assertNull($enrollment->passed);
+        $this->assertFalse((bool) $enrollment->passed);
+        $this->assertSame(1, $enrollment->assessment_attempts);
         $this->assertFalse((bool) $enrollment->certificate_issued);
         $this->assertEquals('pending', $enrollment->answers['review_status']);
         $this->assertSame(1, $enrollment->answers['objective_score']['correct_count']);
@@ -405,8 +413,15 @@ class TrainerPortalComprehensiveTest extends TestCase
         $reviewResponse->assertSessionHasNoErrors();
 
         $enrollment->refresh();
-        $this->assertEquals('completed', $enrollment->status);
+        $this->assertEquals('in_progress', $enrollment->status);
         $this->assertTrue((bool) $enrollment->passed);
+        $this->assertFalse((bool) $enrollment->certificate_issued);
+        $this->assertNull($enrollment->certificate_no);
+
+        $this->post(route('trainer.enrollments.demo-confirmation', $enrollment->enrollment_id))
+            ->assertSessionHasNoErrors();
+        $enrollment->refresh();
+        $this->assertEquals('completed', $enrollment->status);
         $this->assertTrue((bool) $enrollment->certificate_issued);
         $this->assertNotNull($enrollment->certificate_no);
         $this->assertStringStartsWith('DMDP-CERT-', $enrollment->certificate_no);
@@ -421,7 +436,7 @@ class TrainerPortalComprehensiveTest extends TestCase
     /**
      * Test 4: The trainer can issue a certificate after approving the assessment.
      */
-    public function test_certificate_can_be_issued_manually_after_trainer_assessment()
+    public function test_objective_pass_requires_demo_confirmation_before_certificate_issuance()
     {
         $this->actingAs($this->jobseekerUser);
 
@@ -443,8 +458,15 @@ class TrainerPortalComprehensiveTest extends TestCase
             'correct_answer' => 0,
             'points' => 1,
         ]);
+        TrainingEnrollment::create([
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'training_id' => $course->training_id,
+            'training_type' => 'laboratory_onsite',
+            'status' => 'enrolled',
+            'start_date' => now()->toDateString(),
+        ]);
 
-        // Jobseeker submits the assessment; certificate issuance waits for trainer review.
+        // An objective-only passing assessment is immediately passed but does not issue a certificate.
         $response = $this->post(route('jobseeker.training.quiz.submit', $course->training_id), [
             'responses' => json_encode([(string) $question->assessment_id => '0']),
         ]);
@@ -457,30 +479,32 @@ class TrainerPortalComprehensiveTest extends TestCase
 
         $this->assertNotNull($enrollment);
         $this->assertEquals('in_progress', $enrollment->status);
+        $this->assertTrue((bool) $enrollment->passed);
+        $this->assertSame('passed', $enrollment->answers['review_status']);
+        $this->assertSame(1, $enrollment->assessment_attempts);
         $this->assertEquals(0, $enrollment->certificate_issued, 'Certificate should NOT be issued automatically.');
         $this->assertNull($enrollment->certificate_no);
 
-        // Trainer approves; manual certificate configuration leaves issuance to the trainer.
+        // A direct certificate request cannot bypass the practical demo confirmation.
         $this->actingAs($this->trainerUser);
-        $reviewResponse = $this->post(route('trainer.enrollments.evaluate.submit', $enrollment->enrollment_id), [
-            'outcome' => 'passed',
-        ]);
-        $reviewResponse->assertSessionHasNoErrors();
+        $this->post(route('trainer.enrollments.certificate', $enrollment->enrollment_id))
+            ->assertSessionHas('error');
         $enrollment->refresh();
-        $this->assertEquals('completed', $enrollment->status);
+        $this->assertEquals('in_progress', $enrollment->status);
         $this->assertTrue((bool) $enrollment->passed);
         $this->assertEquals(0, $enrollment->certificate_issued);
 
-        $certResponse = $this->post(route('trainer.enrollments.certificate', $enrollment->enrollment_id));
-        $certResponse->assertSessionHasNoErrors();
+        $this->post(route('trainer.enrollments.demo-confirmation', $enrollment->enrollment_id))
+            ->assertSessionHasNoErrors();
 
         $enrollment->refresh();
+        $this->assertEquals('completed', $enrollment->status);
         $this->assertEquals(1, $enrollment->certificate_issued);
         $this->assertNotNull($enrollment->certificate_no);
         $this->assertStringStartsWith('DMDP-CERT-', $enrollment->certificate_no);
     }
 
-    public function test_needs_retake_is_not_a_failed_attempt_and_allows_a_new_submission(): void
+    public function test_objective_submissions_count_retakes_and_lock_after_a_pass(): void
     {
         $course = TrainingProgram::create([
             'trainer_id' => $this->trainerProfile->profile_id,
@@ -521,16 +545,11 @@ class TrainerPortalComprehensiveTest extends TestCase
         $enrollment = TrainingEnrollment::where('jobseeker_id', $this->jobseeker->jobseeker_id)
             ->where('training_id', $course->training_id)
             ->firstOrFail();
-        $this->actingAs($this->trainerUser)
-            ->post(route('trainer.enrollments.evaluate.submit', $enrollment->enrollment_id), [
-                'outcome' => 'needs_retake',
-            ])
-            ->assertSessionHasNoErrors();
-
         $enrollment->refresh();
         $this->assertSame('in_progress', $enrollment->status);
         $this->assertFalse((bool) $enrollment->passed);
         $this->assertSame('needs_retake', $enrollment->answers['review_status']);
+        $this->assertSame(1, $enrollment->assessment_attempts);
         $this->assertFalse((bool) $enrollment->certificate_issued);
         $this->actingAs($this->jobseekerUser)
             ->get(route('jobseeker.training.show', $course->training_id))
@@ -551,25 +570,31 @@ class TrainerPortalComprehensiveTest extends TestCase
 
         $enrollment->refresh();
         $this->assertSame('in_progress', $enrollment->status);
-        $this->assertNull($enrollment->passed);
-        $this->assertSame('pending', $enrollment->answers['review_status']);
+        $this->assertTrue((bool) $enrollment->passed);
+        $this->assertSame('passed', $enrollment->answers['review_status']);
+        $this->assertSame(2, $enrollment->assessment_attempts);
         $this->assertSame(1, $enrollment->answers['objective_score']['correct_count']);
+        $this->actingAs($this->trainerUser)
+            ->get(route('trainer.courses.enrollments', $course->training_id))
+            ->assertOk()
+            ->assertSee('Retakes')
+            ->assertSee('Return for Demo')
+            ->assertSee('>1<', false);
         $this->actingAs($this->jobseekerUser)
             ->get(route('jobseeker.training.show', $course->training_id))
             ->assertOk()
-            ->assertSee('Assessment Status: Pending Review')
-            ->assertDontSee('Auto-scored');
+            ->assertSee('Assessment Status: Passed')
+            ->assertSee('Return to DMDP for practical demo');
 
         $this->actingAs($this->trainerUser)
-            ->post(route('trainer.enrollments.evaluate.submit', $enrollment->enrollment_id), [
-                'outcome' => 'passed',
-            ])
+            ->post(route('trainer.enrollments.demo-confirmation', $enrollment->enrollment_id))
             ->assertSessionHasNoErrors();
 
         $enrollment->refresh();
         $this->assertSame('completed', $enrollment->status);
         $this->assertSame('passed', $enrollment->answers['review_status']);
         $this->assertTrue((bool) $enrollment->certificate_issued);
+        $this->assertSame(2, $enrollment->assessment_attempts);
         $this->actingAs($this->jobseekerUser)
             ->get(route('jobseeker.training.show', $course->training_id))
             ->assertOk()

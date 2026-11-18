@@ -69,7 +69,7 @@
         @endif
 
         @if(session('error'))
-            <div class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-sm flex items-start gap-3 shadow-sm">
+            <div id="registrationServerError" class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-sm flex items-start gap-3 shadow-sm">
                 <svg class="w-5 h-5 text-rose-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <div>
                     <p class="font-bold">Registration Alert</p>
@@ -96,6 +96,31 @@
         <form method="POST" action="{{ route('jobseeker.register.post') }}" class="bg-white border border-slate-200/90 rounded-3xl shadow-sm overflow-hidden" id="registrationForm" novalidate autocomplete="on">
             @csrf
             <input type="hidden" name="role" value="jobseeker">
+
+            <div id="registrationAlert" class="hidden mx-4 mt-4 rounded-2xl border p-4 text-sm shadow-sm" role="alert" aria-live="assertive">
+                <div class="flex items-start gap-3">
+                    <svg class="mt-0.5 h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-start justify-between gap-3">
+                            <p id="registrationAlertTitle" class="font-bold"></p>
+                            <button type="button" id="closeRegistrationAlertBtn" class="-mr-2 -mt-2 rounded-lg p-1 text-current opacity-70 hover:opacity-100" aria-label="Dismiss alert">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <p id="registrationAlertMessage" class="mt-1 leading-relaxed"></p>
+                        <div id="duplicateAlertActions" class="mt-3 hidden flex-wrap items-center gap-3">
+                            <a href="{{ route('login') }}" class="font-semibold underline">Log in</a>
+                            <button type="button" id="confirmDuplicateBtn" class="rounded-lg bg-amber-700 px-3 py-2 text-xs font-bold text-white hover:bg-amber-800">
+                                Continue
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Stepper Navigation -->
             <div class="px-3 sm:px-6 py-4 bg-slate-50/80 border-b border-slate-200/70">
@@ -1286,6 +1311,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---------- Elements ----------
     let currentStep = 1;
     const form = document.getElementById('registrationForm');
+    const registrationAlert = document.getElementById('registrationAlert');
+    const registrationAlertTitle = document.getElementById('registrationAlertTitle');
+    const registrationAlertMessage = document.getElementById('registrationAlertMessage');
+    const duplicateAlertActions = document.getElementById('duplicateAlertActions');
+    const closeRegistrationAlertBtn = document.getElementById('closeRegistrationAlertBtn');
+    const confirmDuplicateBtn = document.getElementById('confirmDuplicateBtn');
     const stepContents = document.querySelectorAll('.step-content');
     const stepDots = document.querySelectorAll('.step-dot');
     const stepLines = document.querySelectorAll('.step-line');
@@ -1320,6 +1351,22 @@ document.addEventListener('DOMContentLoaded', function() {
             el.style.transform = 'translateY(8px)';
             setTimeout(() => el.remove(), 300);
         }, 3000);
+    }
+
+    function showRegistrationAlert(type, title, message, showDuplicateActions = false) {
+        const colors = type === 'duplicate'
+            ? 'border-amber-300 bg-amber-50 text-amber-950'
+            : 'border-rose-300 bg-rose-50 text-rose-950';
+
+        registrationAlert.className = `mx-4 mt-4 rounded-2xl border p-4 text-sm shadow-sm ${colors}`;
+        registrationAlertTitle.textContent = title;
+        registrationAlertMessage.textContent = message;
+        duplicateAlertActions.classList.toggle('hidden', !showDuplicateActions);
+        registrationAlert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function hideRegistrationAlert() {
+        registrationAlert.classList.add('hidden');
     }
 
     // ---------- Step UI ----------
@@ -1862,6 +1909,136 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ---------- Submit ----------
+    async function submitRegistration(confirmDuplicate = false) {
+        hideRegistrationAlert();
+        submitBtn.disabled = true;
+        nextBtn.disabled = true;
+        prevBtn.disabled = true;
+        saveDraftBtn.disabled = true;
+        const submitButtonHtml = submitBtn.innerHTML;
+        submitBtn.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Submitting Profile...
+        `;
+
+        function restoreSubmitButton() {
+            submitBtn.disabled = false;
+            nextBtn.disabled = false;
+            prevBtn.disabled = false;
+            saveDraftBtn.disabled = false;
+            submitBtn.innerHTML = submitButtonHtml;
+        }
+
+        try {
+            const formData = new FormData(form);
+            if (confirmDuplicate) formData.set('confirm_duplicate', '1');
+
+            const sendRegistration = (data) => fetch(form.action, {
+                method: form.method,
+                body: data,
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            let response = await sendRegistration(formData);
+
+            if (response.status === 409) {
+                const result = await response.json();
+                if (result.error !== 'POSSIBLE_DUPLICATE') {
+                    throw new Error(result.message || 'Registration could not be completed.');
+                }
+
+                showRegistrationAlert('duplicate', 'Possible duplicate jobseeker', result.message, true);
+                restoreSubmitButton();
+                return;
+            }
+
+            if (response.status === 422) {
+                const result = await response.json();
+                const errors = result.errors || {};
+                const errorFields = Object.keys(errors);
+
+                if (errorFields.some(field => ['email', 'password', 'role'].includes(field))) currentStep = 1;
+                else if (errorFields.some(field => ['first_name', 'last_name', 'middle_name', 'birth_date', 'sex', 'civil_status', 'citizenship', 'mobile_number', 'employment_status'].includes(field))) currentStep = 2;
+                else if (errorFields.some(field => field.startsWith('address'))) currentStep = 3;
+                else if (errorFields.some(field => field.startsWith('education'))) currentStep = 4;
+                else if (errorFields.some(field => field.startsWith('skills'))) currentStep = 5;
+                else if (errorFields.some(field => ['occupation1', 'industry1', 'preferred_location', 'salary_expectation'].includes(field))) currentStep = 6;
+                else if (errorFields.some(field => ['is_4ps', 'is_pwd', 'is_ofw', 'household_id', 'pwd_type'].includes(field))) currentStep = 7;
+
+                const firstError = errorFields.length ? errors[errorFields[0]][0] : null;
+                const errorMessage = firstError || result.message || 'Please review your registration details.';
+                const hasContactError = errorFields.some(field => ['email', 'mobile_number'].includes(field))
+                    || errorMessage.includes('An account with this mobile number already exists.')
+                    || errorMessage.includes('An account with this email already exists.');
+                if (errorFields.includes('mobile_number') || errorMessage.includes('An account with this mobile number already exists.')) {
+                    currentStep = 2;
+                }
+
+                updateStepUI();
+                if (hasContactError) {
+                    const title = errorFields.includes('email') || errorMessage.includes('An account with this email already exists.')
+                        ? 'Email already in use'
+                        : 'Mobile number already in use';
+                    showRegistrationAlert('error', title, errorMessage);
+                } else {
+                    showToast(errorMessage, 'error');
+                }
+                restoreSubmitButton();
+                return;
+            }
+
+            if (!response.ok) {
+                const contentType = response.headers.get('content-type') || '';
+                const result = contentType.includes('application/json')
+                    ? await response.json()
+                    : null;
+                throw new Error(result?.message || 'Registration could not be completed. Please try again.');
+            }
+
+            const responsePath = new URL(response.url, window.location.href).pathname;
+            const registrationPath = new URL(form.action, window.location.href).pathname;
+            if (response.redirected && responsePath === registrationPath) {
+                const returnedPage = new DOMParser().parseFromString(await response.text(), 'text/html');
+                const sessionError = returnedPage.querySelector('#registrationServerError')?.textContent.trim();
+                const validationErrors = Array.from(returnedPage.querySelectorAll('#laravelErrorBox li'))
+                    .map(error => error.textContent.trim())
+                    .filter(Boolean);
+                const message = sessionError || validationErrors.join(' ');
+
+                if (message) {
+                    if (/same name and birthdate already exists/i.test(message)) {
+                        showRegistrationAlert('duplicate', 'Possible duplicate jobseeker', message, true);
+                    } else if (/email|mobile number|phone number/i.test(message) && /already exists|already used/i.test(message)) {
+                        const title = /email/i.test(message) ? 'Email already in use' : 'Mobile number already in use';
+                        showRegistrationAlert('error', title, message);
+                    } else {
+                        showToast(message, 'error');
+                    }
+                } else {
+                    showToast('Registration could not be completed. Please review your details and try again.', 'error');
+                }
+
+                restoreSubmitButton();
+                return;
+            }
+
+            try { localStorage.removeItem(DRAFT_KEY); } catch (storageError) {}
+            window.location.assign(response.url || form.action);
+        } catch (error) {
+            showToast(error.message || 'Unable to submit your registration. Please try again.', 'error');
+            restoreSubmitButton();
+        }
+    }
+
+    closeRegistrationAlertBtn.addEventListener('click', hideRegistrationAlert);
+    confirmDuplicateBtn.addEventListener('click', () => submitRegistration(true));
+
     form.addEventListener('submit', function(e) {
         const terms = document.getElementById('termsCheck');
         const termsErr = document.getElementById('termsError');
@@ -1873,19 +2050,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
         termsErr?.classList.add('hidden');
-
-        submitBtn.disabled = true;
-        nextBtn.disabled = true;
-        prevBtn.disabled = true;
-        saveDraftBtn.disabled = true;
-        submitBtn.innerHTML = `
-            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Submitting Profile...
-        `;
-        try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+        e.preventDefault();
+        submitRegistration();
     });
 
     // ---------- Auto-open step with Laravel errors ----------

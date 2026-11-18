@@ -27,6 +27,7 @@ class BarangayDistributionController extends Controller
             'district' => $request->input('district'),
             'terrain' => $request->input('terrain'),
             'priority' => $request->input('priority'),
+            'skill_type' => $request->input('skill_type', 'all'),
             'talent_only' => $request->boolean('talent_only') || $request->input('talent_only') == '1',
             'sort' => $request->input('sort', 'registered_desc'),
         ];
@@ -66,6 +67,7 @@ class BarangayDistributionController extends Controller
             'district' => $request->input('district'),
             'terrain' => $request->input('terrain'),
             'priority' => $request->input('priority'),
+            'skill_type' => $request->input('skill_type', 'all'),
             'sort' => $request->input('sort', 'registered_desc'),
         ];
 
@@ -85,9 +87,9 @@ class BarangayDistributionController extends Controller
 
         $callback = function () use ($items, $kpis) {
             $handle = fopen('php://output', 'w');
-            
+
             // UTF-8 BOM for Excel compatibility
-            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
             // Official Document Header
             fputcsv($handle, ['DEPARTMENT OF MANPOWER DEVELOPMENT AND PLACEMENT (DMDP) - CEBU CITY HALL']);

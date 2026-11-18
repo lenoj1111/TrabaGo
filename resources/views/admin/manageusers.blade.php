@@ -255,26 +255,20 @@
                                             </button>
                                         @endif
 
-                                        {{-- 2. Deactivate / Activate Account Toggle --}}
-                                        <form action="{{ route('admin.users.toggle-status', $user->user_id) }}" method="POST" class="inline"
-                                              onsubmit="return confirm('Are you sure you want to {{ $user->status === 'active' ? 'DEACTIVATE' : 'ACTIVATE' }} account #{{ $user->user_id }} ({{ addslashes($displayName) }})?');">
-                                            @csrf
+                                                                                {{-- 2. Deactivate / Activate Account Toggle --}}
+                                        <button type="button" 
+                                                data-action="toggle-status"
+                                                data-user-id="{{ $user->user_id }}"
+                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl font-bold text-xs transition-colors border {{ $user->status === 'active' ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200' }}" 
+                                                title="{{ $user->status === 'active' ? 'Deactivate Account' : 'Activate Account' }}">
                                             @if($user->status === 'active')
-                                                <button type="submit" 
-                                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-colors" 
-                                                        title="Deactivate Account">
-                                                    <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
-                                                    <span>Deac</span>
-                                                </button>
+                                                <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                                <span>Deac</span>
                                             @else
-                                                <button type="submit" 
-                                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-xs transition-colors" 
-                                                        title="Activate Account">
-                                                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                                    <span>Activate</span>
-                                                </button>
+                                                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                <span>Activate</span>
                                             @endif
-                                        </form>
+                                        </button>
 
                                         {{-- 3. Edit Account --}}
                                         <a href="{{ route('admin.users.edit', $user->user_id) }}" 
@@ -476,20 +470,27 @@
                         fetch(`/admin/users/${userId}/toggle-status`, {
                             method: 'POST',
                             headers: {
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json', // This tells Laravel to return JSON
+                                'Content-Type': 'application/json'
                             }
                         })
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
                                 Swal.fire('Success!', data.success, 'success').then(() => location.reload());
-                            } 
+                            } else {
+                                Swal.fire('Error!', data.error || 'Something went wrong.', 'error');
+                            }
                         })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+                        });
                     }
                 });
             });
         });
-
     });
 </script>
 @endsection

@@ -3,8 +3,10 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Notifications\TemporaryPasswordNotification;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -19,15 +21,51 @@ class PasswordResetTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_reset_password_link_can_be_requested(): void
+    public function test_web_forgot_password_generates_and_emails_a_temporary_password(): void
+    {
+        Notification::fake();
+        config(['mail.default' => 'smtp']);
+
+        $user = User::factory()->create();
+
+        $this->post('/forgot-password', ['email' => $user->email])
+            ->assertSessionHas('status', 'If an account exists for that email, a temporary password has been emailed.');
+
+        Notification::assertSentTo($user, TemporaryPasswordNotification::class, function ($notification) use ($user) {
+            return strlen($notification->temporaryPassword) === 20
+                && Hash::check($notification->temporaryPassword, $user->fresh()->password);
+        });
+    }
+
+    public function test_mobile_api_can_request_a_password_reset_link(): void
     {
         Notification::fake();
 
         $user = User::factory()->create();
 
-        $this->post('/forgot-password', ['email' => $user->email]);
+        $this->postJson('/api/auth/forgot-password', ['email' => $user->email])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'If an account exists for that email, a password reset link has been sent.');
 
         Notification::assertSentTo($user, ResetPassword::class);
+    }
+
+    public function test_password_reset_request_does_not_disclose_unknown_email_addresses(): void
+    {
+        Notification::fake();
+        config(['mail.default' => 'smtp']);
+
+        $this->from('/forgot-password')
+            ->post('/forgot-password', ['email' => 'unknown@example.com'])
+            ->assertSessionHas('status', 'If an account exists for that email, a temporary password has been emailed.');
+
+        $this->postJson('/api/auth/forgot-password', ['email' => 'unknown@example.com'])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'If an account exists for that email, a password reset link has been sent.');
+
+        Notification::assertNothingSent();
     }
 
     public function test_reset_password_screen_can_be_rendered(): void
@@ -36,10 +74,10 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create();
 
-        $this->post('/forgot-password', ['email' => $user->email]);
+        $this->postJson('/api/auth/forgot-password', ['email' => $user->email]);
 
         Notification::assertSentTo($user, ResetPassword::class, function ($notification) {
-            $response = $this->get('/reset-password/'.$notification->token);
+            $response = $this->get('/reset-password/' . $notification->token);
 
             $response->assertStatus(200);
 
@@ -53,7 +91,7 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create();
 
-        $this->post('/forgot-password', ['email' => $user->email]);
+        $this->postJson('/api/auth/forgot-password', ['email' => $user->email]);
 
         Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
             $response = $this->post('/reset-password', [

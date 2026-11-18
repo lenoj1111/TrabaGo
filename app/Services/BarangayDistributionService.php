@@ -7,6 +7,26 @@ use Illuminate\Support\Facades\DB;
 
 class BarangayDistributionService
 {
+    protected function normalizeSkillType(?string $skillType, string $skillName = ''): string
+    {
+        $normalized = strtolower(trim((string) $skillType));
+
+        if (in_array($normalized, ['21st_century', '21st-century', '21st century'], true)) {
+            return '21st_century';
+        }
+
+        if (in_array($normalized, ['technical', 'technical skills', 'vocational', 'trade'], true)) {
+            return 'technical';
+        }
+
+        // Preserve technical entries when the type is missing but the skill name looks like a vocational skill.
+        if ($skillName !== '' && preg_match('/\b(technical|computer|excel|driver|welder|nail|hair|cooking|electrical|masonry|carpentry|food|beauty|sewing|plumbing|mechanic|repair|programming|ict|construction|farm|business|accounting)\b/i', $skillName)) {
+            return 'technical';
+        }
+
+        return 'technical';
+    }
+
     /**
      * Master registry of all 80 official Cebu City Barangays with district & terrain classification.
      */
@@ -101,8 +121,18 @@ class BarangayDistributionService
      */
     public function getBarangayDistributionData(array $filters = []): array
     {
+        $skillTypeFilter = strtolower(trim((string) ($filters['skill_type'] ?? 'all')));
+        if (!in_array($skillTypeFilter, ['all', 'technical', '21st_century'], true)) {
+            $skillTypeFilter = 'all';
+        }
+
+        $skillTypeTotals = [
+            'technical' => 0,
+            '21st_century' => 0,
+        ];
+
         // 1 & 2. Aggregate real jobseekers to barangays (cached for 20s as clean array)
-        $liveCounts = \Illuminate\Support\Facades\Cache::remember('barangay_distribution_live_counts', 20, function () {
+        $liveCounts = \Illuminate\Support\Facades\Cache::remember('barangay_distribution_live_counts_' . $skillTypeFilter, 20, function () use ($skillTypeFilter) {
             $liveJobseekers = Jobseeker::with(['details', 'socialStatus', 'skills', 'applications'])->get();
             $counts = [];
 
@@ -134,6 +164,10 @@ class BarangayDistributionService
                         'pwd' => 0,
                         'four_ps' => 0,
                         'skills' => [],
+                        'skill_types' => [
+                            'technical' => 0,
+                            '21st_century' => 0,
+                        ],
                     ];
                 }
 
@@ -162,6 +196,14 @@ class BarangayDistributionService
                     foreach ($js->skills as $sk) {
                         $sName = trim($sk->skill_name);
                         if ($sName !== '') {
+                            $skillType = $this->normalizeSkillType($sk->skill_type ?? null, $sName);
+
+                            if ($skillTypeFilter !== 'all' && $skillType !== $skillTypeFilter) {
+                                continue;
+                            }
+
+                            $counts[$key]['skill_types'][$skillType] = ($counts[$key]['skill_types'][$skillType] ?? 0) + 1;
+
                             $counts[$key]['skills'][$sName] = ($counts[$key]['skills'][$sName] ?? 0) + 1;
                         }
                     }
@@ -379,6 +421,29 @@ class BarangayDistributionService
         usort($realRegisteredItems, fn($a, $b) => $b['registered'] <=> $a['registered']);
         $top10Registered = array_slice($realRegisteredItems, 0, 10);
 
+        $skillTypeTotals = [
+            'technical' => 0,
+            '21st_century' => 0,
+        ];
+
+        foreach ($liveCounts as $live) {
+            $skillTypes = $live['skill_types'] ?? [
+                'technical' => 0,
+                '21st_century' => 0,
+            ];
+
+            $skillTypeTotals['technical'] += $skillTypes['technical'] ?? 0;
+            $skillTypeTotals['21st_century'] += $skillTypes['21st_century'] ?? 0;
+        }
+
+        if (!isset($skillTypeTotals['technical'])) {
+            $skillTypeTotals['technical'] = 0;
+        }
+
+        if (!isset($skillTypeTotals['21st_century'])) {
+            $skillTypeTotals['21st_century'] = 0;
+        }
+
         // Top Hotspots with active seekers
         $realSeekingItems = array_filter($items, fn($i) => $i['seeking'] > 0);
         usort($realSeekingItems, fn($a, $b) => $b['seeking'] <=> $a['seeking']);
@@ -414,6 +479,10 @@ class BarangayDistributionService
             'top10_registered' => array_values($top10Registered),
             'top10_unemployment' => array_values($top10Unemployment),
             'top_mountain_priorities' => array_values($topMountainPriorities),
+            'skill_type_breakdown' => [
+                'technical' => (int) ($skillTypeTotals['technical'] ?? 0),
+                '21st_century' => (int) ($skillTypeTotals['21st_century'] ?? 0),
+            ],
         ];
     }
 

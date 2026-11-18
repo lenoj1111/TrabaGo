@@ -213,6 +213,11 @@
                 </div>
             @endforelse
         </div>
+        @if($skillsCatalog->hasPages())
+        <div class="pt-2">
+            {{ $skillsCatalog->onEachSide(1)->links() }}
+        </div>
+        @endif
 
     </div>
 </div>

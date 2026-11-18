@@ -247,13 +247,7 @@
                                 alt="Cebu City Government Logo"
                                 class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-lg" />
 
-                            <!-- TrabaGo Logo (Center) -->
-                            <div class="flex flex-col items-center">
-                                <img src="{{ asset('images/logo.png') }}"
-                                    alt="TrabaGo Logo"
-                                    class="w-12 h-12 sm:w-14 sm:h-14 object-contain drop-shadow-lg" />
-                                <span class="h-1 w-1 rounded-full bg-emerald-400 mt-2 opacity-50"></span>
-                            </div>
+                            
 
                             <!-- DMDP Logo -->
                             <img src="{{ asset('images/dmdp.png') }}"
@@ -261,13 +255,16 @@
                                 class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-lg" />
                         </div>
 
-                        <!-- Text & Badges -->
+                                                <!-- Text & Badges -->
                         <div class="text-center space-y-3">
                             <p class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest border-b border-white/10 pb-2 inline-block">
                                 Official Partnership Portal
                             </p>
-                            <h2 class="text-3xl font-black text-white tracking-tight mt-2">
-                                Traba<span class="text-emerald-400">Go</span> Cebu City
+                            <h2 class="flex items-center justify-center gap-2 text-3xl font-black text-white tracking-tight mt-2">
+                                <img src="{{ asset('images/logo.png') }}"
+                                    alt="TrabaGo Logo"
+                                    class="w-20 h-20 sm:w-20 sm:h-20 object-contain drop-shadow-lg" />
+                                <span>Traba<span class="text-emerald-400">Go</span></span>
                             </h2>
                             <p class="text-slate-300 text-xs leading-relaxed max-w-xs mx-auto">
                                 AI Skill Matching &bull; Certified Vocational Training &bull; Direct Employer Referrals
@@ -338,7 +335,7 @@
                     <!-- DMDP logo (left) -->
                     <img src="{{ asset('images/dmdp.png') }}"
                         alt="DMDP Logo"
-                        class="shrink-0 w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 object-contain drop-shadow-md" />
+                        class="shrink-0 w-20 h-20 sm:w-32 sm:h-32 md:w-32 md:h-32 object-contain drop-shadow-md" />
 
                     <!-- Center text -->
                     <div class="text-center space-y-4 max-w-xl">

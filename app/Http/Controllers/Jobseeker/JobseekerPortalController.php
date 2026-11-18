@@ -17,6 +17,7 @@ use App\Models\TrainingTopic;
 use App\Services\IdDocumentVerificationService;
 use App\Services\SkillMatchingService;
 use App\Services\TrainingQuizService;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -187,6 +188,16 @@ class JobseekerPortalController extends Controller
             $selectedItem = $rankedJobs[0];
         }
 
+        $perPage = 6;
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $rankedJobs = new LengthAwarePaginator(
+            array_slice($rankedJobs, ($currentPage - 1) * $perPage, $perPage),
+            count($rankedJobs),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
         $savedDocuments = $jobseeker->details && $jobseeker->details->training_certificates
             ? (is_array($jobseeker->details->training_certificates) ? $jobseeker->details->training_certificates : json_decode($jobseeker->details->training_certificates, true))
             : [];
@@ -229,7 +240,7 @@ class JobseekerPortalController extends Controller
                 if ($app->resignation_status !== 'approved') {
                     $hasApplied = true;
                 }
-            } elseif (!in_array($app->status, ['withdrawn', 'rejected'])) {
+            } elseif (!in_array($app->status, ['withdrawn', 'rejected', 'training_recommended'])) {
                 $hasApplied = true;
             }
         }
@@ -296,7 +307,7 @@ class JobseekerPortalController extends Controller
         // Check if the user has an ACTIVE application for this job
         $existing = JobApplication::where('jobseeker_id', $jobseeker->jobseeker_id)
             ->where('job_id', $jobId)
-            ->whereNotIn('status', ['withdrawn', 'rejected'])
+            ->whereNotIn('status', ['withdrawn', 'rejected', 'training_recommended'])
             ->where(function ($query) {
                 $query->where('status', '!=', 'hired')
                     ->orWhere(function ($q) {
@@ -423,7 +434,7 @@ class JobseekerPortalController extends Controller
         }
 
         // Paginate the applications and map the match data
-        $applications = $query->orderByDesc('application_id')->paginate(12)->through(function ($app) use ($userSkills) {
+        $applications = $query->orderByDesc('application_id')->paginate(6)->through(function ($app) use ($userSkills) {
             $jobSkills = $app->jobPosting ? $this->matchingService->getJobSkills($app->jobPosting) : [];
             $match = $this->matchingService->calculateMatch($userSkills, $jobSkills);
             $app->match_details = $match;
@@ -643,57 +654,64 @@ class JobseekerPortalController extends Controller
         $userSkills = $this->matchingService->getJobseekerSkills($jobseeker);
         $filter = $request->input('filter', 'all');
 
-        $allTrainings = TrainingProgram::with(['topics', 'enrollments' => function ($q) use ($jobseeker) {
+        // 1. Get counts for the tabs based on the current jobseeker
+        $counts = [
+            'all' => TrainingProgram::whereDoesntHave('enrollments', function ($q) use ($jobseeker) {
+                $q->where('jobseeker_id', $jobseeker->jobseeker_id)
+                    ->whereIn('status', ['enrolled', 'in_progress', 'completed']);
+            })->count(),
+
+            'enrolled' => TrainingEnrollment::where('jobseeker_id', $jobseeker->jobseeker_id)
+                ->whereIn('status', ['enrolled', 'in_progress'])
+                ->count(),
+
+            'completed' => TrainingEnrollment::where('jobseeker_id', $jobseeker->jobseeker_id)
+                ->where('status', 'completed')
+                ->count(),
+        ];
+
+        // 2. Build the query based on the selected tab
+        $query = TrainingProgram::with(['topics', 'enrollments' => function ($q) use ($jobseeker) {
             $q->where('jobseeker_id', $jobseeker->jobseeker_id);
-        }])->get();
-        $accountCanEnroll = $jobseeker->isProfileAndDocumentsComplete()
-            && Auth::user()
-            && Auth::user()->isAccountVerified();
-        $allTrainings->each(function ($training) use ($jobseeker, $accountCanEnroll) {
+        }]);
+
+        if ($filter === 'enrolled') {
+            // Show courses they are currently taking
+            $query->whereHas('enrollments', function ($q) use ($jobseeker) {
+                $q->where('jobseeker_id', $jobseeker->jobseeker_id)
+                    ->whereIn('status', ['enrolled', 'in_progress']);
+            });
+        } elseif ($filter === 'completed') {
+            // Show courses they have finished and passed
+            $query->whereHas('enrollments', function ($q) use ($jobseeker) {
+                $q->where('jobseeker_id', $jobseeker->jobseeker_id)
+                    ->where('status', 'completed');
+            });
+        } else {
+            // "All Courses": Show only courses they are NOT enrolled in, or failed/dropped
+            $query->whereDoesntHave('enrollments', function ($q) use ($jobseeker) {
+                $q->where('jobseeker_id', $jobseeker->jobseeker_id)
+                    ->whereIn('status', ['enrolled', 'in_progress', 'completed']);
+            });
+        }
+
+        // 3. Sorting: Latest created first
+        $query->orderByDesc('created_at');
+
+        $trainings = $query->paginate(12)->withQueryString();
+
+        // 4. Attach eligibility rules to each course
+        $accountCanEnroll = $jobseeker->isProfileAndDocumentsComplete() && Auth::user() && Auth::user()->isAccountVerified();
+
+        $trainings->getCollection()->transform(function ($training) use ($jobseeker, $accountCanEnroll) {
             $training->eligibility_issues = $training->demographicEligibilityIssues($jobseeker);
             $training->account_can_enroll = $accountCanEnroll;
             $training->can_enroll = $accountCanEnroll && empty($training->eligibility_issues);
+            return $training;
         });
 
-        $enrolledCount = $allTrainings->filter(function ($t) {
-            $enr = $t->enrollments->first();
-            return $enr && in_array($enr->status, ['enrolled', 'in_progress', 'completed', 'failed']);
-        })->count();
-
-        $completedCount = $allTrainings->filter(function ($t) {
-            $enr = $t->enrollments->first();
-            return $enr && $enr->status === 'completed';
-        })->count();
-
-        $counts = [
-            'all' => $allTrainings->count(),
-            'enrolled' => $enrolledCount,
-            'completed' => $completedCount,
-        ];
-
-        if ($filter === 'enrolled') {
-            $trainings = $allTrainings->filter(function ($t) {
-                $enr = $t->enrollments->first();
-                return $enr && in_array($enr->status, ['enrolled', 'in_progress', 'completed', 'failed']);
-            });
-        } elseif ($filter === 'completed') {
-            $trainings = $allTrainings->filter(function ($t) {
-                $enr = $t->enrollments->first();
-                return $enr && $enr->status === 'completed';
-            });
-        } else {
-            $trainings = $allTrainings;
-        }
-
-        $allTrainingSkills = [];
-        foreach ($allTrainings as $t) {
-            $words = array_filter(explode(' ', $t->title), fn($w) => strlen($w) > 3);
-            $allTrainingSkills[$t->training_id] = array_values($words);
-        }
-
-        return view('jobseeker.training.index', compact('trainings', 'userSkills', 'allTrainingSkills', 'jobseeker', 'filter', 'counts'));
+        return view('jobseeker.training.index', compact('trainings', 'userSkills', 'jobseeker', 'filter', 'counts'));
     }
-
     public function trainingSkills(Request $request)
     {
         $jobseeker = $this->getOrCreateJobseeker();
@@ -751,6 +769,15 @@ class JobseekerPortalController extends Controller
             });
         }
 
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $skillsCatalog = new LengthAwarePaginator(
+            array_slice($skillsCatalog, ($currentPage - 1) * 6, 6),
+            count($skillsCatalog),
+            6,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
         return view('jobseeker.training.skills', compact('skillsCatalog', 'userSkills', 'jobseeker'));
     }
 
@@ -759,17 +786,26 @@ class JobseekerPortalController extends Controller
         $jobseeker = $this->getOrCreateJobseeker();
         $userSkills = $this->matchingService->getJobseekerSkills($jobseeker);
 
-        $enrollments = TrainingEnrollment::with(['trainingProgram.topics', 'trainingProgram.trainer'])
+        $allEnrollments = TrainingEnrollment::with(['trainingProgram.topics', 'trainingProgram.trainer'])
             ->where('jobseeker_id', $jobseeker->jobseeker_id)
             ->orderBy('enrollment_id', 'desc')
             ->get();
 
         $stats = [
-            'total' => $enrollments->count(),
-            'in_progress' => $enrollments->whereIn('status', ['enrolled', 'in_progress', 'failed'])->count(),
-            'completed' => $enrollments->where('status', 'completed')->count(),
-            'certificates' => $enrollments->where('certificate_issued', 1)->count(),
+            'total' => $allEnrollments->count(),
+            'in_progress' => $allEnrollments->whereIn('status', ['enrolled', 'in_progress', 'failed'])->count(),
+            'completed' => $allEnrollments->where('status', 'completed')->count(),
+            'certificates' => $allEnrollments->where('certificate_issued', 1)->count(),
         ];
+
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $enrollments = new LengthAwarePaginator(
+            $allEnrollments->forPage($currentPage, 6)->values(),
+            $allEnrollments->count(),
+            6,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         return view('jobseeker.training.enrollments', compact('enrollments', 'jobseeker', 'userSkills', 'stats'));
     }
@@ -778,6 +814,10 @@ class JobseekerPortalController extends Controller
     {
         $jobseeker = $this->getOrCreateJobseeker();
         $training = TrainingProgram::findOrFail($id);
+        if ($training->is_archived) {
+            return redirect()->route('jobseeker.training')
+                ->with('error', 'This training program is no longer accepting new enrollments.');
+        }
 
         $enrollment = TrainingEnrollment::where('jobseeker_id', $jobseeker->jobseeker_id)
             ->where('training_id', $id)
@@ -871,7 +911,7 @@ class JobseekerPortalController extends Controller
         }
         if (($assessmentData['review_status'] ?? null) === 'passed') {
             return redirect()->route('jobseeker.training.show', $id)
-                ->with('info', 'Your assessment has been approved.');
+                ->with('info', 'You passed your assessment. Please return to the DMDP for your practical demo.');
         }
 
         $questions = array_map(function ($question) {
@@ -882,118 +922,151 @@ class JobseekerPortalController extends Controller
         return view('jobseeker.training.quiz', compact('training', 'jobseeker', 'questions'));
     }
 
-    public function submitQuiz(Request $request, int $id)
+    public function submitQuiz(Request $request, TrainingProgram $course)
     {
         $jobseeker = $this->getOrCreateJobseeker();
-        $training = TrainingProgram::with('trainer')->findOrFail($id);
-        $questions = $this->quizService->getQuestionsForTraining($training);
-        if (empty($questions)) {
-            return back()->with('error', 'This course does not have assessment questions yet. Please wait for the trainer to add them.');
+        $responses = $request->input('responses');
+        if (is_string($responses)) {
+            $responses = json_decode($responses, true);
         }
-
-        $request->validate(['responses' => 'required|json']);
-        $submittedResponses = json_decode($request->input('responses'), true);
-        if (!is_array($submittedResponses)) {
-            return back()->withErrors(['responses' => 'Your answers could not be read. Please try again.']);
-        }
-
-        foreach ($questions as $question) {
-            $key = (string) $question['id'];
-            if (!array_key_exists($key, $submittedResponses)) {
-                return back()->withErrors(['responses' => 'Please answer every assessment question before submitting.']);
-            }
-
-            $response = $submittedResponses[$key];
-            if ($question['type'] === 'essay') {
-                if (!is_string($response) || trim($response) === '' || mb_strlen($response) > 5000) {
-                    return back()->withErrors(['responses' => 'Essay answers are required and must be 5,000 characters or fewer.']);
-                }
-            } elseif (
-                filter_var($response, FILTER_VALIDATE_INT) === false
-                || !array_key_exists((int) $response, $question['choices'])
-            ) {
-                return back()->withErrors(['responses' => 'Please select a valid answer for each multiple-choice question.']);
-            }
+        if (!is_array($responses)) {
+            return back()->withErrors(['responses' => 'Submit an answer for every assessment question.'])->withInput();
         }
 
         try {
-            $gradedSubmission = $this->quizService->gradeSubmission($training, $submittedResponses);
+            $submission = $this->quizService->gradeSubmission($course, $responses);
         } catch (\InvalidArgumentException $exception) {
-            return back()->withErrors(['responses' => $exception->getMessage()]);
-        }
-
-        $enrollment = TrainingEnrollment::where('jobseeker_id', $jobseeker->jobseeker_id)
-            ->where('training_id', $id)
-            ->first();
-
-        if (!$enrollment && $training->trainee_capacity !== null && TrainingEnrollment::where('training_id', $id)->count() >= $training->trainee_capacity) {
-            return redirect()->route('jobseeker.training.show', $id)
-                ->with('error', 'This training program has reached its trainee capacity.');
-        }
-
-        $existingAnswers = $enrollment?->answers ?? [];
-        if (!is_array($existingAnswers)) {
-            $existingAnswers = json_decode($existingAnswers, true) ?: [];
-        }
-        if (in_array($existingAnswers['review_status'] ?? null, ['pending', 'passed'], true)) {
-            return redirect()->route('jobseeker.training.show', $id)
-                ->with('info', 'Your submitted assessment is already being reviewed or has been approved.');
-        }
-
-        if (!$enrollment) {
-            $enrollment = new TrainingEnrollment([
-                'jobseeker_id' => $jobseeker->jobseeker_id,
-                'training_id' => $id,
-                'training_type' => $training->training_type ?: 'online',
-                'start_date' => now()->toDateString(),
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'responses' => $exception->getMessage(),
             ]);
         }
 
-        $enrollment->score = $gradedSubmission['objective_score']['percentage'];
-        $enrollment->passed = null;
-        $enrollment->status = 'in_progress';
-        $enrollment->end_date = null;
-        $enrollment->certificate_no = null;
-        $enrollment->certificate_issued = false;
-        $enrollment->certificate_issued_at = null;
-        $enrollment->answers = [
-            'review_status' => 'pending',
-            'submitted_at' => now()->toIso8601String(),
-            'objective_score' => $gradedSubmission['objective_score'],
-            'responses' => $gradedSubmission['responses'],
-        ];
-        $enrollment->save();
+        $hasEssay = collect($submission['responses'])
+            ->contains(fn($answer) => $answer['question_type'] === 'essay');
+        $objectiveScore = $submission['objective_score']['percentage'];
+        $passingScore = (int) ($course->passing_score ?: 70);
+        $passed = !$hasEssay && $objectiveScore !== null && $objectiveScore >= $passingScore;
 
-        Notification::create([
-            'user_id' => Auth::id(),
-            'title' => 'Assessment Submitted for Trainer Review',
-            'message' => "Your assessment for '{$training->title}' is awaiting trainer review. Your certificate is pending.",
-            'type' => 'training',
-            'is_read' => false,
-            'related_id' => $enrollment->enrollment_id,
-        ]);
-        if ($training->trainer?->user_id) {
+        $result = DB::transaction(function () use (
+            $jobseeker,
+            $course,
+            $submission,
+            $hasEssay,
+            $objectiveScore,
+            $passed
+        ) {
+            $enrollment = TrainingEnrollment::where('training_id', $course->training_id)
+                ->where('jobseeker_id', $jobseeker->jobseeker_id)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$enrollment) {
+                return ['status' => 'not_enrolled'];
+            }
+
+            $answers = $enrollment->answers ?? [];
+            if (!is_array($answers)) {
+                $answers = json_decode($answers, true) ?: [];
+            }
+
+            if ($enrollment->certificate_issued || $enrollment->passed) {
+                return ['status' => 'already_passed'];
+            }
+            if (($answers['review_status'] ?? null) === 'pending') {
+                return ['status' => 'pending_review'];
+            }
+
+            $attempts = (int) $enrollment->assessment_attempts + 1;
+            $reviewStatus = $hasEssay ? 'pending' : ($passed ? 'passed' : 'needs_retake');
+            $answers = array_merge($submission, [
+                'review_status' => $reviewStatus,
+                'attempt_number' => $attempts,
+                'submitted_at' => now()->toIso8601String(),
+            ]);
+
+            $enrollment->update([
+                'status' => 'in_progress',
+                'answers' => $answers,
+                'score' => $objectiveScore,
+                'assessment_attempts' => $attempts,
+                'passed' => $passed,
+                'trainer_feedback' => null,
+            ]);
+
+            $tryLabel = $attempts === 1 ? '1 try' : "{$attempts} tries";
+            if ($hasEssay) {
+                $title = 'Assessment Submitted for Trainer Review';
+                $message = "Your assessment for {$course->title} (Attempt #{$attempts}) is pending trainer review. If passed, return to the DMDP for your practical demo.";
+                $notificationType = 'assessment_submitted';
+            } elseif ($passed) {
+                $title = 'Assessment Passed — Return for Demo (DMDP)';
+                $message = "Congratulations! You passed {$course->title} with {$objectiveScore}% in {$tryLabel}. Please return to the DMDP for your practical demo before your trainer issues your certificate.";
+                $notificationType = 'assessment_passed_for_demo';
+            } else {
+                $title = 'Assessment Not Passed';
+                $message = "You scored {$objectiveScore}% on {$course->title} (passing score: {$course->passing_score}%, attempt #{$attempts}). Review the course materials and retake the assessment.";
+                $notificationType = 'assessment_failed';
+            }
+
             Notification::create([
-                'user_id' => $training->trainer->user_id,
-                'title' => 'Trainee Assessment Awaiting Review',
-                'message' => "{$jobseeker->first_name} {$jobseeker->last_name} submitted the assessment for '{$training->title}'. Review objective answers and essay responses.",
-                'type' => 'training',
+                'user_id' => $jobseeker->user_id,
+                'title' => $title,
+                'message' => $message,
+                'type' => $notificationType,
                 'is_read' => false,
                 'related_id' => $enrollment->enrollment_id,
             ]);
+
+            $trainerUserId = DB::table('user_profiles')
+                ->where('profile_id', $course->trainer_id)
+                ->value('user_id');
+
+            if ($trainerUserId && $hasEssay) {
+                Notification::create([
+                    'user_id' => $trainerUserId,
+                    'title' => 'Assessment Awaiting Trainer Review',
+                    'message' => "{$jobseeker->first_name} {$jobseeker->last_name} submitted an assessment for {$course->title} (Attempt #{$attempts}) that requires review.",
+                    'type' => 'assessment_review_needed',
+                    'is_read' => false,
+                    'related_id' => $enrollment->enrollment_id,
+                ]);
+            } elseif ($trainerUserId && $passed) {
+                Notification::create([
+                    'user_id' => $trainerUserId,
+                    'title' => 'Trainee Ready for DMDP Demo',
+                    'message' => "{$jobseeker->first_name} {$jobseeker->last_name} passed {$course->title} with {$objectiveScore}% in {$tryLabel} and is due to return for the practical demo.",
+                    'type' => 'trainee_ready_for_demo',
+                    'is_read' => false,
+                    'related_id' => $enrollment->enrollment_id,
+                ]);
+            }
+
+            return ['status' => $reviewStatus, 'score' => $objectiveScore];
+        });
+
+        if ($result['status'] === 'not_enrolled') {
+            return redirect()->route('jobseeker.training.show', $course->training_id)
+                ->with('error', 'You must enroll in this training course before taking the assessment.');
+        }
+        if ($result['status'] === 'pending_review') {
+            return redirect()->route('jobseeker.training.show', $course->training_id)
+                ->with('info', 'Your previous assessment submission is still awaiting trainer review.');
+        }
+        if ($result['status'] === 'already_passed') {
+            return redirect()->route('jobseeker.training.show', $course->training_id)
+                ->with('info', 'You have already passed. Please return to the DMDP for your practical demo.');
+        }
+        if ($result['status'] === 'pending') {
+            return redirect()->route('jobseeker.training.show', $course->training_id)
+                ->with('success', 'Assessment submitted. Your essay responses are pending trainer review.');
+        }
+        if ($result['status'] === 'passed') {
+            return redirect()->route('jobseeker.training.show', $course->training_id)
+                ->with('success', "Congratulations! You passed with {$result['score']}%. Please return to the DMDP for your practical demo.");
         }
 
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'review_status' => 'pending',
-                'objective_score' => $gradedSubmission['objective_score'],
-                'certificate_issued' => false,
-                'message' => 'Assessment submitted. The trainer must review your answers before deciding the result.',
-            ]);
-        }
-
-        return redirect()->route('jobseeker.training.show', $id);
+        return redirect()->route('jobseeker.training.show', $course->training_id)
+            ->with('error', "You scored {$result['score']}% (passing score: {$passingScore}%). Please review the modules and retake the assessment.");
     }
 
     public function previewCertificate(int $id)
@@ -1009,17 +1082,25 @@ class JobseekerPortalController extends Controller
                 'jobseekers.first_name',
                 'jobseekers.last_name',
                 'training_programs.title as course_title',
-                'training_programs.description as course_desc'
+                'training_programs.training_type',
+                'training_programs.cert_content'
             )
             ->first();
 
         if (!$enrollment) {
-            abort(404, 'Certificate record not found or not yet generated.');
+            abort(404);
         }
 
-        return view('jobseeker.certificates.preview', compact('enrollment'));
-    }
+        if (!$enrollment->certificate_issued) {
+            return redirect()
+                ->route('jobseeker.training.show', $enrollment->training_id)
+                ->with('error', 'Your certificate has not been issued yet. Return to the DMDP for your practical demo and wait for trainer confirmation.');
+        }
 
+        abort_unless((int) $enrollment->jobseeker_id === (int) $jobseeker->jobseeker_id, 404);
+
+        return view('trainer.certificates.preview', compact('enrollment'));
+    }
     // =========================================================================
     // 5. DOCUMENTS
     // =========================================================================
@@ -1059,7 +1140,22 @@ class JobseekerPortalController extends Controller
             }
         }
 
-        return view('jobseeker.documents.index', compact('documents', 'certificatesList', 'jobseeker', 'details'));
+        // Determine states
+        $validIdDoc = $documents['valid_id'];
+        $validIdStatus = $validIdDoc['status'] ?? null;
+
+        $isVerified = in_array($validIdStatus, ['verified', 'approved'], true);
+        $isPendingReview = $validIdDoc && !$isVerified
+            && in_array($validIdStatus, ['under_review', 'pending_review', 'pending'], true);
+
+        return view('jobseeker.documents.index', compact(
+            'documents',
+            'certificatesList',
+            'jobseeker',
+            'details',
+            'isVerified',
+            'isPendingReview'
+        ));
     }
 
     public function previewDocument(string $category)
@@ -1132,6 +1228,95 @@ class JobseekerPortalController extends Controller
 
         abort(404, 'Document file not found on storage.');
     }
+    /**
+     * Show the new ID Verification page.
+     */
+    public function showIdVerification()
+    {
+        $jobseeker = $this->getOrCreateJobseeker();
+
+        // Find the current valid_id document to check its status
+        $validIdDoc = null;
+        $details = $jobseeker->details;
+        if ($details && !empty($details->training_certificates)) {
+            $docs = is_array($details->training_certificates)
+                ? $details->training_certificates
+                : json_decode($details->training_certificates, true);
+
+            foreach ($docs as $doc) {
+                if (($doc['category'] ?? '') === 'valid_id') {
+                    $validIdDoc = $doc;
+                    break;
+                }
+            }
+        }
+
+        $isPendingReview = $validIdDoc && in_array($validIdDoc['status'], ['under_review', 'pending_review']);
+        $isVerified = $validIdDoc && in_array($validIdDoc['status'], ['verified', 'approved']);
+
+        return view('jobseeker.idverification.index', compact('jobseeker', 'isPendingReview', 'isVerified'));
+    }
+
+    /**
+     * Cancel a pending manual review so the user can try again.
+     */
+    public function cancelManualReview()
+    {
+        $jobseeker = $this->getOrCreateJobseeker();
+        $details = $jobseeker->details;
+
+        if ($details && !empty($details->training_certificates)) {
+            $docs = is_array($details->training_certificates)
+                ? $details->training_certificates
+                : (json_decode($details->training_certificates, true) ?: []);
+
+            $docs = array_values(array_filter($docs, function ($doc) {
+                return !(($doc['category'] ?? null) === 'valid_id'
+                    && in_array(($doc['status'] ?? null), ['under_review', 'pending_review', 'pending'], true));
+            }));
+
+            $details->training_certificates = $docs;
+            $details->save();
+        }
+
+        return redirect()->route('jobseeker.documents')
+            ->with('success', 'Manual review request cancelled. You can now try Auto-Verification again.');
+    }
+    /**
+     * Submit ID for Manual Review.
+     */
+    public function submitManualReview(Request $request)
+    {
+        $request->validate([
+            'document_file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ]);
+
+        $jobseeker = $this->getOrCreateJobseeker();
+        $details = $jobseeker->details()->firstOrCreate(['jobseeker_id' => $jobseeker->jobseeker_id]);
+
+        $path = $request->file('document_file')->store("documents/{$jobseeker->jobseeker_id}", 'public');
+
+        $docs = is_array($details->training_certificates)
+            ? $details->training_certificates
+            : (json_decode($details->training_certificates, true) ?: []);
+
+        $docs = array_values(array_filter($docs, fn($d) => ($d['category'] ?? null) !== 'valid_id'));
+
+        $docs[] = [
+            'category' => 'valid_id',
+            'name' => $request->file('document_file')->getClientOriginalName(),
+            'file_path' => $path,
+            'status' => 'under_review', // <--- TRIGGERS THE WARNING
+            'uploaded_at' => now()->toIso8601String(),
+        ];
+
+        $details->training_certificates = $docs;
+        $details->save();
+
+        return redirect()->route('jobseeker.documents')
+            ->with('success', 'Your ID was submitted for manual review. Please wait 1-2 business days.');
+    }
+
     private function runPaddleOcr(string $absolutePath): ?string
     {
         $pythonScript = base_path('app/scripts/ocr_engine.py');
@@ -1406,18 +1591,22 @@ class JobseekerPortalController extends Controller
             if ($ocrText === null) {
                 $status = 'rejected';
                 $rejectionReason = 'We could not read your ID. Please upload a clearer, well-lit photo.';
+                $jobseeker->increment('id_scan_tries');
+                $jobseeker->update(['id_scan_error' => $rejectionReason]);
             } else {
                 $verification = $this->idMatchesJobseeker($jobseeker, $ocrText);
 
                 if ($verification['match']) {
-                    $status = 'verified'; // 🎉 Auto-verified!
+                    $status = 'verified';
+                    $jobseeker->update(['id_scan_error' => null]); // Clear the error on success
                 } else {
                     $status = 'rejected';
                     $rejectionReason = $verification['reason'];
+                    $jobseeker->increment('id_scan_tries');
+                    $jobseeker->update(['id_scan_error' => $rejectionReason]);
                 }
             }
         }
-
         $newDoc = [
             'id' => 'doc_' . uniqid(),
             'category' => $canonicalCategory,
@@ -1525,26 +1714,14 @@ class JobseekerPortalController extends Controller
         $query = Notification::where('user_id', $user->user_id);
 
         if ($filter !== 'all') {
-            if ($filter === 'jpo_pending') {
-                // Still waiting for DMDP / JPO
-                $query->where('status', 'jpo_pending')->where('referred_by_jpo', 0);
-            } elseif ($filter === 'pending') {
-                // Endorsed by JPO — waiting for employer
-                $query->where('referred_by_jpo', 1)->whereIn('status', ['pending', 'reviewed']);
-            } elseif ($filter === 'hired') {
-                $query->where('status', 'hired')
-                    ->where(function ($q) {
-                        $q->whereNull('resignation_status')
-                            ->orWhere('resignation_status', '!=', 'approved');
-                    });
-            } elseif ($filter === 'rejected') {
-                $query->where('status', 'rejected');
+            if ($filter === 'application') {
+                $query->whereIn('type', ['application', 'approval', 'rejection', 'manual_review']);
             } else {
-                $query->where('status', $filter);
+                $query->where('type', $filter);
             }
         }
 
-        $notifications = $query->orderByDesc('created_at')->paginate(15)->appends(['category' => $filter]);
+        $notifications = $query->orderByDesc('created_at')->paginate(6)->appends(['category' => $filter]);
         $unreadCount = Notification::where('user_id', $user->user_id)->where('is_read', false)->count();
 
         return view('jobseeker.notifications.index', compact('notifications', 'unreadCount', 'filter'));
@@ -1810,6 +1987,24 @@ class JobseekerPortalController extends Controller
         $social->save();
 
         return redirect()->route('jobseeker.profile')->with('success', 'Comprehensive profile updated successfully.');
+    }
+    public function uploadProfilePhoto(Request $request)
+    {
+        $request->validate([
+            'profile_photo' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+        ]);
+
+        $jobseeker = $this->getOrCreateJobseeker();
+
+        if ($request->hasFile('profile_photo')) {
+            if ($jobseeker->profile_photo && Storage::disk('public')->exists($jobseeker->profile_photo)) {
+                Storage::disk('public')->delete($jobseeker->profile_photo);
+            }
+            $path = $request->file('profile_photo')->store('profile_photos', 'public');
+            $jobseeker->update(['profile_photo' => $path]);
+        }
+
+        return redirect()->back()->with('success', 'Profile photo updated successfully!');
     }
 
     public function syncSkills(Request $request)

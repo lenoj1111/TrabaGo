@@ -93,7 +93,7 @@ $isApproved = $isJobseeker && (bool) ($currentUser->is_approved ?? false);
             <div class="lg:col-span-5 space-y-4">
                 <div class="flex items-center justify-between px-1">
                     <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        {{ count($rankedJobs) }} Positions Found
+                        {{ $rankedJobs->total() }} Positions Found
                     </p>
                     <span class="text-xs text-emerald-700 font-bold">Sorted by Skill Match %</span>
                 </div>
@@ -206,6 +206,11 @@ $isApproved = $isJobseeker && (bool) ($currentUser->is_approved ?? false);
                     </div>
                     @endforelse
                 </div>
+                @if($rankedJobs->hasPages())
+                <div class="pt-2">
+                    {{ $rankedJobs->onEachSide(1)->links() }}
+                </div>
+                @endif
             </div>
 
             <!-- Right Column: Sticky Selected Job Details Preview -->

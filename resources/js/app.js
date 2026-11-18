@@ -53,14 +53,14 @@ function prefetchLink(url) {
 }
 
 document.addEventListener('pointerenter', (e) => {
-    const anchor = e.target.closest('a');
+    const anchor = e.target instanceof Element ? e.target.closest('a') : null;
     if (anchor && anchor.href) {
         prefetchLink(anchor.href);
     }
 }, { capture: true, passive: true });
 
 document.addEventListener('touchstart', (e) => {
-    const anchor = e.target.closest('a');
+    const anchor = e.target instanceof Element ? e.target.closest('a') : null;
     if (anchor && anchor.href) {
         prefetchLink(anchor.href);
     }
@@ -68,7 +68,7 @@ document.addEventListener('touchstart', (e) => {
 
 // Instant tactile feedback on sidebar link click
 document.addEventListener('click', (e) => {
-    const anchor = e.target.closest('aside a, nav a');
+    const anchor = e.target instanceof Element ? e.target.closest('aside a, nav a') : null;
     if (anchor && anchor.href && shouldPrefetch(anchor.href)) {
         anchor.classList.add('opacity-75');
     }

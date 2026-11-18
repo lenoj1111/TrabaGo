@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -23,7 +24,7 @@ class JobseekerRegistrationController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8|confirmed',
             'role' => 'required|in:jobseeker',
-            
+
             // Jobseeker fields
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
@@ -32,9 +33,9 @@ class JobseekerRegistrationController extends Controller
             'sex' => 'required|string|max:20',
             'civil_status' => 'required|string|max:50',
             'citizenship' => 'required|string|max:100',
-            'mobile_number' => 'required|string|max:50',
+            'mobile_number' => 'required|string|max:50|unique:users,phone_number',
             'employment_status' => 'required|string|max:50',
-            
+
             // Jobseeker Details (JSON fields)
             'address' => 'nullable|array',
             'education' => 'nullable|array',
@@ -42,10 +43,10 @@ class JobseekerRegistrationController extends Controller
             'eligibility' => 'nullable|array',
             'language_proficiency' => 'nullable|array',
             'training_certificates' => 'nullable|array',
-            
+
             // Skills
             'skills' => 'nullable|array',
-            
+
             // Job Preferences
             'occupation1' => 'nullable|string|max:150',
             'occupation2' => 'nullable|string|max:150',
@@ -55,21 +56,62 @@ class JobseekerRegistrationController extends Controller
             'industry3' => 'nullable|string|max:150',
             'preferred_location' => 'nullable|string|max:255',
             'salary_expectation' => 'nullable|string|max:100',
-            
+
             // Social Status
             'is_4ps' => 'nullable|boolean',
             'household_id' => 'nullable|string|max:100',
             'is_ofw' => 'nullable|boolean',
             'is_pwd' => 'nullable|boolean',
             'pwd_type' => 'nullable|string|max:255',
+        ], [
+            'email.unique' => 'An account with this email already exists. Please contact your JPO or an administrator to update your email or reset your password. For your security, never share your password.',
+            'mobile_number.unique' => 'An account with this mobile number already exists. Please contact your JPO or an administrator to update your email or reset your password. For your security, never share your password.',
         ]);
 
+        // 1. Check standard validation first
         if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'message' => 'Please review the registration details and try again.',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            return redirect()->back()->withErrors($validator)->withInput();
         }
 
+        // 2. DUPLICATE CHECK (Name + DOB)
+        if ($request->input('role', 'jobseeker') === 'jobseeker') {
+            $firstName = $request->input('first_name');
+            $lastName = $request->input('last_name');
+            $birthDate = $request->input('birth_date');
+
+            if ($firstName && $lastName && $birthDate) {
+                $dateStr = \Carbon\Carbon::parse($birthDate)->format('Y-m-d');
+
+                $duplicate = DB::table('jobseekers')
+                    ->whereRaw('LOWER(LTRIM(RTRIM(first_name))) = ?', [\Illuminate\Support\Str::lower(trim($firstName))])
+                    ->whereRaw('LOWER(LTRIM(RTRIM(last_name))) = ?', [\Illuminate\Support\Str::lower(trim($lastName))])
+                    ->whereRaw("CONVERT(varchar(10), birth_date, 120) = ?", [$dateStr])
+                    ->exists();
+
+                if ($duplicate && !$request->has('confirm_duplicate')) {
+                    // If the request expects JSON, return the popup message
+                    if ($request->wantsJson()) {
+                        return response()->json([
+                            'success' => false,
+                            'error' => 'POSSIBLE_DUPLICATE',
+                            'message' => 'A jobseeker with the same name and birthdate already exists. If this is you, please log in. If you are a different person, click Continue to proceed with registration.',
+                        ], 409);
+                    }
+
+                    // If the form submits normally (JS failed), show this fallback error
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'A jobseeker with the same name and birthdate already exists. If this is you, please log in. If you are a different person, confirm the warning to continue registration.');
+                }
+            }
+        }
         try {
             // Begin transaction
             DB::beginTransaction();
@@ -124,7 +166,7 @@ class JobseekerRegistrationController extends Controller
                         $skillName = $skill;
                         $skillType = 'technical';
                     }
-                    
+
                     // Only insert if skill name is not empty
                     if (!empty($skillName)) {
                         DB::table('jobseeker_skills')->insert([
@@ -191,30 +233,40 @@ class JobseekerRegistrationController extends Controller
             ]);
 
             // 7. Create notification for admin (only if admin exists)
-                $admin = DB::table('users')->where('role', 'admin')->first();
-                if ($admin) {
-                    DB::table('notifications')->insert([
-                        'user_id' => $admin->user_id,
-                        'title' => 'New Jobseeker Registration',
-                        'message' => "A new jobseeker has registered: {$request->first_name} {$request->last_name}",
-                        'type' => 'approval',
-                        'is_read' => 0,
-                        'created_at' => now(),
-                    ]);
-                }
+            $admin = DB::table('users')->where('role', 'admin')->first();
+            if ($admin) {
+                DB::table('notifications')->insert([
+                    'user_id' => $admin->user_id,
+                    'title' => 'New Jobseeker Registration',
+                    'message' => "A new jobseeker has registered: {$request->first_name} {$request->last_name}",
+                    'type' => 'approval',
+                    'is_read' => 0,
+                    'created_at' => now(),
+                ]);
+            }
             // Commit transaction
             DB::commit();
 
             // Redirect to success page
             return redirect()->route('jobseeker.register.success')
                 ->with('success', 'Jobseeker registration successful! You can now log in to set up your profile and explore job openings.');
-
         } catch (\Exception $e) {
             // Rollback transaction on error
             DB::rollBack();
-            
+
+            $isDuplicatePhone = $e instanceof QueryException
+                && str_contains(strtolower($e->getMessage()), 'users_phone_number_unique');
+
+            $errorMessage = $isDuplicatePhone
+                ? 'An account with this mobile number already exists. Please contact your JPO or an administrator to update your email or reset your password. For your security, never share your password.'
+                : 'Registration could not be completed. Please try again or contact your JPO or an administrator for assistance.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $errorMessage], 422);
+            }
+
             return redirect()->back()
-                ->with('error', 'Registration failed: ' . $e->getMessage())
+                ->with('error', $errorMessage)
                 ->withInput();
         }
     }

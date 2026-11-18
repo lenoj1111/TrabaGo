@@ -145,10 +145,9 @@ $myApplicationsCount = 0;
         {{-- Brand / Header --}}
         <div class="flex items-center justify-between gap-3 px-4 h-16 border-b border-slate-800 shrink-0">
             <a href="{{ route('jobseeker.home') }}" class="flex items-center gap-3 min-w-0">
-                <div class="h-10 w-10 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-cyan-600
-                            flex items-center justify-center text-white text-xl shadow-md shadow-emerald-900/30 shrink-0">
-                    💼
-                </div>
+                <img src="{{ asset('images/logo.png') }}"
+                    alt="TrabaGo Logo"
+                    class="h-10 w-10 object-contain shrink-0 drop-shadow-md" />
                 <div class="flex flex-col leading-tight min-w-0 js-sidebar-label">
                     <span class="font-black text-base text-white tracking-tight">
                         Traba<span class="text-emerald-400">Go</span>
@@ -280,17 +279,26 @@ $myApplicationsCount = 0;
         {{-- User Footer --}}
         <div class="border-t border-slate-800 p-3 shrink-0">
             <div class="flex items-center gap-3 px-2 py-2 rounded-lg bg-slate-900/60">
+                @php
+                $sidebarPhoto = optional(Auth::user()->jobseeker)->profile_photo;
+                @endphp
+                @if($sidebarPhoto && \Illuminate\Support\Facades\Storage::disk('public')->exists($sidebarPhoto))
+                <img src="{{ asset('storage/' . $sidebarPhoto) }}"
+                    alt="Profile Photo"
+                    class="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500 shrink-0">
+                @else
                 <div class="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center
-                            text-slate-950 text-sm font-bold shrink-0">
+                text-slate-950 text-sm font-bold shrink-0">
                     {{ strtoupper(substr(Auth::user()->email ?? 'J', 0, 1)) }}
                 </div>
+                @endif
                 <div class="flex-1 min-w-0 js-sidebar-label">
                     <p class="text-xs font-bold text-white truncate">{{ Auth::user()->email ?? 'Jobseeker' }}</p>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Jobseeker</p>
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('logout') }}" class="mt-1">
+            <form method="POST" action="{{ route('logout') }}" class="mt-1" onsubmit="return confirm('Are you sure you want to log out?')">
                 @csrf
                 <button type="submit"
                     class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold
@@ -361,10 +369,10 @@ $myApplicationsCount = 0;
 
                     <div class="relative" x-data="{ profileOpen: false }" @click.away="profileOpen = false">
                         <button @click="profileOpen = !profileOpen" type="button"
-                            class="flex items-center gap-2 p-1 rounded-xl hover:bg-emerald-50 transition-colors focus:outline-none">
-                            <div class="h-8 w-8 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center justify-center ring-2 ring-emerald-500 shadow-sm">
-                                {{ strtoupper(substr(Auth::user()->email ?? 'J', 0, 1)) }}
-                            </div>
+                            class="flex items-center gap-2 p-2 rounded-xl text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors focus:outline-none"
+                            title="Account Settings"
+                            aria-label="Account Settings">
+                            <i class="bi bi-gear text-lg"></i>
                             <i class="bi bi-chevron-down text-xs text-slate-400 hidden sm:inline-block"></i>
                         </button>
 
@@ -383,7 +391,7 @@ $myApplicationsCount = 0;
                                 <i class="bi bi-file-earmark-text"></i> My Applications
                             </a>
                             <div class="border-t border-slate-100 my-1"></div>
-                            <form action="{{ route('logout') }}" method="POST">
+                            <form action="{{ route('logout') }}" method="POST" onsubmit="return confirm('Are you sure you want to log out?')">
                                 @csrf
                                 <button type="submit"
                                     class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors">

@@ -165,7 +165,7 @@
             </div>
         </div>
         
-        <form action="{{ route('logout') }}" method="POST" class="shrink-0">
+        <form action="{{ route('logout') }}" method="POST" class="shrink-0" onsubmit="return confirm('Are you sure you want to log out?')">
             @csrf
             <button type="submit" title="Log Out" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">

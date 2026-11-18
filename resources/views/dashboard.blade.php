@@ -12,7 +12,7 @@
             <h1 class="text-2xl font-bold">Admin Dashboard</h1>
             <div class="flex items-center gap-4">
                 <span class="text-gray-600 text-sm">{{ Auth::user()->email }}</span>
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('logout') }}" onsubmit="return confirm('Are you sure you want to log out?')">
                     @csrf
                     <button type="submit" class="bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-700 transition-colors">
                         Logout

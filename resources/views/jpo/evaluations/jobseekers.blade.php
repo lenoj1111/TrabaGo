@@ -68,25 +68,27 @@
                         $jobseeker = $app->jobseeker;
                         $job = $app->jobPosting;
                         $employer = $job->employer ?? null;
-                        $isReferred = $app->referred_by_jpo;
 
-                        // Prepare data for the detail modal
                         $uploadedDocs = is_array($jobseeker->details?->training_certificates)
                         ? $jobseeker->details->training_certificates
                         : (json_decode($jobseeker->details?->training_certificates ?? '[]', true) ?: []);
                         $docCount = count($uploadedDocs);
 
-                        // Prepare documents with URLs for Alpine
                         $modalDocs = [];
                         foreach ($uploadedDocs as $idx => $doc) {
                         if (is_array($doc)) {
                         $modalDocs[] = [
                         'name' => $doc['name'] ?? 'Document',
                         'category' => ucfirst(str_replace('_', ' ', $doc['category'] ?? 'File')),
-                        'url' => route('jpo.evaluations.jobseekers.documents.show', [$app->application_id, $idx])
+                        'url' => route('jpo.evaluations.jobseekers.documents.show', [$app->application_id, $idx]),
                         ];
                         }
                         }
+
+                        $profilePhotoUrl = !empty($jobseeker->profile_photo)
+                        && \Illuminate\Support\Facades\Storage::disk('public')->exists($jobseeker->profile_photo)
+                        ? asset('storage/' . $jobseeker->profile_photo)
+                        : null;
 
                         $appData = [
                         'id' => $app->application_id,
@@ -95,19 +97,26 @@
                         'phone' => $jobseeker->mobile_number ?? 'N/A',
                         'job_title' => $job->title,
                         'company' => $employer->company_name ?? 'Company',
+                        'profile_photo_url' => $profilePhotoUrl,
                         'skills' => $jobseeker->skills->pluck('skill_name')->toArray(),
                         'docs' => $modalDocs,
                         'is_verified' => $jobseeker->isVerified(),
-                        'nsrp_url' => route('jpo.evaluations.jobseekers.nsrp', $app->application_id)
+                        'nsrp_url' => route('jpo.evaluations.jobseekers.nsrp', $app->application_id),
                         ];
                         @endphp
                         <tr class="hover:bg-slate-50/70 transition-colors">
                             <!-- Candidate Info -->
                             <td class="py-4 px-6">
                                 <div class="flex items-center gap-3">
+                                    @if($profilePhotoUrl)
+                                    <img src="{{ $profilePhotoUrl }}"
+                                        alt="{{ $jobseeker->first_name }} {{ $jobseeker->last_name }}"
+                                        class="h-10 w-10 rounded-xl object-cover ring-2 ring-emerald-500/30 shrink-0 shadow-sm">
+                                    @else
                                     <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white text-sm font-black shrink-0 shadow-sm">
                                         {{ strtoupper(substr($jobseeker->first_name ?? 'J', 0, 1)) }}
                                     </div>
+                                    @endif
                                     <div>
                                         <p class="font-bold text-slate-900 text-sm">{{ $jobseeker->first_name }} {{ $jobseeker->last_name }}</p>
                                         <p class="text-[11px] text-slate-500">{{ $jobseeker->email }}</p>
@@ -186,8 +195,7 @@
                             <!-- Actions -->
                             <td class="py-4 px-6 text-right">
                                 <div class="ml-auto flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
-                                    <!-- View Button (Triggers Modal) -->
-                                    <button type="button" @click="openDetail({{ json_encode($appData) }})"
+                                    <button type="button" @click='openDetail(@json($appData))'
                                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors">
                                         <svg class="w-3.5 h-3.5 text-slate-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -196,7 +204,6 @@
                                         <span>View</span>
                                     </button>
 
-                                    <!-- Evaluate Button -->
                                     @if($app->referred_by_jpo == 1)
                                     <span class="text-xs font-bold text-emerald-700 flex items-center justify-end gap-1 px-2">
                                         <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -206,7 +213,7 @@
                                     </span>
                                     @elseif($app->status === 'jpo_pending')
                                     <button type="button"
-                                        @click="openRefer({{ $app->application_id }}, '{{ $jobseeker->first_name }} {{ $jobseeker->last_name }}', '{{ $job->title }}')"
+                                        @click="openRefer({{ $app->application_id }}, @js($jobseeker->first_name . ' ' . $jobseeker->last_name), @js($job->title))"
                                         class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-colors">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -256,14 +263,26 @@
 
             <template x-if="selectedApp">
                 <div class="space-y-6">
-                    <!-- Header -->
-                    <div class="flex items-start justify-between border-b border-slate-100 pb-4">
-                        <div>
-                            <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider" x-text="selectedApp.company"></span>
-                            <h3 class="text-2xl font-black text-slate-900 mt-1" x-text="selectedApp.name"></h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Target Role: <span class="font-bold text-slate-800" x-text="selectedApp.job_title"></span></p>
+                    <!-- Header with Photo -->
+                    <div class="flex items-start justify-between border-b border-slate-100 pb-4 gap-4">
+                        <div class="flex items-start gap-4">
+                            <template x-if="selectedApp.profile_photo_url">
+                                <img :src="selectedApp.profile_photo_url"
+                                    :alt="selectedApp.name"
+                                    class="h-16 w-16 rounded-2xl object-cover ring-2 ring-emerald-500/40 shadow-sm shrink-0">
+                            </template>
+                            <template x-if="!selectedApp.profile_photo_url">
+                                <div class="h-16 w-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white font-black text-xl ring-2 ring-emerald-500/40 shadow-sm shrink-0"
+                                    x-text="(selectedApp.name || 'J').charAt(0).toUpperCase()"></div>
+                            </template>
+
+                            <div class="min-w-0">
+                                <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider" x-text="selectedApp.company"></span>
+                                <h3 class="text-2xl font-black text-slate-900 mt-1 truncate" x-text="selectedApp.name"></h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Target Role: <span class="font-bold text-slate-800" x-text="selectedApp.job_title"></span></p>
+                            </div>
                         </div>
-                        <button @click="detailModal = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
+                        <button @click="detailModal = false" class="text-slate-400 hover:text-slate-700 text-2xl font-bold shrink-0">&times;</button>
                     </div>
 
                     <!-- Basic Info -->

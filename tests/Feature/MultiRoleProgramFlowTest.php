@@ -303,4 +303,39 @@ class MultiRoleProgramFlowTest extends TestCase
         $response->assertSee('Dela Cruz');
         $response->assertSee('Jobseeker Status Directory');
     }
+
+    public function test_admin_and_jpo_can_update_jobseeker_login_credentials(): void
+    {
+        $adminResponse = $this->actingAs($this->adminUser)->put(
+            "/admin/jobseekers/{$this->jobseeker->jobseeker_id}/credentials",
+            [
+                'email' => 'juan.updated@gmail.com',
+                'password' => 'newPassword123',
+                'password_confirmation' => 'newPassword123',
+            ]
+        );
+
+        $adminResponse->assertRedirect();
+        $this->jobseekerUser->refresh();
+        $this->assertSame('juan.updated@gmail.com', $this->jobseekerUser->email);
+        $this->assertTrue(Hash::check('newPassword123', $this->jobseekerUser->password));
+        $this->assertDatabaseHas('jobseekers', [
+            'jobseeker_id' => $this->jobseeker->jobseeker_id,
+            'email' => 'juan.updated@gmail.com',
+        ]);
+
+        $jpoResponse = $this->actingAs($this->jpoUser)->put(
+            "/jpo/jobseekers/{$this->jobseeker->jobseeker_id}/credentials",
+            [
+                'email' => 'juan.jpo-updated@gmail.com',
+                'password' => '',
+                'password_confirmation' => '',
+            ]
+        );
+
+        $jpoResponse->assertRedirect();
+        $this->jobseekerUser->refresh();
+        $this->assertSame('juan.jpo-updated@gmail.com', $this->jobseekerUser->email);
+        $this->assertTrue(Hash::check('newPassword123', $this->jobseekerUser->password));
+    }
 }

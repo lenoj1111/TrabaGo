@@ -38,27 +38,23 @@ class JobPostingController extends Controller
             )
             ->selectRaw('(SELECT COUNT(*) FROM job_applications WHERE job_id = jp.job_id) as applications_count');
 
-        // Filter by status
         if ($request->has('status') && $request->status != '') {
             $query->where('jp.status', $request->status);
         }
 
-        // Filter by created_by
         if ($request->has('created_by') && $request->created_by != '') {
             $query->where('jp.created_by', $request->created_by);
         }
 
-        // Search by title or company
         if ($request->has('search') && $request->search != '') {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('jp.title', 'LIKE', "%{$search}%")
-                  ->orWhere('e.company_name', 'LIKE', "%{$search}%")
-                  ->orWhere('jp.job_id', 'LIKE', "%{$search}%");
+                    ->orWhere('e.company_name', 'LIKE', "%{$search}%")
+                    ->orWhere('jp.job_id', 'LIKE', "%{$search}%");
             });
         }
 
-        // Filter by date range
         if ($request->has('date_from') && $request->date_from != '') {
             $query->whereDate('jp.created_at', '>=', $request->date_from);
         }
@@ -67,10 +63,9 @@ class JobPostingController extends Controller
         }
 
         $jobPostings = $query->orderBy('jp.created_at', 'desc')
-            ->paginate(15)
+            ->paginate(6)
             ->withQueryString();
 
-        // Get statistics
         $stats = [
             'total' => DB::table('job_postings')->count(),
             'pending' => DB::table('job_postings')->where('status', 'pending')->count(),
@@ -83,9 +78,17 @@ class JobPostingController extends Controller
                 ->count(),
         ];
 
-        return view('admin.jobpostings.index', compact('jobPostings', 'stats'));
-    }
+        // 👇 Fetch only verified/accredited employers for the Create Modal dropdown
+        $employers = DB::table('employers as e')
+            ->join('users as u', 'e.user_id', '=', 'u.user_id')
+            ->where('e.is_accredited', 1)
+            ->where('u.status', 'active')
+            ->select('e.employer_id', 'e.company_name', 'u.email')
+            ->orderBy('e.company_name')
+            ->get();
 
+        return view('admin.jobpostings.index', compact('jobPostings', 'stats', 'employers'));
+    }
     /**
      * Show the form for creating a new job posting.
      */
@@ -146,9 +149,13 @@ class JobPostingController extends Controller
         $employerId = $request->employer_id ?: null;
         $skillsFormatted = \App\Services\NsrpSkillService::formatSkills($request->input('skills'));
 
+        // If employer is selected, job belongs to them (admin_id = null).
+        // If no employer, it's DMDP Direct (admin_id = admin's profile).
+        $adminProfileId = $employerId ? null : $adminProfile->profile_id;
+
         $jobId = DB::table('job_postings')->insertGetId([
             'employer_id' => $employerId,
-            'admin_id' => $adminProfile->profile_id,  // Using profile_id from user_profiles
+            'admin_id' => $adminProfileId,
             'title' => $request->title,
             'description' => $request->description,
             'job_type' => $request->job_type,
@@ -168,8 +175,12 @@ class JobPostingController extends Controller
             'approved_at' => now()->toDateString(),
         ]);
 
-        return redirect()->route('admin.job-postings')
-            ->with('success', 'Job posting created and approved successfully.');
+        $message = $employerId
+            ? 'Job posting created on behalf of the employer and published successfully.'
+            : 'Job posting created and published successfully.';
+
+        return redirect()->route('admin.job-postings-list.index')
+            ->with('success', $message);
     }
 
     /**
@@ -305,7 +316,7 @@ class JobPostingController extends Controller
     public function destroy(int $id)
     {
         DB::table('job_postings')->where('job_id', $id)->delete();
-        
+
         return redirect()->route('admin.job-postings')
             ->with('success', 'Job posting deleted successfully.');
     }
@@ -420,51 +431,51 @@ class JobPostingController extends Controller
         $count = count($jobIds);
 
         switch ($action) {
-    case 'approve':
-        DB::table('job_postings')
-            ->whereIn('job_id', $jobIds)
-            ->where('status', 'pending')
-            ->update([
-                'status' => 'approved',
-                'approved_at' => now()->toDateString(),
-            ]);
+            case 'approve':
+                DB::table('job_postings')
+                    ->whereIn('job_id', $jobIds)
+                    ->where('status', 'pending')
+                    ->update([
+                        'status' => 'approved',
+                        'approved_at' => now()->toDateString(),
+                    ]);
 
-        $message = "{$count} job postings approved successfully.";
-        break;
+                $message = "{$count} job postings approved successfully.";
+                break;
 
-    case 'reject':
-        DB::table('job_postings')
-            ->whereIn('job_id', $jobIds)
-            ->where('status', 'pending')
-            ->update(['status' => 'rejected']);
+            case 'reject':
+                DB::table('job_postings')
+                    ->whereIn('job_id', $jobIds)
+                    ->where('status', 'pending')
+                    ->update(['status' => 'rejected']);
 
-        $message = "{$count} job postings rejected successfully.";
-        break;
+                $message = "{$count} job postings rejected successfully.";
+                break;
 
-    case 'close':
-        DB::table('job_postings')
-            ->whereIn('job_id', $jobIds)
-            ->whereIn('status', ['approved', 'pending'])
-            ->update(['status' => 'closed']);
+            case 'close':
+                DB::table('job_postings')
+                    ->whereIn('job_id', $jobIds)
+                    ->whereIn('status', ['approved', 'pending'])
+                    ->update(['status' => 'closed']);
 
-        $message = "{$count} job postings closed successfully.";
-        break;
+                $message = "{$count} job postings closed successfully.";
+                break;
 
-    case 'delete':
-        DB::table('job_postings')
-            ->whereIn('job_id', $jobIds)
-            ->delete();
+            case 'delete':
+                DB::table('job_postings')
+                    ->whereIn('job_id', $jobIds)
+                    ->delete();
 
-        $message = "{$count} job postings deleted successfully.";
-        break;
+                $message = "{$count} job postings deleted successfully.";
+                break;
 
-    default:
-        return response()->json([
-            'error' => 'Invalid action.'
-        ], 400);
-}
+            default:
+                return response()->json([
+                    'error' => 'Invalid action.'
+                ], 400);
+        }
 
-return response()->json(['success' => $message]);
+        return response()->json(['success' => $message]);
     }
 
     /**
@@ -501,8 +512,16 @@ return response()->json(['success' => $message]);
         $callback = function () use ($jobPostings) {
             $file = fopen('php://output', 'w');
             fputcsv($file, [
-                'Job ID', 'Title', 'Company', 'Vacancies', 'Valid Until', 
-                'Status', 'Created By', 'Created At', 'Approved At', 'Applications'
+                'Job ID',
+                'Title',
+                'Company',
+                'Vacancies',
+                'Valid Until',
+                'Status',
+                'Created By',
+                'Created At',
+                'Approved At',
+                'Applications'
             ]);
 
             foreach ($jobPostings as $job) {

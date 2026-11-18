@@ -74,14 +74,25 @@
                             @enderror
                         </div>
 
+                        <!-- Approval State Dropdown (Now ALWAYS visible) -->
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-700">Approval State</label>
+                            <select name="is_approved" 
+                                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                                <option value="1" {{ old('is_approved', $user->is_approved) == 1 ? 'selected' : '' }}>Approved & Verified</option>
+                                <option value="0" {{ old('is_approved', $user->is_approved) == 0 ? 'selected' : '' }}>Pending / Unapproved</option>
+                            </select>
+                        </div>
+
+                        <!-- Optional: Keep the shortcut links for convenience, but don't block the form -->
                         @if(in_array($user->role, ['employer', 'jobseeker']))
-                            <div class="space-y-1.5 sm:col-span-2 p-3.5 rounded-2xl bg-amber-50 border border-amber-200">
-                                <span class="text-xs font-bold text-amber-900 flex items-center gap-1.5">
-                                    <svg class="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                    Approval Handled in Dedicated Dashboard
+                            <div class="space-y-1.5 sm:col-span-2 p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+                                <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    Dedicated Dashboard
                                 </span>
-                                <p class="text-[11px] text-amber-800">
-                                    Per DMDP governance rules, approvals and accreditations for {{ ucfirst($user->role) }}s are managed strictly in their respective dashboards rather than User Management.
+                                <p class="text-[11px] text-slate-500">
+                                    You can also manage this {{ $user->role }}'s specific documents and reviews directly in their dedicated dashboard.
                                 </p>
                                 <div class="pt-1">
                                     @if($user->role === 'employer')
@@ -94,15 +105,6 @@
                                         </a>
                                     @endif
                                 </div>
-                            </div>
-                        @else
-                            <div class="space-y-1.5">
-                                <label class="text-xs font-bold text-slate-700">Approval State</label>
-                                <select name="is_approved" 
-                                        class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
-                                    <option value="1" {{ old('is_approved', $user->is_approved) == 1 ? 'selected' : '' }}>Approved & Verified</option>
-                                    <option value="0" {{ old('is_approved', $user->is_approved) == 0 ? 'selected' : '' }}>Pending / Unapproved</option>
-                                </select>
                             </div>
                         @endif
                     </div>

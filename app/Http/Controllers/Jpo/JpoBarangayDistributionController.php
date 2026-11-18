@@ -27,6 +27,7 @@ class JpoBarangayDistributionController extends Controller
             'district' => $request->input('district'),
             'terrain' => $request->input('terrain'),
             'priority' => $request->input('priority'),
+            'skill_type' => $request->input('skill_type', 'all'),
             'sort' => $request->input('sort', 'seeking_desc'), // JPO defaults to sorting by actively seeking candidates for referrals
         ];
 

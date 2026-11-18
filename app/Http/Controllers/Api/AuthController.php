@@ -31,12 +31,20 @@ class AuthController extends Controller
 
         // Address object
         $address = is_array($details?->address) ? $details->address : (json_decode($details?->address ?? '', true) ?: [
-            'street' => '', 'barangay' => '', 'city' => 'Cebu City', 'province' => 'Cebu', 'zip' => '', 'full' => 'Cebu City, Cebu'
+            'street' => '',
+            'barangay' => '',
+            'city' => 'Cebu City',
+            'province' => 'Cebu',
+            'zip' => '',
+            'full' => 'Cebu City, Cebu'
         ]);
 
         // Education object
         $educationObj = is_array($details?->education) ? $details->education : (json_decode($details?->education ?? '', true) ?: [
-            'level' => 'College Graduate', 'school' => '', 'course' => '', 'year_graduated' => ''
+            'level' => 'College Graduate',
+            'school' => '',
+            'course' => '',
+            'year_graduated' => ''
         ]);
         $educationStr = is_array($educationObj)
             ? trim(($educationObj['course'] ?? '') . ' ' . ($educationObj['school'] ?? ''))
@@ -44,12 +52,19 @@ class AuthController extends Controller
 
         // Work Experience
         $workExpObj = is_array($details?->work_experience) ? $details->work_experience : (json_decode($details?->work_experience ?? '', true) ?: [
-            'company' => '', 'position' => '', 'duration' => '', 'description' => '', 'summary' => ''
+            'company' => '',
+            'position' => '',
+            'duration' => '',
+            'description' => '',
+            'summary' => ''
         ]);
 
         // Eligibility & Licenses
         $eligibilityObj = is_array($details?->eligibility) ? $details->eligibility : (json_decode($details?->eligibility ?? '', true) ?: [
-            'civil_service' => '', 'prc_license' => '', 'tesda_nc' => '', 'driver_license' => ''
+            'civil_service' => '',
+            'prc_license' => '',
+            'tesda_nc' => '',
+            'driver_license' => ''
         ]);
 
         // Language proficiencies
@@ -501,7 +516,37 @@ class AuthController extends Controller
                 'errors' => $validator->errors(),
             ], 422);
         }
+        // 👇 DUPLICATE ACCOUNT CHECK 👇
+        if ($request->input('role', 'jobseeker') === 'jobseeker') {
+            $firstName = $request->input('firstName', $request->input('first_name'));
+            $lastName = $request->input('lastName', $request->input('last_name'));
+            $birthDate = $request->input('birthDate', $request->input('birth_date'));
 
+            if ($firstName && $lastName && $birthDate) {
+                // Convert the input date to a Y-m-d string to compare against the DB
+                $dateStr = \Carbon\Carbon::parse($birthDate)->format('Y-m-d');
+
+                $duplicate = Jobseeker::where('first_name', $firstName)
+                    ->where('last_name', $lastName)
+                    ->whereRaw("CONVERT(varchar(10), birth_date, 120) = ?", [$dateStr])
+                    ->exists();
+
+                if ($duplicate && !$request->has('confirm_duplicate')) {
+                    // If the frontend expects JSON (our JS interceptor)
+                    if ($request->wantsJson()) {
+                        return response()->json([
+                            'success' => false,
+                            'error' => 'POSSIBLE_DUPLICATE',
+                            'message' => 'A profile with this name and birthdate already exists. If this is you, please log in. If you are a different person with the same name, click OK to proceed.',
+                        ], 409);
+                    }
+
+                    // Fallback just in case
+                    return back()->withInput()->with('duplicate_warning', 'A profile with this name and birthdate already exists.');
+                }
+            }
+        }
+        // 👆 END OF DUPLICATE CHECK 👆
         try {
             DB::beginTransaction();
 
@@ -545,11 +590,16 @@ class AuthController extends Controller
                 // Save details
                 $details = JobseekerDetail::create([
                     'jobseeker_id' => $jobseeker->jobseeker_id,
-                    'education' => $request->has('education') 
-                        ? (is_array($request->education) ? $request->education : ['level' => (string)$request->education]) 
+                    'education' => $request->has('education')
+                        ? (is_array($request->education) ? $request->education : ['level' => (string)$request->education])
                         : ['level' => 'College Graduate'],
                     'address' => $request->input('address', [
-                        'street' => '', 'barangay' => '', 'city' => 'Cebu City', 'province' => 'Cebu', 'zip' => '', 'full' => 'Cebu City, Cebu'
+                        'street' => '',
+                        'barangay' => '',
+                        'city' => 'Cebu City',
+                        'province' => 'Cebu',
+                        'zip' => '',
+                        'full' => 'Cebu City, Cebu'
                     ]),
                     'training_certificates' => [],
                 ]);
@@ -698,7 +748,7 @@ class AuthController extends Controller
 
         // 2. Details (Address, Education, Work Experience, Eligibility, Language, Bio)
         $details = $jobseeker->details ?: new JobseekerDetail(['jobseeker_id' => $jobseeker->jobseeker_id]);
-        
+
         if ($request->has('address')) {
             $details->address = is_array($request->address) ? $request->address : $details->address;
         }

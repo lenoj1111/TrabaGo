@@ -222,7 +222,7 @@
                                 </p>
                             @else
                                 <p class="text-slate-500 italic mt-0.5">
-                                    {{ $reviewStatus === 'pending' ? 'Pending trainer review' : ($reviewStatus === 'passed' ? 'Awaiting Trainer Issuance' : 'Available after passing') }}
+                                    {{ $reviewStatus === 'pending' ? 'Pending trainer review' : ($reviewStatus === 'passed' ? 'Return to DMDP for Demo' : 'Available after passing') }}
                                 </p>
                             @endif
                         </div>
@@ -299,6 +299,11 @@
                 </div>
             @endforelse
         </div>
+        @if($enrollments->hasPages())
+        <div class="pt-2">
+            {{ $enrollments->onEachSide(1)->links() }}
+        </div>
+        @endif
 
     </div>
 </div>
