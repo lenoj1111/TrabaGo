@@ -321,8 +321,7 @@ class TrainerPortalController extends Controller
             ]);
         }
 
-        // THIS WAS MISSING: Redirect back with a success message
-        return redirect()->route('trainer.enrollments.index')
+        return back()
             ->with('success', 'Enrollment status updated successfully.');
     }
 
@@ -897,6 +896,7 @@ class TrainerPortalController extends Controller
                 'training_enrollments.status',
                 'training_enrollments.start_date',
                 'training_enrollments.end_date',
+                'training_enrollments.lab_remarks',
                 'training_enrollments.score',
                 'training_enrollments.passed',
                 'training_enrollments.assessment_attempts',
@@ -1065,6 +1065,15 @@ class TrainerPortalController extends Controller
         if ($certifiedCount > 0) {
             return back()->with('error', "Cannot delete course '{$course->title}' because {$certifiedCount} learner(s) have already received their official certificates. You can close the course instead of deleting it to preserve their records.");
         }
+
+        DB::transaction(function () use ($course) {
+            $course->topics()->delete();
+            $course->enrollments()->delete();
+            $course->delete();
+        });
+
+        return redirect()->route('trainer.courses')
+            ->with('success', "Training course '{$course->title}' deleted successfully.");
     }
     public function archiveCourse(int $id)
     {

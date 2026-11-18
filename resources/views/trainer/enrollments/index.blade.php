@@ -184,11 +184,36 @@
 
                                 <!-- Hide buttons if completed, no_show, or multiple_absences -->
                                 @if($reviewStatus === 'passed' && (int) $enr->passed === 1 && !$enr->certificate_issued)
-                                <form method="POST" action="{{ route('trainer.enrollments.demo-confirmation', $enr->enrollment_id) }}" onsubmit="return confirm('Confirm the trainee returned to the DMDP for their practical demo? This completes the course, issues the certificate, and awards skills.')">
-                                    @csrf
-                                    <button type="submit" class="rounded-xl bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white transition-colors hover:bg-emerald-500">Return for Demo</button>
-                                </form>
-                                @elseif(!in_array($enr->status, ['completed', 'no_show', 'multiple_absences']))
+                                <div x-data="{ demoConfirmationOpen: false }">
+                                    <button type="button" @click="demoConfirmationOpen = true"
+                                        class="rounded-xl bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white transition-colors hover:bg-emerald-500">
+                                        Return for Demo
+                                    </button>
+
+                                    <div x-show="demoConfirmationOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" role="dialog" aria-modal="true">
+                                        <div @click.away="demoConfirmationOpen = false" class="w-full max-w-md space-y-5 rounded-2xl bg-white p-6 text-left shadow-2xl">
+                                            <div>
+                                                <h3 class="text-lg font-black text-slate-900">Confirm DMDP Demo</h3>
+                                                <p class="mt-2 text-sm text-slate-600">
+                                                    Has {{ $enr->first_name }} {{ $enr->last_name }} returned to the DMDP and completed their practical demo? Confirming will complete the course, issue the certificate, and award the course skills.
+                                                </p>
+                                            </div>
+                                            <div class="flex justify-end gap-3">
+                                                <button type="button" @click="demoConfirmationOpen = false"
+                                                    class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50">
+                                                    Cancel
+                                                </button>
+                                                <form method="POST" action="{{ route('trainer.enrollments.demo-confirmation', $enr->enrollment_id) }}">
+                                                    @csrf
+                                                    <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white hover:bg-emerald-500">
+                                                        Yes, they returned
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                @elseif($enr->status !== 'completed' && !$enr->certificate_issued)
                                 <div class="ml-auto flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
 
                                     <!-- 1. Update Status -->
@@ -200,6 +225,7 @@
                                     </button>
 
                                     <!-- 2. Assessment Button -->
+                                    @if(!in_array($enr->status, ['no_show', 'multiple_absences']))
                                     @if($reviewStatus === 'pending')
                                     <a href="{{ route('trainer.enrollments.evaluate', $enr->enrollment_id) }}"
                                         class="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-[11px] font-bold transition-colors text-center"
@@ -218,6 +244,7 @@
                                         title="Conduct Assessment">
                                         Assess
                                     </button>
+                                    @endif
                                     @endif
                                 </div>
                                 @else
