@@ -560,7 +560,7 @@
                   method="POST" enctype="multipart/form-data" class="space-y-5"
                 @submit="
                     isUploading = true;
-                    uploadStatusText = activeDocType === 'valid_id' && activeVerificationType === 'auto' ? 'Verifying ID with OCR...' : 'Uploading document...';
+                    uploadStatusText = activeDocType === 'valid_id' && activeVerificationType === 'auto' ? 'Verifying ID details...' : 'Uploading document...';
                 ">
                 @csrf
                 <input type="hidden" name="category" :value="activeDocType">
