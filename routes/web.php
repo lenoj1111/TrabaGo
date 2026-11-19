@@ -514,7 +514,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
             }
         }
 
-        $employers = $query->paginate(15)->withQueryString();
+        $employers = $query
+            ->orderByDesc('users.created_at')
+            ->orderByDesc('employers.employer_id')
+            ->paginate(15)
+            ->withQueryString();
 
         $totalEmployers = DB::table('employers')->count();
         $accreditedEmployers = DB::table('employers')->where('is_accredited', 1)->count();

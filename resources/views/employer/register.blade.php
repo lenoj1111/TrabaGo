@@ -276,7 +276,7 @@
                                     'Transportation and Storage',
                                     'Accommodation and Food Service Activities',
                                     'Publishing, Broadcasting, and Content Production and Distribution Activities',
-                                    'Telecommunications, Computer Programming, Consultancy, Computing Infrastructure, and Other Information Service Activities',
+                                    'Telecommunications, Computer Programming, Consultancy, Computing Infrastructure',
                                     'Financial and Insurance Activities',
                                     'Real Estate Activities',
                                     'Professional, Scientific and Technical Activities',
