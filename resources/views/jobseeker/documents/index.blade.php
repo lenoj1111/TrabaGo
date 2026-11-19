@@ -7,6 +7,7 @@
     activeTab: '{{ $isPendingReview ? 'manual' : 'auto' }}',
     uploadModalOpen: false, 
     activeDocType: 'resume', 
+    activeVerificationType: 'manual',
     activeDocLabel: 'Primary Resume / Curriculum Vitae',
     selectedFileName: '',
     selectedFileSize: '',
@@ -32,9 +33,10 @@
         }
     },
 
-    openUploadModal(docType, docLabel) {
+    openUploadModal(docType, docLabel, verificationType = 'manual') {
         this.activeDocType = docType;
         this.activeDocLabel = docLabel;
+        this.activeVerificationType = verificationType;
         this.selectedFileName = '';
         this.selectedFileSize = '';
         if (this.$refs.modalFileInput) {
@@ -204,6 +206,11 @@
                                class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs shrink-0">
                                 Preview / View
                             </a>
+                            <button type="button"
+                                @click="openUploadModal('valid_id', 'Government-Issued Valid ID', 'auto')"
+                                class="px-3 py-1.5 rounded-xl border border-emerald-200 bg-white hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition-colors shrink-0">
+                                Replace File
+                            </button>
                         </div>
                     @elseif($isPendingReview)
                         <div class="rounded-2xl border border-amber-200 bg-amber-50 p-3.5 space-y-2">
@@ -549,17 +556,17 @@
             </div>
 
             {{-- Form explicitly targets the manual verification route when uploading a valid_id manually --}}
-            <form :action="activeDocType === 'valid_id' ? '{{ route('jobseeker.idverification.manual') }}' : '{{ route('jobseeker.documents.upload') }}'" 
+            <form :action="activeDocType === 'valid_id' && activeVerificationType === 'manual' ? '{{ route('jobseeker.idverification.manual') }}' : '{{ route('jobseeker.documents.upload') }}'" 
                   method="POST" enctype="multipart/form-data" class="space-y-5"
                 @submit="
-                    isUploading = true; 
-                    uploadStatusText = 'Uploading document...';
+                    isUploading = true;
+                    uploadStatusText = activeDocType === 'valid_id' && activeVerificationType === 'auto' ? 'Verifying ID with OCR...' : 'Uploading document...';
                 ">
                 @csrf
                 <input type="hidden" name="category" :value="activeDocType">
                 
                 <template x-if="activeDocType === 'valid_id'">
-                    <input type="hidden" name="verification_type" value="manual">
+                    <input type="hidden" name="verification_type" :value="activeVerificationType">
                 </template>
 
                 <!-- Styled File Dropzone -->
@@ -567,7 +574,7 @@
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Choose File</label>
                     <div class="relative border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-2xl p-6 text-center transition-all bg-slate-50/50 hover:bg-emerald-50/30 group">
                         <input type="file" x-ref="modalFileInput" name="document_file" required
-                            :accept="activeDocType === 'valid_id' ? '.pdf,.jpg,.jpeg,.png' : '.pdf,.doc,.docx,.jpg,.jpeg,.png'"
+                            :accept="activeDocType === 'valid_id' && activeVerificationType === 'auto' ? '.jpg,.jpeg,.png' : (activeDocType === 'valid_id' ? '.pdf,.jpg,.jpeg,.png' : '.pdf,.doc,.docx,.jpg,.jpeg,.png')"
                             @change="handleFileSelect"
                             class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
 
@@ -581,7 +588,7 @@
                                 <div>
                                     <p class="text-xs font-bold text-slate-700">Click to browse or drag and drop your file here</p>
                                     <p class="text-[11px] text-slate-400 mt-1"
-                                       x-text="activeDocType === 'valid_id' ? 'Accepted formats: PDF, JPG, PNG (Max 5MB)' : 'Accepted formats: PDF, DOC, DOCX, JPG, PNG (Max 5MB)'"></p>
+                                       x-text="activeDocType === 'valid_id' && activeVerificationType === 'auto' ? 'For OCR testing, choose a JPG or PNG image (Max 5MB)' : (activeDocType === 'valid_id' ? 'Accepted formats: PDF, JPG, PNG (Max 5MB)' : 'Accepted formats: PDF, DOC, DOCX, JPG, PNG (Max 5MB)')"></p>
                                 </div>
                             </template>
                             <template x-if="selectedFileName">
