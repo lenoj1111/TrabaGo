@@ -201,9 +201,15 @@ export default function ProfileScreen() {
   const address = user.address || {};
   const education = user.education_details || {};
   const workExp = user.work_experience || {};
+  const workExperiences = workExp.entries?.length
+    ? workExp.entries
+    : workExp.company || workExp.position
+      ? [{ employer: workExp.company, position: workExp.position, responsibilities: workExp.description }]
+      : [];
   const eligibility = user.eligibility || {};
   const preferences = user.preferences || {};
   const social = user.social_status || {};
+  const languages = user.languages || [];
 
   const isVerified = Boolean(user.is_verified || user.isVerified);
   const isApproved = Boolean(user.isApproved || user.is_approved);
@@ -311,7 +317,7 @@ export default function ProfileScreen() {
             {social.is_4ps && (
               <View style={[styles.socialBadge, { backgroundColor: COLORS.infoBg }]}>
                 <Ionicons name="people" size={14} color={COLORS.info} />
-                <Text style={[styles.socialBadgeText, { color: COLORS.info }]}>4Ps Beneficiary</Text>
+                <Text style={[styles.socialBadgeText, { color: COLORS.info }]}>4Ps Beneficiary{social.household_id ? ` · ${social.household_id}` : ''}</Text>
               </View>
             )}
             {social.is_ofw && (
@@ -380,10 +386,20 @@ export default function ProfileScreen() {
           <Ionicons name="briefcase-outline" size={16} color={COLORS.primary} />
           <View style={styles.detailContent}>
             <Text style={styles.detailLabel}>Work Experience</Text>
-            <Text style={styles.detailValue}>{workExp.position || 'Registered Jobseeker'}</Text>
-            {workExp.company && (
-              <Text style={styles.detailSub}>{workExp.company} ({workExp.duration || 'Previous'})</Text>
-            )}
+            {workExperiences.length ? workExperiences.map((experience, index) => (
+              <View key={index} style={styles.workExperienceItem}>
+                <Text style={styles.detailValue}>{experience.position || 'Position not listed'}</Text>
+                <Text style={styles.detailSub}>{experience.employer || 'Employer not listed'} · {experience.start_date || 'Start date not listed'} – {experience.end_date || 'Present'}</Text>
+                {!!experience.employment_type && <Text style={styles.detailSub}>Employment type: {experience.employment_type}</Text>}
+                {!!experience.employer_address && <Text style={styles.detailSub}>Employer address: {experience.employer_address}</Text>}
+                {!!experience.employer_reference && <Text style={styles.detailSub}>Contact person: {experience.employer_reference}</Text>}
+                {!!(experience.employer_contact_number || experience.employer_contact_email) && (
+                  <Text style={styles.detailSub}>Employer contact: {[experience.employer_contact_number, experience.employer_contact_email].filter(Boolean).join(' · ')}</Text>
+                )}
+                {!!experience.responsibilities && <Text style={styles.detailSub}>{experience.responsibilities}</Text>}
+              </View>
+            )) : <Text style={styles.detailValue}>No work experience listed</Text>}
+            {!!workExp.summary && <Text style={styles.detailSub}>{workExp.summary}</Text>}
           </View>
         </View>
         {(eligibility.civil_service || eligibility.prc_license || eligibility.tesda_nc || eligibility.driver_license) && (
@@ -405,7 +421,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* Career Preferences */}
-      {(preferences.occupation1 || preferences.industry1 || preferences.salary_expectation) && (
+      {(preferences.occupation1 || preferences.occupation2 || preferences.industry1 || preferences.salary_expectation || preferences.preferred_location) && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Career & Job Preferences</Text>
           <View style={styles.detailRow}>
@@ -435,8 +451,30 @@ export default function ProfileScreen() {
               </View>
             </View>
           )}
+          {preferences.preferred_location && (
+            <View style={styles.detailRow}>
+              <Ionicons name="location-outline" size={16} color={COLORS.primary} />
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Preferred Work Location</Text>
+                <Text style={styles.detailValue}>{preferences.preferred_location}</Text>
+              </View>
+            </View>
+          )}
         </View>
       )}
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Languages & Dialects</Text>
+        {languages.length ? (
+          <View style={styles.chipsContainer}>
+            {languages.map((language, index) => (
+              <View key={`${language}-${index}`} style={styles.languageChip}>
+                <Text style={styles.languageChipText}>{language}</Text>
+              </View>
+            ))}
+          </View>
+        ) : <Text style={styles.emptySkillsText}>No languages listed.</Text>}
+      </View>
 
       {/* Skills Matrix */}
       <View style={styles.section}>
@@ -984,11 +1022,30 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 2,
   },
+  workExperienceItem: {
+    marginTop: SPACING.xs,
+    paddingTop: SPACING.xs,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderLight,
+  },
   chipsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: SPACING.xs,
     marginTop: SPACING.xs,
+  },
+  languageChip: {
+    backgroundColor: COLORS.emerald50,
+    borderWidth: 1,
+    borderColor: COLORS.emerald200,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  languageChipText: {
+    color: COLORS.emerald800,
+    fontSize: 12,
+    fontWeight: '700',
   },
   chip: {
     flexDirection: 'row',

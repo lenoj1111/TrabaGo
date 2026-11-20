@@ -15,11 +15,26 @@ export interface EducationDetails {
 }
 
 export interface WorkExperienceDetails {
+  entries?: WorkExperienceEntry[];
   company?: string;
   position?: string;
   duration?: string;
   description?: string;
   summary?: string;
+}
+
+export interface WorkExperienceEntry {
+  employer?: string;
+  employer_address?: string;
+  employer_reference?: string;
+  employer_contact_number?: string;
+  employer_contact_email?: string;
+  position?: string;
+  employment_type?: string;
+  job_title?: string;
+  start_date?: string;
+  end_date?: string;
+  responsibilities?: string;
 }
 
 export interface EligibilityDetails {

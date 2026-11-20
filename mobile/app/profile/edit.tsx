@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../src/constants/theme';
+import { WorkExperienceEntry } from '../../src/types';
 
 type EditTab = 'personal' | 'address' | 'education' | 'preferences' | 'eligibility' | 'skills';
 
@@ -47,6 +48,13 @@ export default function EditProfileScreen() {
   const [sex, setSex] = useState(user?.sex || 'Male');
   const [civilStatus, setCivilStatus] = useState(user?.civilStatus || user?.civil_status || 'Single');
   const [citizenship, setCitizenship] = useState(user?.citizenship || 'Filipino');
+  const savedEmploymentStatus = user?.employmentStatus || user?.employment_status || 'Unemployed';
+  const [employmentStatus, setEmploymentStatus] = useState(
+    ['Unemployed', 'Fresh Graduate', 'Employed', 'Self-Employed', 'Returning OFW'].includes(savedEmploymentStatus)
+      ? savedEmploymentStatus
+      : 'Unemployed'
+  );
+  const [hiredCompany, setHiredCompany] = useState(user?.hired_company || '');
 
   // 2. Address & Barangay
   const addr = user?.address || {};
@@ -64,10 +72,13 @@ export default function EditProfileScreen() {
   const [eduYear, setEduYear] = useState(eduObj.year_graduated || '');
 
   const workObj = user?.work_experience || {};
-  const [workCompany, setWorkCompany] = useState(workObj.company || '');
-  const [workPosition, setWorkPosition] = useState(workObj.position || '');
-  const [workDuration, setWorkDuration] = useState(workObj.duration || '');
   const [bio, setBio] = useState(workObj.summary || user?.bio || '');
+  const savedExperiences = workObj.entries?.length
+    ? workObj.entries
+    : workObj.company || workObj.position
+      ? [{ employer: workObj.company, position: workObj.position, responsibilities: workObj.description }]
+      : [];
+  const [workExperiences, setWorkExperiences] = useState<WorkExperienceEntry[]>(savedExperiences.length ? savedExperiences : [{}]);
 
   // 4. Career Preferences
   const prefObj = user?.preferences || {};
@@ -76,6 +87,7 @@ export default function EditProfileScreen() {
   const [industry1, setIndustry1] = useState(prefObj.industry1 || '');
   const [salaryExpectation, setSalaryExpectation] = useState(prefObj.salary_expectation || '');
   const [preferredLocation, setPreferredLocation] = useState(prefObj.preferred_location || 'Cebu City');
+  const [languages, setLanguages] = useState<string[]>(user?.languages || ['English', 'Tagalog / Filipino', 'Cebuano / Bisaya']);
 
   // 5. Eligibilities & Social Status
   const eligObj = user?.eligibility || {};
@@ -86,8 +98,10 @@ export default function EditProfileScreen() {
 
   const socObj = user?.social_status || {};
   const [is4ps, setIs4ps] = useState(!!socObj.is_4ps);
+  const [householdId, setHouseholdId] = useState(socObj.household_id || '');
   const [isPwd, setIsPwd] = useState(!!socObj.is_pwd);
   const [pwdType, setPwdType] = useState(socObj.pwd_type || '');
+  const [isOfw, setIsOfw] = useState(!!socObj.is_ofw);
 
   // 6. Skills
   const [newSkill, setNewSkill] = useState('');
@@ -110,6 +124,17 @@ export default function EditProfileScreen() {
 
   const handleRemoveSkill = (indexToRemove: number) => {
     setSkills(skills.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const updateExperience = (index: number, field: keyof WorkExperienceEntry, value: string) => {
+    setWorkExperiences((current) => current.map((experience, currentIndex) =>
+      currentIndex === index ? { ...experience, [field]: value } : experience));
+  };
+
+  const toggleLanguage = (language: string) => {
+    setLanguages((current) => current.includes(language)
+      ? current.filter((item) => item !== language)
+      : [...current, language]);
   };
 
   const handleSave = async () => {
@@ -142,6 +167,8 @@ export default function EditProfileScreen() {
         civilStatus,
         civil_status: civilStatus,
         citizenship: citizenship.trim() || 'Filipino',
+        employment_status: employmentStatus,
+        hired_company: hiredCompany.trim(),
         address: {
           barangay: barangay.trim(),
           street: street.trim(),
@@ -158,12 +185,11 @@ export default function EditProfileScreen() {
         },
         education: `${eduCourse.trim()} ${eduSchool.trim() ? ' - ' + eduSchool.trim() : ''}`.trim() || eduLevel,
         work_experience: {
-          company: workCompany.trim(),
-          position: workPosition.trim(),
-          duration: workDuration.trim(),
+          entries: workExperiences,
           summary: bio.trim(),
         },
         bio: bio.trim(),
+        languages,
         preferences: {
           occupation1: occupation1.trim(),
           occupation2: occupation2.trim(),
@@ -179,8 +205,10 @@ export default function EditProfileScreen() {
         },
         social_status: {
           is_4ps: is4ps,
+          household_id: is4ps ? householdId.trim() : '',
           is_pwd: isPwd,
           pwd_type: isPwd ? pwdType.trim() : '',
+          is_ofw: isOfw,
         },
         skills,
       };
@@ -404,6 +432,34 @@ export default function EditProfileScreen() {
                     ))}
                   </View>
                 </View>
+
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>Current Employment Status</Text>
+                  <View style={styles.pillSelectorRow}>
+                    {['Unemployed', 'Fresh Graduate', 'Employed', 'Self-Employed', 'Returning OFW'].map((option) => (
+                      <TouchableOpacity
+                        key={option}
+                        style={[styles.selectorPill, employmentStatus === option && styles.selectorPillActive]}
+                        onPress={() => setEmploymentStatus(option)}>
+                        <Text style={[styles.selectorPillText, employmentStatus === option && styles.selectorPillTextActive]}>{option}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>Hiring / Current Company</Text>
+                  <View style={styles.inputContainer}>
+                    <Ionicons name="business-outline" size={18} color={COLORS.slate400} style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      value={hiredCompany}
+                      onChangeText={setHiredCompany}
+                      placeholder="e.g. Cebu IT Solutions Inc."
+                      placeholderTextColor={COLORS.slate400}
+                    />
+                  </View>
+                </View>
               </View>
             )}
 
@@ -549,48 +605,72 @@ export default function EditProfileScreen() {
 
                 <View style={styles.divider} />
 
-                <Text style={styles.sectionHeading}>Work Experience & Bio</Text>
-
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Most Recent Employer / Company</Text>
-                  <View style={styles.inputContainer}>
-                    <Ionicons name="briefcase-outline" size={18} color={COLORS.slate400} style={styles.inputIcon} />
-                    <TextInput
-                      style={styles.input}
-                      value={workCompany}
-                      onChangeText={setWorkCompany}
-                      placeholder="Company or freelance"
-                      placeholderTextColor={COLORS.slate400}
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.twoColRow}>
-                  <View style={[styles.fieldGroup, { flex: 2 }]}>
-                    <Text style={styles.label}>Position / Role</Text>
-                    <View style={styles.inputContainer}>
-                      <TextInput
-                        style={styles.input}
-                        value={workPosition}
-                        onChangeText={setWorkPosition}
-                        placeholder="e.g. Service Crew, IT Specialist"
-                        placeholderTextColor={COLORS.slate400}
-                      />
+                <Text style={styles.sectionHeading}>Work Experience & Professional History</Text>
+                <Text style={styles.sectionSub}>Add your employment, OJT, or freelance history.</Text>
+                {workExperiences.map((experience, index) => (
+                  <View key={index} style={styles.experienceCard}>
+                    <View style={styles.experienceHeader}>
+                      <Text style={styles.experienceTitle}>Experience {index + 1}</Text>
+                      <TouchableOpacity
+                        onPress={() => setWorkExperiences((current) => current.length === 1 ? [{}] : current.filter((_, itemIndex) => itemIndex !== index))}>
+                        <Text style={styles.removeExperienceText}>Remove</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.fieldGroup}>
+                      <Text style={styles.label}>Employer / Organization</Text>
+                      <TextInput style={styles.input} value={experience.employer || ''} onChangeText={(value) => updateExperience(index, 'employer', value)} placeholder="Employer or organization name" placeholderTextColor={COLORS.slate400} />
+                    </View>
+                    <View style={styles.fieldGroup}>
+                      <Text style={styles.label}>Employer Address</Text>
+                      <TextInput style={styles.input} value={experience.employer_address || ''} onChangeText={(value) => updateExperience(index, 'employer_address', value)} placeholder="Employer's business address" placeholderTextColor={COLORS.slate400} />
+                    </View>
+                    <View style={styles.fieldGroup}>
+                      <Text style={styles.label}>Position / Job Role</Text>
+                      <TextInput style={styles.input} value={experience.position || ''} onChangeText={(value) => updateExperience(index, 'position', value)} placeholder="e.g. HR Officer, Service Crew" placeholderTextColor={COLORS.slate400} />
+                    </View>
+                    <Text style={styles.label}>Employment Type</Text>
+                    <View style={styles.pillSelectorRow}>
+                      {['Full-time', 'Part-time', 'Contract/Project-based', 'Internship/OJT', 'Freelance', 'Temporary'].map((option) => (
+                        <TouchableOpacity
+                          key={option}
+                          style={[styles.selectorPill, experience.employment_type === option && styles.selectorPillActive]}
+                          onPress={() => updateExperience(index, 'employment_type', experience.employment_type === option ? '' : option)}>
+                          <Text style={[styles.selectorPillText, experience.employment_type === option && styles.selectorPillTextActive]}>{option}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    <View style={styles.fieldGroup}>
+                      <Text style={styles.label}>Employer Contact Number</Text>
+                      <TextInput style={styles.input} value={experience.employer_contact_number || ''} onChangeText={(value) => updateExperience(index, 'employer_contact_number', value)} placeholder="e.g. 032-123-4567" placeholderTextColor={COLORS.slate400} keyboardType="phone-pad" />
+                    </View>
+                    <View style={styles.fieldGroup}>
+                      <Text style={styles.label}>Employer Contact Email</Text>
+                      <TextInput style={styles.input} value={experience.employer_contact_email || ''} onChangeText={(value) => updateExperience(index, 'employer_contact_email', value)} placeholder="hr@example.com" placeholderTextColor={COLORS.slate400} keyboardType="email-address" autoCapitalize="none" />
+                    </View>
+                    <View style={styles.fieldGroup}>
+                      <Text style={styles.label}>Contact Person / Reference</Text>
+                      <TextInput style={styles.input} value={experience.employer_reference || ''} onChangeText={(value) => updateExperience(index, 'employer_reference', value)} placeholder="HR or supervisor name" placeholderTextColor={COLORS.slate400} />
+                    </View>
+                    <View style={styles.twoColRow}>
+                      <View style={[styles.fieldGroup, { flex: 1 }]}>
+                        <Text style={styles.label}>Start Date</Text>
+                        <TextInput style={styles.input} value={experience.start_date || ''} onChangeText={(value) => updateExperience(index, 'start_date', value)} placeholder="YYYY-MM-DD" placeholderTextColor={COLORS.slate400} />
+                      </View>
+                      <View style={[styles.fieldGroup, { flex: 1 }]}>
+                        <Text style={styles.label}>End Date</Text>
+                        <TextInput style={styles.input} value={experience.end_date || ''} onChangeText={(value) => updateExperience(index, 'end_date', value)} placeholder="YYYY-MM-DD or blank if current" placeholderTextColor={COLORS.slate400} />
+                      </View>
+                    </View>
+                    <View style={styles.fieldGroup}>
+                      <Text style={styles.label}>Responsibilities</Text>
+                      <TextInput style={[styles.input, styles.textArea]} value={experience.responsibilities || ''} onChangeText={(value) => updateExperience(index, 'responsibilities', value)} placeholder="Describe your responsibilities and achievements..." placeholderTextColor={COLORS.slate400} multiline numberOfLines={3} />
                     </View>
                   </View>
-                  <View style={[styles.fieldGroup, { flex: 1 }]}>
-                    <Text style={styles.label}>Duration</Text>
-                    <View style={styles.inputContainer}>
-                      <TextInput
-                        style={styles.input}
-                        value={workDuration}
-                        onChangeText={setWorkDuration}
-                        placeholder="e.g. 1 yr 6 mos"
-                        placeholderTextColor={COLORS.slate400}
-                      />
-                    </View>
-                  </View>
-                </View>
+                ))}
+                <TouchableOpacity style={styles.addExperienceButton} onPress={() => setWorkExperiences((current) => [...current, {}])}>
+                  <Ionicons name="add-circle-outline" size={18} color={COLORS.primary} />
+                  <Text style={styles.addExperienceText}>Add Work Experience</Text>
+                </TouchableOpacity>
 
                 <View style={styles.fieldGroup}>
                   <Text style={styles.label}>Professional Bio & Career Objective</Text>
@@ -749,6 +829,22 @@ export default function EditProfileScreen() {
                 </View>
 
                 <View style={styles.divider} />
+                <Text style={styles.sectionHeading}>Spoken Languages & Dialects</Text>
+                <View style={styles.pillSelectorRow}>
+                  {['Cebuano / Bisaya', 'English', 'Tagalog / Filipino', 'Ilonggo / Hiligaynon', 'Waray', 'Mandarin', 'Japanese'].map((language) => {
+                    const selected = languages.includes(language);
+                    return (
+                      <TouchableOpacity
+                        key={language}
+                        style={[styles.selectorPill, selected && styles.selectorPillActive]}
+                        onPress={() => toggleLanguage(language)}>
+                        <Text style={[styles.selectorPillText, selected && styles.selectorPillTextActive]}>{language}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <View style={styles.divider} />
 
                 <Text style={styles.sectionHeading}>Social Welfare Classifications</Text>
 
@@ -759,6 +855,13 @@ export default function EditProfileScreen() {
                   </View>
                   <Switch value={is4ps} onValueChange={setIs4ps} trackColor={{ false: COLORS.slate200, true: COLORS.primary }} />
                 </View>
+
+                {is4ps && (
+                  <View style={[styles.fieldGroup, { marginTop: SPACING.sm }]}>
+                    <Text style={styles.label}>4Ps Household ID Number</Text>
+                    <TextInput style={styles.input} value={householdId} onChangeText={setHouseholdId} placeholder="Household ID Number" placeholderTextColor={COLORS.slate400} />
+                  </View>
+                )}
 
                 <View style={[styles.switchRow, { marginTop: SPACING.md }]}>
                   <View style={{ flex: 1 }}>
@@ -782,6 +885,14 @@ export default function EditProfileScreen() {
                     </View>
                   </View>
                 )}
+
+                <View style={[styles.switchRow, { marginTop: SPACING.md }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.switchTitle}>Returning Overseas Filipino Worker</Text>
+                    <Text style={styles.switchSub}>Qualifies for local reintegration and skills-bridging programs.</Text>
+                  </View>
+                  <Switch value={isOfw} onValueChange={setIsOfw} trackColor={{ false: COLORS.slate200, true: COLORS.primary }} />
+                </View>
               </View>
             )}
 
@@ -1000,6 +1111,43 @@ const styles = StyleSheet.create({
   },
   fieldGroup: {
     marginBottom: SPACING.md,
+  },
+  experienceCard: {
+    backgroundColor: COLORS.slate50,
+    borderWidth: 1,
+    borderColor: COLORS.slate200,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  experienceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.md,
+  },
+  experienceTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.slate700,
+    textTransform: 'uppercase',
+  },
+  removeExperienceText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.danger,
+  },
+  addExperienceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
+  },
+  addExperienceText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.primary,
   },
   label: {
     fontSize: 12,
