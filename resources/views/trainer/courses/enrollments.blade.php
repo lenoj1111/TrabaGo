@@ -180,16 +180,59 @@
                                         </div>
                                     </div>
                                 </div>
-                                @elseif(in_array($enrollment->status, ['completed', 'no_show', 'multiple_absences']))
+                                @elseif($enrollment->status === 'completed' || $enrollment->certificate_issued)
                                 <span class="text-[11px] font-bold text-slate-400 italic">No Actions</span>
                                 @else
                                 <div class="ml-auto flex w-fit flex-col items-stretch gap-1.5 rounded-xl border border-slate-200 bg-white p-2">
+                                    <div x-data="{ statusModalOpen: false }">
+                                        <button type="button" @click="statusModalOpen = true"
+                                            class="w-full rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-200">
+                                            Status
+                                        </button>
+
+                                        <div x-show="statusModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" role="dialog" aria-modal="true">
+                                            <div @click.away="statusModalOpen = false" class="w-full max-w-lg space-y-5 rounded-2xl bg-white p-6 text-left shadow-2xl">
+                                                <div>
+                                                    <h3 class="text-lg font-black text-slate-900">Update Enrollment Status</h3>
+                                                    <p class="mt-1 text-sm font-bold text-emerald-700">{{ $enrollment->first_name }} {{ $enrollment->last_name }}</p>
+                                                </div>
+                                                <form method="POST" action="{{ route('trainer.enrollments.status', $enrollment->enrollment_id) }}" class="space-y-4">
+                                                    @csrf
+                                                    <div>
+                                                        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">Enrollment Status</label>
+                                                        <select name="status" required class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none">
+                                                            <option value="enrolled" @selected($enrollment->status === 'enrolled')>Enrolled</option>
+                                                            <option value="in_progress" @selected($enrollment->status === 'in_progress')>In Progress</option>
+                                                            <option value="no_show" @selected($enrollment->status === 'no_show')>No Show</option>
+                                                            <option value="multiple_absences" @selected($enrollment->status === 'multiple_absences')>Multiple Absences</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">Lab & Attendance Remarks</label>
+                                                        <textarea name="lab_remarks" rows="3" placeholder="Notes on attendance, lab participation, or progress..."
+                                                            class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none">{{ $enrollment->lab_remarks }}</textarea>
+                                                    </div>
+                                                    <div class="flex justify-end gap-3 border-t border-slate-100 pt-4">
+                                                        <button type="button" @click="statusModalOpen = false"
+                                                            class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50">
+                                                            Cancel
+                                                        </button>
+                                                        <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white hover:bg-emerald-500">
+                                                            Save Status
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @if(!in_array($enrollment->status, ['no_show', 'multiple_absences']))
                                     @if($reviewStatus === 'pending')
                                     <a href="{{ route('trainer.enrollments.evaluate', $enrollment->enrollment_id) }}" class="rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-indigo-500 text-center">Review Answers</a>
                                     @elseif($reviewStatus === 'needs_retake' || $enrollment->status === 'failed')
                                     <a href="{{ route('trainer.enrollments.assessment', $enrollment->enrollment_id) }}" class="rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-600 text-center">Re-assess</a>
                                     @elseif(!$enrollment->certificate_issued)
                                     <a href="{{ route('trainer.enrollments.assessment', $enrollment->enrollment_id) }}" class="rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-600 text-center">Assess</a>
+                                    @endif
                                     @endif
                                 </div>
                                 @endif

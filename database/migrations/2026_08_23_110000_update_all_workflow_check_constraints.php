@@ -22,7 +22,7 @@ return new class extends Migration
             foreach ($accConstraints as $c) {
                 DB::statement("ALTER TABLE [employer_accreditation] DROP CONSTRAINT [{$c->name}]");
             }
-            DB::statement("ALTER TABLE [employer_accreditation] ADD CONSTRAINT [CK_employer_accreditation_status] CHECK ([status] IN ('pending', 'submitted_to_jpo', 'jpo_approved', 'supervisor_approved', 'admin_approved', 'rejected', 'auto_approved', 'manual_review'))");
+            DB::statement("ALTER TABLE [employer_accreditation] ADD CONSTRAINT [CK_employer_accreditation_status] CHECK ([status] IN ('pending', 'submitted_to_jpo', 'jpo_approved', 'supervisor_approved', 'admin_approved', 'rejected', 'auto_approved', 'manual_review', 'disaccredited'))");
 
             // 3. users role check constraint
             $roleConstraints = DB::select("SELECT name FROM sys.check_constraints WHERE parent_object_id = OBJECT_ID('users') AND (definition LIKE '%role%' OR name LIKE '%users%role%')");

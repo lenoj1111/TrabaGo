@@ -2,9 +2,39 @@ import { apiClient } from './apiClient';
 import { TrainingProgramItem, CertificateItem } from '../types';
 
 export interface QuizSubmission {
-  score: number;
-  total: number;
-  answers: Record<string | number, number>;
+  responses: Record<string, string | number>;
+}
+
+export interface GradedQuizResponse {
+  assessment_id: number;
+  question: string;
+  question_type: string;
+  response: string;
+  options: string[];
+  correct_answer: string | null;
+  is_correct: boolean | null;
+  selected_index?: number;
+  points: number;
+  awarded_points: number | null;
+  explanation?: string;
+}
+
+export interface QuizSubmissionResult {
+  success: boolean;
+  message?: string;
+  review_status?: 'pending' | 'passed' | 'needs_retake' | string;
+  objective_score?: {
+    correct_count: number;
+    question_count: number;
+    earned_points: number;
+    total_points: number;
+    percentage: number | null;
+  };
+  assessment_attempts?: number;
+  retakes?: number;
+  passed?: boolean;
+  certificate_issued?: boolean;
+  responses?: GradedQuizResponse[];
 }
 
 export const trainingService = {
@@ -55,16 +85,10 @@ export const trainingService = {
   async submitQuiz(
     trainingId: number | string,
     submission: QuizSubmission
-  ): Promise<{ success: boolean; message?: string; passed?: boolean; score?: number; certificate_no?: string | null }> {
+  ): Promise<QuizSubmissionResult> {
     try {
       const response = await apiClient.post(`/training/${trainingId}/quiz-result`, submission);
-      return {
-        success: true,
-        message: response.data?.message || 'Quiz submitted successfully!',
-        passed: response.data?.passed,
-        score: response.data?.score,
-        certificate_no: response.data?.certificate_no,
-      };
+      return { success: true, ...response.data };
     } catch (err: any) {
       return {
         success: false,

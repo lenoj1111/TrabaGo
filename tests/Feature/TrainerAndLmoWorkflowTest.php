@@ -117,6 +117,20 @@ class TrainerAndLmoWorkflowTest extends TestCase
             'status' => 'in_progress',
             'lab_remarks' => 'Student actively attending morning coding lab sessions.',
         ]);
+
+        foreach (['no_show', 'multiple_absences'] as $status) {
+            $this->actingAs($this->trainerUser)
+                ->post("/trainer/enrollments/{$this->enrollmentId}/status", [
+                    'status' => $status,
+                    'lab_remarks' => 'Attendance status updated by trainer.',
+                ])
+                ->assertRedirect();
+
+            $this->assertDatabaseHas('training_enrollments', [
+                'enrollment_id' => $this->enrollmentId,
+                'status' => $status,
+            ]);
+        }
     }
 
     public function test_trainer_evaluates_course_answers_and_grades_submission(): void

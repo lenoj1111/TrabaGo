@@ -254,6 +254,16 @@
                                 class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs bg-slate-100 text-slate-500 cursor-not-allowed">
                             <span class="text-[10px] text-slate-400">Primary login credential managed by system administrator.</span>
                         </div>
+
+                        <div class="sm:col-span-2 space-y-1.5">
+                            <label for="secondary_email" class="block text-xs font-bold uppercase tracking-wider text-slate-700">Secondary / Alternate Email</label>
+                            <input id="secondary_email" type="email" name="secondary_email" value="{{ old('secondary_email', $employer->secondary_email) }}" placeholder="e.g. hr@company.com"
+                                class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            <span class="text-[10px] text-slate-400">Optional company contact email. This does not change your account login email.</span>
+                            @error('secondary_email')
+                            <p class="text-[11px] text-rose-600 font-bold">{{ $message }}</p>
+                            @enderror
+                        </div>
                     </div>
                 </div>
 

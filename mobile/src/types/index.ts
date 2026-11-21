@@ -4,6 +4,8 @@ export interface AddressDetails {
   city?: string;
   province?: string;
   zip?: string;
+  postal_code?: string;
+  country?: string;
   full?: string;
 }
 
@@ -21,6 +23,17 @@ export interface WorkExperienceDetails {
   duration?: string;
   description?: string;
   summary?: string;
+  entries?: {
+    employer?: string;
+    company?: string;
+    position?: string;
+    job_title?: string;
+    responsibilities?: string;
+    description?: string;
+    start_date?: string | null;
+    end_date?: string | null;
+    duration?: string;
+  }[];
 }
 
 export interface WorkExperienceEntry {
@@ -47,7 +60,10 @@ export interface EligibilityDetails {
 export interface JobPreferencesDetails {
   occupation1?: string;
   occupation2?: string;
+  occupation3?: string;
   industry1?: string;
+  industry2?: string;
+  industry3?: string;
   preferred_location?: string;
   salary_expectation?: string;
 }
@@ -58,6 +74,11 @@ export interface SocialStatusDetails {
   is_4ps?: boolean;
   household_id?: string;
   is_ofw?: boolean;
+  is_lgbtq?: boolean;
+  is_senior_citizen?: boolean;
+  is_immigrant?: boolean;
+  immigrant_origin?: string;
+  region?: string;
 }
 
 export interface UserProfile {
@@ -204,12 +225,13 @@ export interface ApplicationCounts {
 }
 
 export interface QuizQuestion {
-  id?: number;
+  id: number;
   question: string;
   image_url?: string | null;
+  question_type: 'multiple_choice' | 'essay' | string;
   choices: string[];
   options: string[];
-  answer: number;
+  points?: number;
 }
 
 export interface TrainingTopic {
@@ -249,6 +271,7 @@ export interface TrainingProgramItem {
   status?: 'enrolled' | 'in_progress' | 'completed' | 'failed' | 'not_enrolled' | string;
   passed?: boolean;
   enrolled_skills?: string | null;
+  review_status?: 'pending' | 'passed' | 'needs_retake' | string | null;
 }
 
 export interface CertificateItem {

@@ -16,6 +16,9 @@ export interface RegisterData {
   first_name: string;
   last_name: string;
   middle_name?: string;
+  firstName?: string;
+  lastName?: string;
+  middleName?: string;
   email: string;
   password: string;
   password_confirmation?: string;
@@ -23,11 +26,41 @@ export interface RegisterData {
   phone?: string;
   phone_number?: string;
   role?: string;
-  education?: string;
-  skills?: string[];
+  education?: UserProfile['education_details'];
+  address?: UserProfile['address'] & { postal_code?: string; country?: string };
+  work_experience?: UserProfile['work_experience'];
+  eligibility?: UserProfile['eligibility'];
+  language_proficiency?: string[];
+  skills?: (string | { name: string; type?: string })[];
+  skills_century?: string[];
+  skills_informal_tech?: string[];
   sex?: string;
   civil_status?: string;
   birth_date?: string;
+  birthDate?: string;
+  civilStatus?: string;
+  citizenship?: string;
+  employment_status?: string;
+  occupation1?: string;
+  occupation2?: string;
+  occupation3?: string;
+  industry1?: string;
+  industry2?: string;
+  industry3?: string;
+  preferred_location?: string;
+  salary_min?: string;
+  salary_max?: string;
+  is_4ps?: boolean;
+  household_id?: string;
+  is_ofw?: boolean;
+  is_pwd?: boolean;
+  pwd_type?: string;
+  is_lgbtq?: boolean;
+  is_senior_citizen?: boolean;
+  is_immigrant?: boolean;
+  immigrant_origin?: string;
+  region?: string;
+  company_name?: string;
 }
 
 export const authService = {

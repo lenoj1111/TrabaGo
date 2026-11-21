@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   RefreshControl,
   Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '../../src/context/AuthContext';
@@ -24,10 +24,21 @@ export default function ProfileScreen() {
   const { user, isAuthenticated, logout, addSkill, removeSkill, changePassword, refreshProfile } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (isAuthenticated) {
+        void refreshProfile();
+      }
+    }, [isAuthenticated, refreshProfile])
+  );
+
   const onRefresh = async () => {
     setRefreshing(true);
-    await refreshProfile();
-    setRefreshing(false);
+    try {
+      await refreshProfile();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   // Settings modal
@@ -302,7 +313,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* Social Welfare Classifications */}
-      {(social.is_pwd || social.is_4ps || social.is_ofw) && (
+      {(social.is_pwd || social.is_4ps || social.is_ofw || social.is_lgbtq || social.is_senior_citizen || social.is_immigrant) && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Social Welfare Classifications</Text>
           <View style={styles.socialRow}>
@@ -324,6 +335,26 @@ export default function ProfileScreen() {
               <View style={[styles.socialBadge, { backgroundColor: COLORS.warningBg }]}>
                 <Ionicons name="airplane" size={14} color={COLORS.warning} />
                 <Text style={[styles.socialBadgeText, { color: COLORS.warning }]}>OFW Returnee</Text>
+              </View>
+            )}
+            {social.is_lgbtq && (
+              <View style={[styles.socialBadge, { backgroundColor: COLORS.purpleBg }]}>
+                <Ionicons name="heart" size={14} color={COLORS.purple} />
+                <Text style={[styles.socialBadgeText, { color: COLORS.purple }]}>LGBTQ+ Community Member</Text>
+              </View>
+            )}
+            {social.is_senior_citizen && (
+              <View style={[styles.socialBadge, { backgroundColor: COLORS.infoBg }]}>
+                <Ionicons name="people" size={14} color={COLORS.info} />
+                <Text style={[styles.socialBadgeText, { color: COLORS.info }]}>Senior Citizen</Text>
+              </View>
+            )}
+            {social.is_immigrant && (
+              <View style={[styles.socialBadge, { backgroundColor: COLORS.warningBg }]}>
+                <Ionicons name="globe-outline" size={14} color={COLORS.warning} />
+                <Text style={[styles.socialBadgeText, { color: COLORS.warning }]}>
+                  Immigrant / Migrant Worker{social.immigrant_origin ? ` (${social.immigrant_origin})` : ''}
+                </Text>
               </View>
             )}
           </View>
@@ -429,16 +460,18 @@ export default function ProfileScreen() {
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Desired Roles</Text>
               <Text style={styles.detailValue}>
-                {[preferences.occupation1, preferences.occupation2].filter(Boolean).join(', ') || 'Any matched role'}
+                {[preferences.occupation1, preferences.occupation2, preferences.occupation3].filter(Boolean).join(', ') || 'Any matched role'}
               </Text>
             </View>
           </View>
-          {preferences.industry1 && (
+          {(preferences.industry1 || preferences.industry2 || preferences.industry3) && (
             <View style={styles.detailRow}>
               <Ionicons name="business-outline" size={16} color={COLORS.primary} />
               <View style={styles.detailContent}>
                 <Text style={styles.detailLabel}>Preferred Industry</Text>
-                <Text style={styles.detailValue}>{preferences.industry1}</Text>
+                <Text style={styles.detailValue}>
+                  {[preferences.industry1, preferences.industry2, preferences.industry3].filter(Boolean).join(', ')}
+                </Text>
               </View>
             </View>
           )}

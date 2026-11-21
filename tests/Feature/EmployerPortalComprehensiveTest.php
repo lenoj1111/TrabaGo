@@ -552,11 +552,19 @@ class EmployerPortalComprehensiveTest extends TestCase
      */
     public function test_employer_can_update_profile(): void
     {
+        $profileResponse = $this->actingAs($this->employerUser)
+            ->get(route('employer.profile'));
+        $profileResponse->assertOk()
+            ->assertSee('Account System Login Email')
+            ->assertSee('name="secondary_email"', false)
+            ->assertSee('Secondary / Alternate Email');
+
         $response = $this->actingAs($this->employerUser)
             ->post(route('employer.profile.update'), [
                 'company_name' => 'Cebu Global Innovation Corp',
                 'full_name' => 'Roberto Carlos',
                 'phone' => '09998887766',
+                'secondary_email' => 'backup@example.com',
                 'position' => 'Head of Human Capital',
                 'department' => 'People & Culture',
                 'office' => '12th Floor, Skyrise 4, Cebu IT Park',
@@ -570,6 +578,11 @@ class EmployerPortalComprehensiveTest extends TestCase
             'employer_id' => $this->employer->employer_id,
             'company_name' => 'Cebu Global Innovation Corp',
             'company_address' => '12th Floor, Skyrise 4, Cebu IT Park',
+            'secondary_email' => 'backup@example.com',
+        ]);
+        $this->assertDatabaseHas('users', [
+            'user_id' => $this->employerUser->user_id,
+            'email' => $this->employerUser->email,
         ]);
 
         $this->assertDatabaseHas('user_profiles', [

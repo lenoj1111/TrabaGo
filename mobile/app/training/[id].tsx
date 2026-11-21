@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  TextInput,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
@@ -14,16 +15,23 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 
-import { trainingService } from '../../src/services/trainingService';
+import { GradedQuizResponse, trainingService } from '../../src/services/trainingService';
 import { TrainingProgramItem, QuizQuestion } from '../../src/types';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../src/constants/theme';
 
 interface QuizResultState {
-  score: number;
-  total: number;
-  percentage: number;
+  objectiveScore: {
+    correct_count: number;
+    question_count: number;
+    earned_points: number;
+    total_points: number;
+    percentage: number | null;
+  } | null;
   passed: boolean;
-  certificateNo?: string | null;
+  reviewStatus: string;
+  assessmentAttempts: number;
+  certificateIssued: boolean;
+  responses: GradedQuizResponse[];
 }
 
 export default function TrainingDetailScreen() {
@@ -36,7 +44,7 @@ export default function TrainingDetailScreen() {
   // Quiz state
   const [quizMode, setQuizMode] = useState<boolean>(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string | number>>({});
   const [quizFinished, setQuizFinished] = useState<boolean>(false);
   const [quizResult, setQuizResult] = useState<QuizResultState | null>(null);
   const [submittingQuiz, setSubmittingQuiz] = useState<boolean>(false);
@@ -67,10 +75,17 @@ export default function TrainingDetailScreen() {
 
   const questions = getQuestions();
 
-  const handleSelectOption = (qIndex: number, optionIndex: number) => {
+  const handleSelectOption = (questionId: number, optionIndex: number) => {
     setSelectedAnswers((prev) => ({
       ...prev,
-      [qIndex]: optionIndex,
+      [questionId]: optionIndex,
+    }));
+  };
+
+  const handleEssayChange = (questionId: number, response: string) => {
+    setSelectedAnswers((prev) => ({
+      ...prev,
+      [questionId]: response,
     }));
   };
 
@@ -87,36 +102,27 @@ export default function TrainingDetailScreen() {
   };
 
   const handleSubmitQuiz = async () => {
-    let score = 0;
-    questions.forEach((q, idx) => {
-      if (selectedAnswers[idx] === q.answer) {
-        score += 1;
-      }
-    });
-
-    const total = questions.length;
-    const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
-    const passingThreshold = training?.passing_score ?? 80;
-
     setSubmittingQuiz(true);
     try {
       const res = await trainingService.submitQuiz(id, {
-        score,
-        total,
-        answers: selectedAnswers,
+        responses: selectedAnswers,
       });
 
-      const passed = res.passed ?? percentage >= passingThreshold;
+      if (!res.success) {
+        Alert.alert('Assessment Not Submitted', res.message || 'Please review your answers and try again.');
+        return;
+      }
 
       setQuizResult({
-        score,
-        total,
-        percentage,
-        passed,
-        certificateNo: res.certificate_no || null,
+        objectiveScore: res.objective_score ?? null,
+        passed: Boolean(res.passed),
+        reviewStatus: res.review_status || 'pending',
+        assessmentAttempts: res.assessment_attempts ?? 1,
+        certificateIssued: Boolean(res.certificate_issued),
+        responses: res.responses ?? [],
       });
       setQuizFinished(true);
-      setShowReview(!passed); // Auto-show review if failed to help the user learn
+      setShowReview(true);
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to submit quiz.');
     } finally {
@@ -167,6 +173,7 @@ export default function TrainingDetailScreen() {
   // If Quiz Completed View
   if (quizFinished && quizResult) {
     const passingThreshold = training.passing_score ?? 80;
+    const percentage = quizResult.objectiveScore?.percentage;
 
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -184,36 +191,38 @@ export default function TrainingDetailScreen() {
           </View>
 
           <Text style={styles.resultTitle}>
-            {quizResult.passed ? 'Competency Assessment Passed!' : 'Assessment Incomplete'}
+            {quizResult.reviewStatus === 'pending'
+              ? 'Awaiting Trainer Review'
+              : quizResult.passed
+                ? 'Competency Assessment Passed!'
+                : 'Assessment Not Passed'}
           </Text>
 
           <View style={styles.scoreBadge}>
             <Text style={styles.resultScore}>
-              Score: {quizResult.score} / {quizResult.total} ({quizResult.percentage}%)
+              {percentage === null || percentage === undefined
+                ? 'Objective score pending'
+                : `Score: ${quizResult.objectiveScore?.correct_count}/${quizResult.objectiveScore?.question_count} (${percentage}%)`}
             </Text>
           </View>
 
           <Text style={styles.resultDesc}>
-            {quizResult.passed
-              ? `Congratulations! You scored ${quizResult.percentage}%, exceeding the required ${passingThreshold}% benchmark. Your official DMDP competency credential has been issued.`
-              : `You scored ${quizResult.percentage}%. A minimum passing score of ${passingThreshold}% is required to earn the official DMDP certificate. Review the questions and lecture materials below.`}
+            {quizResult.reviewStatus === 'pending'
+              ? 'Your essay response has been sent to the trainer for review. The final result will appear after the trainer reviews your assessment.'
+              : quizResult.passed
+                ? `You met the ${passingThreshold}% passing score. Return to the DMDP for your practical demo; your trainer issues the certificate after confirmation.`
+                : `You did not meet the ${passingThreshold}% passing score. Review your responses and course materials, then retake the assessment.`}
           </Text>
 
-          {/* Certificate Awarded Card if Passed */}
-          {quizResult.passed && (
+          {quizResult.certificateIssued && (
             <View style={styles.certificateBanner}>
               <View style={styles.certBadgeHeader}>
                 <Ionicons name="shield-checkmark" size={18} color={COLORS.emerald700} />
                 <Text style={styles.certBadgeHeaderText}>OFFICIAL CERTIFICATE ISSUED</Text>
               </View>
-              {quizResult.certificateNo ? (
-                <Text style={styles.certBadgeNo}>#{quizResult.certificateNo}</Text>
-              ) : (
-                <Text style={styles.certBadgeNo}>#DMDP-CERT-ISSUED</Text>
-              )}
               <Text style={styles.certBadgeCourse}>{training.title}</Text>
               <Text style={styles.certBadgeSub}>
-                Automatically added to your Profile Skills & Credentials Vault.
+                Added to your Profile Skills & Credentials Vault.
               </Text>
 
               <TouchableOpacity
@@ -242,7 +251,7 @@ export default function TrainingDetailScreen() {
               </Text>
             </TouchableOpacity>
 
-            {!quizResult.passed && (
+            {quizResult.reviewStatus === 'needs_retake' && (
               <TouchableOpacity
                 style={styles.retakeBtn}
                 activeOpacity={0.85}
@@ -281,71 +290,77 @@ export default function TrainingDetailScreen() {
               Review your answers against official DOLE-DMDP criteria.
             </Text>
 
-            {questions.map((q, qIdx) => {
-              const userChoice = selectedAnswers[qIdx];
-              const isCorrect = userChoice === q.answer;
-              const choices = q.choices || q.options || [];
+            {quizResult.responses.map((response, qIdx) => {
+              const isCorrect = response.is_correct === true;
+              const hasObjectiveResult = response.is_correct !== null;
 
               return (
                 <View
-                  key={qIdx}
-                  style={[styles.reviewCard, isCorrect ? styles.reviewCardCorrect : styles.reviewCardIncorrect]}>
+                  key={response.assessment_id}
+                  style={[
+                    styles.reviewCard,
+                    hasObjectiveResult && (isCorrect ? styles.reviewCardCorrect : styles.reviewCardIncorrect),
+                  ]}>
                   <View style={styles.reviewCardHeader}>
-                    <View style={[styles.qNumberPill, isCorrect ? styles.qPillCorrect : styles.qPillIncorrect]}>
-                      <Text style={[styles.qNumberText, isCorrect ? styles.qTextCorrect : styles.qTextIncorrect]}>
+                    <View style={[styles.qNumberPill, hasObjectiveResult && (isCorrect ? styles.qPillCorrect : styles.qPillIncorrect)]}>
+                      <Text style={[styles.qNumberText, hasObjectiveResult && (isCorrect ? styles.qTextCorrect : styles.qTextIncorrect)]}>
                         Q{qIdx + 1}
                       </Text>
                     </View>
                     <View style={styles.reviewStatusTag}>
                       <Ionicons
-                        name={isCorrect ? 'checkmark-circle' : 'close-circle'}
+                        name={hasObjectiveResult ? (isCorrect ? 'checkmark-circle' : 'close-circle') : 'time-outline'}
                         size={14}
-                        color={isCorrect ? COLORS.emerald700 : COLORS.danger}
+                        color={hasObjectiveResult ? (isCorrect ? COLORS.emerald700 : COLORS.danger) : COLORS.warning}
                       />
                       <Text
                         style={[
                           styles.reviewStatusText,
-                          { color: isCorrect ? COLORS.emerald700 : COLORS.danger },
+                          { color: hasObjectiveResult ? (isCorrect ? COLORS.emerald700 : COLORS.danger) : COLORS.warning },
                         ]}>
-                        {isCorrect ? 'Correct' : 'Incorrect'}
+                        {hasObjectiveResult ? (isCorrect ? 'Correct' : 'Incorrect') : 'Trainer review'}
                       </Text>
                     </View>
                   </View>
 
-                  <Text style={styles.reviewQuestionText}>{q.question}</Text>
+                  <Text style={styles.reviewQuestionText}>{response.question}</Text>
 
-                  <View style={styles.reviewChoicesList}>
-                    {choices.map((choice, cIdx) => {
-                      const isUserSelected = userChoice === cIdx;
-                      const isTargetCorrect = q.answer === cIdx;
+                  {response.question_type === 'essay' ? (
+                    <Text style={styles.reviewEssayResponse}>{response.response}</Text>
+                  ) : (
+                    <View style={styles.reviewChoicesList}>
+                      {response.options.map((choice, cIdx) => {
+                        const isUserSelected = response.selected_index === cIdx;
+                        const isTargetCorrect = quizResult.passed && response.correct_answer === choice;
 
-                      let itemStyle = styles.reviewChoiceItem;
-                      let textStyle = styles.reviewChoiceText;
+                        let itemStyle = styles.reviewChoiceItem;
+                        let textStyle = styles.reviewChoiceText;
 
-                      if (isTargetCorrect) {
-                        itemStyle = styles.reviewChoiceCorrect;
-                        textStyle = styles.reviewChoiceTextCorrect;
-                      } else if (isUserSelected && !isCorrect) {
-                        itemStyle = styles.reviewChoiceWrong;
-                        textStyle = styles.reviewChoiceTextWrong;
-                      }
+                        if (isTargetCorrect) {
+                          itemStyle = styles.reviewChoiceCorrect;
+                          textStyle = styles.reviewChoiceTextCorrect;
+                        } else if (isUserSelected && !isCorrect) {
+                          itemStyle = styles.reviewChoiceWrong;
+                          textStyle = styles.reviewChoiceTextWrong;
+                        }
 
-                      return (
-                        <View key={cIdx} style={itemStyle}>
-                          <View style={styles.choiceBullet}>
-                            <Text style={styles.choiceLetter}>{String.fromCharCode(65 + cIdx)}</Text>
+                        return (
+                          <View key={cIdx} style={itemStyle}>
+                            <View style={styles.choiceBullet}>
+                              <Text style={styles.choiceLetter}>{String.fromCharCode(65 + cIdx)}</Text>
+                            </View>
+                            <Text style={textStyle}>{choice}</Text>
+                            {isTargetCorrect && (
+                              <Ionicons name="checkmark-circle" size={16} color={COLORS.emerald700} style={{ marginLeft: 'auto' }} />
+                            )}
+                            {isUserSelected && !isCorrect && (
+                              <Ionicons name="close-circle" size={16} color={COLORS.danger} style={{ marginLeft: 'auto' }} />
+                            )}
                           </View>
-                          <Text style={textStyle}>{choice}</Text>
-                          {isTargetCorrect && (
-                            <Ionicons name="checkmark-circle" size={16} color={COLORS.emerald700} style={{ marginLeft: 'auto' }} />
-                          )}
-                          {isUserSelected && !isCorrect && (
-                            <Ionicons name="close-circle" size={16} color={COLORS.danger} style={{ marginLeft: 'auto' }} />
-                          )}
-                        </View>
-                      );
-                    })}
-                  </View>
+                        );
+                      })}
+                    </View>
+                  )}
                 </View>
               );
             })}
@@ -361,7 +376,12 @@ export default function TrainingDetailScreen() {
   if (quizMode && questions.length > 0) {
     const currentQ = questions[currentQuestionIndex];
     const choices = currentQ.choices || currentQ.options || [];
-    const answeredCount = Object.keys(selectedAnswers).length;
+    const currentAnswer = selectedAnswers[currentQ.id];
+    const currentAnswered = typeof currentAnswer === 'number' || (typeof currentAnswer === 'string' && currentAnswer.trim().length > 0);
+    const answeredCount = questions.filter((question) => {
+      const response = selectedAnswers[question.id];
+      return typeof response === 'number' || (typeof response === 'string' && response.trim().length > 0);
+    }).length;
 
     return (
       <View style={styles.container}>
@@ -401,27 +421,40 @@ export default function TrainingDetailScreen() {
               <Image source={{ uri: currentQ.image_url }} style={{ width: '100%', height: 220, marginBottom: SPACING.md }} resizeMode="contain" />
             ) : null}
 
-            <View style={styles.choicesList}>
-              {choices.map((choice, cIndex) => {
-                const isSelected = selectedAnswers[currentQuestionIndex] === cIndex;
-                return (
-                  <TouchableOpacity
-                    key={cIndex}
-                    activeOpacity={0.85}
-                    style={[styles.choiceItem, isSelected && styles.choiceItemSelected]}
-                    onPress={() => handleSelectOption(currentQuestionIndex, cIndex)}>
-                    <View style={[styles.choiceBullet, isSelected && styles.choiceBulletSelected]}>
-                      <Text style={[styles.choiceLetter, isSelected && styles.choiceLetterSelected]}>
-                        {String.fromCharCode(65 + cIndex)}
+            {currentQ.question_type === 'essay' ? (
+              <TextInput
+                style={styles.essayInput}
+                value={typeof currentAnswer === 'string' ? currentAnswer : ''}
+                onChangeText={(response) => handleEssayChange(currentQ.id, response)}
+                placeholder="Write your answer (up to 5,000 characters)"
+                placeholderTextColor={COLORS.slate400}
+                multiline
+                maxLength={5000}
+                textAlignVertical="top"
+              />
+            ) : (
+              <View style={styles.choicesList}>
+                {choices.map((choice, cIndex) => {
+                  const isSelected = currentAnswer === cIndex;
+                  return (
+                    <TouchableOpacity
+                      key={cIndex}
+                      activeOpacity={0.85}
+                      style={[styles.choiceItem, isSelected && styles.choiceItemSelected]}
+                      onPress={() => handleSelectOption(currentQ.id, cIndex)}>
+                      <View style={[styles.choiceBullet, isSelected && styles.choiceBulletSelected]}>
+                        <Text style={[styles.choiceLetter, isSelected && styles.choiceLetterSelected]}>
+                          {String.fromCharCode(65 + cIndex)}
+                        </Text>
+                      </View>
+                      <Text style={[styles.choiceText, isSelected && styles.choiceTextSelected]}>
+                        {choice}
                       </Text>
-                    </View>
-                    <Text style={[styles.choiceText, isSelected && styles.choiceTextSelected]}>
-                      {choice}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
           </View>
 
           {/* Navigation Controls */}
@@ -450,10 +483,10 @@ export default function TrainingDetailScreen() {
               <TouchableOpacity
                 style={[
                   styles.navBtnNext,
-                  selectedAnswers[currentQuestionIndex] === undefined && { opacity: 0.5 },
+                  !currentAnswered && { opacity: 0.5 },
                 ]}
                 activeOpacity={0.88}
-                disabled={selectedAnswers[currentQuestionIndex] === undefined}
+                disabled={!currentAnswered}
                 onPress={handleNext}>
                 <Text style={styles.navBtnNextText}>Next</Text>
                 <Ionicons name="arrow-forward" size={16} color={COLORS.white} />
@@ -462,7 +495,7 @@ export default function TrainingDetailScreen() {
               <TouchableOpacity
                 style={[styles.navBtnSubmit, submittingQuiz && { opacity: 0.7 }]}
                 activeOpacity={0.88}
-                disabled={submittingQuiz || selectedAnswers[currentQuestionIndex] === undefined}
+                disabled={submittingQuiz || !currentAnswered}
                 onPress={handleSubmitQuiz}>
                 {submittingQuiz ? (
                   <ActivityIndicator color={COLORS.white} size="small" />
@@ -889,6 +922,17 @@ const styles = StyleSheet.create({
   choicesList: {
     gap: 10,
   },
+  essayInput: {
+    minHeight: 160,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    backgroundColor: COLORS.white,
+    color: COLORS.navy,
+    fontSize: 14,
+    lineHeight: 21,
+  },
   choiceItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1209,6 +1253,14 @@ const styles = StyleSheet.create({
   },
   reviewChoicesList: {
     gap: 6,
+  },
+  reviewEssayResponse: {
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
+    backgroundColor: COLORS.surfaceSubtle,
+    color: COLORS.navy,
+    fontSize: 13,
+    lineHeight: 19,
   },
   reviewChoiceItem: {
     flexDirection: 'row',

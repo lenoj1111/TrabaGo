@@ -152,7 +152,11 @@ class TrainerPortalComprehensiveTest extends TestCase
         // 4. Delete Course
         $deleteResponse = $this->delete(route('trainer.courses.destroy', $course->training_id));
         $deleteResponse->assertRedirect(route('trainer.courses'));
+        $deleteResponse->assertSessionHas('success', "Training course '{$course->title}' deleted successfully.");
         $this->assertDatabaseMissing('training_programs', [
+            'training_id' => $course->training_id,
+        ]);
+        $this->assertDatabaseMissing('training_topics', [
             'training_id' => $course->training_id,
         ]);
     }
@@ -209,7 +213,10 @@ class TrainerPortalComprehensiveTest extends TestCase
         $response->assertOk()
             ->assertSee('Maria Ongoing')
             ->assertDontSee('Juan Trainee')
-            ->assertSee('April 2026');
+            ->assertSee('April 2026')
+            ->assertSee('Status')
+            ->assertSee('No Show')
+            ->assertSee('Multiple Absences');
 
         $completedResponse = $this->get(route('trainer.courses.enrollments', [
             'id' => $course->training_id,

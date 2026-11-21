@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { UserProfile } from '../types';
 import { authService, RegisterData } from '../services/authService';
 import { disconnectEcho } from '../services/echoService';
@@ -182,12 +182,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     const res = await authService.getProfile();
     if (res.success && res.user) {
       setUser(res.user);
     }
-  };
+  }, []);
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     const res = await authService.updateProfile(updates);

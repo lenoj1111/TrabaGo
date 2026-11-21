@@ -156,7 +156,7 @@ class ReportsController extends Controller
                     'company' => $application->jobPosting?->employer?->company_name ?? 'Not recorded',
                     'position' => $application->jobPosting?->title ?? 'Not recorded',
                     'hired_date' => $application->hired_date?->format('Y-m-d') ?? 'Not recorded',
-                    'resignation_status' => $application->resignation_status ?: 'Active',
+                    'resignation_status' => $application->resignation_status ?: 'Active / not recorded',
                 ];
             })->filter(fn($row) => !$barangayFilter
                 || ($barangayFilter === '__unassigned__' && $row['barangay'] === 'Not recorded')

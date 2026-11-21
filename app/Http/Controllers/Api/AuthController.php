@@ -38,6 +38,15 @@ class AuthController extends Controller
             'zip' => '',
             'full' => 'Cebu City, Cebu'
         ]);
+        $address['zip'] = $address['zip'] ?? $address['postal_code'] ?? '';
+        $address['postal_code'] = $address['postal_code'] ?? $address['zip'];
+        $address['country'] = $address['country'] ?? 'Philippines';
+        $address['full'] = $address['full'] ?? trim(implode(', ', array_filter([
+            $address['street'] ?? '',
+            $address['barangay'] ?? '',
+            $address['city'] ?? '',
+            $address['province'] ?? '',
+        ])));
 
         // Education object
         $educationObj = is_array($details?->education) ? $details->education : (json_decode($details?->education ?? '', true) ?: [
@@ -58,6 +67,17 @@ class AuthController extends Controller
             'description' => '',
             'summary' => ''
         ]);
+        $workEntries = $workExpObj['entries'] ?? [];
+        if (is_array($workEntries) && isset($workEntries[0]) && is_array($workEntries[0])) {
+            $latestWork = $workEntries[0];
+            $workExpObj = array_merge($latestWork, $workExpObj, [
+                'company' => $latestWork['employer'] ?? $latestWork['company'] ?? $workExpObj['company'] ?? '',
+                'position' => $latestWork['position'] ?? $latestWork['job_title'] ?? $workExpObj['position'] ?? '',
+                'duration' => $latestWork['duration'] ?? $workExpObj['duration'] ?? '',
+                'description' => $latestWork['responsibilities'] ?? $latestWork['description'] ?? $workExpObj['description'] ?? '',
+                'entries' => $workEntries,
+            ]);
+        }
 
         // Eligibility & Licenses
         $eligibilityObj = is_array($details?->eligibility) ? $details->eligibility : (json_decode($details?->eligibility ?? '', true) ?: [
@@ -126,7 +146,10 @@ class AuthController extends Controller
             'preferences' => [
                 'occupation1' => $preferences->occupation1 ?? '',
                 'occupation2' => $preferences->occupation2 ?? '',
+                'occupation3' => $preferences->occupation3 ?? '',
                 'industry1' => $preferences->industry1 ?? '',
+                'industry2' => $preferences->industry2 ?? '',
+                'industry3' => $preferences->industry3 ?? '',
                 'preferred_location' => $preferences->preferred_location ?? 'Cebu City',
                 'salary_expectation' => $preferences->salary_expectation ?? '',
             ],
@@ -136,6 +159,11 @@ class AuthController extends Controller
                 'is_4ps' => (bool)($socialStatus->is_4ps ?? false),
                 'household_id' => $socialStatus->household_id ?? '',
                 'is_ofw' => (bool)($socialStatus->is_ofw ?? false),
+                'is_lgbtq' => (bool)($socialStatus->is_lgbtq ?? false),
+                'is_senior_citizen' => (bool)($socialStatus->is_senior_citizen ?? false),
+                'is_immigrant' => (bool)($socialStatus->is_immigrant ?? false),
+                'immigrant_origin' => $socialStatus->immigrant_origin ?? '',
+                'region' => $socialStatus->region ?? 'Region VII - Central Visayas',
             ],
             'role' => $user->role,
             'status' => $user->status,
@@ -503,6 +531,35 @@ class AuthController extends Controller
             'civilStatus' => 'nullable|string|max:50',
             'civil_status' => 'nullable|string|max:50',
             'citizenship' => 'nullable|string|max:100',
+            'employment_status' => 'nullable|string|max:100',
+            'address' => 'nullable|array',
+            'work_experience' => 'nullable|array',
+            'eligibility' => 'nullable|array',
+            'language_proficiency' => 'nullable|array',
+            'training_certificates' => 'nullable|array',
+            'skills' => 'nullable|array',
+            'skills_century' => 'nullable|array',
+            'skills_informal_tech' => 'nullable|array',
+            'occupation1' => 'nullable|string|max:150',
+            'occupation2' => 'nullable|string|max:150',
+            'occupation3' => 'nullable|string|max:150',
+            'industry1' => 'nullable|string|max:150',
+            'industry2' => 'nullable|string|max:150',
+            'industry3' => 'nullable|string|max:150',
+            'preferred_location' => 'nullable|string|max:255',
+            'salary_expectation' => 'nullable|string|max:100',
+            'salary_min' => 'nullable|string|max:30',
+            'salary_max' => 'nullable|string|max:30',
+            'is_4ps' => 'nullable|boolean',
+            'household_id' => 'nullable|string|max:100',
+            'is_ofw' => 'nullable|boolean',
+            'is_pwd' => 'nullable|boolean',
+            'pwd_type' => 'nullable|string|max:255',
+            'is_lgbtq' => 'nullable|boolean',
+            'is_senior_citizen' => 'nullable|boolean',
+            'is_immigrant' => 'nullable|boolean',
+            'immigrant_origin' => 'nullable|string|max:255',
+            'region' => 'nullable|string|max:100',
             'education' => 'nullable',
             'phone' => 'nullable|string|max:50',
             'mobile_number' => 'nullable|string|max:50',
@@ -516,6 +573,17 @@ class AuthController extends Controller
                 'errors' => $validator->errors(),
             ], 422);
         }
+
+        $salaryMin = $this->normalizeSalary($request->input('salary_min'));
+        $salaryMax = $this->normalizeSalary($request->input('salary_max'));
+        if ($salaryMin !== null && $salaryMax !== null && $salaryMax < $salaryMin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Maximum salary must be greater than or equal to minimum salary.',
+                'errors' => ['salary_max' => ['Maximum salary must be greater than or equal to minimum salary.']],
+            ], 422);
+        }
+
         // 👇 DUPLICATE ACCOUNT CHECK 👇
         if ($request->input('role', 'jobseeker') === 'jobseeker') {
             $firstName = $request->input('firstName', $request->input('first_name'));
@@ -528,7 +596,7 @@ class AuthController extends Controller
 
                 $duplicate = Jobseeker::where('first_name', $firstName)
                     ->where('last_name', $lastName)
-                    ->whereRaw("CONVERT(varchar(10), birth_date, 120) = ?", [$dateStr])
+                    ->whereDate('birth_date', $dateStr)
                     ->exists();
 
                 if ($duplicate && !$request->has('confirm_duplicate')) {
@@ -583,7 +651,7 @@ class AuthController extends Controller
                     'civil_status' => $request->input('civilStatus', $request->input('civil_status', 'Single')),
                     'citizenship' => $request->input('citizenship', 'Filipino'),
                     'mobile_number' => $phone,
-                    'employment_status' => 'Looking for job',
+                    'employment_status' => $request->input('employment_status', 'Looking for job'),
                     'email' => $user->email,
                 ]);
 
@@ -599,8 +667,13 @@ class AuthController extends Controller
                         'city' => 'Cebu City',
                         'province' => 'Cebu',
                         'zip' => '',
+                        'postal_code' => '',
+                        'country' => 'Philippines',
                         'full' => 'Cebu City, Cebu'
                     ]),
+                    'work_experience' => $request->input('work_experience', []),
+                    'eligibility' => $request->input('eligibility', []),
+                    'language_proficiency' => $request->input('language_proficiency', ['English', 'Filipino', 'Cebuano']),
                     'training_certificates' => [],
                 ]);
 
@@ -610,27 +683,66 @@ class AuthController extends Controller
                     $skillsInput = array_map('trim', explode(',', $skillsInput));
                 }
                 if (is_array($skillsInput)) {
-                    foreach (array_unique(array_filter($skillsInput)) as $skill) {
+                    foreach ($skillsInput as $skill) {
+                        $skillName = is_array($skill) ? ($skill['name'] ?? $skill['skill_name'] ?? '') : $skill;
+                        $skillType = is_array($skill) ? ($skill['type'] ?? $skill['skill_type'] ?? 'technical') : 'technical';
+                        if (!is_string($skillName) || trim($skillName) === '') {
+                            continue;
+                        }
                         JobseekerSkill::create([
                             'jobseeker_id' => $jobseeker->jobseeker_id,
-                            'skill_name' => $skill,
-                            'skill_type' => 'technical',
+                            'skill_name' => trim($skillName),
+                            'skill_type' => $skillType,
                         ]);
+                    }
+                }
+                foreach ([
+                    'skills_century' => '21st_century',
+                    'skills_informal_tech' => 'technical',
+                ] as $field => $skillType) {
+                    foreach ((array) $request->input($field, []) as $skillName) {
+                        if (is_string($skillName) && trim($skillName) !== '') {
+                            JobseekerSkill::create([
+                                'jobseeker_id' => $jobseeker->jobseeker_id,
+                                'skill_name' => trim($skillName),
+                                'skill_type' => $skillType,
+                            ]);
+                        }
                     }
                 }
 
                 // Save preferences
+                $salaryExpectation = $request->input('salary_expectation');
+                $salaryMin = $this->normalizeSalary($request->input('salary_min'));
+                $salaryMax = $this->normalizeSalary($request->input('salary_max'));
+                if ($salaryMin !== null || $salaryMax !== null) {
+                    $salaryExpectation = $this->formatSalaryRange($salaryMin, $salaryMax);
+                }
                 JobPreference::create([
                     'jobseeker_id' => $jobseeker->jobseeker_id,
-                    'preferred_location' => 'Cebu City',
+                    'occupation1' => $request->input('occupation1'),
+                    'occupation2' => $request->input('occupation2'),
+                    'occupation3' => $request->input('occupation3'),
+                    'industry1' => $request->input('industry1'),
+                    'industry2' => $request->input('industry2'),
+                    'industry3' => $request->input('industry3'),
+                    'preferred_location' => $request->input('preferred_location', 'Cebu City'),
+                    'salary_expectation' => $salaryExpectation,
                 ]);
 
                 // Save social status
                 SocialStatus::create([
                     'jobseeker_id' => $jobseeker->jobseeker_id,
-                    'is_pwd' => false,
-                    'is_4ps' => false,
-                    'is_ofw' => false,
+                    'is_pwd' => $request->boolean('is_pwd'),
+                    'pwd_type' => $request->boolean('is_pwd') ? $request->input('pwd_type') : null,
+                    'is_4ps' => $request->boolean('is_4ps'),
+                    'household_id' => $request->boolean('is_4ps') ? $request->input('household_id') : null,
+                    'is_ofw' => $request->boolean('is_ofw'),
+                    'is_lgbtq' => $request->boolean('is_lgbtq'),
+                    'is_senior_citizen' => $request->boolean('is_senior_citizen'),
+                    'is_immigrant' => $request->boolean('is_immigrant'),
+                    'immigrant_origin' => $request->boolean('is_immigrant') ? $request->input('immigrant_origin') : null,
+                    'region' => $request->input('region', 'Region VII - Central Visayas'),
                 ]);
             }
 
@@ -781,7 +893,10 @@ class AuthController extends Controller
             $pref = $jobseeker->preferences ?: new JobPreference(['jobseeker_id' => $jobseeker->jobseeker_id]);
             if (isset($prefData['occupation1'])) $pref->occupation1 = $prefData['occupation1'];
             if (isset($prefData['occupation2'])) $pref->occupation2 = $prefData['occupation2'];
+            if (isset($prefData['occupation3'])) $pref->occupation3 = $prefData['occupation3'];
             if (isset($prefData['industry1'])) $pref->industry1 = $prefData['industry1'];
+            if (isset($prefData['industry2'])) $pref->industry2 = $prefData['industry2'];
+            if (isset($prefData['industry3'])) $pref->industry3 = $prefData['industry3'];
             if (isset($prefData['preferred_location'])) $pref->preferred_location = $prefData['preferred_location'];
             if (isset($prefData['salary_expectation'])) $pref->salary_expectation = $prefData['salary_expectation'];
             $pref->save();
@@ -796,6 +911,11 @@ class AuthController extends Controller
             if (isset($socData['is_4ps'])) $soc->is_4ps = (bool)$socData['is_4ps'];
             if (isset($socData['household_id'])) $soc->household_id = $socData['household_id'];
             if (isset($socData['is_ofw'])) $soc->is_ofw = (bool)$socData['is_ofw'];
+            if (isset($socData['is_lgbtq'])) $soc->is_lgbtq = (bool)$socData['is_lgbtq'];
+            if (isset($socData['is_senior_citizen'])) $soc->is_senior_citizen = (bool)$socData['is_senior_citizen'];
+            if (isset($socData['is_immigrant'])) $soc->is_immigrant = (bool)$socData['is_immigrant'];
+            if (isset($socData['immigrant_origin'])) $soc->immigrant_origin = $socData['immigrant_origin'];
+            if (isset($socData['region'])) $soc->region = $socData['region'];
             $soc->save();
         }
 
@@ -885,6 +1005,24 @@ class AuthController extends Controller
             'message' => 'Skill removed',
             'skills' => $skills,
         ]);
+    }
+
+    private function normalizeSalary(mixed $value): ?int
+    {
+        $digits = preg_replace('/[^0-9]/', '', (string) $value);
+        return $digits === '' ? null : (int) $digits;
+    }
+
+    private function formatSalaryRange(?int $minimum, ?int $maximum): string
+    {
+        if ($minimum !== null && $maximum !== null) {
+            return '₱' . number_format($minimum) . ' - ₱' . number_format($maximum) . ' / month';
+        }
+        if ($minimum !== null) {
+            return '₱' . number_format($minimum) . '+ / month';
+        }
+
+        return $maximum !== null ? 'Up to ₱' . number_format($maximum) . ' / month' : '';
     }
 
     /**

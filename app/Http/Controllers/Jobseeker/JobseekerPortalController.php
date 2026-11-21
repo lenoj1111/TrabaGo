@@ -944,7 +944,7 @@ class JobseekerPortalController extends Controller
         $hasEssay = collect($submission['responses'])
             ->contains(fn($answer) => $answer['question_type'] === 'essay');
         $objectiveScore = $submission['objective_score']['percentage'];
-        $passingScore = (int) ($course->passing_score ?: 70);
+        $passingScore = (int) ($course->passing_score ?: 80);
         $passed = !$hasEssay && $objectiveScore !== null && $objectiveScore >= $passingScore;
 
         $result = DB::transaction(function () use (
@@ -953,6 +953,7 @@ class JobseekerPortalController extends Controller
             $submission,
             $hasEssay,
             $objectiveScore,
+            $passingScore,
             $passed
         ) {
             $enrollment = TrainingEnrollment::where('training_id', $course->training_id)
@@ -1004,7 +1005,7 @@ class JobseekerPortalController extends Controller
                 $notificationType = 'assessment_passed_for_demo';
             } else {
                 $title = 'Assessment Not Passed';
-                $message = "You scored {$objectiveScore}% on {$course->title} (passing score: {$course->passing_score}%, attempt #{$attempts}). Review the course materials and retake the assessment.";
+                $message = "You scored {$objectiveScore}% on {$course->title} (passing score: {$passingScore}%, attempt #{$attempts}). Review the course materials and retake the assessment.";
                 $notificationType = 'assessment_failed';
             }
 
@@ -1823,6 +1824,14 @@ class JobseekerPortalController extends Controller
             'mobile_number' => 'nullable|string|max:30',
             'employment_status' => 'nullable|string|max:100',
             'hired_company' => 'nullable|string|max:150',
+            'occupation1' => 'nullable|string|max:150',
+            'occupation2' => 'nullable|string|max:150',
+            'occupation3' => 'nullable|string|max:150',
+            'industry1' => 'nullable|string|max:150',
+            'industry2' => 'nullable|string|max:150',
+            'industry3' => 'nullable|string|max:150',
+            'preferred_location' => 'nullable|string|max:255',
+            'salary_expectation' => 'nullable|string|max:100',
             'work_experience_submitted' => 'nullable|boolean',
             'work_experience' => 'nullable|array',
             'work_experience.*.employer' => 'nullable|string|max:150',
@@ -1988,7 +1997,10 @@ class JobseekerPortalController extends Controller
         $preferences = $jobseeker->preferences ?: new JobPreference(['jobseeker_id' => $jobseeker->jobseeker_id]);
         $preferences->occupation1 = $request->input('occupation1', $preferences->occupation1);
         $preferences->occupation2 = $request->input('occupation2', $preferences->occupation2);
+        $preferences->occupation3 = $request->input('occupation3', $preferences->occupation3);
         $preferences->industry1 = $request->input('industry1', $preferences->industry1);
+        $preferences->industry2 = $request->input('industry2', $preferences->industry2);
+        $preferences->industry3 = $request->input('industry3', $preferences->industry3);
         $preferences->preferred_location = $request->input('preferred_location', $preferences->preferred_location);
         $preferences->salary_expectation = $request->input('salary_expectation', $preferences->salary_expectation);
         $preferences->save();

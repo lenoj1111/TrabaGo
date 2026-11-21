@@ -170,7 +170,7 @@ Route::prefix('jobseeker')->name('jobseeker.')->group(function () {
         Route::post('/training/{id}/enroll', [JobseekerPortalController::class, 'enrollTraining'])->name('training.enroll');
         Route::get('/training/{id}', [JobseekerPortalController::class, 'trainingShow'])->name('training.show');
         Route::get('/training/{id}/quiz', [JobseekerPortalController::class, 'trainingQuiz'])->name('training.quiz');
-        Route::post('/training/{id}/quiz', [JobseekerPortalController::class, 'submitQuiz'])->name('training.quiz.submit');
+        Route::post('/training/{course}/quiz', [JobseekerPortalController::class, 'submitQuiz'])->name('training.quiz.submit');
         Route::get('/certificates/{id}/preview', [JobseekerPortalController::class, 'previewCertificate'])->name('certificates.preview');
 
         // Document Hub & Verification
@@ -296,12 +296,9 @@ Route::prefix('jpo')->name('jpo.')->middleware(['auth', 'jpo'])->group(function 
     Route::post('/evaluations/jobseekers/{id}/disapprove', [JpoPortalController::class, 'rejectJobseeker'])->name('evaluations.jobseekers.disapprove');
     Route::get('/evaluations/jobseekers/{id}/nsrp', [JpoPortalController::class, 'showNsrpForm'])->name('evaluations.jobseekers.nsrp');
 
-    // 2. Evaluate Accreditation Papers (Recommend to Admin / Direct Accredit / Certificate)
+    // 2. Evaluate Accreditation Papers (Recommend or Reject; official accreditation is Admin-only)
     Route::get('/evaluations/accreditations', [JpoPortalController::class, 'evaluateAccreditations'])->name('evaluations.accreditations');
     Route::post('/evaluations/accreditations/{id}/recommend', [JpoPortalController::class, 'recommendAccreditation'])->name('evaluations.accreditations.recommend');
-    Route::post('/evaluations/accreditations/{id}/accredit', [JpoPortalController::class, 'accreditEmployer'])->name('evaluations.accreditations.accredit');
-    Route::post('/evaluations/accreditations/{id}/disaccredit', [JpoPortalController::class, 'disaccreditEmployer'])->name('evaluations.accreditations.disaccredit');
-    Route::post('/evaluations/accreditations/{id}/reject', [JpoPortalController::class, 'rejectAccreditation'])->name('evaluations.accreditations.reject');
     Route::get('/evaluations/accreditations/{id}/certificate', [JpoPortalController::class, 'certificate'])->name('evaluations.accreditations.certificate');
     Route::post('/evaluations/accreditations/{id}/document-status', [JpoPortalController::class, 'updateDocumentStatus'])->name('evaluations.accreditations.document-status');
     Route::get('/evaluations/accreditations/{id}/print', [JpoPortalController::class, 'printAccreditation'])->name('evaluations.accreditations.print');
@@ -517,7 +514,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
             }
         }
 
-        $employers = $query->paginate(15)->withQueryString();
+        $employers = $query
+            ->orderByDesc('users.created_at')
+            ->orderByDesc('employers.employer_id')
+            ->paginate(15)
+            ->withQueryString();
 
         $totalEmployers = DB::table('employers')->count();
         $accreditedEmployers = DB::table('employers')->where('is_accredited', 1)->count();
